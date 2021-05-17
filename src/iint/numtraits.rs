@@ -3,7 +3,7 @@ use crate::sign::Sign;
 use crate::uint::BUint;
 use crate::tryops::TryOps;
 use num_traits::{Bounded, CheckedAdd, CheckedDiv, CheckedMul, CheckedNeg, CheckedRem, CheckedSub, FromPrimitive, MulAdd, MulAddAssign, Num, One, Signed, ToPrimitive, Zero};
-use num::Integer;
+use num_integer::Integer;
 use std::convert::TryFrom;
 
 impl<const N: usize> Bounded for BIint<N> {
@@ -118,7 +118,7 @@ impl<const N: usize> MulAddAssign for BIint<N> {
 }
 
 impl<const N: usize> Num for BIint<N> {
-    type FromStrRadixErr = std::num::ParseIntError;
+    type FromStrRadixErr = crate::ParseIntError;
 
     fn from_str_radix(string: &str, radix: u32) -> Result<Self, Self::FromStrRadixErr> {
         if string.starts_with("-") {

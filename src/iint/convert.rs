@@ -28,7 +28,10 @@ impl<const N: usize> TryFrom<BIint<N>> for BUint<N> {
 }
 
 macro_rules! from_iint {
-    ($int: tt, $as_type: tt) => {
+    {
+        from: $int: tt,
+        as: $as_type: tt
+    } => {
         impl<const N: usize> From<$int> for BIint<N> {
             fn from(int: $int) -> Self {
                 let uint = if int == $int::MIN {
@@ -54,12 +57,30 @@ macro_rules! from_iint {
     }
 }
 
-from_iint!(i8, u8);
-from_iint!(i16, u16);
-from_iint!(i32, u32);
-from_iint!(isize, usize);
-from_iint!(i64, u64);
-from_iint!(i128, u128);
+from_iint! {
+    from: i8,
+    as: u8
+}
+from_iint! {
+    from: i16,
+    as: u16
+}
+from_iint! {
+    from: i32,
+    as: u32
+}
+from_iint! {
+    from: isize,
+    as: usize
+}
+from_iint! {
+    from: i64,
+    as: u64
+}
+from_iint! {
+    from: i128,
+    as: u128
+}
 
 impl<const N: usize> TryFrom<BIint<N>> for u128 {
     type Error = TryFromIntError;

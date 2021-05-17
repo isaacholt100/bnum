@@ -1,6 +1,5 @@
 use super::BUint;
 use crate::tryops::TryOps;
-use crate::arch;
 
 impl<const N: usize> TryOps for BUint<N> {
     type Error = &'static str;

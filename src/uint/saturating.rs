@@ -17,16 +17,39 @@ const fn saturate_down<const N: usize>((int, overflow): (BUint<N>, bool)) -> BUi
 }
 
 impl<const N: usize> BUint<N> {
-    pub fn saturating_add(self, rhs: Self) -> Self {
+    pub const fn saturating_add(self, rhs: Self) -> Self {
         saturate_up(self.overflowing_add(rhs))
     }
-    pub fn saturating_sub(self, rhs: Self) -> Self {
+    pub const fn saturating_sub(self, rhs: Self) -> Self {
         saturate_down(self.overflowing_sub(rhs))
     }
-    pub fn saturating_mul(self, rhs: Self) -> Self {
+    pub const fn saturating_mul(self, rhs: Self) -> Self {
         saturate_up(self.overflowing_mul(rhs))
     }
-    pub fn saturating_pow(self, exp: u32) -> Self {
+    pub const fn saturating_pow(self, exp: u32) -> Self {
         saturate_up(self.overflowing_pow(exp))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::U128;
+
+    test_unsigned! {
+        test_name: test_saturating_add,
+        method: saturating_add(3945873849578934759897458u128, 304578347593745734845646957398u128)
+    }
+    test_unsigned! {
+        test_name: test_saturating_add_with_overflow,
+        method: saturating_add(u128::MAX, 345345u128)
+    }
+
+    test_unsigned! {
+        test_name: test_saturating_sub_with_overflow,
+        method: saturating_sub(43054734875u128, 304578347593745348455647398u128)
+    }
+    test_unsigned! {
+        test_name: test_saturating_sub,
+        method: saturating_sub(394587384957893459664565697458u128, 304578347593745348455647398u128)
     }
 }

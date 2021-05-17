@@ -1,8 +1,8 @@
-use super::BUint;
-use num_traits::{Bounded, CheckedAdd, CheckedDiv, CheckedMul, CheckedNeg, CheckedRem, CheckedShl, CheckedShr, CheckedSub, FromPrimitive, MulAdd, MulAddAssign, Num, One, SaturatingAdd, SaturatingMul, SaturatingSub, WrappingAdd, WrappingMul, WrappingNeg, WrappingShl, WrappingShr, WrappingSub, ToPrimitive, Unsigned, Zero, Pow};
+use super::BintTest;
+use num_traits::{Bounded, CheckedAdd, CheckedDiv, CheckedMul, CheckedNeg, CheckedRem, CheckedShl, CheckedShr, CheckedSub, FromPrimitive, MulAdd, MulAddAssign, Num, One, SaturatingAdd, SaturatingMul, SaturatingSub, WrappingAdd, WrappingMul, WrappingNeg, WrappingShl, WrappingShr, WrappingSub, ToPrimitive, Signed, Zero, Pow};
 use num_integer::{Integer, Roots};
 
-impl<const N: usize> Bounded for BUint<N> {
+impl<const N: usize> Bounded for BintTest<N> {
     fn min_value() -> Self {
         Self::MIN
     }
@@ -13,7 +13,7 @@ impl<const N: usize> Bounded for BUint<N> {
 
 macro_rules! num_trait_impl {
     ($tr: ident, $method: ident, $ret: ty) => {
-        impl<const N: usize> $tr for BUint<N> {
+        impl<const N: usize> $tr for BintTest<N> {
             fn $method(&self, rhs: &Self) -> $ret {
                 Self::$method(*self, *rhs)
             }
@@ -35,74 +35,60 @@ num_trait_impl!(WrappingAdd, wrapping_add, Self);
 num_trait_impl!(WrappingMul, wrapping_mul, Self);
 num_trait_impl!(WrappingSub, wrapping_sub, Self);
 
-impl<const N: usize> CheckedNeg for BUint<N> {
+impl<const N: usize> CheckedNeg for BintTest<N> {
     fn checked_neg(&self) -> Option<Self> {
         Self::checked_neg(*self)
     }
 }
 
-impl<const N: usize> CheckedShl for BUint<N> {
+impl<const N: usize> CheckedShl for BintTest<N> {
     fn checked_shl(&self, rhs: u32) -> Option<Self> {
         Self::checked_shl(*self, rhs)
     }
 }
 
-impl<const N: usize> CheckedShr for BUint<N> {
+impl<const N: usize> CheckedShr for BintTest<N> {
     fn checked_shr(&self, rhs: u32) -> Option<Self> {
         Self::checked_shr(*self, rhs)
     }
 }
 
-impl<const N: usize> WrappingNeg for BUint<N> {
+impl<const N: usize> WrappingNeg for BintTest<N> {
     fn wrapping_neg(&self) -> Self {
         Self::wrapping_neg(*self)
     }
 }
 
-impl<const N: usize> WrappingShl for BUint<N> {
+/*impl<const N: usize> WrappingShl for BintTest<N> {
     fn wrapping_shl(&self, rhs: u32) -> Self {
         Self::wrapping_shl(*self, rhs)
     }
 }
 
-impl<const N: usize> WrappingShr for BUint<N> {
+impl<const N: usize> WrappingShr for BintTest<N> {
     fn wrapping_shr(&self, rhs: u32) -> Self {
         Self::wrapping_shr(*self, rhs)
     }
-}
+}*/
 
-impl<const N: usize> Pow<u32> for BUint<N> {
-    type Output = Self;
+// TODO: implement Pow trait, WrappingShr trait, WrappingShl trait
 
-    fn pow(self, exp: u32) -> Self {
-        Self::pow(self, exp)
+impl<const N: usize> FromPrimitive for BintTest<N> {
+    fn from_u64(n: u64) -> Option<Self> {
+        Some(n.into())
     }
-}
-
-use std::convert::TryFrom;
-
-impl<const N: usize> FromPrimitive for BUint<N> {
-    fn from_u64(int: u64) -> Option<Self> {
-        Some(int.into())
-    }
-    fn from_i64(int: i64) -> Option<Self> {
-        match u64::try_from(int) {
-            Ok(int) => Some(int.into()),
-            _ => None,
-        }
+    fn from_i64(n: i64) -> Option<Self> {
+        Some(n.into())
     }
     fn from_u128(n: u128) -> Option<Self> {
         Some(n.into())
     }
     fn from_i128(n: i128) -> Option<Self> {
-        match u64::try_from(n) {
-            Ok(n) => Some(n.into()),
-            _ => None,
-        }
+        Some(n.into())
     }
 }
 
-impl<const N: usize> Integer for BUint<N> {
+impl<const N: usize> Integer for BintTest<N> {
     fn div_floor(&self, other: &Self) -> Self {
         *self / *other
     }
@@ -126,17 +112,17 @@ impl<const N: usize> Integer for BUint<N> {
         self.mod_floor(other).is_zero()
     }
     fn is_even(&self) -> bool {
-        self.digits[0].is_even()
+        self.uint.is_even()
     }
     fn is_odd(&self) -> bool {
-        self.digits[0].is_odd()
+        self.uint.is_odd()
     }
-    fn div_rem(&self, rhs: &Self) -> (Self, Self) {
-        Self::div_rem(*self, *rhs)
+    fn div_rem(&self, other: &Self) -> (Self, Self) {
+        (self.div_floor(other), self.mod_floor(other))
     }
 }
 
-impl<const N: usize> MulAdd for BUint<N> {
+impl<const N: usize> MulAdd for BintTest<N> {
     type Output = Self;
 
     fn mul_add(self, a: Self, b: Self) -> Self {
@@ -144,7 +130,7 @@ impl<const N: usize> MulAdd for BUint<N> {
     }
 }
 
-impl<const N: usize> MulAddAssign for BUint<N> {
+impl<const N: usize> MulAddAssign for BintTest<N> {
     fn mul_add_assign(&mut self, a: Self, b: Self) {
         *self = self.mul_add(a, b);
     }
@@ -152,7 +138,7 @@ impl<const N: usize> MulAddAssign for BUint<N> {
 
 use crate::ParseIntError;
 
-impl<const N: usize> Num for BUint<N> {
+impl<const N: usize> Num for BintTest<N> {
     type FromStrRadixErr = ParseIntError;
 
     fn from_str_radix(string: &str, radix: u32) -> Result<Self, Self::FromStrRadixErr> {
@@ -160,7 +146,7 @@ impl<const N: usize> Num for BUint<N> {
     }
 }
 
-impl<const N: usize> One for BUint<N> {
+impl<const N: usize> One for BintTest<N> {
     fn one() -> Self {
         Self::ONE
     }
@@ -169,7 +155,7 @@ impl<const N: usize> One for BUint<N> {
     }
 }
 
-impl<const N: usize> Roots for BUint<N> {
+impl<const N: usize> Roots for BintTest<N> {
     fn sqrt(&self) -> Self {
         Self::sqrt(self)
     }
@@ -181,49 +167,44 @@ impl<const N: usize> Roots for BUint<N> {
     }
 }
 
-impl<const N: usize> ToPrimitive for BUint<N> {
+impl<const N: usize> ToPrimitive for BintTest<N> {
     fn to_i64(&self) -> Option<i64> {
-        match self.to_u64() {
-            Some(int) => int.to_i64(),
-            None => None,
-        }
+        unimplemented!()
     }
     fn to_i128(&self) -> Option<i128> {
-        match self.to_u128() {
-            Some(int) => int.to_i128(),
-            None => None,
-        }
+        unimplemented!()
     }
     fn to_u64(&self) -> Option<u64> {
-        let last_index = self.last_digit_index();
-        if last_index > 0 {
-            return None;
-        }
-        let first = if N > 0 {
-            self.digits[0]
-        } else {
-            0u64
-        };
-        Some(first)
+        unimplemented!()
     }
     fn to_u128(&self) -> Option<u128> {
-        let last_index = self.last_digit_index();
-        if last_index > 1 {
-            return None;
-        }
-        Some(if N == 0 {
-            0
-        } else if N == 1 {
-            self.digits[0] as u128
-        } else {
-            (self.digits[0] as u128) + ((self.digits[1] as u128) << 64)
-        })
+        unimplemented!()
     }
 }
 
-impl<const N: usize> Unsigned for BUint<N> {}
+impl<const N: usize> Signed for BintTest<N> {
+    fn abs(&self) -> Self {
+        Self::abs(*self)
+    }
+    fn abs_sub(&self, other: &Self) -> Self {
+        if *self <= *other {
+            Self::ZERO
+        } else {
+            *self - *other
+        }
+    }
+    fn signum(&self) -> Self {
+        Self::signum(*self)
+    }
+    fn is_positive(&self) -> bool {
+        Self::is_positive(*self)
+    }
+    fn is_negative(&self) -> bool {
+        Self::is_negative(*self)
+    }
+}
 
-impl<const N: usize> Zero for BUint<N> {
+impl<const N: usize> Zero for BintTest<N> {
     fn zero() -> Self {
         Self::ZERO
     }
