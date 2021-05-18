@@ -50,7 +50,7 @@ macro_rules! test {
         #[test]
         fn $test_name() {
             let prim_result = <$primitive>::$method(
-                $($arg.into()),*
+                $($arg.to_owned().into()),*
             );
             let big_result = <$big_type>::$method(
                 $($arg.into()), *
@@ -60,7 +60,7 @@ macro_rules! test {
     }
 }
 
-mod uint;
+pub mod uint;
 mod int;
 mod iint;
 mod tryops;
@@ -77,19 +77,19 @@ pub use uint::BUint;
 pub use int::Bint;
 
 #[allow(unused)]
-type I128 = int::Bint::<{(128 / digit::DIGIT_BITS) - 1}>;
+type I128 = int::Bint::<{(128 / digit::BITS) - 1}>;
 
 type I128Test = int_test::BintTest::<2>;
 
 #[allow(unused)]
-type U128 = BUint::<{128 / digit::DIGIT_BITS}>;
+pub type U128 = BUint::<{128 / digit::BITS}>;
 
-pub type U256 = BUint::<{256 / digit::DIGIT_BITS}>;
-pub type U512 = BUint::<{512 / digit::DIGIT_BITS}>;
-pub type U1024 = BUint::<{1024 / digit::DIGIT_BITS}>;
-pub type U2048 = BUint::<{2048 / digit::DIGIT_BITS}>;
-pub type U4096 = BUint::<{4096 / digit::DIGIT_BITS}>;
-pub type U8192 = BUint::<{8192 / digit::DIGIT_BITS}>;
+pub type U256 = BUint::<{256 / digit::BITS}>;
+pub type U512 = BUint::<{512 / digit::BITS}>;
+pub type U1024 = BUint::<{1024 / digit::BITS}>;
+pub type U2048 = BUint::<{2048 / digit::BITS}>;
+pub type U4096 = BUint::<{4096 / digit::BITS}>;
+pub type U8192 = BUint::<{8192 / digit::BITS}>;
 
 pub type ParseIntError = &'static str;
 pub type TryFromIntError = &'static str;

@@ -1,8 +1,8 @@
 use crate::arch;
-use crate::{ParseIntError, TryFromIntError};
-use crate::digit::{Digit, DIGIT_BITS, DIGIT_BIT_SHIFT, DIGIT_BITS_U32};
+use crate::{TryFromIntError};
+use crate::digit::{Digit, self};
 #[allow(unused_imports)]
-use crate::U128;
+pub use crate::U128;
 
 #[allow(unused)]
 macro_rules! test_unsigned {
@@ -56,6 +56,7 @@ mod wrapping;
 mod fmt;
 mod endian;
 mod radix;
+mod cast;
 
 /// A big unsigned integer type. Digits are stored as little endian
 
@@ -87,16 +88,16 @@ impl<const N: usize> BUint<N> {
         zero.digits[0] = 1;
         zero
     };
-    pub const BITS: usize = DIGIT_BITS * N;
+    pub const BITS: usize = digit::BITS * N;
     pub const BYTES: usize = Self::BITS / 8;
 }
 
-pub const fn trailing_zeros<const N: usize>(uint: &BUint<N>) -> (u32, bool) {
+pub const fn trailing_zeros<const N: usize>(uint: BUint<N>) -> (u32, bool) {
     let mut zeros = 0;
     let mut did_break = false;
     let mut i = 0;
     while i < N {
-        let digit = (&uint.digits)[i];
+        let digit = uint.digits[i];
         zeros += digit.trailing_zeros();
         if digit != Digit::MIN {
             did_break = true;
@@ -107,12 +108,12 @@ pub const fn trailing_zeros<const N: usize>(uint: &BUint<N>) -> (u32, bool) {
     (zeros, did_break)
 }
 
-pub const fn trailing_ones<const N: usize>(uint: &BUint<N>) -> (u32, bool) {
+pub const fn trailing_ones<const N: usize>(uint: BUint<N>) -> (u32, bool) {
     let mut ones = 0;
     let mut did_break = false;
     let mut i = 0;
     while i < N {
-        let digit = (&uint.digits)[i];
+        let digit = uint.digits[i];
         ones += digit.trailing_ones();
         if digit != Digit::MAX {
             did_break = true;
@@ -125,20 +126,20 @@ pub const fn trailing_ones<const N: usize>(uint: &BUint<N>) -> (u32, bool) {
 
 // Standard Rust uint impl
 impl<const N: usize> BUint<N> {
-    pub const fn count_ones(&self) -> u32 {
+    pub const fn count_ones(self) -> u32 {
         let mut ones = 0;
         let mut i = 0;
         while i < N {
-            ones += (&self.digits)[i].count_ones();
+            ones += self.digits[i].count_ones();
             i += 1;
         }
         ones
     }
-    pub const fn count_zeros(&self) -> u32 {
+    pub const fn count_zeros(self) -> u32 {
         let mut zeros = 0;
         let mut i = 0;
         while i < N {
-            zeros += (&self.digits)[i].count_zeros();
+            zeros += self.digits[i].count_zeros();
             i += 1;
         }
         zeros
@@ -156,15 +157,15 @@ impl<const N: usize> BUint<N> {
         }
         zeros
     }
-    pub const fn trailing_zeros(&self) -> u32 {
+    pub const fn trailing_zeros(self) -> u32 {
         trailing_zeros(self).0
     }
-    pub const fn leading_ones(&self) -> u32 {
+    pub const fn leading_ones(self) -> u32 {
         let mut ones = 0;
         let mut i = N;
         while i > 0 {
             i -= 1;
-            let digit = (&self.digits)[i];
+            let digit = self.digits[i];
             ones += digit.leading_ones();
             if digit != Digit::MAX {
                 break;
@@ -172,19 +173,19 @@ impl<const N: usize> BUint<N> {
         }
         ones
     }
-    pub const fn trailing_ones(&self) -> u32 {
+    pub const fn trailing_ones(self) -> u32 {
         trailing_ones(self).0
     }
     const fn unchecked_rotate_left(self, n: u32) -> Self {
         if n == 0 {
             self
         } else {
-            let digit_shift = (n >> DIGIT_BIT_SHIFT) as usize;
-            let shift = (n % DIGIT_BITS_U32) as u8;
+            let digit_shift = (n >> digit::BIT_SHIFT) as usize;
+            let shift = (n % digit::BITS_U32) as u8;
             
             let mut out = Self::ZERO;
             let mut carry = 0;
-            let carry_shift = DIGIT_BITS_U32 as u8 - shift;
+            let carry_shift = digit::BITS_U32 as u8 - shift;
 
             let mut i = 0;
             while i < N - digit_shift {
@@ -209,12 +210,13 @@ impl<const N: usize> BUint<N> {
             out
         }
     }
+    const BITS_MINUS_1: u32 = (Self::BITS - 1) as u32;
     pub const fn rotate_left(self, n: u32) -> Self {
-        let n = n & (Self::BITS - 1) as u32;
+        let n = n & Self::BITS_MINUS_1;
         self.unchecked_rotate_left(n)
     }
     pub const fn rotate_right(self, n: u32) -> Self {
-        let n = n & (Self::BITS - 1) as u32;
+        let n = n & Self::BITS_MINUS_1;
         self.unchecked_rotate_left(N as u32 - n)
     }
     const N_MINUS_1: usize = N - 1;
@@ -258,19 +260,37 @@ impl<const N: usize> BUint<N> {
         ones == 1
     }
     #[cfg(debug_assertions)]
-    pub const fn next_power_of_two(&self) -> Self {
-        expect!(self.checked_next_power_of_two(), "overflow")
+    pub const fn next_power_of_two(self) -> Self {
+        expect!(self.checked_next_power_of_two(), "attempt to calculate next power of two with overflow")
     }
     #[cfg(not(debug_assertions))]
-    pub const fn next_power_of_two(&self) -> Self {
+    pub const fn next_power_of_two(self) -> Self {
+        self.wrapping_next_power_of_two()
+    }
+    pub const fn checked_next_power_of_two(self) -> Option<Self> {
+        let last_set_digit_index = self.last_digit_index();
+        let leading_zeros = self.digits[last_set_digit_index].leading_zeros();
+
+        if leading_zeros == 0 {
+            if last_set_digit_index == Self::N_MINUS_1 {
+                None
+            } else {
+                let mut out = Self::ZERO;
+                out.digits[last_set_digit_index + 1] = 1;
+                Some(out)
+            }
+        } else {
+            let mut out = Self::ZERO;
+            out.digits[last_set_digit_index] = 1 << (digit::BITS_U32 - leading_zeros);
+            Some(out)
+        }
+    }
+    pub const fn wrapping_next_power_of_two(self) -> Self {
         match self.checked_next_power_of_two() {
             Some(int) => int,
             None => Self::ZERO,
         }
-    }
-    pub const fn checked_next_power_of_two(&self) -> Option<Self> {
-        unimplemented!()
-    }
+    } 
 }
 
 #[cfg(test)]
@@ -331,20 +351,32 @@ mod tests {
     }
     // Test next_power_of_two
     // Test checked_next_power_of_two
+    test_unsigned! {
+        test_name: test_next_power_of_two,
+        method: next_power_of_two(394857834758937458973489573894759879u128)
+    }
 }
+use crate::digit::BYTE_SHIFT;
 
 impl<const N: usize> BUint<N> {
-    pub const fn modpow(&self, exp: &Self, modulus: &Self) -> Self {
-        unimplemented!()
+    pub const fn bits(&self) -> usize {
+        let last_digit_index = self.last_digit_index();
+        ((last_digit_index + 1) << digit::BIT_SHIFT) - (&self.digits[last_digit_index]).leading_zeros() as usize
+    }
+    pub const fn bit(&self, index: usize) -> bool {
+        const BITS_MINUS_1: usize = digit::BITS - 1;
+
+        let digit = (&self.digits)[index >> BYTE_SHIFT];
+        digit & (1 << (index & BITS_MINUS_1)) != 0
     }
     pub const fn sqrt(&self) -> Self {
-        unimplemented!()
+        todo!()
     }
     pub const fn cbrt(&self) -> Self {
-        unimplemented!()
+        todo!()
     }
     pub const fn nth_root(&self, n: u32) -> Self {
-        unimplemented!()
+        todo!()
     }
     pub const fn digits(&self) -> [Digit; N] {
         self.digits
@@ -354,10 +386,15 @@ impl<const N: usize> BUint<N> {
             digits,
         }
     }
-    pub const fn is_zero(self) -> bool {
+    pub const fn from_digit(digit: Digit) -> Self {
+        let mut out = Self::ZERO;
+        out.digits[0] = digit;
+        out
+    }
+    pub const fn is_zero(&self) -> bool {
         let mut i = 0;
         while i < N {
-            if self.digits[i] != 0 {
+            if (&self.digits)[i] != 0 {
                 return false;
             }
             i += 1;
@@ -368,7 +405,7 @@ impl<const N: usize> BUint<N> {
         let mut index = 0;
         let mut i = 1;
         while i < N {
-            if self.digits[i] != 0 {
+            if (&self.digits)[i] != 0 {
                 index = i;
             }
             i += 1;

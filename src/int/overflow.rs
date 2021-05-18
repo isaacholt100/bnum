@@ -22,19 +22,19 @@ impl<const N: usize> Bint<N> {
         (out, carry)
     }
     pub const fn overflowing_mul(self, rhs: Self) -> (Self, bool) {
-        unimplemented!()
+        todo!()
     }
     pub const fn overflowing_div(self, rhs: Self) -> (Self, bool) {
-        unimplemented!()
+        todo!()
     }
     pub const fn overflowing_div_euclid(self, rhs: Self) -> (Self, bool) {
-        unimplemented!()
+        todo!()
     }
     pub const fn overflowing_rem(self, rhs: Self) -> (Self, bool) {
-        unimplemented!()
+        todo!()
     }
     pub const fn overflowing_rem_euclid(self, rhs: Self) -> (Self, bool) {
-        unimplemented!()
+        todo!()
     }
     pub const fn overflowing_neg(self) -> (Self, bool) {
         if self.is_zero() {
@@ -44,10 +44,10 @@ impl<const N: usize> Bint<N> {
         }
     }
     pub const fn overflowing_shl(self, rhs: u32) -> (Self, bool) {
-        unimplemented!()
+        todo!()
     }
     pub const fn overflowing_shr(self, rhs: u32) -> (Self, bool) {
-        unimplemented!()
+        todo!()
     }
     pub const fn overflowing_abs(self) -> (Self, bool) {
         if self.is_negative() {
@@ -57,7 +57,7 @@ impl<const N: usize> Bint<N> {
         }
     }
     pub const fn overflowing_pow(self, exp: u32) -> (Self, bool) {
-        unimplemented!()
+        todo!()
     }
 }
 

@@ -126,10 +126,10 @@ impl<const N: usize> Integer for BUint<N> {
         self.mod_floor(other).is_zero()
     }
     fn is_even(&self) -> bool {
-        self.digits[0].is_even()
+        self.digits[0] & 1 == 0
     }
     fn is_odd(&self) -> bool {
-        self.digits[0].is_odd()
+        self.digits[0] & 1 == 1
     }
     fn div_rem(&self, rhs: &Self) -> (Self, Self) {
         Self::div_rem(*self, *rhs)
@@ -216,7 +216,7 @@ impl<const N: usize> ToPrimitive for BUint<N> {
         } else if N == 1 {
             self.digits[0] as u128
         } else {
-            (self.digits[0] as u128) + ((self.digits[1] as u128) << 64)
+            (self.digits[0] as u128) | ((self.digits[1] as u128) << 64)
         })
     }
 }

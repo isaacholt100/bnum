@@ -1,5 +1,5 @@
 use super::BUint;
-use crate::digit::DIGIT_BITS;
+use crate::digit;
 use std::fmt::{Binary, Display, Formatter, LowerExp, LowerHex, Octal, UpperExp, UpperHex, self};
 macro_rules! fmt {
     ($format: expr, $format_pad: expr, $pad: expr, $prefix: expr) => {
@@ -24,7 +24,7 @@ macro_rules! fmt {
 }
 
 impl<const N: usize> Binary for BUint<N> {
-    fmt!("{:b}", "{:01$b}", DIGIT_BITS, "0b");
+    fmt!("{:b}", "{:01$b}", digit::BITS, "0b");
 }
 
 /*impl<const N: usize> Debug for BUint<N> {
@@ -35,18 +35,29 @@ impl<const N: usize> Binary for BUint<N> {
 
 impl<const N: usize> Display for BUint<N> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        self.to_str_radix(10);
+        // 
         // TODO: implement
         write!(f, "Bigint")
     }
 }
 
-impl<const N: usize> LowerExp for BUint<N> {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        unimplemented!()
-    }
+macro_rules! exp_fmt {
+    ($e: expr) => {
+        fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+            let mut decimal_str = format!("{}", self);
+            let exp = decimal_str.len() - 1;
+            decimal_str.trim_end_matches('0');
+            write!(f, "{}.{}{}{}", &decimal_str[0..1], &decimal_str[1..], $e, exp)
+        }
+    };
 }
 
-const HEX_PADDING: usize = DIGIT_BITS / 4;
+impl<const N: usize> LowerExp for BUint<N> {
+    exp_fmt!("e");
+}
+
+const HEX_PADDING: usize = digit::BITS / 4;
 
 impl<const N: usize> LowerHex for BUint<N> {
     fmt!("{:x}", "{:01$x}", HEX_PADDING, "0x");
@@ -92,9 +103,7 @@ impl<const N: usize> Octal for BUint<N> {
 }
 
 impl<const N: usize> UpperExp for BUint<N> {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        unimplemented!()
-    }
+    exp_fmt!("E");
 }
 
 impl<const N: usize> UpperHex for BUint<N> {

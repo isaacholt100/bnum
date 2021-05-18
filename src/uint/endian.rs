@@ -1,5 +1,5 @@
 use super::BUint;
-use crate::digit::{Digit, DIGIT_BYTES, DIGIT_BYTE_SHIFT};
+use crate::digit::{Digit, self};
 
 impl<const N: usize> BUint<N> {
     #[cfg(target_endian = "big")]
@@ -41,8 +41,8 @@ impl<const N: usize> BUint<N> {
             let digit_bytes = self.digits[N - i].to_be_bytes();
             i -= 1;
             let mut j = 0;
-            while j < DIGIT_BYTES {
-                bytes[(i << DIGIT_BYTE_SHIFT) + j] = digit_bytes[j];
+            while j < digit::BYTES {
+                bytes[(i << digit::BYTE_SHIFT) + j] = digit_bytes[j];
                 j += 1;
             }
         }
@@ -54,8 +54,8 @@ impl<const N: usize> BUint<N> {
         while i < N {
             let digit_bytes = self.digits[i].to_le_bytes();
             let mut j = 0;
-            while j < DIGIT_BYTES {
-                bytes[(i << DIGIT_BYTE_SHIFT) + j] = digit_bytes[j];
+            while j < digit::BYTES {
+                bytes[(i << digit::BYTE_SHIFT) + j] = digit_bytes[j];
                 j += 1;
             }
             i += 1;
@@ -77,7 +77,7 @@ impl<const N: usize> BUint<N> {
             let j = Self::N_MINUS_1 - i;
             let digit_bytes = [bytes[j - 7], bytes[j - 6], bytes[j - 5], bytes[j - 4], bytes[j - 3], bytes[j - 2], bytes[j - 1], bytes[j]];
             int.digits[i] = Digit::from_be_bytes(digit_bytes);
-            i += DIGIT_BYTES;
+            i += digit::BYTES;
         }
         int
     }
@@ -86,10 +86,10 @@ impl<const N: usize> BUint<N> {
         let mut i = 0;
         while i < N {
             let j = N - i;
-            let ptr = (&bytes[(j - DIGIT_BYTES)..j]).as_ptr() as *const [u8; DIGIT_BYTES];
-            let digit_bytes: [u8; DIGIT_BYTES] = unsafe { *ptr };
+            let ptr = (&bytes[(j - digit::BYTES)..j]).as_ptr() as *const [u8; digit::BYTES];
+            let digit_bytes: [u8; digit::BYTES] = unsafe { *ptr };
             int.digits[i] = Digit::from_be_bytes(digit_bytes);
-            i += DIGIT_BYTES;
+            i += digit::BYTES;
         }
         int
     }
@@ -99,7 +99,7 @@ impl<const N: usize> BUint<N> {
         while i < N {
             let digit_bytes = [bytes[i], bytes[i + 1], bytes[i + 2], bytes[i + 3], bytes[i + 4], bytes[i + 5], bytes[i + 6], bytes[i + 7]];
             int.digits[i] = Digit::from_le_bytes(digit_bytes);
-            i += DIGIT_BYTES;
+            i += digit::BYTES;
         }
         int
     }
@@ -109,10 +109,10 @@ impl<const N: usize> BUint<N> {
         let mut i = 0;
         while i < N {
             let digit_bytes = unsafe {
-                *((&bytes[i..(i + 8)]).as_ptr() as *const [u8; DIGIT_BYTES])
+                *((&bytes[i..(i + 8)]).as_ptr() as *const [u8; digit::BYTES])
             };
             int.digits[i] = Digit::from_le_bytes(digit_bytes);
-            i += DIGIT_BYTES;
+            i += digit::BYTES;
         }
         int
     }

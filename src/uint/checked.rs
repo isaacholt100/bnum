@@ -9,6 +9,8 @@ const fn tuple_to_option<const N: usize>((int, overflow): (BUint<N>, bool)) -> O
     }
 }
 
+use crate::digit::{self, DoubleDigit};
+
 impl<const N: usize> BUint<N> {
     pub const fn checked_add(self, rhs: Self) -> Option<Self> {
         tuple_to_option(self.overflowing_add(rhs))
@@ -19,22 +21,51 @@ impl<const N: usize> BUint<N> {
     pub const fn checked_mul(self, rhs: Self) -> Option<Self> {
         tuple_to_option(self.overflowing_mul(rhs))
     }
-    const fn div_rem_digit(self, digit: Digit) -> (Self, Self) {
-        unimplemented!()
+    const fn div_wide(high: Digit, low: Digit, rhs: Digit) -> (Digit, Digit) {
+        let lhs = digit::to_double_digit(high, low);
+        let rhs = rhs as DoubleDigit;
+
+        ((lhs / rhs) as Digit, (lhs % rhs) as Digit)
     }
-    const fn div_rem_core(self, rhs: Self) -> (Self, Self) {
-        unimplemented!()
+    const fn div_half(rem: Digit, digit: Digit, rhs: Digit) -> (Digit, Digit) {
+
+        const fn div_rem(a: Digit, b: Digit) -> (Digit, Digit) {
+            (a / b, a % b)
+        }
+        let (hi, rem) = div_rem((rem << digit::HALF_BITS) | (digit >> digit::HALF_BITS), rhs);
+        let (lo, rem) = div_rem((rem << digit::HALF_BITS) | (digit & digit::HALF), rhs);
+        ((hi << digit::HALF_BITS) | lo, rem)
+    }
+    const fn div_rem_digit(self, rhs: Digit) -> (Self, Self) {
+        let mut rem: Digit = 0;
+        let mut out = Self::ZERO;
+        if rhs <= digit::HALF {
+            let mut i = N;
+            while i > 0 {
+                i -= 1;
+                let (q, r) = Self::div_half(rem, self.digits[i], rhs);
+                out.digits[i] = q;
+                rem = r;
+            }
+        } else {
+            let mut i = N;
+            while i > 0 {
+                i -= 1;
+                let (q, r) = Self::div_wide(rem, self.digits[i], rhs);
+                out.digits[i] = q;
+                rem = r;
+            }
+        }
+        (out, Self::from_digit(rem))
+    }
+    const fn div_rem_core(self, mut v: Self, n: usize, m: usize) -> (Self, Self) {
+        let shift = self.digits[n - 1].leading_zeros();
+        v = v.unchecked_shl(shift);
+        todo!()
     }
     const fn div_rem_unchecked(self, rhs: Self) -> (Self, Self) {
         if self.is_zero() {
             return (Self::ZERO, Self::ZERO);
-        }
-        if rhs.last_digit_index() == 0 {
-            let first_digit = rhs.digits[0];
-            if first_digit == 1 {
-                return (self, Self::ZERO);
-            }
-            return self.div_rem_digit(first_digit);
         }
 
         use std::cmp::Ordering;
@@ -43,7 +74,17 @@ impl<const N: usize> BUint<N> {
             Ordering::Less => (Self::ZERO, rhs),
             Ordering::Equal => (Self::ONE, Self::ZERO),
             Ordering::Greater => {
-                self.div_rem_core(rhs)
+                let self_last_digit_index = self.last_digit_index();
+                let rhs_last_digit_index = rhs.last_digit_index();
+                if rhs.last_digit_index() == 0 {
+                    let first_digit = rhs.digits[0];
+                    if first_digit == 1 {
+                        return (self, Self::ZERO);
+                    }
+                    return self.div_rem_digit(first_digit);
+                }
+                let mut rhs = rhs;
+                self.div_rem_core(rhs, rhs_last_digit_index, self_last_digit_index - rhs_last_digit_index)
             }
         }
     }
@@ -92,7 +133,43 @@ impl<const N: usize> BUint<N> {
         tuple_to_option(self.overflowing_shr(rhs))
     }
     pub const fn checked_pow(self, exp: u32) -> Option<Self> {
-        tuple_to_option(self.overflowing_pow(exp))
+        if exp == 0 {
+            return Some(Self::ONE);
+        }
+        if self.is_zero() {
+            return Some(Self::ZERO);
+        }
+        let mut y = Self::ONE;
+        let mut n = exp;
+        let mut x = self;
+        let mut overflow = false;
+
+        macro_rules! checked_mul {
+            ($var: ident) => {
+                let prod = x.checked_mul($var);
+                match prod {
+                    Some(prod) => {
+                        $var = prod;
+                    },
+                    None => {
+                        return None;
+                    }
+                };
+            }
+        }
+
+        while n > 1 {
+            if n & 1 == 0 {
+                checked_mul!(x);
+                n >>= 1;
+            } else {
+                checked_mul!(y);
+                checked_mul!(x);
+                n -= 1;
+                n >>= 1;
+            }
+        }
+        x.checked_mul(y)
     }
 }
 
@@ -126,6 +203,11 @@ mod tests {
     test_unsigned! {
         test_name: test_checked_sub_overflow,
         method: checked_sub(23423423u128, 209834908234898u128),
+        converter: converter
+    }
+    test_unsigned! {
+        test_name: test_checked_div,
+        method: checked_div(234233453453454563453453423u128, 34534597u128),
         converter: converter
     }
     

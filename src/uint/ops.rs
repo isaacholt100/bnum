@@ -87,9 +87,19 @@ impl<const N: usize> BitOr for BUint<N> {
     type Output = Self;
 
     fn bitor(self, rhs: Self) -> Self {
-        self.op(&rhs, |a, b| {
-            a | b
-        })
+        Self::bitor(self, rhs)
+    }
+}
+
+impl<const N: usize> BUint<N> {
+    pub const fn bitor(self, rhs: Self) -> Self {
+        let mut out = Self::ZERO;
+        let mut i = 0;
+        while i < N {
+            out.digits[i] = self.digits[i] | rhs.digits[i];
+            i += 1;
+        }
+        out
     }
 }
 

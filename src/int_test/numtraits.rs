@@ -169,16 +169,16 @@ impl<const N: usize> Roots for BintTest<N> {
 
 impl<const N: usize> ToPrimitive for BintTest<N> {
     fn to_i64(&self) -> Option<i64> {
-        unimplemented!()
+        todo!()
     }
     fn to_i128(&self) -> Option<i128> {
-        unimplemented!()
+        todo!()
     }
     fn to_u64(&self) -> Option<u64> {
-        unimplemented!()
+        todo!()
     }
     fn to_u128(&self) -> Option<u128> {
-        unimplemented!()
+        todo!()
     }
 }
 

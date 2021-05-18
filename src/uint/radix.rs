@@ -2,7 +2,7 @@ use super::BUint;
 use crate::ParseIntError;
 use crate::digit::{self, Digit};
 
-const DIGIT_BITS: u8 = digit::DIGIT_BITS as u8;
+const BITS: u8 = digit::BITS as u8;
 
 macro_rules! assert_range {
     ($radix: expr, $max: expr) => {
@@ -20,7 +20,7 @@ fn ilog2(n: u32) -> u8 {
 impl<const N: usize> BUint<N> {
     fn from_bitwise_digits_le(buf: &[u8], bits: u8) -> Option<Self> {
         let mut out = Self::ZERO;
-        let digits_per_big_digit = DIGIT_BITS / bits;
+        let digits_per_big_digit = BITS / bits;
         for (i, digit) in buf
             .chunks(digits_per_big_digit.into())
             .map(|chunk| {
@@ -43,7 +43,7 @@ impl<const N: usize> BUint<N> {
     }
     /*fn to_bitwise_digits_le(&self, bits: u8) -> Vec<u8> {
         let mask: Digit = (1 << bits) - 1;
-        let digits_per_big_digit = DIGIT_BITS / bits;
+        let digits_per_big_digit = BITS / bits;
         let 
     }
     fn to_str_radix_reversed(&self, radix: u32) -> Vec<u8> {
@@ -67,24 +67,24 @@ impl<const N: usize> BUint<N> {
     }
     pub fn from_radix_be(buf: &[u8], radix: u32) -> Option<Self> {
         assert_range!(radix, 256);
-        unimplemented!()
+        todo!()
     }
     pub fn from_radix_le(buf: &[u8], radix: u32) -> Option<Self> {
         assert_range!(radix, 256);
-        unimplemented!()
+        todo!()
     }
     pub fn to_str_radix(&self, radix: u32) -> String {
-        unimplemented!()
+        todo!()
     }
     pub fn to_radix_be(&self, radix: u32) -> Vec<u8> {
-        unimplemented!()
+        todo!()
     }
     pub fn to_radix_le(&self, radix: u32) -> Vec<u8> {
         /*if self.is_zero() {
             vec![0]
         } else if radix.is_power_of_two() {
             let bits = ilog2(radix);
-            if DIGIT_BITS % bits == 0 {
+            if BITS % bits == 0 {
                 self.to_bitwise_digits_le(bits)
             } else {
                 self.to_inexact_bitwise_digits_le(bits)
@@ -94,7 +94,7 @@ impl<const N: usize> BUint<N> {
         } else {
             self.to_radix_digits_le(radix)
         }*/
-        unimplemented!()
+        todo!()
     }
     fn from_str_bitwise_radix(src: &str, radix: u32, chunk_size: usize) -> Result<Self, ParseIntError> {
         let mut out = Self::ZERO;
@@ -124,11 +124,11 @@ impl<const N: usize> BUint<N> {
             let byte = Self::byte_to_digit(byte, radix)?;
             digit |= Digit::from(byte) << dbits;
             dbits += bits;
-            if dbits >= DIGIT_BITS {
+            if dbits >= BITS {
                 if index < N {
                     out.digits[index] = digit;
                     index += 1;
-                    dbits -= DIGIT_BITS;
+                    dbits -= BITS;
                     digit = Digit::from(byte) >> (bits - dbits);
                 } else if digit != 0 {
                     return Err("overflow");
@@ -175,13 +175,13 @@ impl<const N: usize> BUint<N> {
             return Err("invalid digit");
         }
         match radix {
-            2 => Self::from_str_bitwise_radix(src, radix, digit::DIGIT_BITS),
-            4 => Self::from_str_bitwise_radix(src, radix, digit::DIGIT_BITS >> 1),
-            16 => Self::from_str_bitwise_radix(src, radix, digit::DIGIT_BITS >> 2),
+            2 => Self::from_str_bitwise_radix(src, radix, digit::BITS),
+            4 => Self::from_str_bitwise_radix(src, radix, digit::BITS >> 1),
+            16 => Self::from_str_bitwise_radix(src, radix, digit::BITS >> 2),
             8 => Self::from_inexact_bitwise_digits_le(src.as_bytes(), 8, 3),
             32 => Self::from_inexact_bitwise_digits_le(src.as_bytes(), 32, 4),
             radix => {
-                unimplemented!()
+                todo!()
             }
         }
         /*let mut v = Vec::with_capacity(src.len());

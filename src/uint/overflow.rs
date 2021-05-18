@@ -1,6 +1,6 @@
 use super::BUint;
 use crate::arch;
-use crate::digit::{Digit, DoubleDigit, DIGIT_BIT_SHIFT, DIGIT_BITS_U32};
+use crate::digit;
 
 const LONG_MUL_THRESHOLD: usize = 32;
 const KARATSUBA_THRESHOLD: usize = 256;
@@ -83,48 +83,7 @@ impl<const N: usize> BUint<N> {
         }
         (out, overflow)
     }
-    /*const fn split<const M: usize>(self) -> (BUint<M>, BUint<{N - M}>) {
-        use std::mem::MaybeUninit;
-
-        let mut left = MaybeUninit::<[Digit; M]>::uninit();
-        let mut right = MaybeUninit::<[Digit; N - M]>::uninit();
-        let digits_ptr = self.digits.as_ptr();
-        let left_ptr = left.as_mut_ptr() as *mut Digit;
-        let right_ptr = right.as_mut_ptr() as *mut Digit;
-        unsafe {
-            digits_ptr.copy_to_nonoverlapping(left_ptr, M);
-            digits_ptr.add(M).copy_to_nonoverlapping(right_ptr, N - M);
-            std::mem::forget(self);
-            (BUint::from_digits(left.assume_init()), BUint::from_digits(right.assume_init()))
-        }
-    }*/
-    const fn karatsuba(self, rhs: Self) -> (Self, bool)/* where [u8; {N >> 1}]: Sized, [u8; {N - (N >> 1)}]: Sized*/ {
-        /*if self.last_digit_index() == 0 && rhs.last_digit_index() == 0 {
-            let prod = self.digits[0] as DoubleDigit * rhs.digits[0] as DoubleDigit;
-            let mut out = Self::ZERO;
-            out.digits[0] = prod as Digit;
-            out.digits[1] = (prod >> 64) as Digit;
-            (out, false)
-        } else {
-            let M = N >> 1;
-            let (x_H, x_L) = self.split::<{N >> 1}>();
-            let (y_H, y_L) = self.split::<{N >> 1}>();
-            
-            unimplemented!()
-        }*/
-        unimplemented!()
-    }
-    const fn toom3(self, rhs: Self) -> (Self, bool) {
-        unimplemented!()
-    }
     pub const fn overflowing_mul(self, rhs: Self) -> (Self, bool) {
-        /*if N <= LONG_MUL_THRESHOLD {
-            self.long_mul(rhs)
-        } else if N <= KARATSUBA_THRESHOLD {
-            self.karatsuba(rhs)
-        } else {
-            self.toom3(rhs)
-        }*/
         self.long_mul(rhs)
     }
     /*#[cfg(feature = "intrinsics")]
@@ -181,12 +140,12 @@ impl<const N: usize> BUint<N> {
         if rhs == 0 {
             self
         } else {
-            let digit_shift = (rhs >> DIGIT_BIT_SHIFT) as usize;
-            let shift = (rhs % DIGIT_BITS_U32) as u8;
+            let digit_shift = (rhs >> digit::BIT_SHIFT) as usize;
+            let shift = (rhs % digit::BITS_U32) as u8;
             
             let mut out = Self::ZERO;
             let mut carry = 0;
-            let carry_shift = DIGIT_BITS_U32 as u8 - shift;
+            let carry_shift = digit::BITS_U32 as u8 - shift;
             let mut last_index = digit_shift;
             let mut i = digit_shift;
 
@@ -216,12 +175,12 @@ impl<const N: usize> BUint<N> {
         if rhs == 0 {
             self
         } else {
-            let digit_shift = (rhs >> DIGIT_BIT_SHIFT) as usize;
-            let shift = (rhs % DIGIT_BITS_U32) as u8;
+            let digit_shift = (rhs >> digit::BIT_SHIFT) as usize;
+            let shift = (rhs % digit::BITS_U32) as u8;
             
             let mut out = Self::ZERO;
             let mut borrow = 0;
-            let borrow_shift = DIGIT_BITS_U32 as u8 - shift;
+            let borrow_shift = digit::BITS_U32 as u8 - shift;
             let mut i = digit_shift;
 
             while i < N {
@@ -251,7 +210,43 @@ impl<const N: usize> BUint<N> {
         }
     }
     pub const fn overflowing_pow(self, exp: u32) -> (Self, bool) {
-        unimplemented!()
+        if exp == 0 {
+            return (Self::ONE, false);
+        }
+        if self.is_zero() {
+            return (Self::ZERO, false);
+        }
+        let mut y = Self::ONE;
+        let mut n = exp;
+        let mut x = self;
+        let mut overflow = false;
+
+        macro_rules! overflowing_mul {
+            ($var: ident) => {
+                let (prod, o) = x.overflowing_mul($var);
+                $var = prod;
+                if o {
+                    overflow = o;
+                }
+            }
+        }
+
+        while n > 1 {
+            if n & 1 == 0 {
+                overflowing_mul!(x);
+                n >>= 1;
+            } else {
+                overflowing_mul!(y);
+                overflowing_mul!(x);
+                n -= 1;
+                n >>= 1;
+            }
+        }
+        let (prod, o) = x.overflowing_mul(y);
+        if o {
+            overflow = o;
+        }
+        (prod, overflow)
     }
 }
 
@@ -297,6 +292,11 @@ mod tests {
     test_unsigned! {
         test_name: test_overflowing_shr,
         method: overflowing_shr(349573947593475973453348759u128, 10u32),
+        converter: converter
+    }
+    test_unsigned! {
+        test_name: test_overflowing_pow,
+        method: overflowing_pow(3444334u128, 3345334345u32),
         converter: converter
     }
 }

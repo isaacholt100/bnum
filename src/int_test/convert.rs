@@ -3,7 +3,7 @@ use num_traits::ToPrimitive;
 use std::convert::TryFrom;
 use std::str::FromStr;
 use crate::{TryFromIntError, ParseIntError};
-use crate::digit::{Digit, SignedDigit, DIGIT_BITS};
+use crate::digit::{Digit, SignedDigit, self};
 use crate::uint::BUint;
 
 impl<const N: usize> FromStr for BintTest<N> {
@@ -31,7 +31,7 @@ impl<const N: usize> From<i128> for BintTest<N> {
         if int < 0 {
             let mut digits = [0; N];
             digits[0] = int as Digit;
-            digits[N - 1] = (int >> DIGIT_BITS) as Digit;
+            digits[N - 1] = (int >> digit::BITS) as Digit;
             Self {
                 uint: digits.into(),
             }

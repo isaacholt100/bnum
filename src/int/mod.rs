@@ -1,4 +1,4 @@
-use crate::digit::{Digit, SignedDigit, DIGIT_BITS, DIGIT_BITS_U32};
+use crate::digit::{Digit, SignedDigit, self};
 use crate::uint::{BUint, self};
 use crate::ParseIntError;
 #[allow(unused_imports)]
@@ -88,15 +88,15 @@ impl<const N: usize> Bint<N> {
     const UINT_MIN: BUint::<N> = BUint::<N>::MIN;
     const UINT_ONE: BUint::<N> = BUint::<N>::ONE;
     const UINT_MAX: BUint::<N> = BUint::<N>::MAX;
-    const UINT_BITS: usize = Self::UINT_LENGTH * DIGIT_BITS;
+    const UINT_BITS: usize = Self::UINT_LENGTH * digit::BITS;
     const UINT_BYTES: usize = Self::UINT_BITS / 8;
     pub const BYTES: usize = Self::BITS / 8;
-    pub const BITS: usize = (Self::UINT_LENGTH + 1) * DIGIT_BITS;
+    pub const BITS: usize = (Self::UINT_LENGTH + 1) * digit::BITS;
 }
 
 impl<const N: usize> Bint<N> {
     pub fn from_str_radix(src: &str, radix: u32) -> Result<Self, ParseIntError> {
-        unimplemented!()
+        todo!()
     }
     pub const fn count_ones(self) -> u32 {
         self.signed_digit.count_ones() + self.uint.count_ones()
@@ -106,13 +106,13 @@ impl<const N: usize> Bint<N> {
     }
     pub const fn leading_zeros(self) -> u32 {
         if self.signed_digit == 0 {
-            DIGIT_BITS_U32 + self.uint.leading_zeros()
+            digit::BITS_U32 + self.uint.leading_zeros()
         } else {
             self.signed_digit.leading_zeros()
         }
     }
-    pub const fn trailing_zeros(&self) -> u32 {
-        let (uint_zeros, did_break) = uint::trailing_zeros(&self.uint);
+    pub const fn trailing_zeros(self) -> u32 {
+        let (uint_zeros, did_break) = uint::trailing_zeros(self.uint);
         if did_break {
             uint_zeros
         } else {
@@ -121,13 +121,13 @@ impl<const N: usize> Bint<N> {
     }
     pub const fn leading_ones(self) -> u32 {
         if self.signed_digit == -1 {
-            DIGIT_BITS_U32 + self.uint.leading_ones()
+            digit::BITS_U32 + self.uint.leading_ones()
         } else {
             self.signed_digit.leading_ones()
         }
     }
-    pub const fn trailing_ones(&self) -> u32 {
-        let (uint_ones, did_break) = uint::trailing_ones(&self.uint);
+    pub const fn trailing_ones(self) -> u32 {
+        let (uint_ones, did_break) = uint::trailing_ones(self.uint);
         if did_break {
             uint_ones
         } else {
@@ -135,10 +135,10 @@ impl<const N: usize> Bint<N> {
         }
     }
     pub const fn rotate_left(self, n: u32) -> Self {
-        unimplemented!()
+        todo!()
     }
     pub const fn rotate_right(self, n: u32) -> Self {
-        unimplemented!()
+        todo!()
     }
     pub const fn swap_bytes(self) -> Self {
         let uint_digits = self.uint.digits();
@@ -171,16 +171,16 @@ impl<const N: usize> Bint<N> {
         }
     }
     pub const fn unsigned_abs(self) -> BUint<{Self::UINT_LENGTH + 1}> {
-        unimplemented!()
+        todo!()
     }
     pub const fn pow(self, exp: u32) -> Self {
-        unimplemented!()
+        todo!()
     }
     pub const fn div_euclid(self, rhs: Self) -> Self {
-        unimplemented!()
+        todo!()
     }
     pub const fn rem_euclid(self, rhs: Self) -> Self {
-        unimplemented!()
+        todo!()
     }
     #[cfg(debug_assertions)]
     pub const fn abs(self) -> Self {
@@ -305,34 +305,34 @@ mod tests {
 
 impl<const N: usize> Bint<N> {
     pub fn parse_bytes(buf: &[u8], radix: u32) -> Option<Self> {
-        unimplemented!()
+        todo!()
     }
     pub fn from_radix_be(buf: &[u8], radix: u32) -> Option<Self> {
-        unimplemented!()
+        todo!()
     }
     pub fn from_radix_le(buf: &[u8], radix: u32) -> Option<Self> {
-        unimplemented!()
+        todo!()
     }
     pub fn to_str_radix(&self, radix: u32) -> String {
-        unimplemented!()
+        todo!()
     }
     pub fn to_radix_be(&self, radix: u32) -> Vec<u8> {
-        unimplemented!()
+        todo!()
     }
     pub fn to_radix_le(&self, radix: u32) -> Vec<u8> {
-        unimplemented!()
+        todo!()
     }
     pub const fn modpow(&self, exp: &Self, modulus: &Self) -> Self {
-        unimplemented!()
+        todo!()
     }
     pub const fn sqrt(&self) -> Self {
-        unimplemented!()
+        todo!()
     }
     pub const fn cbrt(&self) -> Self {
-        unimplemented!()
+        todo!()
     }
     pub const fn nth_root(&self, n: u32) -> Self {
-        unimplemented!()
+        todo!()
     }
     pub const fn is_zero(self) -> bool {
         self.signed_digit == 0 && self.uint.is_zero()

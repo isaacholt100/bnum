@@ -1,5 +1,5 @@
 use super::BintTest;
-use crate::digit::{DIGIT_BYTES, DIGIT_BYTE_SHIFT, SignedDigit};
+use crate::digit::{self, SignedDigit};
 use crate::uint::BUint;
 
 impl<const N: usize> BintTest<N> {
@@ -50,9 +50,9 @@ impl<const N: usize> BintTest<N> {
         self.to_le_bytes()
     }
     /*pub const fn from_be_bytes(bytes: [u8; Self::BYTES]) -> Self where [u8; Self::UINT_BYTES]: Sized {
-        let signed_bytes_ptr = (&bytes[0..DIGIT_BYTES]).as_ptr() as *const [u8; DIGIT_BYTES];
-        let signed_bytes: [u8; DIGIT_BYTES] = *signed_bytes_ptr;
-        let uint_bytes_ptr = (&bytes[DIGIT_BYTES..]).as_ptr() as *const [u8; Self::UINT_BYTES];
+        let signed_bytes_ptr = (&bytes[0..BYTES]).as_ptr() as *const [u8; BYTES];
+        let signed_bytes: [u8; BYTES] = *signed_bytes_ptr;
+        let uint_bytes_ptr = (&bytes[BYTES..]).as_ptr() as *const [u8; Self::UINT_BYTES];
         let uint_bytes: [u8; Self::UINT_BYTES] = *uint_bytes_ptr;
         Self {
             signed_digit: SignedDigit::from_be_bytes(signed_bytes),
@@ -65,7 +65,7 @@ impl<const N: usize> BintTest<N> {
         while i < N {
             let digit_bytes = [bytes[i], bytes[i + 1], bytes[i + 2], bytes[i + 3], bytes[i + 4], bytes[i + 5], bytes[i + 6], bytes[i + 7]];
             int.digits[i] = Digit::from_le_bytes(digit_bytes);
-            i += DIGIT_BYTES;
+            i += BYTES;
         }
         int
     }

@@ -167,5 +167,5 @@ fn main() {
     }
     println!("{:b} {:b}", -45i8 as u8, -23i8 as u8);
     println!("{:?}", (-45i8).overflowing_mul(-23i8));
-    println!("{:?}", (-45i8 as u8).overflowing_mul(-23i8 as u8));
+    //println!("{:?}", 129u8.next_power_of_two());
 }

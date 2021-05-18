@@ -27,7 +27,7 @@ impl<const N: usize> Display for BintTest<N> {
 
 impl<const N: usize> LowerExp for BintTest<N> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        unimplemented!()
+        todo!()
     }
 }
 
@@ -43,7 +43,7 @@ impl<const N: usize> Octal for BintTest<N> {
 
 impl<const N: usize> UpperExp for BintTest<N> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        unimplemented!()
+        todo!()
     }
 }
 

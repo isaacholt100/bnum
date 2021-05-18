@@ -1,4 +1,4 @@
-use crate::digit::{Digit, DoubleDigit, SignedDigit, SignedDoubleDigit, DIGIT_BITS};
+use crate::digit::{Digit, DoubleDigit, SignedDigit, SignedDoubleDigit, self};
 
 #[cfg(use_addcarry)]
 #[inline]
@@ -13,7 +13,7 @@ pub fn adc(carry: u8, a: Digit, b: Digit, out: &mut Digit) -> u8 {
 pub fn adc(carry: u8, a: Digit, b: Digit, out: &mut Digit) -> u8 {
     let sum = a as DoubleDigit + b as DoubleDigit + carry as DoubleDigit;
     *out = sum as Digit;
-    (sum >> DIGIT_BITS) as u8
+    (sum >> digit::BITS) as u8
 }
 
 /*#[cfg(feature = "intrinsics")]
@@ -30,7 +30,7 @@ pub fn add_carry(carry: u8, a: u64, b: u64) -> (u64, u8) {
 #[inline]
 pub const fn add_carry_unsigned(carry: u8, a: Digit, b: Digit) -> (Digit, u8) {
     let sum = a as DoubleDigit + b as DoubleDigit + carry as DoubleDigit;
-    (sum as Digit, (sum >> DIGIT_BITS) as u8)
+    (sum as Digit, (sum >> digit::BITS) as u8)
 }
 
 #[inline]
