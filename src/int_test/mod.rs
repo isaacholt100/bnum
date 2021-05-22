@@ -302,7 +302,7 @@ impl<const N: usize> BintTest<N> {
     }
 }
 
-use std::default::Default;
+use core::default::Default;
 
 impl<const N: usize> Default for BintTest<N> {
     fn default() -> Self {
@@ -310,7 +310,7 @@ impl<const N: usize> Default for BintTest<N> {
     }
 }
 
-use std::iter::{Iterator, Product, Sum};
+use core::iter::{Iterator, Product, Sum};
 
 impl<const N: usize> Product<Self> for BintTest<N> {
     fn product<I: Iterator<Item = Self>>(iter: I) -> Self {

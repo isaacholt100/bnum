@@ -1,5 +1,5 @@
 use super::BUint;
-use std::cmp::{PartialEq, Eq, PartialOrd, Ord, Ordering};
+use core::cmp::{PartialEq, Eq, PartialOrd, Ord, Ordering};
 
 // When const traits are stable in Rust, the trait implementations can be replaced with these
 

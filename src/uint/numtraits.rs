@@ -1,6 +1,7 @@
 use super::BUint;
 use num_traits::{Bounded, CheckedAdd, CheckedDiv, CheckedMul, CheckedNeg, CheckedRem, CheckedShl, CheckedShr, CheckedSub, FromPrimitive, MulAdd, MulAddAssign, Num, One, SaturatingAdd, SaturatingMul, SaturatingSub, WrappingAdd, WrappingMul, WrappingNeg, WrappingShl, WrappingShr, WrappingSub, ToPrimitive, Unsigned, Zero, Pow};
 use num_integer::{Integer, Roots};
+use crate::digit;
 
 impl<const N: usize> Bounded for BUint<N> {
     fn min_value() -> Self {
@@ -79,7 +80,7 @@ impl<const N: usize> Pow<u32> for BUint<N> {
     }
 }
 
-use std::convert::TryFrom;
+use core::convert::TryFrom;
 
 impl<const N: usize> FromPrimitive for BUint<N> {
     fn from_u64(int: u64) -> Option<Self> {
@@ -99,6 +100,12 @@ impl<const N: usize> FromPrimitive for BUint<N> {
             Ok(n) => Some(n.into()),
             _ => None,
         }
+    }
+    fn from_f32(f: f32) -> Option<Self> {
+        Self::try_from(f).ok()
+    }
+    fn from_f64(f: f64) -> Option<Self> {
+        Self::try_from(f).ok()
     }
 }
 
@@ -169,15 +176,106 @@ impl<const N: usize> One for BUint<N> {
     }
 }
 
+macro_rules! check_zero_or_one {
+    ($self: ident) => {
+        if $self.last_digit_index() == 0 {
+            let d = $self.digits[0];
+            if d == 0 || d == 1 {
+                return *$self;
+            }
+        }
+    }
+}
+
+impl<const N: usize> BUint<N> {
+    pub const fn power_of_two(power: usize) -> Self {
+        let mut out = Self::ZERO;
+        out.digits[power >> digit::BIT_SHIFT] = 1 << (power & (digit::BITS - 1));
+        out
+    }
+    fn fixpoint<F>(mut self, max_bits: usize, f: F) -> Self
+    where F: Fn(&Self) -> Self {
+        let mut xn = f(&self);
+        while self < xn {
+            self = if xn.bits() > max_bits {
+                Self::power_of_two(max_bits)
+            } else {
+                xn
+            };
+            xn = f(&self);
+        }
+        while self > xn {
+            self = xn;
+            xn = f(&self);
+        }
+        self
+    }
+}
+
 impl<const N: usize> Roots for BUint<N> {
     fn sqrt(&self) -> Self {
-        Self::sqrt(self)
+        check_zero_or_one!(self);
+
+        if let Some(n) = self.to_u128() {
+            return n.sqrt().into();
+        }
+        let bits = self.bits();
+        let max_bits = bits / 2 + 1;
+
+        let mut guess = Self::power_of_two(max_bits);
+        guess.fixpoint(max_bits, move |s| {
+            let q = self / s;
+            let t = s + q;
+            t >> 1
+        })
     }
     fn cbrt(&self) -> Self {
-        Self::cbrt(self)
+        check_zero_or_one!(self);
+
+        if let Some(n) = self.to_u128() {
+            return n.cbrt().into();
+        }
+        let bits = self.bits();
+        let max_bits = bits / 3 + 1;
+
+        let mut guess = Self::power_of_two(max_bits);
+        guess.fixpoint(max_bits, move |s| {
+            let q = self / (s * s);
+            let t: Self = (s << 1) + q;
+            t.div_rem_small(3).0
+        })
     }
     fn nth_root(&self, n: u32) -> Self {
-        Self::nth_root(self, n)
+        match n {
+            0 => panic!("can't have zeroth root"),
+            1 => *self,
+            2 => self.sqrt(),
+            3 => self.cbrt(),
+            _ => {
+                check_zero_or_one!(self);
+
+                let bits = self.bits();
+                let n_usize = n as usize;
+                if bits <= n_usize {
+                    return Self::ONE;
+                }
+
+                if let Some(x) = self.to_u128() {
+                    return x.nth_root(n).into();
+                }
+                let max_bits = bits / n_usize + 1;
+        
+                let mut guess = Self::power_of_two(max_bits);
+                let n_minus_1 = n - 1;
+
+                guess.fixpoint(max_bits, move |s| {
+                    let q = self / s.pow(n_minus_1);
+                    let mul: Self = n_minus_1.into();
+                    let t: Self = s * mul + q;
+                    t.div_rem_small(n as u64).0
+                })
+            }
+        }
     }
 }
 
@@ -199,26 +297,39 @@ impl<const N: usize> ToPrimitive for BUint<N> {
         if last_index > 0 {
             return None;
         }
-        let first = if N > 0 {
-            self.digits[0]
-        } else {
-            0u64
-        };
-        Some(first)
+        Some(self.digits[0])
     }
     fn to_u128(&self) -> Option<u128> {
         let last_index = self.last_digit_index();
         if last_index > 1 {
             return None;
         }
-        Some(if N == 0 {
-            0
-        } else if N == 1 {
-            self.digits[0] as u128
-        } else {
-            (self.digits[0] as u128) | ((self.digits[1] as u128) << 64)
-        })
+        Some(digit::to_double_digit(self.digits[1], self.digits[0]))
     }
+    fn to_f32(&self) -> Option<f32> {
+        let mantissa = self.to_mantissa();
+        let exp = self.bits() - last_set_bit(mantissa) as usize;
+
+        if exp > f32::MAX_EXP as usize {
+            Some(f32::INFINITY)
+        } else {
+            Some((mantissa as f32) * 2f32.powi(exp as i32))
+        }
+    }
+    fn to_f64(&self) -> Option<f64> {
+        let mantissa = self.to_mantissa();
+        let exp = self.bits() - last_set_bit(mantissa) as usize;
+
+        if exp > f64::MAX_EXP as usize {
+            Some(f64::INFINITY)
+        } else {
+            Some((mantissa as f64) * 2f64.powi(exp as i32))
+        }
+    }
+}
+
+fn last_set_bit(n: u64) -> u8 {
+    ((core::mem::size_of_val(&n) as u8) << 3) - n.leading_zeros() as u8
 }
 
 impl<const N: usize> Unsigned for BUint<N> {}

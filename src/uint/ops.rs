@@ -1,5 +1,5 @@
 use super::BUint;
-use std::ops::{Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Div, DivAssign, Mul, MulAssign, Not, Rem, RemAssign, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign};
+use core::ops::{Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Div, DivAssign, Mul, MulAssign, Not, Rem, RemAssign, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign};
 
 macro_rules! op_ref_impl {
     ($tr: tt <$rhs: ty>, $method: ident) => {
@@ -279,7 +279,7 @@ shift_impl!(Shl, shl, ShlAssign, shl_assign, u8, u16);
 
 shift_impl!(Shr, shr, ShrAssign, shr_assign, u8, u16);
 
-use std::convert::TryInto;
+use core::convert::TryInto;
 
 macro_rules! try_shift_impl {
     ($tr: tt, $method: ident, $assign_tr: tt, $assign_method: ident, $err: expr, $($rhs: ty), *) => {

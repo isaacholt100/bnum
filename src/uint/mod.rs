@@ -57,6 +57,7 @@ mod fmt;
 mod endian;
 mod radix;
 mod cast;
+mod radix_bases;
 
 /// A big unsigned integer type. Digits are stored as little endian
 
@@ -190,7 +191,7 @@ impl<const N: usize> BUint<N> {
             let mut i = 0;
             while i < N - digit_shift {
                 let digit = self.digits[i];
-                let new_carry = digit >> carry_shift;
+                let new_carry = digit.wrapping_shr(carry_shift as u32);
                 let new_digit = (digit << shift) | carry;
                 carry = new_carry;
                 out.digits[i + digit_shift] = new_digit;
@@ -198,7 +199,7 @@ impl<const N: usize> BUint<N> {
             }
             while i < N {
                 let digit = self.digits[i];
-                let new_carry = digit >> carry_shift;
+                let new_carry = digit.wrapping_shr(carry_shift as u32);
                 let new_digit = (digit << shift) | carry;
                 carry = new_carry;
                 out.digits[i + digit_shift - N] = new_digit;
@@ -356,27 +357,50 @@ mod tests {
         method: next_power_of_two(394857834758937458973489573894759879u128)
     }
 }
-use crate::digit::BYTE_SHIFT;
 
 impl<const N: usize> BUint<N> {
+    const fn to_mantissa(&self) -> u64 {
+        let mut bits = self.bits() as u64;
+        let mut out: u64 = 0;
+        let mut out_bits = 0;
+        const BITS_MINUS_1: u64 = digit::BITS as u64 - 1;
+
+        const fn min(a: u64, b: u64) -> u64 {
+            if a < b {
+                a
+            } else {
+                b
+            }
+        }
+
+        let mut i = N;
+        while i > 0 {
+            let digit_bits = ((bits - 1) & BITS_MINUS_1) + 1;
+            let bits_want = min(64 - out_bits, digit_bits);
+            if bits_want != 64 {
+                out <<= bits_want;
+            }
+            let d0 = self.digits[i] >> (digit_bits - bits_want);
+            out |= d0;
+            out_bits += bits_want;
+            bits -= bits_want;
+
+            if out_bits == 64 {
+                break;
+            }
+            i -= 1;
+        }
+        out
+    }
     pub const fn bits(&self) -> usize {
         let last_digit_index = self.last_digit_index();
-        ((last_digit_index + 1) << digit::BIT_SHIFT) - (&self.digits[last_digit_index]).leading_zeros() as usize
+        ((last_digit_index + 1) << digit::BIT_SHIFT) - self.digits[last_digit_index].leading_zeros() as usize
     }
     pub const fn bit(&self, index: usize) -> bool {
         const BITS_MINUS_1: usize = digit::BITS - 1;
 
-        let digit = (&self.digits)[index >> BYTE_SHIFT];
+        let digit = self.digits[index >> digit::BIT_SHIFT];
         digit & (1 << (index & BITS_MINUS_1)) != 0
-    }
-    pub const fn sqrt(&self) -> Self {
-        todo!()
-    }
-    pub const fn cbrt(&self) -> Self {
-        todo!()
-    }
-    pub const fn nth_root(&self, n: u32) -> Self {
-        todo!()
     }
     pub const fn digits(&self) -> [Digit; N] {
         self.digits
@@ -426,7 +450,7 @@ impl<const N: usize> BUint<N> {
     }
     fn from_uninit<C>(mut closure: C) -> Self where C: FnMut(usize) -> Digit {
         // This is an unsafe but faster version, would be implemented but can't transmute for const generic array yet
-        /*use std::mem::{self, MaybeUninit};
+        /*use core::mem::{self, MaybeUninit};
         let mut digits: [MaybeUninit<u64>; N] = unsafe {
             MaybeUninit::uninit().assume_init()
         };
@@ -492,7 +516,7 @@ impl<const N: usize> BUint<N> {
     }
 }
 
-use std::default::Default;
+use core::default::Default;
 
 impl<const N: usize> Default for BUint<N> {
     fn default() -> Self {
@@ -500,7 +524,7 @@ impl<const N: usize> Default for BUint<N> {
     }
 }
 
-use std::iter::{Iterator, Product, Sum};
+use core::iter::{Iterator, Product, Sum};
 
 impl<const N: usize> Product<Self> for BUint<N> {
     fn product<I: Iterator<Item = Self>>(iter: I) -> Self {

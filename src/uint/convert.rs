@@ -1,8 +1,9 @@
 use super::BUint;
 use num_traits::ToPrimitive;
-use std::convert::TryFrom;
-use std::str::FromStr;
+use core::convert::{TryFrom, TryInto};
+use core::str::FromStr;
 use crate::{TryFromIntError, ParseIntError};
+use crate::digit;
 
 impl<const N: usize> FromStr for BUint<N> {
     type Err = ParseIntError;
@@ -43,7 +44,45 @@ macro_rules! from_uint {
 
 from_uint!(u8, u16, u32, usize, u64);
 
-use std::convert::TryInto;
+impl<const N: usize> TryFrom<f64> for BUint<N> {
+    type Error = TryFromIntError;
+
+    fn try_from(f: f64) -> Result<Self, Self::Error> {
+        if !f.is_finite() {
+            return Err("not finite");
+        }
+        let f = f.trunc();
+        if f == 0.0 {
+            return Ok(Self::ZERO);
+        }
+        use num_traits::float::FloatCore;
+        use core::cmp::Ordering;
+        let (mantissa, exponent, sign) = FloatCore::integer_decode(f);
+        if sign == -1 {
+            return Err("negative float");
+        }
+        let out = Self::from(mantissa);
+        match exponent.cmp(&0) {
+            Ordering::Greater => {
+                if out.bits() + exponent as usize >= Self::BITS {
+                    Err("too large")
+                } else {
+                    Ok(out << exponent)
+                }
+            },
+            Ordering::Equal => Ok(out),
+            Ordering::Less => Ok(out >> (-exponent)),
+        }
+    }
+}
+
+impl<const N: usize> TryFrom<f32> for BUint<N> {
+    type Error = TryFromIntError;
+
+    fn try_from(f: f32) -> Result<Self, Self::Error> {
+        Self::try_from(f as f64)
+    }
+}
 
 macro_rules! try_from_iint {
     ($($iint: tt -> $uint: tt),*) => {
@@ -62,15 +101,11 @@ try_from_iint!(i8 -> u8, i16 -> u16, i32 -> u32, isize -> usize, i64 -> u64, i12
 
 impl<const N: usize> From<u128> for BUint<N> {
     fn from(int: u128) -> Self {
-        if int == 0 {
-            return Self::ZERO;
-        }
-        // Faster than modulus - same as `int % (2 ** 64)`
-        let first = int as u64;
-        let second = int >> 64;
+        let (high, low) = digit::from_double_digit(int);
+
         let mut out = Self::ZERO;
-        out.digits[0] = first;
-        out.digits[1] = second as u64;
+        out.digits[0] = low;
+        out.digits[1] = high;
         out
     }
 }
@@ -101,6 +136,22 @@ impl_try_int!(i32, to_i32, "BUint is too large to cast to i32");
 impl_try_int!(i16, to_i16, "BUint is too large to cast to i16");
 impl_try_int!(i8, to_i8, "BUint is too large to cast to i8");
 
+impl<const N: usize> TryFrom<BUint<N>> for f32 {
+    type Error = TryFromIntError;
+
+    fn try_from(uint: BUint<N>) -> Result<Self, Self::Error> {
+        Ok(uint.to_f32().unwrap())
+    }
+}
+
+impl<const N: usize> TryFrom<BUint<N>> for f64 {
+    type Error = TryFromIntError;
+
+    fn try_from(uint: BUint<N>) -> Result<Self, Self::Error> {
+        Ok(uint.to_f64().unwrap())
+    }
+}
+
 impl<const N: usize> From<[u64; N]> for BUint<N> {
     fn from(digits: [u64; N]) -> Self {
         Self::from_digits(digits)
@@ -117,7 +168,6 @@ impl<const N: usize> From<BUint<N>> for [u64; N] {
 mod tests {
     use super::*;
     use crate::U128;
-    use std::convert::TryInto;
 
     #[test]
     fn it_converts_u8() {
@@ -162,7 +212,6 @@ mod tests {
     fn it_converts_u64() {
         let u = 9374563574234910234u64;
         let a = U128::from(u);
-        println!("{}", a.digits[0]);
         let into: u64 = a.try_into().unwrap();
         assert_eq!(into, u);
         assert_eq!(a.last_digit_index(), 0);

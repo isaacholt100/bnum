@@ -1,5 +1,6 @@
 use super::BUint;
 use crate::digit::{Digit, self};
+use core::mem::MaybeUninit;
 
 impl<const N: usize> BUint<N> {
     #[cfg(target_endian = "big")]
@@ -70,67 +71,134 @@ impl<const N: usize> BUint<N> {
     pub const fn to_ne_bytes(self) -> [u8; N * 8] {
         self.to_le_bytes()
     }
-    pub const fn const_from_be_bytes(bytes: [u8; N * 8]) -> Self {
-        let mut int = Self::ZERO;
+    pub const fn from_be_bytes(bytes: [u8; N * 8]) -> Self {
+        let mut out = Self::ZERO;
+        let arr_ptr = bytes.as_ptr();
         let mut i = 0;
         while i < N {
-            let j = Self::N_MINUS_1 - i;
-            let digit_bytes = [bytes[j - 7], bytes[j - 6], bytes[j - 5], bytes[j - 4], bytes[j - 3], bytes[j - 2], bytes[j - 1], bytes[j]];
-            int.digits[i] = Digit::from_be_bytes(digit_bytes);
-            i += digit::BYTES;
-        }
-        int
-    }
-    pub fn from_be_bytes(bytes: [u8; N * 8]) -> Self {
-        let mut int = Self::ZERO;
-        let mut i = 0;
-        while i < N {
-            let j = N - i;
-            let ptr = (&bytes[(j - digit::BYTES)..j]).as_ptr() as *const [u8; digit::BYTES];
-            let digit_bytes: [u8; digit::BYTES] = unsafe { *ptr };
-            int.digits[i] = Digit::from_be_bytes(digit_bytes);
-            i += digit::BYTES;
-        }
-        int
-    }
-    pub const fn const_from_le_bytes(bytes: [u8; N * 8]) -> Self {
-        let mut int = Self::ZERO;
-        let mut i = 0;
-        while i < N {
-            let digit_bytes = [bytes[i], bytes[i + 1], bytes[i + 2], bytes[i + 3], bytes[i + 4], bytes[i + 5], bytes[i + 6], bytes[i + 7]];
-            int.digits[i] = Digit::from_le_bytes(digit_bytes);
-            i += digit::BYTES;
-        }
-        int
-    }
-
-    pub fn from_le_bytes(bytes: [u8; N * 8]) -> Self {
-        let mut int = Self::ZERO;
-        let mut i = 0;
-        while i < N {
+            let mut uninit = MaybeUninit::<[u8; 8]>::uninit();
+            let ptr = uninit.as_mut_ptr() as *mut u8;
             let digit_bytes = unsafe {
-                *((&bytes[i..(i + 8)]).as_ptr() as *const [u8; digit::BYTES])
+                arr_ptr.add((Self::N_MINUS_1 - i) << digit::BYTE_SHIFT).copy_to_nonoverlapping(ptr, digit::BYTES);
+                uninit.assume_init()
             };
-            int.digits[i] = Digit::from_le_bytes(digit_bytes);
-            i += digit::BYTES;
+            out.digits[i] = Digit::from_be_bytes(digit_bytes);
+            i += 1;
         }
-        int
+        out
+    }
+    pub const fn from_le_bytes(bytes: [u8; N * 8]) -> Self {
+        let mut out = Self::ZERO;
+        let arr_ptr = bytes.as_ptr();
+        let mut i = 0;
+        while i < N {
+            let mut uninit = MaybeUninit::<[u8; 8]>::uninit();
+            let ptr = uninit.as_mut_ptr() as *mut u8;
+            let digit_bytes = unsafe {
+                arr_ptr.add(i << digit::BYTE_SHIFT).copy_to_nonoverlapping(ptr, digit::BYTES);
+                uninit.assume_init()
+            };
+            out.digits[i] = Digit::from_le_bytes(digit_bytes);
+            i += 1;
+        }
+        out
     }
     #[cfg(target_endian = "big")]
-    pub const fn const_from_ne_bytes(bytes: [u8; N * 8]) -> Self {
-        Self::const_from_be_bytes(bytes)
-    }
-    #[cfg(not(target_endian = "big"))]
-    pub const fn const_from_ne_bytes(bytes: [u8; N * 8]) -> Self {
-        Self::const_from_le_bytes(bytes)
-    }
-    #[cfg(target_endian = "big")]
-    pub fn from_ne_bytes(bytes: [u8; N * 8]) -> Self {
+    pub const fn from_ne_bytes(bytes: [u8; N * 8]) -> Self {
         Self::from_be_bytes(bytes)
     }
     #[cfg(not(target_endian = "big"))]
-    pub fn from_ne_bytes(bytes: [u8; N * 8]) -> Self {
+    pub const fn from_ne_bytes(bytes: [u8; N * 8]) -> Self {
         Self::from_le_bytes(bytes)
+    }
+    pub const fn from_be_slice(slice: &[u8]) -> Option<Self> {
+        let len = slice.len();
+        let mut out = Self::ZERO;
+        let slice_ptr = slice.as_ptr();
+        let mut i = 0;
+        let exact = len >> digit::BYTE_SHIFT;
+        while i < exact {
+            let mut uninit = MaybeUninit::<[u8; 8]>::uninit();
+            let ptr = uninit.as_mut_ptr() as *mut u8;
+            let digit_bytes = unsafe {
+                slice_ptr.add(len - 8 - (i << digit::BYTE_SHIFT)).copy_to_nonoverlapping(ptr, digit::BYTES);
+                uninit.assume_init()
+            };
+            let digit = Digit::from_be_bytes(digit_bytes);
+            if i < N {
+                out.digits[i] = digit;
+            } else if digit != 0 {
+                return None;
+            };
+            i += 1;
+        }
+        let rem = len & (digit::BYTES - 1);
+        if rem == 0 {
+            Some(out)
+        } else {
+            let mut last_digit_bytes = [0; digit::BYTES];
+            let addition = exact << digit::BYTE_SHIFT;
+            let mut j = 0;
+            while j < rem {
+                last_digit_bytes[8 - rem + j] = slice[j];
+                j += 1;
+            }
+            let digit = Digit::from_be_bytes(last_digit_bytes);
+            if i < N {
+                out.digits[i] = digit;
+            } else if digit != 0 {
+                return None;
+            };
+            Some(out)
+        }
+    }
+    pub const fn from_le_slice(slice: &[u8]) -> Option<Self> {
+        let len = slice.len();
+        let mut out = Self::ZERO;
+        let slice_ptr = slice.as_ptr();
+        let mut i = 0;
+        let exact = len >> digit::BYTE_SHIFT;
+        while i < exact {
+            let mut uninit = MaybeUninit::<[u8; 8]>::uninit();
+            let ptr = uninit.as_mut_ptr() as *mut u8;
+            let digit_bytes = unsafe {
+                slice_ptr.add(i << digit::BYTE_SHIFT).copy_to_nonoverlapping(ptr, digit::BYTES);
+                uninit.assume_init()
+            };
+            let digit = Digit::from_le_bytes(digit_bytes);
+            if i < N {
+                out.digits[i] = digit;
+            } else if digit != 0 {
+                return None;
+            };
+            i += 1;
+        }
+        if len & (digit::BYTES - 1) == 0 {
+            Some(out)
+        } else {
+            let mut last_digit_bytes = [0; digit::BYTES];
+            let addition = exact << digit::BYTE_SHIFT;
+            let mut j = 0;
+            while j + addition < len {
+                last_digit_bytes[j] = slice[j + addition];
+                j += 1;
+            }
+            let digit = Digit::from_le_bytes(last_digit_bytes);
+            if i < N {
+                out.digits[i] = digit;
+            } else if digit != 0 {
+                return None;
+            };
+            Some(out)
+        }
+    }
+    #[cfg(target_endian = "big")]
+    pub const fn from_ne_slice(bytes: &[u8]) -> Option<Self> {
+        Self::from_be_slice(bytes)
+    }
+    #[cfg(not(target_endian = "big"))]
+    pub const fn from_ne_slice(bytes: &[u8]) -> Option<Self> {
+        Self::from_le_slice(bytes)
     }
 }
 
@@ -174,29 +242,51 @@ mod tests {
         method: to_ne_bytes(123423345734905803845939847534085908u128),
         converter: convert
     }
-    
-    #[test]
-    fn test_from_be_bytes() {
-        let a = 23547843905834589345903845984384598u128;
-        let buint = U128::from(a);
-        // Current causes compiler crash due to instability of const generics
-        //assert_eq!(buint, U128::from_be_bytes(buint.to_be_bytes()));
-        //assert_eq!(U128::from_be_bytes([4; 16]), u128::from_be_bytes([4; 16]).into());
+
+    test_unsigned! {
+        test_name: test_from_be_bytes,
+        method: from_be_bytes([3, 5, 44, 253, 55, 110, 64, 53, 54, 78, 0, 8, 91, 16, 25, 42])
     }
-    #[test]
-    fn test_from_le_bytes() {
-        let a = 34590834563845890504549985948845098454u128;
-        let buint = U128::from(a);
-        // Current causes compiler crash due to instability of const generics
-        //assert_eq!(buint, U128::from_le_bytes(buint.to_le_bytes()));
-        //assert_eq!(U128::from_le_bytes([4; 16]), u128::from_le_bytes([4; 16]).into());
+    test_unsigned! {
+        test_name: test_from_le_bytes,
+        method: from_le_bytes([15, 65, 44, 30, 115, 200, 244, 167, 44, 6, 9, 11, 90, 56, 77, 150])
     }
+    test_unsigned! {
+        test_name: test_from_ne_bytes,
+        method: from_ne_bytes([73, 80, 2, 24, 160, 188, 204, 45, 33, 88, 4, 68, 230, 180, 145, 32])
+    }
+
     #[test]
-    fn test_from_ne_bytes() {
-        let a = 9876757883495934598734924753734758883u128;
-        let buint = U128::from(a);
-        // Current causes compiler crash due to instability of const generics
-        //assert_eq!(buint, U128::from_ne_bytes(buint.to_ne_bytes()));
-        //assert_eq!(U128::from_ne_bytes([4; 16]), u128::from_ne_bytes([4; 16]).into());
+    fn test_from_le_slice() {
+        let arr = [73, 80, 2, 24, 160, 188, 204, 45, 33, 88, 4, 68, 230, 180, 145, 32];
+        assert_eq!(U128::from_le_bytes(arr), U128::from_le_slice(&arr[..]).unwrap());
+        let mut arr2 = arr;
+        arr2[15] = 0;
+        arr2[14] = 0;
+        arr2[13] = 0;
+        assert_eq!(U128::from_le_bytes(arr2), U128::from_le_slice(&arr2[..13]).unwrap());
+        let mut v = arr.to_vec();
+        v.extend(vec![0, 0, 0, 0, 0].into_iter());
+        assert_eq!(U128::from_le_bytes(arr), U128::from_le_slice(&v).unwrap());
+        v.insert(0, 4);
+        assert_eq!(U128::from_le_slice(&v), None);
+    }
+
+    #[test]
+    fn test_from_be_slice() {
+        let arr = [73, 80, 2, 24, 160, 188, 204, 45, 33, 88, 4, 68, 230, 180, 145, 32];
+        assert_eq!(U128::from_be_bytes(arr), U128::from_be_slice(&arr[..]).unwrap());
+        let mut arr2 = arr;
+        arr2[0] = 0;
+        arr2[1] = 0;
+        arr2[2] = 0;
+        assert_eq!(U128::from_be_bytes(arr2), U128::from_be_slice(&arr2[2..]).unwrap());
+        let mut v = arr.to_vec();
+        v.insert(0, 0);
+        v.insert(0, 0);
+        v.insert(0, 0);
+        assert_eq!(U128::from_be_bytes(arr), U128::from_be_slice(&v).unwrap());
+        v.push(4);
+        assert_eq!(U128::from_be_slice(&v), None);
     }
 }

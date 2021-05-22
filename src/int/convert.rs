@@ -1,7 +1,7 @@
 use super::Bint;
 use num_traits::ToPrimitive;
-use std::convert::TryFrom;
-use std::str::FromStr;
+use core::convert::TryFrom;
+use core::str::FromStr;
 use crate::{TryFromIntError, ParseIntError};
 use crate::digit::{Digit, SignedDigit, self};
 use crate::uint::BUint;
@@ -28,7 +28,6 @@ from_iint!(i8 -> u8, i16 -> u16, i32 -> u32, isize -> usize, i64 -> u64);
 
 impl<const N: usize> From<i128> for Bint<N> {
     fn from(int: i128) -> Self {
-        println!("{}", int as Digit);
         Self {
             signed_digit: (int >> digit::BITS) as SignedDigit,
             uint: (int as Digit).into(),

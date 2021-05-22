@@ -1,6 +1,6 @@
 use super::BIint;
 use crate::sign::Sign;
-use std::cmp::Ordering;
+use core::cmp::Ordering;
 
 impl<const N: usize> PartialEq for BIint<N> {
     fn eq(&self, other: &Self) -> bool {

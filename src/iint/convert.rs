@@ -1,7 +1,7 @@
 use super::BIint;
 use crate::sign::Sign;
 use crate::uint::BUint;
-use std::convert::TryFrom;
+use core::convert::TryFrom;
 use num_traits::{Signed, ToPrimitive};
 use crate::TryFromIntError;
 
@@ -131,7 +131,7 @@ to_int!(i8, to_i8, "BIint is too large to cast to i8");
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::convert::TryInto;
+    use core::convert::TryInto;
     use num_traits::One;
 
     #[test]

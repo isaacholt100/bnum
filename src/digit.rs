@@ -26,5 +26,9 @@ pub const HALF_BITS: usize = BITS / 2;
 pub const HALF: Digit = (1 << HALF_BITS) - 1;
 
 pub const fn to_double_digit(high: Digit, low: Digit) -> DoubleDigit {
-    low as DoubleDigit | ((high as DoubleDigit) << BITS)
+    ((high as DoubleDigit) << BITS) | low as DoubleDigit
+}
+
+pub const fn from_double_digit(double: DoubleDigit) -> (Digit, Digit) {
+    ((double >> BITS) as Digit, double as Digit)
 }

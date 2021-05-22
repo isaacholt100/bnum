@@ -4,7 +4,7 @@ use crate::uint::BUint;
 use crate::tryops::TryOps;
 use num_traits::{Bounded, CheckedAdd, CheckedDiv, CheckedMul, CheckedNeg, CheckedRem, CheckedSub, FromPrimitive, MulAdd, MulAddAssign, Num, One, Signed, ToPrimitive, Zero};
 use num_integer::Integer;
-use std::convert::TryFrom;
+use core::convert::TryFrom;
 
 impl<const N: usize> Bounded for BIint<N> {
     fn min_value() -> Self {
@@ -41,7 +41,7 @@ impl<const N: usize> CheckedMul for BIint<N> {
 
 impl<const N: usize> CheckedNeg for BIint<N> {
     fn checked_neg(&self) -> Option<Self> {
-        use std::ops::Neg;
+        use core::ops::Neg;
         Some(self.neg())
     }
 }
@@ -161,7 +161,7 @@ impl<const N: usize> Signed for BIint<N> {
         }
     }
     fn abs_sub(&self, other: &Self) -> Self {
-        use std::ops::Sub;
+        use core::ops::Sub;
         if self <= other {
             Self::zero()
         } else {
@@ -169,7 +169,7 @@ impl<const N: usize> Signed for BIint<N> {
         }
     }
     fn signum(&self) -> Self {
-        use std::ops::Neg;
+        use core::ops::Neg;
         match self.sign {
             Sign::Plus => Self::one(),
             Sign::Zero => Self::zero(),

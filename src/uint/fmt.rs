@@ -1,6 +1,7 @@
 use super::BUint;
 use crate::digit;
-use std::fmt::{Binary, Display, Formatter, LowerExp, LowerHex, Octal, UpperExp, UpperHex, self};
+use core::fmt::{Binary, Display, Formatter, LowerExp, LowerHex, Octal, UpperExp, UpperHex, self};
+
 macro_rules! fmt {
     ($format: expr, $format_pad: expr, $pad: expr, $prefix: expr) => {
         fn fmt(&self, f: &mut Formatter) -> fmt::Result {
@@ -35,19 +36,16 @@ impl<const N: usize> Binary for BUint<N> {
 
 impl<const N: usize> Display for BUint<N> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        self.to_str_radix(10);
-        // 
-        // TODO: implement
-        write!(f, "Bigint")
+        write!(f, "{}", self.to_str_radix(10))
     }
 }
 
 macro_rules! exp_fmt {
     ($e: expr) => {
         fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-            let mut decimal_str = format!("{}", self);
+            let decimal_str = format!("{}", self);
             let exp = decimal_str.len() - 1;
-            decimal_str.trim_end_matches('0');
+            let decimal_str = decimal_str.trim_end_matches('0');
             write!(f, "{}.{}{}{}", &decimal_str[0..1], &decimal_str[1..], $e, exp)
         }
     };
@@ -88,13 +86,13 @@ impl<const N: usize> Octal for BUint<N> {
         bytes.chunks(3).rev().for_each(|buf| unsafe {
             match buf.len() {
                 3 => {
-                    string.push(bin_str_to_oct_char(std::str::from_utf8_unchecked(&[buf[2], buf[1], buf[0]])))
+                    string.push(bin_str_to_oct_char(core::str::from_utf8_unchecked(&[buf[2], buf[1], buf[0]])))
                 },
                 2 => {
-                    string.push(bin_str_to_oct_char(std::str::from_utf8_unchecked(&[buf[1], buf[0]])))
+                    string.push(bin_str_to_oct_char(core::str::from_utf8_unchecked(&[buf[1], buf[0]])))
                 },
                 _ => {
-                    string.push(bin_str_to_oct_char(std::str::from_utf8_unchecked(buf)))
+                    string.push(bin_str_to_oct_char(core::str::from_utf8_unchecked(buf)))
                 }
             }
         });

@@ -59,7 +59,7 @@ impl<const N: usize> BIint<N> {
     }
 }
 
-use std::cmp::Ordering;
+use core::cmp::Ordering;
 
 impl<const N: usize> BIint<N> {
     fn add_inner_or(self, rhs: Self) -> Result<Self, &'static str> {
@@ -90,7 +90,7 @@ impl<const N: usize> BIint<N> {
     }
 }
 
-use std::fmt::{Debug, Formatter, self};
+use core::fmt::{Debug, Formatter, self};
 
 impl<const N: usize> Debug for BIint<N> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {

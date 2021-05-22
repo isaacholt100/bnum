@@ -1,7 +1,7 @@
 use super::BintTest;
 use num_traits::ToPrimitive;
-use std::convert::TryFrom;
-use std::str::FromStr;
+use core::convert::TryFrom;
+use core::str::FromStr;
 use crate::{TryFromIntError, ParseIntError};
 use crate::digit::{Digit, SignedDigit, self};
 use crate::uint::BUint;

@@ -1,23 +1,11 @@
 use super::BUint;
 use crate::arch;
-use crate::digit;
+use crate::digit::{self, Digit};
 
 const LONG_MUL_THRESHOLD: usize = 32;
 const KARATSUBA_THRESHOLD: usize = 256;
 
 impl<const N: usize> BUint<N> {
-    /*#[cfg(feature = "intrinsics")]
-    pub fn overflowing_add(self, rhs: Self) -> (Self, bool) {
-        let mut out = Self::ZERO;
-        let mut carry = 0u8;
-        self.digits.iter().zip(rhs.digits.iter()).for_each(|(a, b)| {
-            let result = arch::add_carry(carry, a, b);
-            out.digits[i] = result.0;
-            carry = result.1;
-        });
-        (out, carry != 0)
-    }*/
-    //#[cfg(not(feature = "intrinsics"))]
     pub const fn overflowing_add(self, rhs: Self) -> (Self, bool) {
         let mut out = Self::ZERO;
         let mut carry = 0u8;
@@ -30,18 +18,6 @@ impl<const N: usize> BUint<N> {
         }
         (out, carry != 0)
     }
-    /*#[cfg(feature = "intrinsics")]
-    pub fn overflowing_sub(self, rhs: Self) -> (Self, bool) {
-        let mut out = Self::ZERO;
-        let mut borrow = 0u8;
-        self.digits.iter().zip(rhs.digits.iter()).for_each(|(a, b)| {
-            let result = arch::sub_borrow(borrow, a, b);
-            out.digits[i] = result.0;
-            borrow = result.1;
-        })
-        (out, borrow != 0)
-    }*/
-    //#[cfg(not(feature = "intrinsics"))]
     pub const fn overflowing_sub(self, rhs: Self) -> (Self, bool) {
         let mut out = Self::ZERO;
         let mut borrow = 0u8;
@@ -54,12 +30,6 @@ impl<const N: usize> BUint<N> {
         }
         (out, borrow != 0)
     }
-    /*#[cfg(feature = "intrinsics")]
-    pub fn overflowing_mul(self, rhs: Self) -> (Self, bool) {
-        // TODO: implement
-        (Self::ZERO, false)
-    }*/
-    //#[cfg(not(feature = "intrinsics"))]
     const fn long_mul(self, rhs: Self) -> (Self, bool) {
         let mut overflow = false;
         let mut out = Self::ZERO;
@@ -86,49 +56,30 @@ impl<const N: usize> BUint<N> {
     pub const fn overflowing_mul(self, rhs: Self) -> (Self, bool) {
         self.long_mul(rhs)
     }
-    /*#[cfg(feature = "intrinsics")]
-    pub fn overflowing_div(self, rhs: Self) -> (Self, bool) {
-        // TODO: implement
-        (Self::ZERO, false)
-    }*/
-    //#[cfg(not(feature = "intrinsics"))]
+    const fn overflowing_mul_digit(self, rhs: Digit) -> (Self, Digit) {
+        let mut out = Self::ZERO;
+        let mut carry: Digit = 0;
+        let mut i = 0;
+        while i < N {
+            let (prod, c) = arch::mul_carry_unsigned(carry, 0, self.digits[i], rhs);
+            out.digits[i] = prod;
+            carry = c;
+            i += 1;
+        }
+        (out, carry)
+    }
     pub const fn overflowing_div(self, rhs: Self) -> (Self, bool) {
         (self.wrapping_div(rhs), false)
     }
-    /*#[cfg(feature = "intrinsics")]
-    pub fn overflowing_div_euclid(self, rhs: Self) -> (Self, bool) {
-        self.overflowing_div(rhs)
-    }*/
-    //#[cfg(not(feature = "intrinsics"))]
     pub const fn overflowing_div_euclid(self, rhs: Self) -> (Self, bool) {
         self.overflowing_div(rhs)
     }
-    /*#[cfg(feature = "intrinsics")]
-    pub fn overflowing_rem(self, rhs: Self) -> (Self, bool) {
-        // TODO: implement
-        (Self::ZERO, false)
-    }*/
-    //#[cfg(not(feature = "intrinsics"))]
     pub const fn overflowing_rem(self, rhs: Self) -> (Self, bool) {
         (self.wrapping_rem(rhs), false)
     }
-    /*#[cfg(feature = "intrinsics")]
-    pub fn overflowing_rem_euclid(self, rhs: Self) -> (Self, bool) {
-        self.overflowing_rem(rhs)
-    }*/
-    //#[cfg(not(feature = "intrinsics"))]
     pub const fn overflowing_rem_euclid(self, rhs: Self) -> (Self, bool) {
         self.overflowing_rem(rhs)
     }
-    /*#[cfg(feature = "intrinsics")]
-    pub fn overflowing_neg(self) -> (Self, bool) {
-        if self == Self::ZERO {
-            (Self::ZERO, false)
-        } else {
-            (!self + Self::ONE, true)
-        }
-    }*/
-    //#[cfg(not(feature = "intrinsics"))]
     pub const fn overflowing_neg(self) -> (Self, bool) {
         if self.is_zero() {
             (Self::ZERO, false)
@@ -140,31 +91,40 @@ impl<const N: usize> BUint<N> {
         if rhs == 0 {
             self
         } else {
+            const BITS_MINUS_1: u32 = digit::BITS_U32 - 1;
             let digit_shift = (rhs >> digit::BIT_SHIFT) as usize;
-            let shift = (rhs % digit::BITS_U32) as u8;
+            let shift = (rhs & BITS_MINUS_1) as u8;
             
             let mut out = Self::ZERO;
-            let mut carry = 0;
-            let carry_shift = digit::BITS_U32 as u8 - shift;
-            let mut last_index = digit_shift;
             let mut i = digit_shift;
 
-            while i < N {
-                let digit = self.digits[i - digit_shift];
-                let new_carry = digit >> carry_shift;
-                let new_digit = (digit << shift) | carry;
-                if new_digit != 0 {
-                    last_index = i;
-                    out.digits[i] = new_digit;
+            if shift == 0 {
+                while i < N {
+                    let digit = self.digits[i - digit_shift];
+                    out.digits[i] = digit;
+                    i += 1;
                 }
-                carry = new_carry;
-                i += 1;
-            }
+            } else {
+                let mut carry = 0;
+                let carry_shift = digit::BITS_U32 as u8 - shift;
+                let mut last_index = digit_shift;
+                while i < N {
+                    let digit = self.digits[i - digit_shift];
+                    let new_carry = digit >> carry_shift;
+                    let new_digit = (digit << shift) | carry;
+                    if new_digit != 0 {
+                        last_index = i;
+                        out.digits[i] = new_digit;
+                    }
+                    carry = new_carry;
+                    i += 1;
+                }
 
-            if carry != 0 {
-                last_index += 1;
-                if last_index < N {
-                    out.digits[last_index] = carry;
+                if carry != 0 {
+                    last_index += 1;
+                    if last_index < N {
+                        out.digits[last_index] = carry;
+                    }
                 }
             }
 
@@ -175,21 +135,30 @@ impl<const N: usize> BUint<N> {
         if rhs == 0 {
             self
         } else {
+            const BITS_MINUS_1: u32 = digit::BITS_U32 - 1;
             let digit_shift = (rhs >> digit::BIT_SHIFT) as usize;
-            let shift = (rhs % digit::BITS_U32) as u8;
+            let shift = (rhs & BITS_MINUS_1) as u8;
             
             let mut out = Self::ZERO;
-            let mut borrow = 0;
-            let borrow_shift = digit::BITS_U32 as u8 - shift;
             let mut i = digit_shift;
 
-            while i < N {
-                let digit = self.digits[Self::N_MINUS_1 + digit_shift - i];
-                let new_borrow = digit << borrow_shift;
-                let new_digit = (digit >> shift) | borrow;
-                out.digits[Self::N_MINUS_1 - i] = new_digit;
-                borrow = new_borrow;
-                i += 1;
+            if shift == 0 {
+                while i < N {
+                    let digit = self.digits[Self::N_MINUS_1 + digit_shift - i];
+                    out.digits[Self::N_MINUS_1 - i] = digit;
+                    i += 1;
+                }
+            } else {
+                let mut borrow = 0;
+                let borrow_shift = digit::BITS_U32 as u8 - shift;
+                while i < N {
+                    let digit = self.digits[Self::N_MINUS_1 + digit_shift - i];
+                    let new_borrow = digit << borrow_shift;
+                    let new_digit = (digit >> shift) | borrow;
+                    out.digits[Self::N_MINUS_1 - i] = new_digit;
+                    borrow = new_borrow;
+                    i += 1;
+                }
             }
 
             out
@@ -197,14 +166,14 @@ impl<const N: usize> BUint<N> {
     }
     pub const fn overflowing_shl(self, rhs: u32) -> (Self, bool) {
         if rhs as usize >= Self::BITS {
-            (self.unchecked_shl(rhs & (Self::BITS - 1) as u32), true)
+            (self.unchecked_shl(rhs & Self::BITS_MINUS_1), true)
         } else {
             (self.unchecked_shl(rhs), false)
         }
     }
     pub const fn overflowing_shr(self, rhs: u32) -> (Self, bool) {
         if rhs as usize >= Self::BITS {
-            (self.unchecked_shr(rhs & (Self::BITS - 1) as u32), true)
+            (self.unchecked_shr(rhs & Self::BITS_MINUS_1), true)
         } else {
             (self.unchecked_shr(rhs), false)
         }

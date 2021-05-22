@@ -1,15 +1,18 @@
-#![feature(const_generics)]
-#![feature(const_evaluatable_checked)]
-#![feature(const_raw_ptr_deref)]
-//#![feature(const_trait_impl)]
-#![feature(const_panic)]
-#![feature(const_fn)]
-#![feature(const_option)]
-#![feature(const_maybe_uninit_assume_init)]
-#![feature(const_intrinsic_copy)]
-#![feature(const_mut_refs)]
-#![feature(const_maybe_uninit_as_ptr)]
-#![feature(const_ptr_offset)]
+#![feature(
+    const_generics,
+    const_evaluatable_checked,
+    const_raw_ptr_deref,
+    //#![feature(const_trait_impl,
+    const_panic,
+    const_fn,
+    const_option,
+    const_maybe_uninit_assume_init,
+    const_intrinsic_copy,
+    const_mut_refs,
+    const_maybe_uninit_as_ptr,
+    const_ptr_offset,
+    test
+)]
 
 fn test_into_converter<U, T: Into<U>>(x: T) -> U {
     x.into()
@@ -50,7 +53,7 @@ macro_rules! test {
         #[test]
         fn $test_name() {
             let prim_result = <$primitive>::$method(
-                $($arg.to_owned().into()),*
+                $($arg.into()),*
             );
             let big_result = <$big_type>::$method(
                 $($arg.into()), *
@@ -68,8 +71,9 @@ mod sign;
 mod main;
 mod arch;
 mod digit;
-mod bound;
+//mod bound;
 mod int_test;
+mod benchmarks;
 
 pub use iint::BIint;
 pub use sign::Sign;
