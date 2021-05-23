@@ -409,13 +409,21 @@ mod tests {
         let u = BUint::<100>::from_radix_le(buf, 256).unwrap();
         let v = u.to_radix_le(256);
         assert_eq!(v, buf);
+
+        let buf = &[34, 45, 32, 100, 53, 54, 65, 53, 0, 53];
+        let option = BUint::<100>::from_radix_le(buf, 99);
+        assert!(option.is_none());
     }
     #[test]
     fn test_from_to_radix_be() {
         let buf = &[34, 57, 100, 184, 54, 40, 78, 10, 5, 200, 45, 67];
-        let u = BUint::<100>::from_radix_be(buf, 220).unwrap();
-        let v = u.to_radix_be(220);
+        let u = BUint::<100>::from_radix_be(buf, 201).unwrap();
+        let v = u.to_radix_be(201);
         assert_eq!(v, buf);
+
+        let buf = &[100, 4, 0, 54, 45, 20, 200, 43];
+        let option = BUint::<100>::from_radix_le(buf, 150);
+        assert!(option.is_none());
     }
     #[test]
     fn test_from_to_str_radix() {
@@ -423,5 +431,21 @@ mod tests {
         let u = BUint::<100>::from_str_radix(src, 32).unwrap();
         let v = u.to_str_radix(32);
         assert_eq!(v, src);
+
+        let src = "934579gfhjh394hdkg9845798";
+        let result = BUint::<100>::from_str_radix(src, 18);
+        assert!(result.is_err());
+    }
+    #[test]
+    fn test_parse_bytes() {
+        let src = "134957dkbhadoinegrhi983475hdgkhgdhiu3894hfd";
+        let u = BUint::<100>::parse_bytes(src.as_bytes(), 35).unwrap();
+        let v = BUint::<100>::from_str_radix(src, 35).unwrap();
+        assert_eq!(u, v);
+        assert_eq!(v.to_str_radix(35), src);
+
+        let bytes = b"345977fsuudf0350845";
+        let option = BUint::<100>::parse_bytes(src.as_bytes(), 20);
+        assert!(option.is_none());
     }
 }

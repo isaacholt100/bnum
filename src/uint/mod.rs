@@ -302,125 +302,6 @@ impl<const N: usize> BUint<N> {
     } 
 }
 
-#[cfg(test)]
-mod tests {
-    use crate::U128;
-
-    test_unsigned! {
-        test_name: test_count_ones,
-        method: {
-            count_ones(203583443659837459073490583937485738404u128);
-            count_ones(3947594755489u128);
-        }
-    }
-    test_unsigned! {
-        test_name: test_count_zeros,
-        method: {
-            count_zeros(7435098345734853045348057390485934908u128);
-            count_zeros(3985789475546u128);
-        }
-    }
-    test_unsigned! {
-        test_name: test_leading_ones,
-        method: {
-            leading_ones(3948590439409853946593894579834793459u128);
-            leading_ones(u128::MAX - 0b111);
-        }
-    }
-    test_unsigned! {
-        test_name: test_leading_zeros,
-        method: {
-            leading_zeros(49859830845963457783945789734895834754u128);
-            leading_zeros(40545768945769u128);
-        }
-    }
-    test_unsigned! {
-        test_name: test_trailing_ones,
-        method: {
-            trailing_ones(45678345973495637458973488509345903458u128);
-            trailing_ones(u128::MAX);
-        }
-    }
-    test_unsigned! {
-        test_name: test_trailing_zeros,
-        method: {
-            trailing_zeros(23488903477439859084534857349857034599u128);
-            trailing_zeros(343453454565u128);
-        }
-    }
-    test_unsigned! {
-        test_name: test_rotate_left,
-        method: {
-            rotate_left(394857348975983475983745983798579483u128, 5555u32);
-            rotate_left(4056890546059u128, 12u32);
-        }
-    }
-    test_unsigned! {
-        test_name: test_rotate_right,
-        method: {
-            rotate_right(90845674987957297107197973489575938457u128, 10934u32);
-            rotate_right(1345978945679u128, 33u32);
-        }
-    }
-    test_unsigned! {
-        test_name: test_swap_bytes,
-        method: {
-            swap_bytes(3749589304858934758390485937458349058u128);
-            swap_bytes(3405567798345u128);
-        }
-    }
-    test_unsigned! {
-        test_name: test_reverse_bits,
-        method: {
-            reverse_bits(3345565093489578938485934957893745984u128);
-            reverse_bits(608670986790835u128);
-        }
-    }
-    test_unsigned! {
-        test_name: test_pow,
-        method: {
-            pow(59345u128, 4u32);
-            pow(54u128, 9u32);
-        }
-    }
-    // Test div_euclid
-    // Test rem_euclid
-    #[test]
-    fn test_is_power_of_two() {
-        let power = U128::from(1u128 << 88);
-        let non_power = U128::from((1u128 << 88) - 5);
-        assert!(power.is_power_of_two());
-        assert!(!non_power.is_power_of_two());
-    }
-    test_unsigned! {
-        test_name: test_checked_next_power_of_two,
-        method: {
-            checked_next_power_of_two(1340539475937597893475987u128);
-            checked_next_power_of_two(u128::MAX);
-        },
-        converter: |option: Option<u128>| -> Option<U128> {
-            match option {
-                None => None,
-                Some(u) => Some(u.into()),
-            }
-        }
-    }
-    test_unsigned! {
-        test_name: test_next_power_of_two,
-        method: {
-            next_power_of_two(394857834758937458973489573894759879u128);
-            next_power_of_two(800345894358459u128);
-        }
-    }
-    /*test_unsigned! {
-        test_name: test_wrapping_next_power_of_two,
-        method: {
-            wrapping_next_power_of_two(97495768945869084687890u128);
-            wrapping_next_power_of_two(u128::MAX);
-        }
-    }*/
-}
-
 impl<const N: usize> BUint<N> {
     const fn to_mantissa(&self) -> u64 {
         let bits = self.bits();
@@ -569,5 +450,159 @@ impl<const N: usize> Sum<Self> for BUint<N> {
 impl<'a, const N: usize> Sum<&'a Self> for BUint<N> {
     fn sum<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
         iter.fold(Self::ZERO, |a, b| a + b)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::U128;
+
+    test_unsigned! {
+        test_name: test_count_ones,
+        method: {
+            count_ones(203583443659837459073490583937485738404u128);
+            count_ones(3947594755489u128);
+        }
+    }
+    test_unsigned! {
+        test_name: test_count_zeros,
+        method: {
+            count_zeros(7435098345734853045348057390485934908u128);
+            count_zeros(3985789475546u128);
+        }
+    }
+    test_unsigned! {
+        test_name: test_leading_ones,
+        method: {
+            leading_ones(3948590439409853946593894579834793459u128);
+            leading_ones(u128::MAX - 0b111);
+        }
+    }
+    test_unsigned! {
+        test_name: test_leading_zeros,
+        method: {
+            leading_zeros(49859830845963457783945789734895834754u128);
+            leading_zeros(40545768945769u128);
+        }
+    }
+    test_unsigned! {
+        test_name: test_trailing_ones,
+        method: {
+            trailing_ones(45678345973495637458973488509345903458u128);
+            trailing_ones(u128::MAX);
+        }
+    }
+    test_unsigned! {
+        test_name: test_trailing_zeros,
+        method: {
+            trailing_zeros(23488903477439859084534857349857034599u128);
+            trailing_zeros(343453454565u128);
+        }
+    }
+    test_unsigned! {
+        test_name: test_rotate_left,
+        method: {
+            rotate_left(394857348975983475983745983798579483u128, 5555u32);
+            rotate_left(4056890546059u128, 12u32);
+        }
+    }
+    test_unsigned! {
+        test_name: test_rotate_right,
+        method: {
+            rotate_right(90845674987957297107197973489575938457u128, 10934u32);
+            rotate_right(1345978945679u128, 33u32);
+        }
+    }
+    test_unsigned! {
+        test_name: test_swap_bytes,
+        method: {
+            swap_bytes(3749589304858934758390485937458349058u128);
+            swap_bytes(3405567798345u128);
+        }
+    }
+    test_unsigned! {
+        test_name: test_reverse_bits,
+        method: {
+            reverse_bits(3345565093489578938485934957893745984u128);
+            reverse_bits(608670986790835u128);
+        }
+    }
+    test_unsigned! {
+        test_name: test_pow,
+        method: {
+            pow(59345u128, 4u32);
+            pow(54u128, 9u32);
+        }
+    }
+    test_unsigned! {
+        test_name: test_div_euclid,
+        method: {
+            div_euclid(345987945738945789347u128, 345987945738945789347u128);
+            div_euclid(139475893475987093754099u128, 3459837453479u128);
+        }
+    }
+    test_unsigned! {
+        test_name: test_rem_euclid,
+        method: {
+            rem_euclid(8094589656797897987u128, 8094589656797897987u128);
+            rem_euclid(3734597349574397598374594598u128, 3495634895793845783745897u128);
+        }
+    }
+    #[test]
+    fn test_is_power_of_two() {
+        let power = U128::from(1u128 << 88);
+        let non_power = U128::from((1u128 << 88) - 5);
+        assert!(power.is_power_of_two());
+        assert!(!non_power.is_power_of_two());
+    }
+    test_unsigned! {
+        test_name: test_checked_next_power_of_two,
+        method: {
+            checked_next_power_of_two(1340539475937597893475987u128);
+            checked_next_power_of_two(u128::MAX);
+        },
+        converter: |option: Option<u128>| -> Option<U128> {
+            match option {
+                None => None,
+                Some(u) => Some(u.into()),
+            }
+        }
+    }
+    test_unsigned! {
+        test_name: test_next_power_of_two,
+        method: {
+            next_power_of_two(394857834758937458973489573894759879u128);
+            next_power_of_two(800345894358459u128);
+        }
+    }
+    /*test_unsigned! {
+        test_name: test_wrapping_next_power_of_two,
+        method: {
+            wrapping_next_power_of_two(97495768945869084687890u128);
+            wrapping_next_power_of_two(u128::MAX);
+        }
+    }*/
+    #[test]
+    fn test_bit() {
+        let u = U128::from(0b001010100101010101u128);
+        assert!(u.bit(0));
+        assert!(!u.bit(1));
+        assert!(!u.bit(17));
+        assert!(!u.bit(16));
+        assert!(u.bit(15));
+    }
+    #[test]
+    fn test_is_zero() {
+        assert!(U128::MIN.is_zero());
+        assert!(!U128::MAX.is_zero());
+        assert!(!U128::ONE.is_zero());
+    }
+    #[test]
+    fn test_bits() {
+        let u = U128::from(0b1001010100101010101u128);
+        assert_eq!(u.bits(), 19);
+
+        let u = U128::power_of_two(78);
+        assert_eq!(u.bits(), 79);
     }
 }

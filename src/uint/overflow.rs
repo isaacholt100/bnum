@@ -252,6 +252,46 @@ mod tests {
         converter: converter
     }
     test_unsigned! {
+        test_name: test_overflowing_div,
+        method: {
+            overflowing_div(103573984758937498573594857389345u128, 3453454545345345345987u128);
+            overflowing_div(193679457916593485358497389457u128, 684u128);
+        },
+        converter: converter
+    }
+    test_unsigned! {
+        test_name: test_overflowing_div_euclid,
+        method: {
+            overflowing_div_euclid(349573947593745898375u128, 349573947593745898375u128);
+            overflowing_div_euclid(0u128, 3459745734895734957984579u128);
+        },
+        converter: converter
+    }
+    test_unsigned! {
+        test_name: test_overflowing_rem,
+        method: {
+            overflowing_rem(2973459793475897343495439857u128, 56u128);
+            overflowing_rem(1u128 << 64, 2u128);
+        },
+        converter: converter
+    }
+    test_unsigned! {
+        test_name: test_overflowing_rem_euclid,
+        method: {
+            overflowing_rem_euclid(27943758345638459034898756847983745u128, 37589734758937458973459u128);
+            overflowing_rem_euclid(0u128, 93745934953894u128);
+        },
+        converter: converter
+    }
+    test_unsigned! {
+        test_name: test_overflowing_neg,
+        method: {
+            overflowing_neg(0u128);
+            overflowing_neg(93498734534534273984577u128);
+        },
+        converter: converter
+    }
+    test_unsigned! {
         test_name: test_overflowing_shl,
         method: {
             overflowing_shl(u128::MAX - 3453475, 5u32);

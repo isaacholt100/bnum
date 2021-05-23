@@ -328,3 +328,8 @@ impl<const N: usize> Zero for BUint<N> {
         self == &Self::ZERO
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::U128;
+}

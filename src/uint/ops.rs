@@ -242,3 +242,8 @@ impl<const N: usize> SubAssign for BUint<N> {
 }
 
 assign_ref_impl!(SubAssign<BUint<N>> for BUint, sub_assign);
+
+#[cfg(test)]
+mod tests {
+    use crate::U128;
+}
