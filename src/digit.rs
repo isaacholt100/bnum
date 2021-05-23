@@ -17,10 +17,6 @@ pub const BYTE_SHIFT: usize = BYTES.trailing_zeros() as usize;
 
 pub const BIT_SHIFT: usize = BITS.trailing_zeros() as usize;
 
-pub const MAX: Digit = Digit::MAX;
-
-pub const MIN: Digit = Digit::MIN;
-
 pub const HALF_BITS: usize = BITS / 2;
 
 pub const HALF: Digit = (1 << HALF_BITS) - 1;

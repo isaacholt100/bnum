@@ -35,10 +35,7 @@ impl<const N: usize> BUint<N> {
 
 impl<const N: usize> PartialEq for BUint<N> {
     fn eq(&self, other: &Self) -> bool {
-        self.digits
-            .iter()
-            .zip(other.digits.iter())
-            .all(|(a, b)| a == b)
+        Self::eq(self, other)
     }
 }
 
@@ -46,24 +43,13 @@ impl<const N: usize> Eq for BUint<N> {}
 
 impl<const N: usize> PartialOrd for BUint<N> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
+        Self::partial_cmp(self, other)
     }
 }
 
 impl<const N: usize> Ord for BUint<N> {
     fn cmp(&self, other: &Self) -> Ordering {
-        for (a, b) in self.digits.iter().zip(other.digits.iter()).rev() {
-            match a.cmp(&b) {
-                Ordering::Greater => {
-                    return Ordering::Greater;
-                },
-                Ordering::Less => {
-                    return Ordering::Less;
-                },
-                _ => {}
-            }
-        }
-        Ordering::Equal
+        Self::cmp(self, other)
     }
 }
 

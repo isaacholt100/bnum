@@ -8,30 +8,52 @@ use crate::I128Test;
 macro_rules! test_signed {
     {
         test_name: $test_name: ident,
-        method: $method: ident ($($arg: expr), *)
+        method: {
+            $($method: ident ($($arg: expr), *) ;) *
+        }
     } => {
         test! {
             big: I128Test,
             primitive: i128,
             test_name: $test_name,
-            method: $method ($($arg), *)
+            method: {
+                $($method ($($arg), *) ;) *
+            }
         }
     };
     {
         test_name: $test_name: ident,
-        method: $method: ident ($($arg: expr), *),
+        method: {
+            $($method: ident ($($arg: expr), *) ;) *
+        },
         converter: $converter: expr
     } => {
         test! {
             big: I128Test,
             primitive: i128,
             test_name: $test_name,
-            method: $method ($($arg), *),
+            method: {
+                $($method ($($arg), *) ;) *
+            },
             converter: $converter
         }
     }
 }
 
+macro_rules! uint_method {
+    { $(fn $name: ident ($self: ident $(,$param: ident : $Type: ty)*) -> $ret: ty), * } => {
+        $(pub const fn $name($self $(,$param: $Type)*) -> $ret {
+            $self.uint.$name($($param), *)
+        })*
+    };
+    { $(fn $name: ident (&$self: ident $(,$param: ident : $Type: ty)*) -> $ret: ty), * } => {
+        $(pub const fn $name($self $(,$param: $Type)*) -> $ret {
+            $self.uint.$name($($param), *)
+        })*
+    };
+}
+
+mod cast;
 mod cmp;
 mod convert;
 mod ops;
@@ -42,6 +64,7 @@ mod saturating;
 mod wrapping;
 mod fmt;
 mod endian;
+mod radix;
 
 use serde::{Serialize, Deserialize};
 
@@ -82,43 +105,29 @@ impl<const N: usize> BintTest<N> {
             uint: BUint::MAX,
         }
     };
-    const UINT_LENGTH: usize = N;
-    const UINT_MIN: BUint::<N> = BUint::<N>::MIN;
-    const UINT_ONE: BUint::<N> = BUint::<N>::ONE;
-    const UINT_MAX: BUint::<N> = BUint::<N>::MAX;
-    const UINT_BITS: usize = Self::UINT_LENGTH * digit::BITS;
-    const UINT_BYTES: usize = Self::UINT_BITS / 8;
     pub const BYTES: usize = Self::BITS / 8;
     pub const BITS: usize = N * digit::BITS;
 }
 
 impl<const N: usize> BintTest<N> {
-    pub fn from_str_radix(src: &str, radix: u32) -> Result<Self, ParseIntError> {
-        todo!()
+    uint_method! {
+        fn count_ones(self) -> u32,
+        fn count_zeros(self) -> u32,
+        fn leading_zeros(self) -> u32,
+        fn trailing_zeros(self) -> u32,
+        fn leading_ones(self) -> u32,
+        fn trailing_ones(self) -> u32
     }
-    pub const fn count_ones(self) -> u32 {
-        self.uint.count_ones()
-    }
-    pub const fn count_zeros(self) -> u32 {
-        self.uint.count_zeros()
-    }
-    pub const fn leading_zeros(self) -> u32 {
-        self.uint.leading_zeros()
-    }
-    pub const fn trailing_zeros(self) -> u32 {
-        self.uint.trailing_zeros()
-    }
-    pub const fn leading_ones(self) -> u32 {
-        self.uint.leading_ones()
-    }
-    pub const fn trailing_ones(self) -> u32 {
-        self.uint.trailing_ones()
-    }
+
     pub const fn rotate_left(self, n: u32) -> Self {
-        todo!()
+        Self {
+            uint: self.uint.rotate_left(n),
+        }
     }
     pub const fn rotate_right(self, n: u32) -> Self {
-        todo!()
+        Self {
+            uint: self.uint.rotate_right(n),
+        }
     }
     pub const fn swap_bytes(self) -> Self {
         Self {
@@ -130,8 +139,18 @@ impl<const N: usize> BintTest<N> {
             uint: self.uint.reverse_bits(),
         }
     }
-    pub const fn unsigned_abs(self) -> BUint<{Self::UINT_LENGTH + 1}> {
-        todo!()
+    pub const fn unsigned_abs(self) -> BUint<N> {
+        if self.is_negative() {
+            if self.eq(&Self::MIN) {
+                let mut digits = [0; N];
+                digits[N - 1] = 1;
+                BUint::from_digits(digits)
+            } else {
+                self.wrapping_neg().uint
+            }
+        } else {
+            self.uint
+        }
     }
     pub const fn pow(self, exp: u32) -> Self {
         todo!()
@@ -172,28 +191,32 @@ impl<const N: usize> BintTest<N> {
     pub const fn is_negative(self) -> bool {
         self.signed_digit().is_negative()
     }
+    pub const fn is_power_of_two(self) -> bool {
+        if self.is_negative() {
+            false
+        } else {
+            self.uint.is_power_of_two()
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    // Test from_str_radix
     test_signed! {
-        test_name: test_count_ones_pos,
-        method: count_ones(34579834758459769875878374593749837548i128)
+        test_name: test_count_ones,
+        method: {
+            count_ones(34579834758459769875878374593749837548i128);
+            count_ones(-34579834758945986784957689473749837548i128);
+        }
     }
     test_signed! {
-        test_name: test_count_ones_neg,
-        method: count_ones(-34579834758945986784957689473749837548i128)
-    }
-    test_signed! {
-        test_name: test_count_zeros_pos,
-        method: count_zeros(97894576897934857979834753847877889734i128)
-    }
-    test_signed! {
-        test_name: test_count_zeros_neg,
-        method: count_zeros(-97894576897934857979834753847877889734i128)
+        test_name: test_count_zeros,
+        method: {
+            count_zeros(97894576897934857979834753847877889734i128);
+            count_zeros(-97894576897934857979834753847877889734i128);
+        }
     }
 
     #[test]
@@ -210,92 +233,79 @@ mod tests {
     }
 
     test_signed! {
-        test_name: test_leading_zeros_pos,
-        method: leading_zeros(1234897937459789793445634456858978937i128)
+        test_name: test_leading_zeros,
+        method: {
+            leading_zeros(1234897937459789793445634456858978937i128);
+            leading_zeros(-1234897937459789793445634456858978937i128);
+        }
     }
     test_signed! {
-        test_name: test_leading_zeros_neg,
-        method: leading_zeros(-1234897937459789793445634456858978937i128)
+        test_name: test_trailing_zeros,
+        method: {
+            trailing_zeros(8003849534758937495734957034534073957i128);
+            trailing_zeros(-8003849534758937495734957034534073957i128);
+        }
     }
     test_signed! {
-        test_name: test_trailing_zeros_pos,
-        method: trailing_zeros(8003849534758937495734957034534073957i128)
+        test_name: test_leading_ones,
+        method: {
+            leading_ones(1);
+            leading_ones(-1);
+        }
     }
     test_signed! {
-        test_name: test_trailing_zeros_neg,
-        method: trailing_zeros(-8003849534758937495734957034534073957i128)
+        test_name: test_trailing_ones,
+        method: {
+            trailing_ones(1);
+            trailing_ones(-1);
+        }
     }
     test_signed! {
-        test_name: test_leading_ones_pos,
-        method: leading_ones(1)
+        test_name: test_rotate_left,
+        method: {
+            rotate_left(3457894375984563459457i128, 69845u32);
+            rotate_left(-34598792345789i128, 4u32);
+        }
     }
     test_signed! {
-        test_name: test_leading_ones_neg,
-        method: leading_ones(-1)
+        test_name: test_rotate_right,
+        method: {
+            rotate_right(109375495687201345976994587i128, 354u32);
+            rotate_right(-4598674589769i128, 75u32);
+        }
     }
     test_signed! {
-        test_name: test_trailing_ones_pos,
-        method: trailing_ones(1)
+        test_name: test_swap_bytes,
+        method: {
+            swap_bytes(98934757983792102304988394759834587i128);
+            swap_bytes(-234i128);
+        }
     }
     test_signed! {
-        test_name: test_trailing_ones_neg,
-        method: trailing_ones(-1)
-    }
-
-    // Test rotate_left
-    // Test rotate_right
-
-    test_signed! {
-        test_name: test_swap_bytes_pos,
-        method: swap_bytes(98934757983792102304988394759834587i128)
+        test_name: test_reverse_bits,
+        method: {
+            reverse_bits(349579348509348374589749083490580i128);
+            reverse_bits(-22003495898345i128);
+        }
     }
     test_signed! {
-        test_name: test_swap_bytes_neg,
-        method: swap_bytes(-234i128)
-    }
-    test_signed! {
-        test_name: test_reverse_bits_pos,
-        method: reverse_bits(349579348509348374589749083490580i128)
-    }
-    test_signed! {
-        test_name: test_reverse_bits_neg,
-        method: reverse_bits(-22003495898345i128)
+        test_name: test_unsigned_abs,
+        method: {
+            unsigned_abs(i128::MIN);
+            unsigned_abs(45645634534534i128);
+            unsigned_abs(-456456345334534i128);
+        }
     }
 }
 
 impl<const N: usize> BintTest<N> {
+    uint_method! {
+        fn bit(&self, index: usize) -> bool,
+        fn bits(&self) -> usize,
+        fn digits(&self) -> [Digit; N]
+    }
     const fn signed_digit(&self) -> SignedDigit {
         self.uint.digits()[N - 1] as SignedDigit
-    }
-    pub fn parse_bytes(buf: &[u8], radix: u32) -> Option<Self> {
-        todo!()
-    }
-    pub fn from_radix_be(buf: &[u8], radix: u32) -> Option<Self> {
-        todo!()
-    }
-    pub fn from_radix_le(buf: &[u8], radix: u32) -> Option<Self> {
-        todo!()
-    }
-    pub fn to_str_radix(&self, radix: u32) -> String {
-        todo!()
-    }
-    pub fn to_radix_be(&self, radix: u32) -> Vec<u8> {
-        todo!()
-    }
-    pub fn to_radix_le(&self, radix: u32) -> Vec<u8> {
-        todo!()
-    }
-    pub const fn modpow(&self, exp: &Self, modulus: &Self) -> Self {
-        todo!()
-    }
-    pub const fn sqrt(&self) -> Self {
-        todo!()
-    }
-    pub const fn cbrt(&self) -> Self {
-        todo!()
-    }
-    pub const fn nth_root(&self, n: u32) -> Self {
-        todo!()
     }
     pub const fn is_zero(self) -> bool {
         self.uint.is_zero()

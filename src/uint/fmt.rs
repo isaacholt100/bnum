@@ -44,9 +44,17 @@ macro_rules! exp_fmt {
     ($e: expr) => {
         fn fmt(&self, f: &mut Formatter) -> fmt::Result {
             let decimal_str = format!("{}", self);
+            if decimal_str == "0" {
+                return write!(f, "{}{}0", 0, $e);
+            }
             let exp = decimal_str.len() - 1;
             let decimal_str = decimal_str.trim_end_matches('0');
-            write!(f, "{}.{}{}{}", &decimal_str[0..1], &decimal_str[1..], $e, exp)
+            println!("{}", decimal_str);
+            if decimal_str.len() == 1 {
+                write!(f, "{}{}{}", &decimal_str[0..1], $e, exp)
+            } else {
+                write!(f, "{}.{}{}{}", &decimal_str[0..1], &decimal_str[1..], $e, exp)
+            }
         }
     };
 }
@@ -61,41 +69,9 @@ impl<const N: usize> LowerHex for BUint<N> {
     fmt!("{:x}", "{:01$x}", HEX_PADDING, "0x");
 }
 
-fn bin_str_to_oct_char(s: &str) -> char {
-    match s {
-        "000" | "00" | "0" => '0',
-        "001" | "01" | "1" => '1',
-        "010" | "10" => '2',
-        "011" | "11" => '3',
-        "100" => '4',
-        "101" => '5',
-        "110" => '6',
-        "111" => '7',
-        _ => unreachable!(),
-    }
-}
-
 impl<const N: usize> Octal for BUint<N> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        let mut bin_string = format!("{:b}", &self);
-        let mut bytes = unsafe {
-            bin_string.as_bytes_mut()
-        };
-        bytes.reverse();
-        let mut string = String::new();
-        bytes.chunks(3).rev().for_each(|buf| unsafe {
-            match buf.len() {
-                3 => {
-                    string.push(bin_str_to_oct_char(core::str::from_utf8_unchecked(&[buf[2], buf[1], buf[0]])))
-                },
-                2 => {
-                    string.push(bin_str_to_oct_char(core::str::from_utf8_unchecked(&[buf[1], buf[0]])))
-                },
-                _ => {
-                    string.push(bin_str_to_oct_char(core::str::from_utf8_unchecked(buf)))
-                }
-            }
-        });
+        let string = self.to_str_radix(8);
         f.pad_integral(true, "0o", &string)
     }
 }
@@ -113,26 +89,134 @@ mod tests {
     use crate::U128;
 
     macro_rules! test_fmt {
-        ($a: expr, $name: ident, $format: expr) => {
+        {
+            test_name: $name: ident,
+            format: $format: expr,
+            numbers: {
+                $($number: expr), *
+            }
+        } => {
             #[test]
             fn $name() {
-                let buint = U128::from($a);
-                assert_eq!(format!($format, $a), format!($format, buint));
+                $(
+                    let buint = U128::from($number);
+                    assert_eq!(format!($format, buint), format!($format, $number));
+                )*
             }
         }
     }
 
-    test_fmt!(30034348u128, test_binary_format, "{:b}");
-
-    test_fmt!(30034348u128, test_binary_verbose_format, "{:#b}");
-    //test_fmt!(30034348u128, test_display_format, "{}");
-    //test_fmt!(30034348u128, test_debug_format, "{:?}");
-    //test_fmt!(30034348u128, test_lower_exp_format, "{:e}");
-    test_fmt!(0x34534400000000000000000000434345u128, test_lower_hex_format, "{:x}");
-    test_fmt!(0x34534400000000000000000000434345u128, test_lower_hex_verbose_format, "{:#x}");
-    test_fmt!(0o30000000000000000000000000000000000001u128, test_octal_format, "{:o}");
-    test_fmt!(0o30000000000000000000000000000000000001u128, test_octal_verbose_format, "{:#o}");
-    //test_fmt!(30034348u128, test_upper_exp_format, "{:E}");
-    test_fmt!(0x18000000000000000000000000001u128, test_upper_hex_format, "{:X}");
-    test_fmt!(0x18000000000000000000000000001u128, test_upper_hex_verbose_format, "{:#X}");
+    test_fmt! {
+        test_name: test_binary_format,
+        format: "{:b}",
+        numbers: {
+            30034348u128,
+            0b100110100101010101011101010101u128,
+            0u128,
+            1u128
+        }
+    }
+    test_fmt! {
+        test_name: test_binary_verbose_format,
+        format: "{:#b}",
+        numbers: {
+            34967984576947586764957u128,
+            0b1100101010010101010010111u128,
+            0u128,
+            1u128
+        }
+    }
+    test_fmt! {
+        test_name: test_lower_hex_format,
+        format: "{:x}",
+        numbers: {
+            0x45435345u128,
+            0x4979457693459874abcdefu128,
+            0u128,
+            1u128
+        }
+    }
+    test_fmt! {
+        test_name: test_lower_hex_verbose_format,
+        format: "{:#x}",
+        numbers: {
+            0x34534400000000000000000000434345u128,
+            0xabcdefu128,
+            0u128,
+            1u128
+        }
+    }
+    test_fmt! {
+        test_name: test_octal_format,
+        format: "{:o}",
+        numbers: {
+            0o30000000000000000000000000000000000001u128,
+            39457394759u128,
+            0u128,
+            1u128
+        }
+    }
+    test_fmt! {
+        test_name: test_octal_verbose_format,
+        format: "{:#o}",
+        numbers: {
+            0o30000000000000000000000000000000000001u128,
+            456653945723394759u128,
+            0u128,
+            1u128
+        }
+    }
+    test_fmt! {
+        test_name: test_upper_hex_format,
+        format: "{:X}",
+        numbers: {
+            0x18000000000000000000000000001u128,
+            0xABCD456456DEF45u128,
+            0u128,
+            1u128
+        }
+    }
+    test_fmt! {
+        test_name: test_upper_hex_verbose_format,
+        format: "{:#X}",
+        numbers: {
+            0x49867ABBBB34754975CC454u128,
+            0x9649567ABCEEDu128,
+            0u128,
+            1u128
+        }
+    }
+    test_fmt! {
+        test_name: test_display_format,
+        format: "{}",
+        numbers: {
+            349578347589374664564568395748345u128,
+            93847934758734u128,
+            0u128,
+            1u128
+        }
+    }
+    test_fmt! {
+        test_name: test_lower_exp_format,
+        format: "{:e}",
+        numbers: {
+            831647298645678945768947500000u128,
+            10u128,
+            5u128,
+            20u128,
+            0u128,
+            1u128
+        }
+    }
+    test_fmt! {
+        test_name: test_upper_exp_format,
+        format: "{:E}",
+        numbers: {
+            982736597459678457689674000000u128,
+            100400u128,
+            50050u128,
+            0u128,
+            1u128
+        }
+    }
 }

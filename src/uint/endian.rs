@@ -137,7 +137,6 @@ impl<const N: usize> BUint<N> {
             Some(out)
         } else {
             let mut last_digit_bytes = [0; digit::BYTES];
-            let addition = exact << digit::BYTE_SHIFT;
             let mut j = 0;
             while j < rem {
                 last_digit_bytes[8 - rem + j] = slice[j];
@@ -208,52 +207,82 @@ mod tests {
 
     test_unsigned! {
         test_name: test_from_be,
-        method: from_be(234889034774398590845348573498570345u128)
+        method: {
+            from_be(234889034774398590845348573498570345u128);
+            from_be(349857348957u128);
+        }
     }
     test_unsigned! {
         test_name: test_from_le,
-        method: from_le(374598340857345349875907438579348534u128)
+        method: {
+            from_le(374598340857345349875907438579348534u128);
+            from_le(9875474394587u128);
+        }
     }
     test_unsigned! {
         test_name: test_to_be,
-        method: to_be(938495078934875384738495787358743854u128)
+        method: {
+            to_be(938495078934875384738495787358743854u128);
+            to_be(394567834657835489u128);
+        }
     }
     test_unsigned! {
         test_name: test_to_le,
-        method: to_le(634985790475394859374957339475897443u128)
+        method: {
+            to_le(634985790475394859374957339475897443u128);
+            to_le(12379045679853u128);
+        }
     }
 
-    fn convert(bytes: [u8; 16]) -> [u8; 16] {
+    fn converter(bytes: [u8; 16]) -> [u8; 16] {
         bytes
     }
 
     test_unsigned! {
         test_name: test_to_be_bytes,
-        method: to_be_bytes(883497884590834905834758374950859884u128),
-        converter: convert
+        method: {
+            to_be_bytes(883497884590834905834758374950859884u128);
+            to_be_bytes(456747598769u128);
+        },
+        converter: converter
     }
     test_unsigned! {
         test_name: test_to_le_bytes,
-        method: to_le_bytes(349587309485908349057389485093457397u128),
-        converter: convert
+        method: {
+            to_le_bytes(349587309485908349057389485093457397u128);
+            to_le_bytes(4985679837455u128);
+        },
+        converter: converter
     }
     test_unsigned! {
         test_name: test_to_ne_bytes,
-        method: to_ne_bytes(123423345734905803845939847534085908u128),
-        converter: convert
+        method: {
+            to_ne_bytes(123423345734905803845939847534085908u128);
+            to_ne_bytes(685947586789335u128);
+        },
+        converter: converter
     }
 
     test_unsigned! {
         test_name: test_from_be_bytes,
-        method: from_be_bytes([3, 5, 44, 253, 55, 110, 64, 53, 54, 78, 0, 8, 91, 16, 25, 42])
+        method: {
+            from_be_bytes([3, 5, 44, 253, 55, 110, 64, 53, 54, 78, 0, 8, 91, 16, 25, 42]);
+            from_be_bytes([0, 0, 0, 0, 30, 0, 64, 53, 54, 78, 0, 8, 91, 16, 25, 42]);
+        }
     }
     test_unsigned! {
         test_name: test_from_le_bytes,
-        method: from_le_bytes([15, 65, 44, 30, 115, 200, 244, 167, 44, 6, 9, 11, 90, 56, 77, 150])
+        method: {
+            from_le_bytes([15, 65, 44, 30, 115, 200, 244, 167, 44, 6, 9, 11, 90, 56, 77, 150]);
+            from_le_bytes([0, 0, 0, 0, 0, 200, 244, 167, 44, 6, 9, 11, 90, 56, 77, 150]);
+        }
     }
     test_unsigned! {
         test_name: test_from_ne_bytes,
-        method: from_ne_bytes([73, 80, 2, 24, 160, 188, 204, 45, 33, 88, 4, 68, 230, 180, 145, 32])
+        method: {
+            from_ne_bytes([73, 80, 2, 24, 160, 188, 204, 45, 33, 88, 4, 68, 230, 180, 145, 32]);
+            from_ne_bytes([0, 0, 0, 0, 0, 188, 204, 45, 33, 88, 4, 68, 230, 180, 0, 0]);
+        }
     }
 
     #[test]
@@ -288,5 +317,11 @@ mod tests {
         assert_eq!(U128::from_be_bytes(arr), U128::from_be_slice(&v).unwrap());
         v.push(4);
         assert_eq!(U128::from_be_slice(&v), None);
+    }
+
+    #[test]
+    fn test_from_ne_slice() {
+        let arr = [65, 50, 100, 45, 224, 55, 10, 6, 88, 150, 230, 1, 0, 53, 90, 110];
+        assert_eq!(U128::from_be_bytes(arr), U128::from_be_slice(&arr[..]).unwrap());
     }
 }

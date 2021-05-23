@@ -14,7 +14,9 @@ macro_rules! test_signed {
             big: I128,
             primitive: i128,
             test_name: $test_name,
-            method: $method ($($arg), *)
+            method: {
+                $method ($($arg), *);
+            }
         }
     };
     {
@@ -26,7 +28,9 @@ macro_rules! test_signed {
             big: I128,
             primitive: i128,
             test_name: $test_name,
-            method: $method ($($arg), *),
+            method: {
+                $method ($($arg), *);
+            },
             converter: $converter
         }
     }

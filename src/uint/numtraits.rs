@@ -222,7 +222,7 @@ impl<const N: usize> Roots for BUint<N> {
         let bits = self.bits();
         let max_bits = bits / 2 + 1;
 
-        let mut guess = Self::power_of_two(max_bits);
+        let guess = Self::power_of_two(max_bits);
         guess.fixpoint(max_bits, move |s| {
             let q = self / s;
             let t = s + q;
@@ -238,11 +238,11 @@ impl<const N: usize> Roots for BUint<N> {
         let bits = self.bits();
         let max_bits = bits / 3 + 1;
 
-        let mut guess = Self::power_of_two(max_bits);
+        let guess = Self::power_of_two(max_bits);
         guess.fixpoint(max_bits, move |s| {
             let q = self / (s * s);
             let t: Self = (s << 1) + q;
-            t.div_rem_small(3).0
+            t.div_rem_digit(3).0
         })
     }
     fn nth_root(&self, n: u32) -> Self {
@@ -265,14 +265,14 @@ impl<const N: usize> Roots for BUint<N> {
                 }
                 let max_bits = bits / n_usize + 1;
         
-                let mut guess = Self::power_of_two(max_bits);
+                let guess = Self::power_of_two(max_bits);
                 let n_minus_1 = n - 1;
 
                 guess.fixpoint(max_bits, move |s| {
                     let q = self / s.pow(n_minus_1);
                     let mul: Self = n_minus_1.into();
                     let t: Self = s * mul + q;
-                    t.div_rem_small(n as u64).0
+                    t.div_rem_digit(n as u64).0
                 })
             }
         }
@@ -307,29 +307,15 @@ impl<const N: usize> ToPrimitive for BUint<N> {
         Some(digit::to_double_digit(self.digits[1], self.digits[0]))
     }
     fn to_f32(&self) -> Option<f32> {
-        let mantissa = self.to_mantissa();
-        let exp = self.bits() - last_set_bit(mantissa) as usize;
-
-        if exp > f32::MAX_EXP as usize {
-            Some(f32::INFINITY)
-        } else {
-            Some((mantissa as f32) * 2f32.powi(exp as i32))
-        }
+        Some(self.as_f32())
     }
     fn to_f64(&self) -> Option<f64> {
-        let mantissa = self.to_mantissa();
-        let exp = self.bits() - last_set_bit(mantissa) as usize;
-
-        if exp > f64::MAX_EXP as usize {
-            Some(f64::INFINITY)
-        } else {
-            Some((mantissa as f64) * 2f64.powi(exp as i32))
-        }
+        Some(self.as_f64())
     }
 }
 
-fn last_set_bit(n: u64) -> u8 {
-    ((core::mem::size_of_val(&n) as u8) << 3) - n.leading_zeros() as u8
+const fn last_set_bit(n: u64) -> u8 {
+    64 - n.leading_zeros() as u8
 }
 
 impl<const N: usize> Unsigned for BUint<N> {}

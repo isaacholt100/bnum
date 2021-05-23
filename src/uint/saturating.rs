@@ -37,19 +37,30 @@ mod tests {
 
     test_unsigned! {
         test_name: test_saturating_add,
-        method: saturating_add(3945873849578934759897458u128, 304578347593745734845646957398u128)
-    }
-    test_unsigned! {
-        test_name: test_saturating_add_with_overflow,
-        method: saturating_add(u128::MAX, 345345u128)
-    }
-
-    test_unsigned! {
-        test_name: test_saturating_sub_with_overflow,
-        method: saturating_sub(43054734875u128, 304578347593745348455647398u128)
+        method: {
+            saturating_add(3945873849578934759897458u128, 304578347593745734845646957398u128);
+            saturating_add(u128::MAX, 345345u128);
+        }
     }
     test_unsigned! {
         test_name: test_saturating_sub,
-        method: saturating_sub(394587384957893459664565697458u128, 304578347593745348455647398u128)
+        method: {
+            saturating_sub(43054734875u128, 304578347593745348455647398u128);
+            saturating_sub(394587384957893459664565697458u128, 304578347593745348455647398u128);
+        }
+    }
+    test_unsigned! {
+        test_name: test_saturating_mul,
+        method: {
+            saturating_mul(u128::MAX, 1u128);
+            saturating_mul(u128::MAX, 345u128);
+        }
+    }
+    test_unsigned! {
+        test_name: test_saturating_pow,
+        method: {
+            saturating_pow(3593745u128, 3451u32);
+            saturating_pow(11u128, 34u32);
+        }
     }
 }

@@ -59,7 +59,7 @@ impl<const N: usize> WrappingNeg for BintTest<N> {
     }
 }
 
-/*impl<const N: usize> WrappingShl for BintTest<N> {
+impl<const N: usize> WrappingShl for BintTest<N> {
     fn wrapping_shl(&self, rhs: u32) -> Self {
         Self::wrapping_shl(*self, rhs)
     }
@@ -69,9 +69,7 @@ impl<const N: usize> WrappingShr for BintTest<N> {
     fn wrapping_shr(&self, rhs: u32) -> Self {
         Self::wrapping_shr(*self, rhs)
     }
-}*/
-
-// TODO: implement Pow trait, WrappingShr trait, WrappingShl trait
+}
 
 impl<const N: usize> FromPrimitive for BintTest<N> {
     fn from_u64(n: u64) -> Option<Self> {
@@ -155,15 +153,51 @@ impl<const N: usize> One for BintTest<N> {
     }
 }
 
+impl<const N: usize> Pow<u32> for BintTest<N> {
+    type Output = Self;
+
+    fn pow(self, exp: u32) -> Self {
+        Self::pow(self, exp)
+    }
+}
+
 impl<const N: usize> Roots for BintTest<N> {
     fn sqrt(&self) -> Self {
-        Self::sqrt(self)
+        if self.is_negative() {
+            panic!("imaginary square root")
+        } else {
+            Self {
+                uint: self.uint.sqrt()
+            }
+        }
     }
     fn cbrt(&self) -> Self {
-        Self::cbrt(self)
+        if self.is_negative() {
+            let out = Self {
+                uint: self.unsigned_abs().cbrt(),
+            };
+            -out
+        } else {
+            Self {
+                uint: self.uint.cbrt(),
+            }
+        }
     }
     fn nth_root(&self, n: u32) -> Self {
-        Self::nth_root(self, n)
+        if self.is_negative() {
+            if n.is_even() {
+                panic!("imaginary root degree of {}", n)
+            } else {
+                let out = Self {
+                    uint: self.unsigned_abs().nth_root(n),
+                };
+                -out
+            }
+        } else {
+            Self {
+                uint: self.uint.nth_root(n),
+            }
+        }
     }
 }
 

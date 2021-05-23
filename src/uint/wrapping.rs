@@ -41,20 +41,17 @@ mod tests {
     use crate::U128;
     
     test_unsigned! {
-        test_name: test_wrapping_add_with_overflow,
-        method: wrapping_add(u128::MAX - 394857938475u128, 3947587348957384975893475983744567797u128)
-    }
-    test_unsigned! {
         test_name: test_wrapping_add,
-        method: wrapping_add(984756897982709347597234977937u128, 4957698475906748597694574094567944u128)
+        method: {
+            wrapping_add(u128::MAX - 394857938475u128, 3947587348957384975893475983744567797u128);
+            wrapping_add(984756897982709347597234977937u128, 4957698475906748597694574094567944u128);
+        }
     }
-
     test_unsigned! {
         test_name: test_wrapping_sub_with_overflow,
-        method: wrapping_sub(34593475897340985709493475u128, 3947587348957384975893475983744567797u128)
-    }
-    test_unsigned! {
-        test_name: test_wrapping_sub,
-        method: wrapping_sub(1030495898347598730975979834759739457u128, 4957698475906748597694574094567944u128)
+        method: {
+            wrapping_sub(34593475897340985709493475u128, 3947587348957384975893475983744567797u128);
+            wrapping_sub(1030495898347598730975979834759739457u128, 4957698475906748597694574094567944u128);
+        }
     }
 }

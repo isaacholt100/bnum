@@ -66,3 +66,11 @@ impl<const N: usize> From<bool> for BintTest<N> {
         }
     }
 }
+
+impl<const N: usize> TryFrom<BintTest<N>> for u32 {
+    type Error = TryFromIntError;
+
+    fn try_from(int: BintTest<N>) -> Result<Self, Self::Error> {
+        todo!()
+    }
+}

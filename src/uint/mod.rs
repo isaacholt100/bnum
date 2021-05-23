@@ -8,25 +8,33 @@ pub use crate::U128;
 macro_rules! test_unsigned {
     {
         test_name: $test_name: ident,
-        method: $method: ident ($($arg: expr), *)
+        method: {
+            $($method: ident ($($arg: expr), *) ;) *
+        }
     } => {
         test! {
             big: U128,
             primitive: u128,
             test_name: $test_name,
-            method: $method ($($arg), *)
+            method: {
+                $($method ($($arg), *) ;) *
+            }
         }
     };
     {
         test_name: $test_name: ident,
-        method: $method: ident ($($arg: expr), *),
+        method: {
+            $($method: ident ($($arg: expr), *) ;) *
+        },
         converter: $converter: expr
     } => {
         test! {
             big: U128,
             primitive: u128,
             test_name: $test_name,
-            method: $method ($($arg), *),
+            method: {
+                $($method ($($arg), *) ;) *
+            },
             converter: $converter
         }
     }
@@ -218,7 +226,7 @@ impl<const N: usize> BUint<N> {
     }
     pub const fn rotate_right(self, n: u32) -> Self {
         let n = n & Self::BITS_MINUS_1;
-        self.unchecked_rotate_left(N as u32 - n)
+        self.unchecked_rotate_left(Self::BITS as u32 - n)
     }
     const N_MINUS_1: usize = N - 1;
     pub const fn swap_bytes(self) -> Self {
@@ -298,49 +306,83 @@ impl<const N: usize> BUint<N> {
 mod tests {
     use crate::U128;
 
-    // Test from_str_radix
-
     test_unsigned! {
         test_name: test_count_ones,
-        method: count_ones(203583443659837459073490583937485738404u128)
+        method: {
+            count_ones(203583443659837459073490583937485738404u128);
+            count_ones(3947594755489u128);
+        }
     }
     test_unsigned! {
         test_name: test_count_zeros,
-        method: count_zeros(7435098345734853045348057390485934908u128)
+        method: {
+            count_zeros(7435098345734853045348057390485934908u128);
+            count_zeros(3985789475546u128);
+        }
     }
     test_unsigned! {
         test_name: test_leading_ones,
-        method: leading_ones(3948590439409853946593894579834793459u128)
+        method: {
+            leading_ones(3948590439409853946593894579834793459u128);
+            leading_ones(u128::MAX - 0b111);
+        }
     }
     test_unsigned! {
         test_name: test_leading_zeros,
-        method: leading_zeros(49859830845963457783945789734895834754u128)
+        method: {
+            leading_zeros(49859830845963457783945789734895834754u128);
+            leading_zeros(40545768945769u128);
+        }
     }
     test_unsigned! {
         test_name: test_trailing_ones,
-        method: trailing_ones(45678345973495637458973488509345903458u128)
+        method: {
+            trailing_ones(45678345973495637458973488509345903458u128);
+            trailing_ones(u128::MAX);
+        }
     }
     test_unsigned! {
         test_name: test_trailing_zeros,
-        method: trailing_zeros(23488903477439859084534857349857034599u128)
+        method: {
+            trailing_zeros(23488903477439859084534857349857034599u128);
+            trailing_zeros(343453454565u128);
+        }
     }
     test_unsigned! {
         test_name: test_rotate_left,
-        method: rotate_left(394857348975983475983745983798579483u128, 5555u32)
+        method: {
+            rotate_left(394857348975983475983745983798579483u128, 5555u32);
+            rotate_left(4056890546059u128, 12u32);
+        }
     }
     test_unsigned! {
         test_name: test_rotate_right,
-        method: rotate_left(90845674987957297107197973489575938457u128, 10934u32)
+        method: {
+            rotate_right(90845674987957297107197973489575938457u128, 10934u32);
+            rotate_right(1345978945679u128, 33u32);
+        }
     }
     test_unsigned! {
         test_name: test_swap_bytes,
-        method: swap_bytes(3749589304858934758390485937458349058u128)
+        method: {
+            swap_bytes(3749589304858934758390485937458349058u128);
+            swap_bytes(3405567798345u128);
+        }
     }
     test_unsigned! {
         test_name: test_reverse_bits,
-        method: reverse_bits(3345565093489578938485934957893745984u128)
+        method: {
+            reverse_bits(3345565093489578938485934957893745984u128);
+            reverse_bits(608670986790835u128);
+        }
     }
-    // Test pow
+    test_unsigned! {
+        test_name: test_pow,
+        method: {
+            pow(59345u128, 4u32);
+            pow(54u128, 9u32);
+        }
+    }
     // Test div_euclid
     // Test rem_euclid
     #[test]
@@ -350,17 +392,42 @@ mod tests {
         assert!(power.is_power_of_two());
         assert!(!non_power.is_power_of_two());
     }
-    // Test next_power_of_two
-    // Test checked_next_power_of_two
+    test_unsigned! {
+        test_name: test_checked_next_power_of_two,
+        method: {
+            checked_next_power_of_two(1340539475937597893475987u128);
+            checked_next_power_of_two(u128::MAX);
+        },
+        converter: |option: Option<u128>| -> Option<U128> {
+            match option {
+                None => None,
+                Some(u) => Some(u.into()),
+            }
+        }
+    }
     test_unsigned! {
         test_name: test_next_power_of_two,
-        method: next_power_of_two(394857834758937458973489573894759879u128)
+        method: {
+            next_power_of_two(394857834758937458973489573894759879u128);
+            next_power_of_two(800345894358459u128);
+        }
     }
+    /*test_unsigned! {
+        test_name: test_wrapping_next_power_of_two,
+        method: {
+            wrapping_next_power_of_two(97495768945869084687890u128);
+            wrapping_next_power_of_two(u128::MAX);
+        }
+    }*/
 }
 
 impl<const N: usize> BUint<N> {
     const fn to_mantissa(&self) -> u64 {
-        let mut bits = self.bits() as u64;
+        let bits = self.bits();
+        if bits <= digit::BITS {
+            return self.digits[0];
+        }
+        let mut bits = bits as u64;
         let mut out: u64 = 0;
         let mut out_bits = 0;
         const BITS_MINUS_1: u64 = digit::BITS as u64 - 1;
@@ -375,6 +442,7 @@ impl<const N: usize> BUint<N> {
 
         let mut i = N;
         while i > 0 {
+            i -= 1;
             let digit_bits = ((bits - 1) & BITS_MINUS_1) + 1;
             let bits_want = min(64 - out_bits, digit_bits);
             if bits_want != 64 {
@@ -388,7 +456,6 @@ impl<const N: usize> BUint<N> {
             if out_bits == 64 {
                 break;
             }
-            i -= 1;
         }
         out
     }
@@ -435,51 +502,6 @@ impl<const N: usize> BUint<N> {
             i += 1;
         }
         index
-    }
-    const fn last_digit(&self) -> Digit {
-        let mut last_digit = self.digits[0];
-        let mut i = 1;
-        while i < N {
-            let digit = self.digits[i];
-            if digit != 0 {
-                last_digit = digit;
-            }
-            i += 1;
-        }
-        last_digit
-    }
-    fn from_uninit<C>(mut closure: C) -> Self where C: FnMut(usize) -> Digit {
-        // This is an unsafe but faster version, would be implemented but can't transmute for const generic array yet
-        /*use core::mem::{self, MaybeUninit};
-        let mut digits: [MaybeUninit<u64>; N] = unsafe {
-            MaybeUninit::uninit().assume_init()
-        };
-        for i in 0..N {
-            digits[i] = MaybeUninit::new(closure(i));
-        }
-        Self::from(unsafe {
-            mem::transmute::<_, [u64; N]>(digits)
-        });*/
-        let mut digits = [0; N];
-        for i in 0..N {
-            digits[i] = closure(i);
-        }
-        Self::from(digits)
-    }
-    fn op<C>(&self, rhs: &Self, mut closure: C) -> Self where C: FnMut(Digit, Digit) -> Digit {
-        Self::from_uninit(|i| {
-            closure(self.digits[i], rhs.digits[i])
-        })
-    }
-    fn shift_left(&self, by: usize) -> Self {
-        let slice = &self.digits[by..];
-        let mut digits = [0; N];
-        for (i, digit) in slice.iter().enumerate() {
-            digits[i] = *digit;
-        }
-        Self {
-            digits,
-        }
     }
     pub fn try_from_buint<const M: usize>(uint: BUint<M>) -> Result<Self, TryFromIntError> {
         let last_digit_index = uint.last_digit_index();

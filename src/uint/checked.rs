@@ -36,7 +36,11 @@ impl<const N: usize> BUint<N> {
 
         ((hi << digit::HALF_BITS) | lo, rem)
     }
-    pub const fn div_rem_small(self, rhs: Digit) -> (Self, Self) {
+    const fn div_rem_small(self, rhs: Digit) -> (Self, Self) {
+        let (div, rem) = self.div_rem_digit(rhs);
+        (div, Self::from_digit(rem))
+    }
+    pub const fn div_rem_digit(self, rhs: Digit) -> (Self, Digit) {
         let mut rem: Digit = 0;
         let mut out = Self::ZERO;
         if rhs > digit::HALF {
@@ -56,7 +60,7 @@ impl<const N: usize> BUint<N> {
                 rem = r;
             }
         }
-        (out, Self::from_digit(rem))
+        (out, rem)
     }
     const fn div_rem_core(self, v: Self, n: usize, m: usize) -> (Self, Self) {
         let shift = v.digits[n - 1].leading_zeros();
@@ -225,7 +229,7 @@ impl<const N: usize> BUint<N> {
         use core::cmp::Ordering;
 
         match self.cmp(&rhs) {
-            Ordering::Less => (Self::ZERO, rhs),
+            Ordering::Less => (Self::ZERO, self),
             Ordering::Equal => (Self::ONE, Self::ZERO),
             Ordering::Greater => {
                 let self_last_digit_index = self.last_digit_index();
@@ -237,7 +241,6 @@ impl<const N: usize> BUint<N> {
                     }
                     return self.div_rem_small(first_digit);
                 }
-                let mut rhs = rhs;
                 self.div_rem_core(rhs, rhs_last_digit_index + 1, self_last_digit_index - rhs_last_digit_index)
             }
         }
@@ -284,7 +287,11 @@ impl<const N: usize> BUint<N> {
         }
     }
     pub const fn checked_shr(self, rhs: u32) -> Option<Self> {
-        tuple_to_option(self.overflowing_shr(rhs))
+        if rhs as usize >= Self::BITS {
+            None
+        } else {
+            Some(self.unchecked_shr(rhs))
+        }
     }
     pub const fn checked_pow(self, exp: u32) -> Option<Self> {
         if exp == 0 {
@@ -296,7 +303,6 @@ impl<const N: usize> BUint<N> {
         let mut y = Self::ONE;
         let mut n = exp;
         let mut x = self;
-        let mut overflow = false;
 
         macro_rules! checked_mul {
             ($var: ident) => {
@@ -340,35 +346,94 @@ mod tests {
 
     test_unsigned! {
         test_name: test_checked_add,
-        method: checked_add(238732748937u128, 23583048508u128),
+        method: {
+            checked_add(238732748937u128, 23583048508u128);
+            checked_add(u128::MAX, 1u128);
+        },
         converter: converter
     }
-    test_unsigned! {
-        test_name: test_checked_add_overflow,
-        method: checked_add(u128::MAX, 1u128),
-        converter: converter
-    }
-
     test_unsigned! {
         test_name: test_checked_sub,
-        method: checked_sub(334534859834905830u128, 93745873457u128),
+        method: {
+            checked_sub(334534859834905830u128, 93745873457u128);
+            checked_sub(23423423u128, 209834908234898u128);
+        },
         converter: converter
     }
     test_unsigned! {
-        test_name: test_checked_sub_overflow,
-        method: checked_sub(23423423u128, 209834908234898u128),
-        converter: converter
-    }
-    test_unsigned! {
-        test_name: test_checked_div_small,
-        method: checked_div(234233453453454563453453423u128, 34534597u128),
+        test_name: test_checked_mul,
+        method: {
+            checked_mul(309458690987839544353455765u128, 344597u128);
+            checked_mul(958734920934875289309456874985769879u128, 33219654565456456453434545697u128);
+        },
         converter: converter
     }
     test_unsigned! {
         test_name: test_checked_div,
-        method: checked_div(95873492093487528930479456874985769879u128, 33219654565456456453434545697u128),
+        method: {
+            checked_div(234233453453454563453453423u128, 34534597u128);
+            checked_div(95873492093487528930479456874985769879u128, 33219654565456456453434545697u128);
+            checked_div(34564564564u128, 33219654565456456453434545697u128);
+            checked_div(475749674596u128, 0u128);
+        },
         converter: converter
     }
-    
-    // TODO: test other checked methods
+    test_unsigned! {
+        test_name: test_checked_div_euclid,
+        method: {
+            checked_div(3058689475456456908345374598734535u128, 973457035343453453454338408u128);
+            checked_div(1734857456846783458346458640586098u128, 98474869054698745u128);
+        },
+        converter: converter
+    }
+    test_unsigned! {
+        test_name: test_checked_rem,
+        method: {
+            checked_rem(9845764759879745698u128, 948745860945769845645986745986u128);
+            checked_rem(3450457689456094859604589684905698u128, 34985734895793u128);
+            checked_rem(4987569457756984789756745677957698476u128, 49857498576947593595548u128);
+            checked_rem(475749674596u128, 0u128);
+        },
+        converter: converter
+    }
+    test_unsigned! {
+        test_name: test_checked_rem_euclid,
+        method: {
+            checked_rem_euclid(45645609485069840574594565646456u128, 984756897456799u128);
+            checked_rem_euclid(9827986748560745645867456456456456u128, 98474869054698456456456456456745u128);
+        },
+        converter: converter
+    }
+    test_unsigned! {
+        test_name: test_checked_neg,
+        method: {
+            checked_neg(456456454698756u128);
+            checked_neg(0u128);
+        },
+        converter: converter
+    }
+    test_unsigned! {
+        test_name: test_checked_shl,
+        method: {
+            checked_shl(45645643454354563634554698756u128, 22u32);
+            checked_shl(4598745697987927893475u128, 5873u32);
+        },
+        converter: converter
+    }
+    test_unsigned! {
+        test_name: test_checked_shr,
+        method: {
+            checked_shl(8098459098745896789454976498u128, 100u32);
+            checked_shl(9719834759874986456456465u128, 128u32);
+        },
+        converter: converter
+    }
+    test_unsigned! {
+        test_name: test_checked_pow,
+        method: {
+            checked_pow(4565u128, 100u32);
+            checked_pow(43u128, 15u32);
+        },
+        converter: converter
+    }
 }
