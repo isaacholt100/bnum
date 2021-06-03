@@ -1,6 +1,8 @@
 use super::BintTest;
 use num_traits::{Bounded, CheckedAdd, CheckedDiv, CheckedMul, CheckedNeg, CheckedRem, CheckedShl, CheckedShr, CheckedSub, FromPrimitive, MulAdd, MulAddAssign, Num, One, SaturatingAdd, SaturatingMul, SaturatingSub, WrappingAdd, WrappingMul, WrappingNeg, WrappingShl, WrappingShr, WrappingSub, ToPrimitive, Signed, Zero, Pow};
 use num_integer::{Integer, Roots};
+use crate::digit;
+use core::convert::TryFrom;
 
 impl<const N: usize> Bounded for BintTest<N> {
     fn min_value() -> Self {
@@ -83,6 +85,12 @@ impl<const N: usize> FromPrimitive for BintTest<N> {
     }
     fn from_i128(n: i128) -> Option<Self> {
         Some(n.into())
+    }
+    fn from_f32(f: f32) -> Option<Self> {
+        Self::try_from(f).ok()
+    }
+    fn from_f64(f: f64) -> Option<Self> {
+        Self::try_from(f).ok()
     }
 }
 
@@ -203,16 +211,49 @@ impl<const N: usize> Roots for BintTest<N> {
 
 impl<const N: usize> ToPrimitive for BintTest<N> {
     fn to_i64(&self) -> Option<i64> {
-        todo!()
+        if self.is_negative() {
+            let ones = N - 64 + 1;
+            if (self.leading_ones() as usize) < ones {
+                None
+            } else {
+                Some(self.digits()[0] as i64)
+            }
+        } else {
+            self.uint.to_i64()
+        }
     }
     fn to_i128(&self) -> Option<i128> {
-        todo!()
+        if self.is_negative() {
+            let ones = N - 128 + 1;
+            if (self.leading_ones() as usize) < ones {
+                None
+            } else {
+                let digits = self.digits();
+                Some(digit::to_signed_double_digit(digits[1], digits[0]))
+            }
+        } else {
+            self.uint.to_i128()
+        }
     }
     fn to_u64(&self) -> Option<u64> {
-        todo!()
+        if self.is_negative() {
+            None
+        } else {
+            self.uint.to_u64()
+        }
     }
     fn to_u128(&self) -> Option<u128> {
-        todo!()
+        if self.is_negative() {
+            None
+        } else {
+            self.uint.to_u128()
+        }
+    }
+    fn to_f32(&self) -> Option<f32> {
+        Some(self.as_f32())
+    }
+    fn to_f64(&self) -> Option<f64> {
+        Some(self.as_f64())
     }
 }
 

@@ -1,6 +1,5 @@
 use crate::digit::{Digit, SignedDigit, self};
-use crate::uint::{BUint, self};
-use crate::ParseIntError;
+use crate::uint::BUint;
 #[allow(unused_imports)]
 use crate::I128Test;
 
@@ -107,6 +106,7 @@ impl<const N: usize> BintTest<N> {
     };
     pub const BYTES: usize = Self::BITS / 8;
     pub const BITS: usize = N * digit::BITS;
+    const N_MINUS_1: usize = N - 1;
 }
 
 impl<const N: usize> BintTest<N> {
@@ -141,32 +141,23 @@ impl<const N: usize> BintTest<N> {
     }
     pub const fn unsigned_abs(self) -> BUint<N> {
         if self.is_negative() {
-            if self.eq(&Self::MIN) {
-                let mut digits = [0; N];
-                digits[N - 1] = 1;
-                BUint::from_digits(digits)
-            } else {
-                self.wrapping_neg().uint
-            }
+            self.wrapping_neg().uint
         } else {
             self.uint
         }
     }
     pub const fn pow(self, exp: u32) -> Self {
-        todo!()
+        expect!(self.checked_pow(exp), "attempt to calculate power with overflow")
     }
     pub const fn div_euclid(self, rhs: Self) -> Self {
-        todo!()
+        expect!(self.checked_div_euclid(rhs), "attempt to divide by zero")
     }
     pub const fn rem_euclid(self, rhs: Self) -> Self {
-        todo!()
+        expect!(self.checked_rem_euclid(rhs), "attempt to calculate remainder with a divisor of zero")
     }
     #[cfg(debug_assertions)]
     pub const fn abs(self) -> Self {
-        match self.checked_abs() {
-            Some(int) => int,
-            None => panic!("attempt to negate with overflow"),
-        }
+        expect!(self.checked_abs(), "attempt to negate with overflow")
     }
     #[cfg(not(debug_assertions))]
     pub const fn abs(self) -> Self {
@@ -196,6 +187,39 @@ impl<const N: usize> BintTest<N> {
             false
         } else {
             self.uint.is_power_of_two()
+        }
+    }
+    #[cfg(debug_assertions)]
+    pub const fn next_power_of_two(self) -> Self {
+        expect!(self.checked_next_power_of_two(), "attempt to calculate next power of two with overflow")
+    }
+    #[cfg(not(debug_assertions))]
+    pub const fn next_power_of_two(self) -> Self {
+        self.wrapping_next_power_of_two()
+    }
+    pub const fn checked_next_power_of_two(self) -> Option<Self> {
+        if self.is_negative() {
+            Some(Self::ONE)
+        } else {
+            match self.uint.checked_next_power_of_two() {
+                Some(uint) => {
+                    let out = Self {
+                        uint,
+                    };
+                    if out.is_negative() {
+                        None
+                    } else {
+                        Some(out)
+                    }
+                },
+                None => None,
+            }
+        }
+    }
+    pub const fn wrapping_next_power_of_two(self) -> Self {
+        match self.checked_next_power_of_two() {
+            Some(int) => int,
+            None => Self::MIN,
         }
     }
 }
@@ -309,6 +333,16 @@ impl<const N: usize> BintTest<N> {
     }
     pub const fn is_zero(self) -> bool {
         self.uint.is_zero()
+    }
+    pub const fn from_digits(digits: [Digit; N]) -> Self {
+        Self {
+            uint: BUint::from_digits(digits),
+        }
+    }
+    pub const fn from_buint(uint: BUint<N>) -> Self {
+        Self {
+            uint,
+        }
     }
 }
 

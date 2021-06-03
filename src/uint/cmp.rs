@@ -4,6 +4,7 @@ use core::cmp::{PartialEq, Eq, PartialOrd, Ord, Ordering};
 // When const traits are stable in Rust, the trait implementations can be replaced with these
 
 impl<const N: usize> BUint<N> {
+    /// Determines whether `self` is equal to `other`. This is provided as a const method as well as the `eq` method in the `PartialEq` trait to allow for const evaluation. When const traits become stable in Rust, this method will no longer be necessary.
     pub const fn eq(&self, other: &Self) -> bool {
         let mut i = 0;
         while i < N {
@@ -14,6 +15,8 @@ impl<const N: usize> BUint<N> {
         }
         true
     }
+
+    /// Returns the comparison of `self` and `other`. This is provided as a const method as well as the `cmp` method in the `Ord` trait to allow for const evaluation. When const traits become stable in Rust, this method will no longer be necessary.
     pub const fn cmp(&self, other: &Self) -> Ordering {
         let mut i = N;
         while i > 0 {
@@ -28,6 +31,8 @@ impl<const N: usize> BUint<N> {
         }
         Ordering::Equal
     }
+
+    /// Returns the comparison of `self` and `other`. This is provided as a const method as well as the `partial_cmp` method in the `PartialOrd` trait to allow for const evaluation. When const traits become stable in Rust, this method will no longer be necessary.
     pub const fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }

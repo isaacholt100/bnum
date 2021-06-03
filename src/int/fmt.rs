@@ -17,12 +17,6 @@ impl<const N: usize> Binary for Bint<N> {
     fmt!("{:b}{:0pad$b}", Self::UINT_BITS, "0b", Binary);
 }
 
-impl<const N: usize> Display for Bint<N> {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "{}", self.to_str_radix(10))
-    }
-}
-
 /*impl<const N: usize> Debug for Bint<N> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         Binary::fmt(self, f)
@@ -37,12 +31,6 @@ impl<const N: usize> LowerExp for Bint<N> {
 
 impl<const N: usize> LowerHex for Bint<N> {
     fmt!("{:x}{:0pad$x}", Self::UINT_BITS / 4, "0x", LowerHex);
-}
-
-impl<const N: usize> Octal for Bint<N> {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "{}", self.to_str_radix(8))
-    }
 }
 
 impl<const N: usize> UpperExp for Bint<N> {

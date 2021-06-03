@@ -72,7 +72,7 @@ impl<const N: usize> BintTest<N> {
             })
         }
     }
-    pub const fn from_ne_slice(slice: &[u8]) -> Option<Self> {
+    /*pub const fn from_ne_slice(slice: &[u8]) -> Option<Self> {
         let option = BUint::from_ne_slice(slice);
         match option {
             None => None,
@@ -80,7 +80,7 @@ impl<const N: usize> BintTest<N> {
                 uint,
             })
         }
-    }
+    }*/
 }
 
 #[cfg(test)]

@@ -1,6 +1,5 @@
 use super::BUint;
 use crate::arch;
-use crate::digit;
 
 //const LONG_MUL_THRESHOLD: usize = 32;
 //const KARATSUBA_THRESHOLD: usize = 256;
@@ -87,136 +86,21 @@ impl<const N: usize> BUint<N> {
             (self.not().add(Self::ONE), true)
         }
     }
-    pub const fn unchecked_shl(self, rhs: u32) -> Self {
-        if rhs == 0 {
-            self
-        } else {
-            const BITS_MINUS_1: u32 = digit::BITS_U32 - 1;
-            let digit_shift = (rhs >> digit::BIT_SHIFT) as usize;
-            let shift = (rhs & BITS_MINUS_1) as u8;
-            
-            let mut out = Self::ZERO;
-            let mut i = digit_shift;
-
-            if shift == 0 {
-                while i < N {
-                    let digit = self.digits[i - digit_shift];
-                    out.digits[i] = digit;
-                    i += 1;
-                }
-            } else {
-                let mut carry = 0;
-                let carry_shift = digit::BITS_U32 as u8 - shift;
-                let mut last_index = digit_shift;
-                while i < N {
-                    let digit = self.digits[i - digit_shift];
-                    let new_carry = digit >> carry_shift;
-                    let new_digit = (digit << shift) | carry;
-                    if new_digit != 0 {
-                        last_index = i;
-                        out.digits[i] = new_digit;
-                    }
-                    carry = new_carry;
-                    i += 1;
-                }
-
-                if carry != 0 {
-                    last_index += 1;
-                    if last_index < N {
-                        out.digits[last_index] = carry;
-                    }
-                }
-            }
-
-            out
-        }
-    }
-    pub const fn unchecked_shr(self, rhs: u32) -> Self {
-        if rhs == 0 {
-            self
-        } else {
-            const BITS_MINUS_1: u32 = digit::BITS_U32 - 1;
-            let digit_shift = (rhs >> digit::BIT_SHIFT) as usize;
-            let shift = (rhs & BITS_MINUS_1) as u8;
-            
-            let mut out = Self::ZERO;
-            let mut i = digit_shift;
-
-            if shift == 0 {
-                while i < N {
-                    let digit = self.digits[Self::N_MINUS_1 + digit_shift - i];
-                    out.digits[Self::N_MINUS_1 - i] = digit;
-                    i += 1;
-                }
-            } else {
-                let mut borrow = 0;
-                let borrow_shift = digit::BITS_U32 as u8 - shift;
-                while i < N {
-                    let digit = self.digits[Self::N_MINUS_1 + digit_shift - i];
-                    let new_borrow = digit << borrow_shift;
-                    let new_digit = (digit >> shift) | borrow;
-                    out.digits[Self::N_MINUS_1 - i] = new_digit;
-                    borrow = new_borrow;
-                    i += 1;
-                }
-            }
-
-            out
-        }
-    }
     pub const fn overflowing_shl(self, rhs: u32) -> (Self, bool) {
         if rhs as usize >= Self::BITS {
-            (self.unchecked_shl(rhs & Self::BITS_MINUS_1), true)
+            (super::unchecked_shl(self, rhs & Self::BITS_MINUS_1), true)
         } else {
-            (self.unchecked_shl(rhs), false)
+            (super::unchecked_shl(self, rhs), false)
         }
     }
     pub const fn overflowing_shr(self, rhs: u32) -> (Self, bool) {
         if rhs as usize >= Self::BITS {
-            (self.unchecked_shr(rhs & Self::BITS_MINUS_1), true)
+            (super::unchecked_shr(self, rhs & Self::BITS_MINUS_1), true)
         } else {
-            (self.unchecked_shr(rhs), false)
+            (super::unchecked_shr(self, rhs), false)
         }
     }
-    pub const fn overflowing_pow(self, exp: u32) -> (Self, bool) {
-        if exp == 0 {
-            return (Self::ONE, false);
-        }
-        if self.is_zero() {
-            return (Self::ZERO, false);
-        }
-        let mut y = Self::ONE;
-        let mut n = exp;
-        let mut x = self;
-        let mut overflow = false;
-
-        macro_rules! overflowing_mul {
-            ($var: ident) => {
-                let (prod, o) = x.overflowing_mul($var);
-                $var = prod;
-                if o {
-                    overflow = o;
-                }
-            }
-        }
-
-        while n > 1 {
-            if n & 1 == 0 {
-                overflowing_mul!(x);
-                n >>= 1;
-            } else {
-                overflowing_mul!(y);
-                overflowing_mul!(x);
-                n -= 1;
-                n >>= 1;
-            }
-        }
-        let (prod, o) = x.overflowing_mul(y);
-        if o {
-            overflow = o;
-        }
-        (prod, overflow)
-    }
+    overflowing_pow!();
 }
 
 #[cfg(test)]

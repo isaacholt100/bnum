@@ -3,10 +3,13 @@ use core::ops::{Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor
 
 impl<const N: usize> BintTest<N> {
     pub const fn add(self, rhs: Self) -> Self {
-        match self.checked_add(rhs) {
-            Some(int) => int,
-            None => panic!("attempt to add with overflow"),
-        }
+        expect!(self.checked_add(rhs), "attempt to add with overflow")
+    }
+    pub const fn sub(self, rhs: Self) -> Self {
+        expect!(self.checked_sub(rhs), "attempt to subtract with overflow")
+    }
+    pub const fn neg(self) -> Self {
+        expect!(self.checked_neg(), "attempt to negative with overflow")
     }
 }
 
@@ -88,16 +91,6 @@ impl<const N: usize> BitXorAssign for BintTest<N> {
 
 assign_ref_impl!(BitXorAssign<BintTest<N>> for BintTest, bitxor_assign);
 
-impl<const N: usize> Div for BintTest<N> {
-    type Output = Self;
-
-    fn div(self, rhs: Self) -> Self {
-        self.checked_div(rhs).unwrap()
-    }
-}
-
-op_ref_impl!(Div<BintTest<N>> for BintTest, div);
-
 impl<const N: usize> DivAssign for BintTest<N> {
     fn div_assign(&mut self, rhs: Self) {
         *self = self.div(rhs);
@@ -110,7 +103,7 @@ impl<const N: usize> Mul for BintTest<N> {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self {
-        self.checked_mul(rhs).unwrap()
+        expect!(self.checked_mul(rhs), "attempt to multiply with overflow")
     }
 }
 
@@ -152,7 +145,7 @@ impl<const N: usize> Neg for BintTest<N> {
     type Output = Self;
 
     fn neg(self) -> Self {
-        self.checked_neg().expect("attempt to negative with overflow")
+        expect!(self.checked_neg(), "attempt to negative with overflow")
     }
 }
 
@@ -160,19 +153,9 @@ impl<const N: usize> Neg for &BintTest<N> {
     type Output = BintTest<N>;
 
     fn neg(self) -> BintTest<N> {
-        (*self).not()
+        (*self).neg()
     }
 }
-
-impl<const N: usize> Rem for BintTest<N> {
-    type Output = Self;
-
-    fn rem(self, rhs: Self) -> Self {
-        self.checked_rem(rhs).unwrap()
-    }
-}
-
-op_ref_impl!(Rem<BintTest<N>> for BintTest, rem);
 
 impl<const N: usize> RemAssign for BintTest<N> {
     fn rem_assign(&mut self, rhs: Self) {
@@ -186,7 +169,7 @@ impl<const N: usize> Shl<u32> for BintTest<N> {
     type Output = Self;
 
     fn shl(self, rhs: u32) -> Self {
-        self.checked_shl(rhs).unwrap()
+        expect!(self.checked_shl(rhs), "attempt to shift left with overflow")
     }
 }
 
@@ -204,7 +187,7 @@ impl<const N: usize> Shr<u32> for BintTest<N> {
     type Output = Self;
 
     fn shr(self, rhs: u32) -> Self {
-        self.checked_shr(rhs).unwrap()
+        expect!(self.checked_shr(rhs), "attempt to shift left with overflow")
     }
 }
 
@@ -226,7 +209,7 @@ impl<const N: usize> Sub for BintTest<N> {
     type Output = Self;
 
     fn sub(self, rhs: Self) -> Self {
-        self.checked_sub(rhs).expect("attempt to subtract with overflow")
+        expect!(self.checked_sub(rhs), "attempt to subtract with overflow")
     }
 }
 

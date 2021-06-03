@@ -1,5 +1,4 @@
-#[deny(overflowing_literals)]
-pub const BASES_32: &[(u32, usize)] = &[
+pub static BASES_32: &[(u32, usize)] = &[
     (0, 0), // 0
     (0, 0), // 1
     (0, 0), // 2
@@ -258,8 +257,8 @@ pub const BASES_32: &[(u32, usize)] = &[
     (4228250625, 4), // 255
     (0, 0), // 256
 ];
-#[deny(overflowing_literals)]
-pub const BASES_64: &[(u64, usize)] = &[
+
+pub static BASES_64: &[(u64, usize)] = &[
     (0, 0), // 0
     (0, 0), // 1
     (0, 0), // 2

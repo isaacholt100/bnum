@@ -25,6 +25,10 @@ pub const fn to_double_digit(high: Digit, low: Digit) -> DoubleDigit {
     ((high as DoubleDigit) << BITS) | low as DoubleDigit
 }
 
+pub const fn to_signed_double_digit(high: Digit, low: Digit) -> SignedDoubleDigit {
+    ((high as SignedDoubleDigit) << BITS) | low as SignedDoubleDigit
+}
+
 pub const fn from_double_digit(double: DoubleDigit) -> (Digit, Digit) {
     ((double >> BITS) as Digit, double as Digit)
 }

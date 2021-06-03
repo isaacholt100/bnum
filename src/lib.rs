@@ -1,11 +1,7 @@
 #![feature(
     const_generics,
     const_evaluatable_checked,
-    const_raw_ptr_deref,
-    //#![feature(const_trait_impl,
     const_panic,
-    const_fn,
-    const_option,
     const_maybe_uninit_assume_init,
     const_intrinsic_copy,
     const_mut_refs,
@@ -13,10 +9,147 @@
     const_ptr_offset,
     test
 )]
+#![no_std]
+
+#[macro_use]
+extern crate alloc;
 
 #[allow(unused)]
 fn test_into_converter<U, T: Into<U>>(x: T) -> U {
     x.into()
+}
+
+macro_rules! div_zero {
+    () => {
+        panic!("attempt to divide by zero")
+    };
+}
+
+macro_rules! rem_zero {
+    () => {
+        panic!("attempt to calculate remainder with a divisor of zero")
+    };
+}
+
+macro_rules! try_int_impl {
+    ($Struct: tt, $int: ty, $method: ident, $err: expr) => {
+        impl<const N: usize> TryFrom<$Struct<N>> for $int {
+            type Error = crate::TryFromIntError;
+        
+            fn try_from(uint: $Struct<N>) -> Result<Self, Self::Error> {
+                uint.$method().ok_or(crate::TryFromIntError {
+                    from: "BUint",
+                    to: stringify!($int),
+                    reason: crate::error::TryFromErrorReason::TooLarge,
+                })
+            }
+        }
+    }
+}
+
+macro_rules! all_try_int_impls {
+    ($Struct: tt) => {
+        try_int_impl!($Struct, u128, to_u128, "BUint is too large to cast to u128");
+        try_int_impl!($Struct, u64, to_u64, "BUint is too large to cast to u64");
+        try_int_impl!($Struct, usize, to_usize, "BUint is too large to cast to usize");
+        try_int_impl!($Struct, u32, to_u32, "BUint is too large to cast to u32");
+        try_int_impl!($Struct, u16, to_u16, "BUint is too large to cast to u16");
+        try_int_impl!($Struct, u8, to_u8, "BUint is too large to cast to u8");
+
+        try_int_impl!($Struct, i128, to_i128, "BUint is too large to cast to i128");
+        try_int_impl!($Struct, i64, to_i64, "BUint is too large to cast to i64");
+        try_int_impl!($Struct, isize, to_isize, "BUint is too large to cast to isize");
+        try_int_impl!($Struct, i32, to_i32, "BUint is too large to cast to i32");
+        try_int_impl!($Struct, i16, to_i16, "BUint is too large to cast to i16");
+        try_int_impl!($Struct, i8, to_i8, "BUint is too large to cast to i8");
+    }
+}
+
+macro_rules! checked_pow {
+    () => {
+        pub const fn checked_pow(self, exp: u32) -> Option<Self> {
+            if exp == 0 {
+                return Some(Self::ONE);
+            }
+            if self.is_zero() {
+                return Some(Self::ZERO);
+            }
+            let mut y = Self::ONE;
+            let mut n = exp;
+            let mut x = self;
+
+            macro_rules! checked_mul {
+                ($var: ident) => {
+                    let prod = x.checked_mul($var);
+                    match prod {
+                        Some(prod) => {
+                            $var = prod;
+                        },
+                        None => {
+                            return None;
+                        }
+                    };
+                }
+            }
+
+            while n > 1 {
+                if n & 1 == 0 {
+                    checked_mul!(x);
+                    n >>= 1;
+                } else {
+                    checked_mul!(y);
+                    checked_mul!(x);
+                    n -= 1;
+                    n >>= 1;
+                }
+            }
+            x.checked_mul(y)
+        }
+    }
+}
+
+macro_rules! overflowing_pow {
+    () => {
+        pub const fn overflowing_pow(self, exp: u32) -> (Self, bool) {
+            if exp == 0 {
+                return (Self::ONE, false);
+            }
+            if self.is_zero() {
+                return (Self::ZERO, false);
+            }
+            let mut y = Self::ONE;
+            let mut n = exp;
+            let mut x = self;
+            let mut overflow = false;
+    
+            macro_rules! overflowing_mul {
+                ($var: ident) => {
+                    let (prod, o) = x.overflowing_mul($var);
+                    $var = prod;
+                    if o {
+                        overflow = o;
+                    }
+                }
+            }
+    
+            while n > 1 {
+                if n & 1 == 0 {
+                    overflowing_mul!(x);
+                    n >>= 1;
+                } else {
+                    overflowing_mul!(y);
+                    overflowing_mul!(x);
+                    n -= 1;
+                    n >>= 1;
+                }
+            }
+            let (prod, o) = x.overflowing_mul(y);
+            if o {
+                overflow = o;
+            }
+            (prod, overflow)
+        }
+    }
 }
 
 macro_rules! expect {
@@ -77,15 +210,7 @@ macro_rules! shift_impl {
                 }
             }
 
-            impl<const N: usize> $assign_tr<$rhs> for $Struct<N> {
-                fn $assign_method(&mut self, rhs: $rhs) {
-                    *self = self.$method(rhs);
-                }
-            }
-
             op_ref_impl!($tr<$rhs> for $Struct, $method);
-
-            assign_ref_impl!($assign_tr<$rhs> for $Struct, $assign_method);
         )*
     }
 }
@@ -102,15 +227,7 @@ macro_rules! try_shift_impl {
                 }
             }
 
-            impl<const N: usize> $assign_tr<$rhs> for $Struct<N> {
-                fn $assign_method(&mut self, rhs: $rhs) {
-                    *self = self.$method(rhs);
-                }
-            }
-
             op_ref_impl!($tr<$rhs> for $Struct, $method);
-
-            assign_ref_impl!($assign_tr<$rhs> for $Struct, $assign_method);
         )*
     }
 }
@@ -150,18 +267,6 @@ macro_rules! shift_self_impl {
                 (*self).$method(rhs)
             }
         }
-
-        impl<const N: usize, const M: usize> $assign_tr<$rhs<M>> for $Struct<N> {
-            fn $assign_method(&mut self, rhs: $rhs<M>) {
-                *self = self.$method(rhs);
-            }
-        }
-
-        impl<const N: usize, const M: usize> $assign_tr<&$rhs<M>> for $Struct<N> {
-            fn $assign_method(&mut self, rhs: &$rhs<M>) {
-                *self = self.$method(*rhs);
-            }
-        }
     }
 }
 
@@ -194,8 +299,8 @@ macro_rules! all_shift_impls {
 #[allow(unused)]
 macro_rules! test {
     {
-        big: $big_type: tt,
-        primitive: $primitive: tt,
+        big: $big_type: ty,
+        primitive: $primitive: ty,
         test_name: $test_name: ident,
         method: {
             $($method: ident ($($arg: expr), *) ;) *
@@ -212,8 +317,8 @@ macro_rules! test {
         }
     };
     {
-        big: $big_type: tt,
-        primitive: $primitive: tt,
+        big: $big_type: ty,
+        primitive: $primitive: ty,
         test_name: $test_name: ident,
         method: {
             $($method: ident ($($arg: expr), *) ;) *
@@ -224,7 +329,7 @@ macro_rules! test {
         fn $test_name() {
             $(
                 let prim_result = <$primitive>::$method(
-                    $($arg.into()),*
+                    $($arg), *
                 );
                 let big_result = <$big_type>::$method(
                     $($arg.into()), *
@@ -235,9 +340,8 @@ macro_rules! test {
     }
 }
 
-pub mod uint;
+mod uint;
 mod int;
-mod iint;
 mod tryops;
 mod sign;
 mod main;
@@ -246,12 +350,13 @@ mod digit;
 //mod bound;
 mod int_test;
 mod benchmarks;
+mod error;
 
-pub use iint::BIint;
 pub use sign::Sign;
 pub use uint::BUint;
 pub use int::Bint;
 pub use int_test::BintTest;
+pub use error::*;
 
 #[allow(unused)]
 type I128 = int::Bint::<{(128 / digit::BITS) - 1}>;
@@ -267,7 +372,3 @@ pub type U1024 = BUint::<{1024 / digit::BITS}>;
 pub type U2048 = BUint::<{2048 / digit::BITS}>;
 pub type U4096 = BUint::<{4096 / digit::BITS}>;
 pub type U8192 = BUint::<{8192 / digit::BITS}>;
-
-pub type ParseIntError = &'static str;
-pub type TryFromIntError = &'static str;
-pub type OperationError = &'static str;

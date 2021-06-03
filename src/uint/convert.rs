@@ -3,6 +3,7 @@ use num_traits::ToPrimitive;
 use core::convert::{TryFrom, TryInto};
 use core::str::FromStr;
 use crate::{TryFromIntError, ParseIntError};
+use crate::error::TryFromErrorReason::*;
 use crate::digit;
 
 impl<const N: usize> FromStr for BUint<N> {
@@ -49,7 +50,11 @@ impl<const N: usize> TryFrom<f64> for BUint<N> {
 
     fn try_from(f: f64) -> Result<Self, Self::Error> {
         if !f.is_finite() {
-            return Err("not finite");
+            return Err(TryFromIntError {
+                from: "f64",
+                to: "BUint",
+                reason: NotFinite,
+            });
         }
         let f = f.trunc();
         if f == 0.0 {
@@ -59,13 +64,21 @@ impl<const N: usize> TryFrom<f64> for BUint<N> {
         use core::cmp::Ordering;
         let (mantissa, exponent, sign) = FloatCore::integer_decode(f);
         if sign == -1 {
-            return Err("negative float");
+            return Err(TryFromIntError {
+                from: "f64",
+                to: "BUint",
+                reason: Negative,
+            });
         }
         let out = Self::from(mantissa);
         match exponent.cmp(&0) {
             Ordering::Greater => {
                 if out.bits() + exponent as usize >= Self::BITS {
-                    Err("too large")
+                    Err(TryFromIntError {
+                        from: "f64",
+                        to: "BUint",
+                        reason: TooLarge,
+                    })
                 } else {
                     Ok(out << exponent)
                 }
@@ -90,7 +103,14 @@ macro_rules! try_from_iint {
             type Error = TryFromIntError;
 
             fn try_from(int: $iint) -> Result<Self, Self::Error> {
-                let uint: $uint = int.try_into().ok().ok_or("Can't convert negative integer to uint")?;
+                let uint: $uint = int
+                    .try_into()
+                    .ok()
+                    .ok_or(TryFromIntError {
+                        from: stringify!($iint),
+                        to: "BUint",
+                        reason: Negative,
+                    })?;
                 Ok(Self::from(uint))
             }
         })*
@@ -110,37 +130,13 @@ impl<const N: usize> From<u128> for BUint<N> {
     }
 }
 
-macro_rules! impl_try_int {
-    ($int: tt, $method: ident, $err: expr) => {
-        impl<const N: usize> TryFrom<BUint<N>> for $int {
-            type Error = TryFromIntError;
-        
-            fn try_from(uint: BUint<N>) -> Result<Self, Self::Error> {
-                uint.$method().ok_or($err)
-            }
-        }
-    }
-}
-
-impl_try_int!(u128, to_u128, "BUint is too large to cast to u128");
-impl_try_int!(u64, to_u64, "BUint is too large to cast to u64");
-impl_try_int!(usize, to_usize, "BUint is too large to cast to usize");
-impl_try_int!(u32, to_u32, "BUint is too large to cast to u32");
-impl_try_int!(u16, to_u16, "BUint is too large to cast to u16");
-impl_try_int!(u8, to_u8, "BUint is too large to cast to u8");
-
-impl_try_int!(i128, to_i128, "BUint is too large to cast to i128");
-impl_try_int!(i64, to_i64, "BUint is too large to cast to i64");
-impl_try_int!(isize, to_isize, "BUint is too large to cast to isize");
-impl_try_int!(i32, to_i32, "BUint is too large to cast to i32");
-impl_try_int!(i16, to_i16, "BUint is too large to cast to i16");
-impl_try_int!(i8, to_i8, "BUint is too large to cast to i8");
+all_try_int_impls!(BUint);
 
 impl<const N: usize> TryFrom<BUint<N>> for f32 {
     type Error = TryFromIntError;
 
     fn try_from(uint: BUint<N>) -> Result<Self, Self::Error> {
-        Ok(uint.to_f32().unwrap())
+        Ok(uint.as_f32())
     }
 }
 
@@ -148,7 +144,7 @@ impl<const N: usize> TryFrom<BUint<N>> for f64 {
     type Error = TryFromIntError;
 
     fn try_from(uint: BUint<N>) -> Result<Self, Self::Error> {
-        Ok(uint.to_f64().unwrap())
+        Ok(uint.as_f64())
     }
 }
 
@@ -189,7 +185,7 @@ mod tests {
         converter: |result| {
             match result {
                 Ok(u) => Ok(U128::from(u)),
-                Err(_) => Err("")
+                Err(_) => unreachable!()
             }
         }
     }

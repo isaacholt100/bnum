@@ -3,8 +3,9 @@ use num_traits::ToPrimitive;
 use core::convert::TryFrom;
 use core::str::FromStr;
 use crate::{TryFromIntError, ParseIntError};
-use crate::digit::{Digit, SignedDigit, self};
+use crate::digit::{Digit, self};
 use crate::uint::BUint;
+use crate::error::TryFromErrorReason::*;
 
 impl<const N: usize> FromStr for BintTest<N> {
     type Err = ParseIntError;
@@ -67,10 +68,48 @@ impl<const N: usize> From<bool> for BintTest<N> {
     }
 }
 
-impl<const N: usize> TryFrom<BintTest<N>> for u32 {
+all_try_int_impls!(BintTest);
+
+impl<const N: usize> TryFrom<BUint<N>> for BintTest<N> {
     type Error = TryFromIntError;
 
-    fn try_from(int: BintTest<N>) -> Result<Self, Self::Error> {
-        todo!()
+    fn try_from(u: BUint<N>) -> Result<Self, Self::Error> {
+        if u.leading_ones() != 0 {
+            Err(TryFromIntError {
+                from: "BUint",
+                to: "BintTest",
+                reason: TooLarge,   
+            })
+        } else {
+            Ok(Self {
+                uint: u,
+            })
+        }
+    }
+}
+
+impl<const N: usize> TryFrom<f32> for BintTest<N> {
+    type Error = TryFromIntError;
+
+    fn try_from(f: f32) -> Result<Self, Self::Error> {
+        if f < 0.0 {
+            let x = BUint::try_from(-f)?;
+            Ok(-Self::from_buint(x))
+        } else {
+            Ok(Self::from_buint(BUint::try_from(f)?))
+        }
+    }
+}
+
+impl<const N: usize> TryFrom<f64> for BintTest<N> {
+    type Error = TryFromIntError;
+
+    fn try_from(f: f64) -> Result<Self, Self::Error> {
+        if f < 0.0 {
+            let x = BUint::try_from(-f)?;
+            Ok(-Self::from_buint(x))
+        } else {
+            Ok(Self::from_buint(BUint::try_from(f)?))
+        }
     }
 }

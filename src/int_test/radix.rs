@@ -1,8 +1,9 @@
 use super::BintTest;
-use crate::ParseIntError;
-use crate::digit::{self, Digit, DoubleDigit};
+use crate::digit;
 use crate::uint::BUint;
-use core::iter::Iterator;
+use alloc::string::String;
+use alloc::vec::Vec;
+use crate::error::{ParseIntError, ParseIntErrorReason::*};
 
 const BITS: u8 = digit::BITS as u8;
 
@@ -38,18 +39,21 @@ impl<const N: usize> BintTest<N> {
             src = &src[1..];
             negative = true;
             if src.starts_with('+') {
-                return Err("invalid digit");
+                return Err(ParseIntError {
+                    reason: InvalidDigit,
+                });
             }
         }
         let uint = BUint::from_str_radix(src, radix)?;
         if uint.bit(Self::BITS - 1) {
-            Err("too big")
+            Err(ParseIntError {
+                reason: TooLarge,
+            })
         } else {
             if negative {
                 let abs_value = Self {
                     uint,
                 };
-                use std::ops::Neg;
                 Ok(abs_value.neg())
             } else {
                 Ok(Self {
@@ -58,8 +62,13 @@ impl<const N: usize> BintTest<N> {
             }
         }
     }
+    // Might change so it outputs a '-' sign if necessary instead of two's complement representation
     pub fn to_str_radix(&self, radix: u32) -> String {
-        self.uint.to_str_radix(radix)
+        if self.is_negative() {
+            format!("-{}", self.unsigned_abs().to_str_radix(radix))
+        } else {
+            self.uint.to_str_radix(radix)
+        }
     }
     pub fn to_radix_be(&self, radix: u32) -> Vec<u8> {
         self.uint.to_radix_be(radix)
@@ -78,7 +87,7 @@ mod tests {
         method: {
             from_str_radix("-3459dsdhtert98345", 31u32);
         },
-        converter: |result: Result<i128, std::num::ParseIntError>| -> Result<I128Test, &str> {
+        converter: |result: Result<i128, core::num::ParseIntError>| -> Result<I128Test, crate::ParseIntError> {
             Ok(result.unwrap().into())
         }
     }

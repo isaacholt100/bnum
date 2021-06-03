@@ -1,36 +1,164 @@
 use super::BintTest;
 use crate::arch;
-use crate::digit::SignedDigit;
+use crate::digit::{SignedDigit, Digit};
 
 impl<const N: usize> BintTest<N> {
     pub const fn overflowing_add(self, rhs: Self) -> (Self, bool) {
-        let (uint, overflow) = self.uint.overflowing_add(rhs.uint);
-        let out = Self {
-            uint,
-        };
-        (out, (self.is_negative() == rhs.is_negative()) && out.is_negative() != self.is_negative())
+        let mut digits = [0; N];
+        let mut carry = 0u8;
+
+        let self_digits = self.digits();
+        let rhs_digits = rhs.digits();
+
+        let mut i = 0;
+        while i < Self::N_MINUS_1 {
+            let (sum, c) = arch::add_carry_unsigned(carry, self_digits[i], rhs_digits[i]);
+            digits[i] = sum;
+            carry = c;
+            i += 1;
+        }
+        let (sum, carry) = arch::add_carry_signed(
+            carry,
+            self_digits[Self::N_MINUS_1] as SignedDigit,
+            rhs_digits[Self::N_MINUS_1] as SignedDigit
+        );
+        digits[Self::N_MINUS_1] = sum as Digit;
+
+        (Self::from_digits(digits), carry != 0)
     }
     pub const fn overflowing_sub(self, rhs: Self) -> (Self, bool) {
-        let (uint, overflow) = self.uint.overflowing_sub(rhs.uint);
+        let mut digits = [0; N];
+        let mut borrow = 0u8;
+
+        let self_digits = self.digits();
+        let rhs_digits = rhs.digits();
+
+        let mut i = 0;
+        while i < Self::N_MINUS_1 {
+            let (sub, b) = arch::sub_borrow_unsigned(borrow, self_digits[i], rhs_digits[i]);
+            digits[i] = sub;
+            borrow = b;
+            i += 1;
+        }
+        let (sub, borrow) = arch::sub_borrow_signed(
+            borrow,
+            self_digits[Self::N_MINUS_1] as SignedDigit,
+            rhs_digits[Self::N_MINUS_1] as SignedDigit
+        );
+        digits[Self::N_MINUS_1] = sub as Digit;
+
+        (Self::from_digits(digits), borrow)
+    }
+    pub const fn overflowing_mul(self, rhs: Self) -> (Self, bool) {
+        let (uint, overflow) = self.unsigned_abs().overflowing_mul(rhs.unsigned_abs());
         let out = Self {
             uint,
         };
-        (out, (self.is_positive() && rhs.is_negative() && out.is_negative()) || (self.is_negative() && rhs.is_positive() && out.is_positive()))
+        if self.is_negative() && rhs.is_negative() {
+            (out, overflow || out.is_negative())
+        } else {
+            let out = out.neg();
+            (out, overflow || out.is_positive())
+        }
     }
-    pub const fn overflowing_mul(self, rhs: Self) -> (Self, bool) {
-        todo!()
+    const fn div_rem_unchecked(self, rhs: Self) -> (Self, Self) {
+        let (div, rem) = self.unsigned_abs().div_rem_unchecked(rhs.unsigned_abs());
+        if self.is_negative() {
+            if rhs.is_negative() {
+                let div = Self {
+                    uint: div,
+                };
+                let rem = Self {
+                    uint: rem,
+                };
+                (div, rem.neg())
+            } else {
+                let div = Self {
+                    uint: div,
+                };
+                let rem = Self {
+                    uint: rem,
+                };
+                (div.neg(), rem.neg())
+            }
+        } else {
+            if rhs.is_negative() {
+                let div = Self {
+                    uint: div,
+                };
+                let rem = Self {
+                    uint: rem,
+                };
+                (div.neg(), rem)
+            } else {
+                let div = Self {
+                    uint: div,
+                };
+                let rem = Self {
+                    uint: rem,
+                };
+                (div, rem)
+            }
+        }
     }
     pub const fn overflowing_div(self, rhs: Self) -> (Self, bool) {
-        todo!()
+        if self.eq(&Self::MIN) && rhs.eq(&Self::MINUS_ONE) {
+            (self, true)
+        } else {
+            if rhs.is_zero() {
+                div_zero!()
+            }
+            (self.div_rem_unchecked(rhs).0, false)
+        }
     }
     pub const fn overflowing_div_euclid(self, rhs: Self) -> (Self, bool) {
-        todo!()
+        if self.eq(&Self::MIN) && rhs.eq(&Self::MINUS_ONE) {
+            (self, true)
+        } else {
+            if rhs.is_zero() {
+                div_zero!()
+            }
+            let (div, rem) = self.div_rem_unchecked(rhs);
+            if self.is_negative() {
+                if rem.is_zero() {
+                    (div, false)
+                } else {
+                    let div = if div.is_negative() {
+                        div.sub(Self::ONE)
+                    } else {
+                        div.add(Self::ONE)
+                    };
+                    (div, false)
+                }
+            } else {
+                (div, false)
+            }
+        }
     }
     pub const fn overflowing_rem(self, rhs: Self) -> (Self, bool) {
-        todo!()
+        if self.eq(&Self::MIN) && rhs.eq(&Self::MINUS_ONE) {
+            (self, true)
+        } else {
+            if rhs.is_zero() {
+                div_zero!()
+            }
+            (self.div_rem_unchecked(rhs).1, false)
+        }
     }
     pub const fn overflowing_rem_euclid(self, rhs: Self) -> (Self, bool) {
-        todo!()
+        if self.eq(&Self::MIN) && rhs.eq(&Self::MINUS_ONE) {
+            (self, true)
+        } else {
+            if rhs.is_zero() {
+                rem_zero!()
+            }
+            let rem = self.div_rem_unchecked(rhs).1;
+            if rem.is_negative() {
+                (rem.add(rhs), false)
+            } else {
+                (rem, false)
+            }
+        }
     }
     pub const fn overflowing_neg(self) -> (Self, bool) {
         if self.is_zero() {
@@ -54,10 +182,44 @@ impl<const N: usize> BintTest<N> {
             (self, false)
         }
     }
-    pub const fn overflowing_pow(self, exp: u32) -> (Self, bool) {
-        todo!()
+    overflowing_pow!();
+}
+
+use core::ops::{Div, Rem};
+
+impl<const N: usize> Div for BintTest<N> {
+    type Output = Self;
+
+    fn div(self, rhs: Self) -> Self {
+        if self.eq(&Self::MIN) && rhs.eq(&Self::MINUS_ONE) {
+            panic!("attempt to divide with overflow")
+        } else {
+            if rhs.is_zero() {
+                div_zero!()
+            }
+            self.div_rem_unchecked(rhs).0
+        }
     }
 }
+
+op_ref_impl!(Div<BintTest<N>> for BintTest, div);
+
+impl<const N: usize> Rem for BintTest<N> {
+    type Output = Self;
+
+    fn rem(self, rhs: Self) -> Self {
+        if self.eq(&Self::MIN) && rhs.eq(&Self::MINUS_ONE) {
+            panic!("attempt to calculate remainder with overflow")
+        } else {
+            if rhs.is_zero() {
+                rem_zero!()
+            }
+            self.div_rem_unchecked(rhs).1
+        }
+    }
+}
+
+op_ref_impl!(Rem<BintTest<N>> for BintTest, rem);
 
 #[cfg(test)]
 mod tests {
@@ -68,29 +230,11 @@ mod tests {
     }
 
     test_signed! {
-        test_name: test_overflowing_add_1,
+        test_name: test_overflowing_add,
         method: {
             overflowing_add(-934875934758937458934734533455i128, 347539475983475893475893475973458i128);
-        },
-        converter: converter
-    }
-    test_signed! {
-        test_name: test_overflowing_add_2,
-        method: {
             overflowing_add(i128::MAX, i128::MAX);
-        },
-        converter: converter
-    }
-    test_signed! {
-        test_name: test_overflowing_add_3,
-        method: {
             overflowing_add(934875934758937458934734533455i128, -3475395983475893475893475973458i128);
-        },
-        converter: converter
-    }
-    test_signed! {
-        test_name: test_overflowing_add_4,
-        method: {
             overflowing_add(-1i128, 1i128);
         },
         converter: converter
@@ -98,7 +242,7 @@ mod tests {
     test_signed! {
         test_name: test_overflowing_neg,
         method: {
-            overflowing_neg(i64::MIN);
+            overflowing_neg(i64::MIN as i128);
         },
         converter: converter
     }

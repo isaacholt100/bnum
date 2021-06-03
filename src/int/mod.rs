@@ -317,15 +317,6 @@ impl<const N: usize> Bint<N> {
     pub fn from_radix_le(buf: &[u8], radix: u32) -> Option<Self> {
         todo!()
     }
-    pub fn to_str_radix(&self, radix: u32) -> String {
-        todo!()
-    }
-    pub fn to_radix_be(&self, radix: u32) -> Vec<u8> {
-        todo!()
-    }
-    pub fn to_radix_le(&self, radix: u32) -> Vec<u8> {
-        todo!()
-    }
     pub const fn modpow(&self, exp: &Self, modulus: &Self) -> Self {
         todo!()
     }

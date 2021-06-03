@@ -188,11 +188,6 @@ macro_rules! check_zero_or_one {
 }
 
 impl<const N: usize> BUint<N> {
-    pub const fn power_of_two(power: usize) -> Self {
-        let mut out = Self::ZERO;
-        out.digits[power >> digit::BIT_SHIFT] = 1 << (power & (digit::BITS - 1));
-        out
-    }
     fn fixpoint<F>(mut self, max_bits: usize, f: F) -> Self
     where F: Fn(&Self) -> Self {
         let mut xn = f(&self);
@@ -332,4 +327,41 @@ impl<const N: usize> Zero for BUint<N> {
 #[cfg(test)]
 mod tests {
     use crate::U128;
+    use super::*;
+
+    #[test]
+    fn test_sqrt() {
+        let u = 23984723947892374973985479u128;
+        assert_eq!(U128::from(u).sqrt(), u.sqrt().into());
+
+        let u = 9345878u128.pow(2);
+        assert_eq!(U128::from(u).sqrt(), u.sqrt().into());
+
+        let u = 1u128;
+        assert_eq!(U128::from(u).sqrt(), u.sqrt().into());
+    }
+
+    #[test]
+    fn test_cbrt() {
+        let u = 253450947984756967398457893475u128;
+        assert_eq!(U128::from(u).cbrt(), u.cbrt().into());
+
+        let u = 34345u128.pow(3);
+        assert_eq!(U128::from(u).cbrt(), u.cbrt().into());
+
+        let u = 0u128;
+        assert_eq!(U128::from(u).cbrt(), u.cbrt().into());
+    }
+
+    #[test]
+    fn test_nth_root() {
+        let u = 98234759704698792745469879u128;
+        assert_eq!(U128::from(u).nth_root(5), u.nth_root(5).into());
+
+        let u = 563u128.pow(7);
+        assert_eq!(U128::from(u).nth_root(7), u.nth_root(7).into());
+
+        let u = u + 5;
+        assert_eq!(U128::from(u).nth_root(7), u.nth_root(7).into());
+    }
 }

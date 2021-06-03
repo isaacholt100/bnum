@@ -91,7 +91,7 @@ mod tests {
     }
     test_signed! {
         test_name: test_overflowing_neg,
-        method: overflowing_neg(i64::MIN),
+        method: overflowing_neg(i64::MIN as i128),
         converter: converter
     }
 }

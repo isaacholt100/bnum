@@ -42,7 +42,5 @@ impl<const N: usize> BintTest<N> {
     pub const fn checked_abs(self) -> Option<Self> {
         tuple_to_option(self.overflowing_abs())
     }
-    pub const fn checked_pow(self, exp: u32) -> Option<Self> {
-        tuple_to_option(self.overflowing_pow(exp))
-    }
+    checked_pow!();
 }

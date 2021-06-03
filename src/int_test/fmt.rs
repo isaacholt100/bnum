@@ -1,5 +1,5 @@
 use super::BintTest;
-use core::fmt::{Binary, Debug, Display, Formatter, LowerExp, LowerHex, Octal, UpperExp, UpperHex, self};
+use core::fmt::{Binary, Display, Formatter, LowerExp, LowerHex, Octal, UpperExp, UpperHex, self};
 
 macro_rules! fmt {
     ($format: expr, $pad: expr, $prefix: expr, $trait: tt) => {

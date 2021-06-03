@@ -64,7 +64,7 @@ impl<const N: usize> BUint<N> {
     }
     const fn div_rem_core(self, v: Self, n: usize, m: usize) -> (Self, Self) {
         let shift = v.digits[n - 1].leading_zeros();
-        let v = v.unchecked_shl(shift);
+        let v = super::unchecked_shl(v, shift);
 
         debug_assert!(v.bit(N * digit::BITS - 1));
         debug_assert!(n + m <= N);
@@ -221,7 +221,7 @@ impl<const N: usize> BUint<N> {
         let remainder = u.to_uint(shift);
         (q, remainder)
     }
-    const fn div_rem_unchecked(self, rhs: Self) -> (Self, Self) {
+    pub const fn div_rem_unchecked(self, rhs: Self) -> (Self, Self) {
         if self.is_zero() {
             return (Self::ZERO, Self::ZERO);
         }
@@ -247,7 +247,7 @@ impl<const N: usize> BUint<N> {
     }
     pub const fn div_rem(self, rhs: Self) -> (Self, Self) {
         if rhs.is_zero() {
-            panic!("attempt to divide by zero")
+            div_zero!()
         } else {
             self.div_rem_unchecked(rhs)
         }
@@ -283,54 +283,17 @@ impl<const N: usize> BUint<N> {
         if rhs as usize >= Self::BITS {
             None
         } else {
-            Some(self.unchecked_shl(rhs))
+            Some(super::unchecked_shl(self, rhs))
         }
     }
     pub const fn checked_shr(self, rhs: u32) -> Option<Self> {
         if rhs as usize >= Self::BITS {
             None
         } else {
-            Some(self.unchecked_shr(rhs))
+            Some(super::unchecked_shr(self, rhs))
         }
     }
-    pub const fn checked_pow(self, exp: u32) -> Option<Self> {
-        if exp == 0 {
-            return Some(Self::ONE);
-        }
-        if self.is_zero() {
-            return Some(Self::ZERO);
-        }
-        let mut y = Self::ONE;
-        let mut n = exp;
-        let mut x = self;
-
-        macro_rules! checked_mul {
-            ($var: ident) => {
-                let prod = x.checked_mul($var);
-                match prod {
-                    Some(prod) => {
-                        $var = prod;
-                    },
-                    None => {
-                        return None;
-                    }
-                };
-            }
-        }
-
-        while n > 1 {
-            if n & 1 == 0 {
-                checked_mul!(x);
-                n >>= 1;
-            } else {
-                checked_mul!(y);
-                checked_mul!(x);
-                n -= 1;
-                n >>= 1;
-            }
-        }
-        x.checked_mul(y)
-    }
+    checked_pow!();
 }
 
 #[cfg(test)]

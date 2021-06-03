@@ -1,6 +1,7 @@
 use super::BUint;
 use crate::digit;
 use core::fmt::{Binary, Display, Formatter, LowerExp, LowerHex, Octal, UpperExp, UpperHex, self};
+use alloc::string::String;
 
 macro_rules! fmt {
     ($format: expr, $format_pad: expr, $pad: expr, $prefix: expr) => {
@@ -49,7 +50,6 @@ macro_rules! exp_fmt {
             }
             let exp = decimal_str.len() - 1;
             let decimal_str = decimal_str.trim_end_matches('0');
-            println!("{}", decimal_str);
             if decimal_str.len() == 1 {
                 write!(f, "{}{}{}", &decimal_str[0..1], $e, exp)
             } else {

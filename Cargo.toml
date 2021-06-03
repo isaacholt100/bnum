@@ -12,3 +12,4 @@ num-traits = "0.2.14"
 serde = { version = "1.0.126", features = ["derive"] }
 serde-big-array = { version = "0.3.2", features = ["const-generics"] }
 num-bigint = "0.4.0"
+lazy_static = "1.4.0"
