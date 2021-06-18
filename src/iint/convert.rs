@@ -1,4 +1,4 @@
-use super::BintTest;
+use super::BIint;
 use num_traits::ToPrimitive;
 use core::convert::TryFrom;
 use core::str::FromStr;
@@ -6,8 +6,9 @@ use crate::{TryFromIntError, ParseIntError};
 use crate::digit::{Digit, self};
 use crate::uint::BUint;
 use crate::error::TryFromErrorReason::*;
+use crate::macros;
 
-impl<const N: usize> FromStr for BintTest<N> {
+impl<const N: usize> FromStr for BIint<N> {
     type Err = ParseIntError;
 
     fn from_str(src: &str) -> Result<Self, Self::Err> {
@@ -17,7 +18,7 @@ impl<const N: usize> FromStr for BintTest<N> {
 
 macro_rules! from_iint {
     ($($from: tt -> $as: ty), *) => {
-        $(impl<const N: usize> From<$from> for BintTest<N> {
+        $(impl<const N: usize> From<$from> for BIint<N> {
             fn from(int: $from) -> Self {
                 (int as i128).into()
             }
@@ -27,7 +28,7 @@ macro_rules! from_iint {
 
 from_iint!(i8 -> u8, i16 -> u16, i32 -> u32, isize -> usize, i64 -> u64);
 
-impl<const N: usize> From<i128> for BintTest<N> {
+impl<const N: usize> From<i128> for BIint<N> {
     fn from(int: i128) -> Self {
         if int < 0 {
             let mut digits = [0; N];
@@ -46,7 +47,7 @@ impl<const N: usize> From<i128> for BintTest<N> {
 
 macro_rules! from_uint {
     ($($from: tt), *) => {
-        $(impl<const N: usize> From<$from> for BintTest<N> {
+        $(impl<const N: usize> From<$from> for BIint<N> {
             fn from(int: $from) -> Self {
                 Self {
                     uint: int.into(),
@@ -58,7 +59,7 @@ macro_rules! from_uint {
 
 from_uint!(u8, u16, u32, usize, u64, u128);
 
-impl<const N: usize> From<bool> for BintTest<N> {
+impl<const N: usize> From<bool> for BIint<N> {
     fn from(small: bool) -> Self {
         if small {
             Self::ONE
@@ -68,16 +69,16 @@ impl<const N: usize> From<bool> for BintTest<N> {
     }
 }
 
-all_try_int_impls!(BintTest);
+macros::all_try_int_impls!(BIint);
 
-impl<const N: usize> TryFrom<BUint<N>> for BintTest<N> {
+impl<const N: usize> TryFrom<BUint<N>> for BIint<N> {
     type Error = TryFromIntError;
 
     fn try_from(u: BUint<N>) -> Result<Self, Self::Error> {
         if u.leading_ones() != 0 {
             Err(TryFromIntError {
                 from: "BUint",
-                to: "BintTest",
+                to: "BIint",
                 reason: TooLarge,   
             })
         } else {
@@ -88,7 +89,7 @@ impl<const N: usize> TryFrom<BUint<N>> for BintTest<N> {
     }
 }
 
-impl<const N: usize> TryFrom<f32> for BintTest<N> {
+impl<const N: usize> TryFrom<f32> for BIint<N> {
     type Error = TryFromIntError;
 
     fn try_from(f: f32) -> Result<Self, Self::Error> {
@@ -101,7 +102,7 @@ impl<const N: usize> TryFrom<f32> for BintTest<N> {
     }
 }
 
-impl<const N: usize> TryFrom<f64> for BintTest<N> {
+impl<const N: usize> TryFrom<f64> for BIint<N> {
     type Error = TryFromIntError;
 
     fn try_from(f: f64) -> Result<Self, Self::Error> {

@@ -1,5 +1,6 @@
 use super::BUint;
 use core::ops::{Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Div, DivAssign, Mul, MulAssign, Not, Rem, RemAssign, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign};
+use crate::macros::{expect, op_ref_impl, all_shift_impls};
 
 impl<const N: usize> BUint<N> {
     pub const fn add(self, rhs: Self) -> Self {
@@ -203,7 +204,7 @@ impl<T, const N: usize> ShrAssign<T> for BUint<N> where Self: Shr<T, Output = Se
     }
 }
 
-use crate::BintTest;
+use crate::iint::BIint;
 
 all_shift_impls!(BUint);
 

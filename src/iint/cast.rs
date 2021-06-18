@@ -1,9 +1,9 @@
-use super::BintTest;
+use super::BIint;
 use crate::uint::BUint;
 use crate::uint;
 use crate::digit::Digit;
 
-impl<const N: usize> BintTest<N> {
+impl<const N: usize> BIint<N> {
     uint_method! {
         fn as_u8(&self) -> u8,
         fn as_u16(&self) -> u16,
@@ -16,9 +16,7 @@ impl<const N: usize> BintTest<N> {
         fn as_i32(&self) -> i32,
         fn as_i64(&self) -> i64,
         fn as_i128(&self) -> i128,
-        fn as_isize(&self) -> isize//,
-        //fn as_f32(&self) -> f32,
-        //fn as_f64(&self) -> f64
+        fn as_isize(&self) -> isize
     }
 
     pub fn as_f32(&self) -> f32 {
@@ -51,8 +49,8 @@ impl<const N: usize> BintTest<N> {
             uint::cast_down::<N, M>(&self.uint)
         }
     }
-    pub const fn as_biint<const M: usize>(&self) -> BintTest<M> where [Digit; M - N]: Sized {
-        BintTest {
+    pub const fn as_biint<const M: usize>(&self) -> BIint<M> where [Digit; M - N]: Sized {
+        BIint {
             uint: self.as_buint()
         }
     }

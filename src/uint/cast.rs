@@ -1,6 +1,6 @@
 use super::BUint;
 use crate::digit::{self, Digit};
-use crate::BintTest;
+use crate::BIint;
 use core::mem::MaybeUninit;
 
 macro_rules! as_int {
@@ -166,8 +166,8 @@ impl<const N: usize> BUint<N> {
         }
     }
 
-    pub const fn as_biint<const M: usize>(&self) -> BintTest<M> where [Digit; M - N]: Sized {
-        BintTest::from_buint(self.as_buint())
+    pub const fn as_biint<const M: usize>(&self) -> BIint<M> where [Digit; M - N]: Sized {
+        BIint::from_buint(self.as_buint())
     }
 }
 

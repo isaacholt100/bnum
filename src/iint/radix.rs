@@ -1,11 +1,8 @@
-use super::BintTest;
-use crate::digit;
+use super::BIint;
 use crate::uint::BUint;
 use alloc::string::String;
 use alloc::vec::Vec;
 use crate::error::{ParseIntError, ParseIntErrorReason::*};
-
-const BITS: u8 = digit::BITS as u8;
 
 macro_rules! assert_range {
     ($radix: expr, $max: expr) => {
@@ -13,7 +10,7 @@ macro_rules! assert_range {
     }
 }
 
-impl<const N: usize> BintTest<N> {
+impl<const N: usize> BIint<N> {
     pub fn parse_bytes(buf: &[u8], radix: u32) -> Option<Self> {
         let s = core::str::from_utf8(buf).ok()?;
         Self::from_str_radix(s, radix).ok()
@@ -80,14 +77,14 @@ impl<const N: usize> BintTest<N> {
 
 #[cfg(test)]
 mod tests {
-    use crate::I128Test;
+    use crate::I128;
 
     test_signed! {
         test_name: test_from_str_radix,
         method: {
             from_str_radix("-3459dsdhtert98345", 31u32);
         },
-        converter: |result: Result<i128, core::num::ParseIntError>| -> Result<I128Test, crate::ParseIntError> {
+        converter: |result: Result<i128, core::num::ParseIntError>| -> Result<I128, crate::ParseIntError> {
             Ok(result.unwrap().into())
         }
     }

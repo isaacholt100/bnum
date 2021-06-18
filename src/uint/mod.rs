@@ -1,6 +1,5 @@
-use crate::arch;
-//use crate::{TryFromIntError};
 use crate::digit::{Digit, self};
+use crate::macros::expect;
 
 #[allow(unused)]
 macro_rules! test_unsigned {
@@ -53,7 +52,6 @@ use serde::{Serialize, Deserialize};
 mod cmp;
 mod convert;
 mod ops;
-mod tryops;
 mod numtraits;
 mod overflow;
 mod checked;
@@ -803,28 +801,6 @@ impl<const N: usize> BUint<N> {
             i += 1;
         }
         index
-    }
-    fn add_mut(self, rhs: &Self, out: &mut Self) -> Result<(), &'static str> {
-        let mut carry = 0u8;
-        for i in 0..N {
-            carry = arch::adc(carry, self.digits[i], rhs.digits[i], &mut out.digits[i]);
-        }
-        if carry != 0 {
-            Err("Overflow")
-        } else {
-            Ok(())
-        }
-    }
-    fn sub_mut(self, rhs: &Self, out: &mut Self) -> Result<(), &'static str> {
-        let mut borrow = 0u8;
-        for i in 0..N {
-            borrow = arch::sbb(borrow, self.digits[i], rhs.digits[i], &mut out.digits[i]);
-        }
-        if borrow != 0 {
-            Err("Underflow")
-        } else {
-            Ok(())
-        }
     }
 }
 

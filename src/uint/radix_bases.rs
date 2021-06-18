@@ -517,3 +517,15 @@ pub static BASES_64: &[(u64, usize)] = &[
     (17878103347812890625, 8), // 255
     (0, 0), // 256
 ];
+
+use crate::digit::Digit;
+pub fn get_radix_base(radix: u32, bits: u8) -> (Digit, usize) {
+    match bits {
+        32 => {
+            let (base, power) = super::radix_bases::BASES_32[radix as usize];
+            (base as Digit, power)
+        },
+        64 => super::radix_bases::BASES_64[radix as usize],
+        _ => unreachable!(),
+    }
+}

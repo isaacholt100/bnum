@@ -1,6 +1,6 @@
-use super::BintTest;
+use super::BIint;
 
-impl<const N: usize> BintTest<N> {
+impl<const N: usize> BIint<N> {
     pub const fn wrapping_add(self, rhs: Self) -> Self {
         self.overflowing_add(rhs).0
     }

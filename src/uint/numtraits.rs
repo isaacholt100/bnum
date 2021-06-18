@@ -309,10 +309,6 @@ impl<const N: usize> ToPrimitive for BUint<N> {
     }
 }
 
-const fn last_set_bit(n: u64) -> u8 {
-    64 - n.leading_zeros() as u8
-}
-
 impl<const N: usize> Unsigned for BUint<N> {}
 
 impl<const N: usize> Zero for BUint<N> {

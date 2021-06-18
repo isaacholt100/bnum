@@ -1,5 +1,6 @@
 use super::BUint;
 use crate::digit::Digit;
+use crate::macros::{div_zero, checked_pow};
 
 const fn tuple_to_option<const N: usize>((int, overflow): (BUint<N>, bool)) -> Option<BUint<N>> {
     if overflow {
@@ -148,7 +149,7 @@ impl<const N: usize> BUint<N> {
                 let mut carry: Digit = 0;
                 let mut i = 0;
                 while i < M {
-                    let (prod, c) = crate::arch::mul_carry_unsigned(carry, 0, uint.digits[i], rhs);
+                    let (prod, c) = crate::arithmetic::mul_carry_unsigned(carry, 0, uint.digits[i], rhs);
                     carry = c;
                     rest[i] = prod;
                     i += 1;

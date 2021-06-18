@@ -1,7 +1,7 @@
-use super::BintTest;
+use super::BIint;
 use crate::uint::BUint;
 
-impl<const N: usize> BintTest<N> {
+impl<const N: usize> BIint<N> {
     #[cfg(target_endian = "big")]
     pub const fn from_be(x: Self) -> Self {
         x
@@ -85,7 +85,7 @@ impl<const N: usize> BintTest<N> {
 
 #[cfg(test)]
 mod tests {
-    use crate::I128Test;
+    use crate::I128;
 
     test_signed! {
         test_name: test_from_be,

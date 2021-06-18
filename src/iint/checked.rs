@@ -1,6 +1,7 @@
-use super::Bint;
+use super::BIint;
+use crate::macros::checked_pow;
 
-const fn tuple_to_option<const N: usize>((int, overflow): (Bint<N>, bool)) -> Option<Bint<N>> {
+const fn tuple_to_option<const N: usize>((int, overflow): (BIint<N>, bool)) -> Option<BIint<N>> {
     if overflow {
         None
     } else {
@@ -8,7 +9,7 @@ const fn tuple_to_option<const N: usize>((int, overflow): (Bint<N>, bool)) -> Op
     }
 }
 
-impl<const N: usize> Bint<N> {
+impl<const N: usize> BIint<N> {
     pub const fn checked_add(self, rhs: Self) -> Option<Self> {
         tuple_to_option(self.overflowing_add(rhs))
     }
@@ -42,7 +43,5 @@ impl<const N: usize> Bint<N> {
     pub const fn checked_abs(self) -> Option<Self> {
         tuple_to_option(self.overflowing_abs())
     }
-    pub const fn checked_pow(self, exp: u32) -> Option<Self> {
-        tuple_to_option(self.overflowing_pow(exp))
-    }
+    checked_pow!();
 }

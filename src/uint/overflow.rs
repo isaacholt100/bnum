@@ -1,5 +1,6 @@
 use super::BUint;
-use crate::arch;
+use crate::arithmetic;
+use crate::macros::overflowing_pow;
 
 //const LONG_MUL_THRESHOLD: usize = 32;
 //const KARATSUBA_THRESHOLD: usize = 256;
@@ -10,7 +11,7 @@ impl<const N: usize> BUint<N> {
         let mut carry = 0u8;
         let mut i = 0;
         while i < N {
-            let result = arch::add_carry_unsigned(carry, self.digits[i], rhs.digits[i]);
+            let result = arithmetic::add_carry_unsigned(carry, self.digits[i], rhs.digits[i]);
             out.digits[i] = result.0;
             carry = result.1;
             i += 1;
@@ -22,7 +23,7 @@ impl<const N: usize> BUint<N> {
         let mut borrow = 0u8;
         let mut i = 0;
         while i < N {
-            let result = arch::sub_borrow_unsigned(borrow, self.digits[i], rhs.digits[i]);
+            let result = arithmetic::sub_borrow_unsigned(borrow, self.digits[i], rhs.digits[i]);
             out.digits[i] = result.0;
             borrow = result.1;
             i += 1;
@@ -39,7 +40,7 @@ impl<const N: usize> BUint<N> {
             while j < N {
                 let index = i + j;
                 if index < N {
-                    let (prod, c) = arch::mul_carry_unsigned(carry, out.digits[index], self.digits[i], rhs.digits[j]);
+                    let (prod, c) = arithmetic::mul_carry_unsigned(carry, out.digits[index], self.digits[i], rhs.digits[j]);
                     out.digits[index] = prod;
                     carry = c;
                 } else if (self.digits[i] != 0 && rhs.digits[j] != 0) || carry != 0 {

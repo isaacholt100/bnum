@@ -1,4 +1,5 @@
 use super::BUint;
+use crate::macros::expect;
 
 impl<const N: usize> BUint<N> {
     pub const fn wrapping_add(self, rhs: Self) -> Self {

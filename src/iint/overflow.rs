@@ -1,8 +1,9 @@
-use super::BintTest;
-use crate::arch;
+use super::BIint;
+use crate::arithmetic;
 use crate::digit::{SignedDigit, Digit};
+use crate::macros::{overflowing_pow, div_zero, rem_zero, op_ref_impl};
 
-impl<const N: usize> BintTest<N> {
+impl<const N: usize> BIint<N> {
     pub const fn overflowing_add(self, rhs: Self) -> (Self, bool) {
         let mut digits = [0; N];
         let mut carry = 0u8;
@@ -12,12 +13,12 @@ impl<const N: usize> BintTest<N> {
 
         let mut i = 0;
         while i < Self::N_MINUS_1 {
-            let (sum, c) = arch::add_carry_unsigned(carry, self_digits[i], rhs_digits[i]);
+            let (sum, c) = arithmetic::add_carry_unsigned(carry, self_digits[i], rhs_digits[i]);
             digits[i] = sum;
             carry = c;
             i += 1;
         }
-        let (sum, carry) = arch::add_carry_signed(
+        let (sum, carry) = arithmetic::add_carry_signed(
             carry,
             self_digits[Self::N_MINUS_1] as SignedDigit,
             rhs_digits[Self::N_MINUS_1] as SignedDigit
@@ -35,12 +36,12 @@ impl<const N: usize> BintTest<N> {
 
         let mut i = 0;
         while i < Self::N_MINUS_1 {
-            let (sub, b) = arch::sub_borrow_unsigned(borrow, self_digits[i], rhs_digits[i]);
+            let (sub, b) = arithmetic::sub_borrow_unsigned(borrow, self_digits[i], rhs_digits[i]);
             digits[i] = sub;
             borrow = b;
             i += 1;
         }
-        let (sub, borrow) = arch::sub_borrow_signed(
+        let (sub, borrow) = arithmetic::sub_borrow_signed(
             borrow,
             self_digits[Self::N_MINUS_1] as SignedDigit,
             rhs_digits[Self::N_MINUS_1] as SignedDigit
@@ -102,7 +103,7 @@ impl<const N: usize> BintTest<N> {
         }
     }
     pub const fn overflowing_div(self, rhs: Self) -> (Self, bool) {
-        if self.eq(&Self::MIN) && rhs.eq(&Self::MINUS_ONE) {
+        if self.eq(&Self::MIN) && rhs.eq(&Self::NEG_ONE) {
             (self, true)
         } else {
             if rhs.is_zero() {
@@ -112,7 +113,7 @@ impl<const N: usize> BintTest<N> {
         }
     }
     pub const fn overflowing_div_euclid(self, rhs: Self) -> (Self, bool) {
-        if self.eq(&Self::MIN) && rhs.eq(&Self::MINUS_ONE) {
+        if self.eq(&Self::MIN) && rhs.eq(&Self::NEG_ONE) {
             (self, true)
         } else {
             if rhs.is_zero() {
@@ -136,7 +137,7 @@ impl<const N: usize> BintTest<N> {
         }
     }
     pub const fn overflowing_rem(self, rhs: Self) -> (Self, bool) {
-        if self.eq(&Self::MIN) && rhs.eq(&Self::MINUS_ONE) {
+        if self.eq(&Self::MIN) && rhs.eq(&Self::NEG_ONE) {
             (self, true)
         } else {
             if rhs.is_zero() {
@@ -146,7 +147,7 @@ impl<const N: usize> BintTest<N> {
         }
     }
     pub const fn overflowing_rem_euclid(self, rhs: Self) -> (Self, bool) {
-        if self.eq(&Self::MIN) && rhs.eq(&Self::MINUS_ONE) {
+        if self.eq(&Self::MIN) && rhs.eq(&Self::NEG_ONE) {
             (self, true)
         } else {
             if rhs.is_zero() {
@@ -187,11 +188,11 @@ impl<const N: usize> BintTest<N> {
 
 use core::ops::{Div, Rem};
 
-impl<const N: usize> Div for BintTest<N> {
+impl<const N: usize> Div for BIint<N> {
     type Output = Self;
 
     fn div(self, rhs: Self) -> Self {
-        if self.eq(&Self::MIN) && rhs.eq(&Self::MINUS_ONE) {
+        if self.eq(&Self::MIN) && rhs.eq(&Self::NEG_ONE) {
             panic!("attempt to divide with overflow")
         } else {
             if rhs.is_zero() {
@@ -202,13 +203,13 @@ impl<const N: usize> Div for BintTest<N> {
     }
 }
 
-op_ref_impl!(Div<BintTest<N>> for BintTest, div);
+op_ref_impl!(Div<BIint<N>> for BIint, div);
 
-impl<const N: usize> Rem for BintTest<N> {
+impl<const N: usize> Rem for BIint<N> {
     type Output = Self;
 
     fn rem(self, rhs: Self) -> Self {
-        if self.eq(&Self::MIN) && rhs.eq(&Self::MINUS_ONE) {
+        if self.eq(&Self::MIN) && rhs.eq(&Self::NEG_ONE) {
             panic!("attempt to calculate remainder with overflow")
         } else {
             if rhs.is_zero() {
@@ -219,13 +220,13 @@ impl<const N: usize> Rem for BintTest<N> {
     }
 }
 
-op_ref_impl!(Rem<BintTest<N>> for BintTest, rem);
+op_ref_impl!(Rem<BIint<N>> for BIint, rem);
 
 #[cfg(test)]
 mod tests {
-    use crate::I128Test;
+    use crate::I128;
 
-    fn converter(tuple: (i128, bool)) -> (I128Test, bool) {
+    fn converter(tuple: (i128, bool)) -> (I128, bool) {
         (tuple.0.into(), tuple.1)
     }
 

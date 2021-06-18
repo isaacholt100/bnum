@@ -1,7 +1,8 @@
 use crate::digit::{Digit, SignedDigit, self};
 use crate::uint::BUint;
 #[allow(unused_imports)]
-use crate::I128Test;
+use crate::I128;
+use crate::macros::expect;
 
 #[allow(unused)]
 macro_rules! test_signed {
@@ -12,7 +13,7 @@ macro_rules! test_signed {
         }
     } => {
         test! {
-            big: I128Test,
+            big: I128,
             primitive: i128,
             test_name: $test_name,
             method: {
@@ -28,7 +29,7 @@ macro_rules! test_signed {
         converter: $converter: expr
     } => {
         test! {
-            big: I128Test,
+            big: I128,
             primitive: i128,
             test_name: $test_name,
             method: {
@@ -69,12 +70,12 @@ use serde::{Serialize, Deserialize};
 
 /// Stored similarly to two's complement
 #[derive(Clone, Copy, Hash, Debug, Serialize, Deserialize)]
-pub struct BintTest<const N: usize> {
+pub struct BIint<const N: usize> {
     uint: BUint<N>,
 }
 /// impl containing constants
 
-impl<const N: usize> BintTest<N> {
+impl<const N: usize> BIint<N> {
     pub const MIN: Self = {
         let mut digits = [0; N];
         digits[N - 1] = 1;
@@ -99,7 +100,7 @@ impl<const N: usize> BintTest<N> {
             uint: BUint::ONE,
         }
     };
-    pub const MINUS_ONE: Self = {
+    pub const NEG_ONE: Self = {
         Self {
             uint: BUint::MAX,
         }
@@ -109,7 +110,7 @@ impl<const N: usize> BintTest<N> {
     const N_MINUS_1: usize = N - 1;
 }
 
-impl<const N: usize> BintTest<N> {
+impl<const N: usize> BIint<N> {
     uint_method! {
         fn count_ones(self) -> u32,
         fn count_zeros(self) -> u32,
@@ -168,7 +169,7 @@ impl<const N: usize> BintTest<N> {
     }
     pub const fn signum(self) -> Self {
         if self.is_negative() {
-            Self::MINUS_ONE
+            Self::NEG_ONE
         } else if self.is_zero() {
             Self::ZERO
         } else {
@@ -245,15 +246,15 @@ mod tests {
 
     #[test]
     fn test_is_positive() {
-        assert!(I128Test::from(304950490384054358903845i128).is_positive());
-        assert!(!I128Test::from(-304950490384054358903845i128).is_positive());
-        assert!(!I128Test::from(0).is_positive());
+        assert!(I128::from(304950490384054358903845i128).is_positive());
+        assert!(!I128::from(-304950490384054358903845i128).is_positive());
+        assert!(!I128::from(0).is_positive());
     }
     #[test]
     fn test_is_negative() {
-        assert!(!I128Test::from(30890890894345345343453434i128).is_negative());
-        assert!(I128Test::from(-8783947895897346938745873443i128).is_negative());
-        assert!(!I128Test::from(0).is_negative());
+        assert!(!I128::from(30890890894345345343453434i128).is_negative());
+        assert!(I128::from(-8783947895897346938745873443i128).is_negative());
+        assert!(!I128::from(0).is_negative());
     }
 
     test_signed! {
@@ -322,7 +323,7 @@ mod tests {
     }
 }
 
-impl<const N: usize> BintTest<N> {
+impl<const N: usize> BIint<N> {
     uint_method! {
         fn bit(&self, index: usize) -> bool,
         fn bits(&self) -> usize,
@@ -348,7 +349,7 @@ impl<const N: usize> BintTest<N> {
 
 use core::default::Default;
 
-impl<const N: usize> Default for BintTest<N> {
+impl<const N: usize> Default for BIint<N> {
     fn default() -> Self {
         Self::ZERO
     }
@@ -356,25 +357,25 @@ impl<const N: usize> Default for BintTest<N> {
 
 use core::iter::{Iterator, Product, Sum};
 
-impl<const N: usize> Product<Self> for BintTest<N> {
+impl<const N: usize> Product<Self> for BIint<N> {
     fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.fold(Self::ONE, |a, b| a * b)
     }
 }
 
-impl<'a, const N: usize> Product<&'a Self> for BintTest<N> {
+impl<'a, const N: usize> Product<&'a Self> for BIint<N> {
     fn product<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
         iter.fold(Self::ONE, |a, b| a * b)
     }
 }
 
-impl<const N: usize> Sum<Self> for BintTest<N> {
+impl<const N: usize> Sum<Self> for BIint<N> {
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.fold(Self::ZERO, |a, b| a + b)
     }
 }
 
-impl<'a, const N: usize> Sum<&'a Self> for BintTest<N> {
+impl<'a, const N: usize> Sum<&'a Self> for BIint<N> {
     fn sum<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
         iter.fold(Self::ZERO, |a, b| a + b)
     }

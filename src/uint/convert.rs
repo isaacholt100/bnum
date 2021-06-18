@@ -5,6 +5,7 @@ use core::str::FromStr;
 use crate::{TryFromIntError, ParseIntError};
 use crate::error::TryFromErrorReason::*;
 use crate::digit;
+use crate::macros::all_try_int_impls;
 
 impl<const N: usize> FromStr for BUint<N> {
     type Err = ParseIntError;

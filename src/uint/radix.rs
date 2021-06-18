@@ -6,6 +6,7 @@ use num_integer::Integer;
 use alloc::string::String;
 use alloc::vec::Vec;
 use crate::error::ParseIntErrorReason::*;
+use super::radix_bases;
 
 const BITS_U8: u8 = digit::BITS as u8;
 
@@ -81,16 +82,6 @@ impl<const N: usize> BUint<N> {
         let lo = *acc as Digit;
         *acc >>= BITS_U8;
         lo
-    }
-    fn get_radix_base(radix: u32, bits: u8) -> (Digit, usize) {
-        match bits {
-            32 => {
-                let (base, power) = super::radix_bases::BASES_32[radix as usize];
-                (base as Digit, power)
-            },
-            64 => super::radix_bases::BASES_64[radix as usize],
-            _ => unreachable!(),
-        }
     }
     fn from_radix_digits_be<Head, TailInner, Tail>(head: Head, tail: Tail, radix: u32, base: Digit) -> Option<Self>
     where
@@ -183,7 +174,7 @@ impl<const N: usize> BUint<N> {
                 Self::from_inexact_bitwise_digits_le(buf.iter().rev().copied(), bits)
             }
         } else {
-            let (base, power) = Self::get_radix_base(radix, BITS_U8);
+            let (base, power) = radix_bases::get_radix_base(radix, BITS_U8);
             let r = buf.len() % power;
             let i = if r == 0 {
                 power
@@ -243,7 +234,7 @@ impl<const N: usize> BUint<N> {
                 Self::from_inexact_bitwise_digits_le(buf.iter().copied(), bits)
             }
         } else {
-            let (base, power) = Self::get_radix_base(radix, BITS_U8);
+            let (base, power) = radix_bases::get_radix_base(radix, BITS_U8);
             let r = buf.len() % power;
             let i = if r == 0 {
                 power
@@ -263,27 +254,6 @@ impl<const N: usize> BUint<N> {
             Self::from_radix_digits_be(head, tail, radix, base)
         };
         out
-    }
-    fn from_str_bitwise_radix(src: &str, radix: u32, chunk_size: usize) -> Result<Self, ParseIntError> {
-        let mut out = Self::ZERO;
-        let mut index = 0;
-        let mut i = src.len();
-        while i > 0 {
-            if index == N {
-                return Err(ParseIntError {
-                    reason: TooLarge,
-                });
-            }
-            let end = i;
-            i = i.saturating_sub(chunk_size);
-            let digit = match Digit::from_str_radix(&src[i..end], radix) {
-                Ok(digit) => digit,
-                Err(_) => panic!(""),
-            };
-            out.digits[index] = digit;
-            index += 1;
-        }
-        Ok(out)
     }
     fn byte_to_digit(byte: u8) -> u8 {
         match byte {
@@ -324,9 +294,9 @@ impl<const N: usize> BUint<N> {
                 reason: Empty,
             });
         }
+        let buf = src.as_bytes();
         let validate_src = || -> Result<&[u8], ParseIntError> {
             let radix = radix as u8;
-            let buf = src.as_bytes();
             for &byte in buf {
                 if Self::byte_to_digit(byte) >= radix {
                     return Err(ParseIntError {
@@ -352,9 +322,6 @@ impl<const N: usize> BUint<N> {
                     reason: TooLarge,
                 })
             },
-            /*2 => Self::from_str_bitwise_radix(src, radix, digit::BITS),
-            4 => Self::from_str_bitwise_radix(src, radix, digit::BITS >> 1),
-            16 => Self::from_str_bitwise_radix(src, radix, digit::BITS >> 2),*/
             8 | 32 => {
                 let bits = ilog2(radix);
                 let buf = validate_src()?;
@@ -367,7 +334,7 @@ impl<const N: usize> BUint<N> {
                 })
             },
             radix => {
-                let (base, power) = Self::get_radix_base(radix, BITS_U8);
+                let (base, power) = radix_bases::get_radix_base(radix, BITS_U8);
                 let buf = validate_src()?;
                 let r = buf.len() % power;
                 let i = if r == 0 {
@@ -531,7 +498,7 @@ impl<const N: usize> BUint<N> {
         let radix_digits = ((self.bits() as f64) / radix_log2).ceil();
         use num_traits::ToPrimitive;
         let mut out = Vec::with_capacity(radix_digits.to_usize().unwrap_or(0));
-        let (base, power) = Self::get_radix_base(radix, BITS_U8 / 2);
+        let (base, power) = radix_bases::get_radix_base(radix, BITS_U8 / 2);
         let radix = radix as Digit;
         let mut copy = *self;
         while copy.last_digit_index() > 0 {
@@ -629,7 +596,7 @@ mod tests {
         assert_eq!(v.to_str_radix(35), src);
 
         let bytes = b"345977fsuudf0350845";
-        let option = BUint::<100>::parse_bytes(src.as_bytes(), 20);
+        let option = BUint::<100>::parse_bytes(bytes, 20);
         assert!(option.is_none());
     }
 }
