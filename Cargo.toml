@@ -4,12 +4,14 @@ version = "0.1.0"
 authors = ["isaac-holt <isaac_holt@icloud.com>"]
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[features]
+default = ["u8_digit", "nightly"]
+u8_digit = []
+nightly = []
+serde_all = ["serde", "serde-big-array"]
 
 [dependencies]
 num-integer = "0.1.44"
 num-traits = "0.2.14"
-serde = { version = "1.0.126", features = ["derive"] }
-serde-big-array = { version = "0.3.2", features = ["const-generics"] }
-num-bigint = "0.4.0"
-lazy_static = "1.4.0"
+serde = { version = "1.0.126", features = ["derive"], optional = true }
+serde-big-array = { version = "0.3.2", features = ["const-generics"], optional = true }

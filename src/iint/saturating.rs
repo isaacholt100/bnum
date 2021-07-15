@@ -1,4 +1,5 @@
 use super::BIint;
+use crate::ExpType;
 
 const fn saturate<const N: usize>((int, overflow): (BIint<N>, bool)) -> BIint<N> {
     if overflow {
@@ -28,7 +29,8 @@ impl<const N: usize> BIint<N> {
     pub const fn saturating_mul(self, rhs: Self) -> Self {
         saturate(self.overflowing_mul(rhs))
     }
-    pub const fn saturating_pow(self, exp: u32) -> Self {
+    pub const fn saturating_pow(self, exp: ExpType) -> Self {
         saturate(self.overflowing_pow(exp))
     }
+    // TODO: test other methods
 }

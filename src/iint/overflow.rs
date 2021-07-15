@@ -2,6 +2,8 @@ use super::BIint;
 use crate::arithmetic;
 use crate::digit::{SignedDigit, Digit};
 use crate::macros::{overflowing_pow, div_zero, rem_zero, op_ref_impl};
+use crate::ExpType;
+use crate::digit;
 
 impl<const N: usize> BIint<N> {
     pub const fn overflowing_add(self, rhs: Self) -> (Self, bool) {
@@ -25,7 +27,7 @@ impl<const N: usize> BIint<N> {
         );
         digits[Self::N_MINUS_1] = sum as Digit;
 
-        (Self::from_digits(digits), carry != 0)
+        (Self::from_digits(digits), carry)
     }
     pub const fn overflowing_sub(self, rhs: Self) -> (Self, bool) {
         let mut digits = [0; N];
@@ -55,51 +57,33 @@ impl<const N: usize> BIint<N> {
         let out = Self {
             uint,
         };
-        if self.is_negative() && rhs.is_negative() {
+        if self.is_negative() == rhs.is_negative() {
             (out, overflow || out.is_negative())
         } else {
-            let out = out.neg();
-            (out, overflow || out.is_positive())
+            match out.checked_neg() {
+                Some(n) => (n, overflow || out.is_negative()),
+                None => (out, overflow),
+            }
         }
     }
     const fn div_rem_unchecked(self, rhs: Self) -> (Self, Self) {
         let (div, rem) = self.unsigned_abs().div_rem_unchecked(rhs.unsigned_abs());
+        let div = Self {
+            uint: div,
+        };
+        let rem = Self {
+            uint: rem,
+        };
         if self.is_negative() {
             if rhs.is_negative() {
-                let div = Self {
-                    uint: div,
-                };
-                let rem = Self {
-                    uint: rem,
-                };
                 (div, rem.neg())
             } else {
-                let div = Self {
-                    uint: div,
-                };
-                let rem = Self {
-                    uint: rem,
-                };
                 (div.neg(), rem.neg())
             }
+        } else if rhs.is_negative() {
+            (div.neg(), rem)
         } else {
-            if rhs.is_negative() {
-                let div = Self {
-                    uint: div,
-                };
-                let rem = Self {
-                    uint: rem,
-                };
-                (div.neg(), rem)
-            } else {
-                let div = Self {
-                    uint: div,
-                };
-                let rem = Self {
-                    uint: rem,
-                };
-                (div, rem)
-            }
+            (div, rem)
         }
     }
     pub const fn overflowing_div(self, rhs: Self) -> (Self, bool) {
@@ -138,7 +122,7 @@ impl<const N: usize> BIint<N> {
     }
     pub const fn overflowing_rem(self, rhs: Self) -> (Self, bool) {
         if self.eq(&Self::MIN) && rhs.eq(&Self::NEG_ONE) {
-            (self, true)
+            (Self::ZERO, true)
         } else {
             if rhs.is_zero() {
                 div_zero!()
@@ -148,33 +132,72 @@ impl<const N: usize> BIint<N> {
     }
     pub const fn overflowing_rem_euclid(self, rhs: Self) -> (Self, bool) {
         if self.eq(&Self::MIN) && rhs.eq(&Self::NEG_ONE) {
-            (self, true)
+            (Self::ZERO, true)
         } else {
             if rhs.is_zero() {
                 rem_zero!()
             }
             let rem = self.div_rem_unchecked(rhs).1;
             if rem.is_negative() {
-                (rem.add(rhs), false)
+                (rem.add(rhs.abs()), false)
             } else {
                 (rem, false)
             }
         }
     }
     pub const fn overflowing_neg(self) -> (Self, bool) {
-        if self.is_zero() {
-            (self, false)
-        } else {
-            self.not().overflowing_add(Self::ONE)
-        }
+        self.not().overflowing_add(Self::ONE)
     }
-    pub const fn overflowing_shl(self, rhs: u32) -> (Self, bool) {
+    pub const fn overflowing_shl(self, rhs: ExpType) -> (Self, bool) {
         let (uint, overflow) = self.uint.overflowing_shl(rhs);
         (Self { uint }, overflow)
     }
-    pub const fn overflowing_shr(self, rhs: u32) -> (Self, bool) {
-        let (uint, overflow) = self.uint.overflowing_shr(rhs);
-        (Self { uint }, overflow)
+    const fn shr_internal(self, rhs: ExpType) -> Self {
+        if rhs == 0 {
+            self
+        } else {
+            let digit_shift = (rhs >> digit::BIT_SHIFT) as usize;
+            let shift = (rhs & digit::BITS_MINUS_1) as u8;
+            let self_digits = self.digits();
+    
+            let mut out_digits = [Digit::MAX; N];
+            let mut i = digit_shift;
+    
+            if shift == 0 {
+                while i < N {
+                    let digit = self_digits[Self::N_MINUS_1 + digit_shift - i];
+                    out_digits[Self::N_MINUS_1 - i] = digit;
+                    i += 1;
+                }
+            } else {
+                let mut borrow = 0;
+                let borrow_shift = Digit::BITS as u8 - shift;
+                while i < N {
+                    let digit = self_digits[Self::N_MINUS_1 + digit_shift - i];
+                    let new_borrow = digit << borrow_shift;
+                    let new_digit = (digit >> shift) | borrow;
+                    out_digits[Self::N_MINUS_1 - i] = new_digit;
+                    borrow = new_borrow;
+                    i += 1;
+                }
+                out_digits[Self::N_MINUS_1 - digit_shift] |= (Digit::MAX >> (digit::BITS as u8 - shift)) << (digit::BITS as u8 - shift);
+            }
+    
+            Self::from_digits(out_digits)
+        }
+    }
+    const BITS_MINUS_1: ExpType = (Self::BITS - 1) as ExpType;
+    pub const fn overflowing_shr(self, rhs: ExpType) -> (Self, bool) {
+        if self.is_negative() {
+            if rhs >= Self::BITS {
+                (self.shr_internal(rhs & Self::BITS_MINUS_1), true)
+            } else {
+                (self.shr_internal(rhs), false)
+            }
+        } else {
+            let (uint, overflow) = self.uint.overflowing_shr(rhs);
+            (Self { uint }, overflow)
+        }
     }
     pub const fn overflowing_abs(self) -> (Self, bool) {
         if self.is_negative() {
@@ -224,26 +247,137 @@ op_ref_impl!(Rem<BIint<N>> for BIint, rem);
 
 #[cfg(test)]
 mod tests {
-    use crate::I128;
+    use crate::{I128};
 
-    fn converter(tuple: (i128, bool)) -> (I128, bool) {
-        (tuple.0.into(), tuple.1)
+    fn converter((i, b): (i128, bool)) -> (I128, bool) {
+        (i.into(), b)
     }
 
     test_signed! {
-        test_name: test_overflowing_add,
+        name: overflowing_add,
         method: {
             overflowing_add(-934875934758937458934734533455i128, 347539475983475893475893475973458i128);
+            overflowing_add(-i128::MAX, i128::MIN);
             overflowing_add(i128::MAX, i128::MAX);
             overflowing_add(934875934758937458934734533455i128, -3475395983475893475893475973458i128);
             overflowing_add(-1i128, 1i128);
+            overflowing_add(2045968475684509874586979i128, 94568725098475698745698i128);
         },
         converter: converter
     }
     test_signed! {
-        test_name: test_overflowing_neg,
+        name: overflowing_sub,
         method: {
-            overflowing_neg(i64::MIN as i128);
+            overflowing_sub(i128::MIN, 13i128);
+            overflowing_sub(i128::MAX, -1i128);
+            overflowing_sub(i128::MAX, i128::MIN);
+            overflowing_sub(230245967103496797694856i128, 94652913868299723689754i128);
+            overflowing_sub(-67123904629745976456354i128, -20497945760945679496574769i128);
+            overflowing_sub(9927456979077656767i128, -792097495764756947568979i128);
+            overflowing_sub(-23970459790749276945i128, 7872057947569745967495645i128);
+        },
+        converter: converter
+    }
+    test_signed! {
+        name: overflowing_mul,
+        method: {
+            overflowing_mul(2074906579478979567567i128, -2072974564564565467567i128);
+            overflowing_mul(-92945876945658479894i128, -20i128);
+            overflowing_mul(8372092705967489i128, 9792439i128);
+            overflowing_mul(-2364565i128, 792094794798655i128);
+            overflowing_mul(1i128 << 64, 1i128 << 63);
+            overflowing_mul(-(1i128 << 100), 1i128 << 27);
+        },
+        converter: converter
+    }
+    test_signed! {
+        name: overflowing_div,
+        method: {
+            overflowing_div(10947569029764980694786947597i128, -47236447694567498576i128);
+            overflowing_div(-973929823948769876783454435i128, -497546i128);
+            overflowing_div(97291090487678456456456i128, -947596745i128);
+            overflowing_div(827906724975290456897456456i128, 729i128);
+            overflowing_div(-3454435i128, 445497546i128);
+            overflowing_div(i128::MIN, -1i128);
+            overflowing_div(i128::MIN, -1i128);
+        },
+        converter: converter
+    }
+    test_signed! {
+        name: overflowing_div_euclid,
+        method: {
+            overflowing_div_euclid(8472957694746986729474654i128, 4897694756i128);
+            overflowing_div_euclid(0i128, 794796456i128);
+            overflowing_div_euclid(-297947569743957645646i128, 74986748965i128);
+            overflowing_div_euclid(-1792097293475798465456456i128, -3496745i128);
+            overflowing_div_euclid(1097245097927945645456546456i128, -97297697495796874956i128);
+            overflowing_div_euclid(i128::MIN, -1i128);
+        },
+        converter: converter
+    }
+    test_signed! {
+        name: overflowing_rem,
+        method: {
+            overflowing_rem(2098475620974568975896i128, 99237i128);
+            overflowing_rem(-927019762475698748956i128, 8975343453i128);
+            overflowing_rem(-457567567567i128, -9729347698475698i128);
+            overflowing_rem(-972495656752356734534545679i128, -457894759867i128);
+            overflowing_rem(89087290769874598645645i128, -802987698i128);
+            overflowing_rem(-577i128 * 80456498576, 577i128);
+            overflowing_rem(i128::MIN, -1i128);
+        },
+        converter: converter
+    }
+    test_signed! {
+        name: overflowing_rem_euclid,
+        method: {
+            overflowing_rem_euclid(7290789407684798674987568947879i128, 79724945645667457698479856i128);
+            overflowing_rem_euclid(-9729837784956456456456456456i128, 98720375689074895645i128);
+            overflowing_rem_euclid(-2936401972940576894758964564i128, -82937982476578945769456i128);
+            overflowing_rem_euclid(7897263472466179456456456456i128, -209476984756987456i128);
+            overflowing_rem_euclid(0i128, -79872976456456i128);
+            overflowing_rem_euclid(i128::MIN, -1i128);
+        },
+        converter: converter
+    }
+    test_signed! {
+        name: overflowing_neg,
+        method: {
+            overflowing_neg(0i128);
+            overflowing_neg(i128::MIN);
+            overflowing_neg(997340597745960395879i128);
+            overflowing_neg(-76249618692464867585i128);
+        },
+        converter: converter
+    }
+    test_signed! {
+        name: overflowing_shl,
+        method: {
+            overflowing_shl(i128::MAX - 3453475, 8 as u16);
+            overflowing_shl(77948798i128, 58743 as u16);
+            overflowing_shl(-9797456456456i128, 27 as u16);
+            overflowing_shl(-1i128, 65 as u16);
+        },
+        converter: converter
+    }
+    test_signed! {
+        name: overflowing_shr,
+        method: {
+            overflowing_shr(i128::MIN, 11 as u16);
+            overflowing_shr(94876927098575645698456i128, 43546 as u16);
+            overflowing_shr(-2937694856456456546456456i128, 3 as u16);
+            overflowing_shr(-7135096792937597985769867i128, 97 as u16);
+            overflowing_shr(-1i128, 85 as u16);
+        },
+        converter: converter
+    }
+    test_signed! {
+        name: overflowing_pow,
+        method: {
+            overflowing_pow(97465984i128, 2555 as u16);
+            overflowing_pow(-19i128, 11 as u16);
+            overflowing_pow(-277i128, 14 as u16);
+            overflowing_pow(66i128, 9 as u16);
         },
         converter: converter
     }

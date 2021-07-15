@@ -1,8 +1,8 @@
 use super::BIint;
-use num_traits::{Bounded, CheckedAdd, CheckedDiv, CheckedMul, CheckedNeg, CheckedRem, CheckedShl, CheckedShr, CheckedSub, FromPrimitive, MulAdd, MulAddAssign, Num, One, SaturatingAdd, SaturatingMul, SaturatingSub, WrappingAdd, WrappingMul, WrappingNeg, WrappingShl, WrappingShr, WrappingSub, ToPrimitive, Signed, Zero, Pow};
+use num_traits::{Bounded, CheckedAdd, CheckedDiv, CheckedMul, CheckedNeg, CheckedRem, CheckedShl, CheckedShr, CheckedSub, FromPrimitive, MulAdd, MulAddAssign, Num, One, SaturatingAdd, SaturatingMul, SaturatingSub, WrappingAdd, WrappingMul, WrappingNeg, WrappingShl, WrappingShr, WrappingSub, ToPrimitive, Signed, Zero, Pow, PrimInt, Saturating, NumCast, AsPrimitive};
 use num_integer::{Integer, Roots};
-use crate::digit;
 use core::convert::TryFrom;
+use crate::ExpType;
 
 impl<const N: usize> Bounded for BIint<N> {
     fn min_value() -> Self {
@@ -43,15 +43,100 @@ impl<const N: usize> CheckedNeg for BIint<N> {
     }
 }
 
+impl AsPrimitive<char> for BIint<0> {
+    fn as_(self) -> char {
+        0u8 as char
+    }
+}
+
+macro_rules! as_primitive_impl {
+    ($ty: ty, $method: ident) => {
+        impl<const N: usize> AsPrimitive<$ty> for BIint<N> {
+            fn as_(self) -> $ty {
+                self.$method()
+            }
+        }
+    }
+}
+
+as_primitive_impl!(f32, as_f32);
+as_primitive_impl!(f64, as_f64);
+as_primitive_impl!(u8, as_u8);
+as_primitive_impl!(u16, as_u16);
+as_primitive_impl!(u32, as_u32);
+as_primitive_impl!(usize, as_usize);
+as_primitive_impl!(u64, as_u64);
+as_primitive_impl!(u128, as_u128);
+as_primitive_impl!(i8, as_i8);
+as_primitive_impl!(i16, as_i16);
+as_primitive_impl!(i32, as_i32);
+as_primitive_impl!(isize, as_isize);
+as_primitive_impl!(i64, as_i64);
+as_primitive_impl!(i128, as_i128);
+
+macro_rules! as_biint {
+    ($($ty: ty), *) => {
+        $(
+            impl<const N: usize> AsPrimitive<BIint<N>> for $ty {
+                fn as_(self) -> BIint<N> {
+                    BIint {
+                        uint: self.as_(),
+                    }
+                }
+            }
+        )*
+    }
+}
+
+as_biint!(u8, u16, u32, usize, u64, u128, i8, i16, i32, isize, i64, i128, char, bool);
+
+impl<const N: usize> AsPrimitive<BIint<N>> for f32 {
+    fn as_(self) -> BIint<N> {
+        BIint::try_from(self).unwrap_or(if self.is_sign_negative() {
+            BIint::MIN
+        } else {
+            BIint::MAX
+        })
+    }
+}
+
+impl<const N: usize> AsPrimitive<BIint<N>> for f64 {
+    fn as_(self) -> BIint<N> {
+        BIint::try_from(self).unwrap_or(if self.is_sign_negative() {
+            BIint::MIN
+        } else {
+            BIint::MAX
+        })
+    }
+}
+
+use crate::BUint;
+
+#[cfg(feature = "nightly")]
+impl<const N: usize, const M: usize> AsPrimitive<BUint<M>> for BIint<N> where [(); M - N]: Sized {
+    fn as_(self) -> BUint<M> {
+        self.as_buint::<M>()
+    }
+}
+
+#[cfg(feature = "nightly")]
+impl<const N: usize, const M: usize> AsPrimitive<BIint<M>> for BIint<N> where [(); M - N]: Sized {
+    fn as_(self) -> BIint<M> {
+        self.as_biint::<M>()
+    }
+}
+
+use core::convert::TryInto;
+
 impl<const N: usize> CheckedShl for BIint<N> {
     fn checked_shl(&self, rhs: u32) -> Option<Self> {
-        Self::checked_shl(*self, rhs)
+        Self::checked_shl(*self, rhs.try_into().ok()?)
     }
 }
 
 impl<const N: usize> CheckedShr for BIint<N> {
     fn checked_shr(&self, rhs: u32) -> Option<Self> {
-        Self::checked_shr(*self, rhs)
+        Self::checked_shr(*self, rhs.try_into().ok()?)
     }
 }
 
@@ -63,13 +148,13 @@ impl<const N: usize> WrappingNeg for BIint<N> {
 
 impl<const N: usize> WrappingShl for BIint<N> {
     fn wrapping_shl(&self, rhs: u32) -> Self {
-        Self::wrapping_shl(*self, rhs)
+        Self::wrapping_shl(*self, rhs as ExpType)
     }
 }
 
 impl<const N: usize> WrappingShr for BIint<N> {
     fn wrapping_shr(&self, rhs: u32) -> Self {
-        Self::wrapping_shr(*self, rhs)
+        Self::wrapping_shr(*self, rhs as ExpType)
     }
 }
 
@@ -161,10 +246,10 @@ impl<const N: usize> One for BIint<N> {
     }
 }
 
-impl<const N: usize> Pow<u32> for BIint<N> {
+impl<const N: usize> Pow<ExpType> for BIint<N> {
     type Output = Self;
 
-    fn pow(self, exp: u32) -> Self {
+    fn pow(self, exp: ExpType) -> Self {
         Self::pow(self, exp)
     }
 }
@@ -209,6 +294,15 @@ impl<const N: usize> Roots for BIint<N> {
     }
 }
 
+impl<const N: usize> Saturating for BIint<N> {
+    fn saturating_add(self, rhs: Self) -> Self {
+        Self::saturating_add(self, rhs)
+    }
+    fn saturating_sub(self, rhs: Self) -> Self {
+        Self::saturating_sub(self, rhs)
+    }
+}
+
 impl<const N: usize> ToPrimitive for BIint<N> {
     fn to_i64(&self) -> Option<i64> {
         if self.is_negative() {
@@ -216,7 +310,8 @@ impl<const N: usize> ToPrimitive for BIint<N> {
             if (self.leading_ones() as usize) < ones {
                 None
             } else {
-                Some(self.digits()[0] as i64)
+                Some(self.as_i64())
+                //Some(self.digits()[0] as i64)
             }
         } else {
             self.uint.to_i64()
@@ -228,8 +323,7 @@ impl<const N: usize> ToPrimitive for BIint<N> {
             if (self.leading_ones() as usize) < ones {
                 None
             } else {
-                let digits = self.digits();
-                Some(digit::to_signed_double_digit(digits[1], digits[0]))
+                Some(self.as_i128())
             }
         } else {
             self.uint.to_i128()

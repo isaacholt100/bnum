@@ -6,14 +6,15 @@ use core::cmp::{PartialEq, Eq, PartialOrd, Ord, Ordering};
 
 impl<const N: usize> BIint<N> {
     pub const fn eq(&self, other: &Self) -> bool {
-        self.signed_digit() == other.signed_digit() &&
         BUint::eq(&self.uint, &other.uint)
     }
     pub const fn cmp(&self, other: &Self) -> Ordering {
-        if self.signed_digit() == other.signed_digit() {
-            BUint::<N>::cmp(&self.uint, &other.uint)
+        let s1 = self.signed_digit();
+        let s2 = other.signed_digit();
+        if s1 == s2 {
+            BUint::cmp(&self.uint, &other.uint)
         } else {
-            if self.signed_digit() > other.signed_digit() {
+            if s1 > s2 {
                 Ordering::Greater
             } else {
                 Ordering::Less
@@ -47,34 +48,34 @@ impl<const N: usize> Ord for BIint<N> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::I128;
 
     #[test]
-    fn test_inequality() {
-        let a = BIint::<2>::from(-2348273479989898i128);
-        let b = BIint::<2>::from(-9049873947589473745i128);
+    fn inequality() {
+        let a = I128::from(-2348273479989898i128);
+        let b = I128::from(-9049873947589473745i128);
         assert!(a > b);
         assert_ne!(a, b);
 
-        let a = BIint::<2>::from(34578394758934759478789354i128);
-        let b = BIint::<2>::from(3459374957834758394759782i128);
+        let a = I128::from(34578394758934759478789354i128);
+        let b = I128::from(3459374957834758394759782i128);
         assert!(a > b);
         assert_ne!(a, b);
 
-        let a = BIint::<2>::from(-34578394758934759478789354i128);
-        let b = BIint::<2>::from(3459374957834758394759782i128);
+        let a = I128::from(-34578394758934759478789354i128);
+        let b = I128::from(3459374957834758394759782i128);
         assert!(b > a);
         assert_ne!(a, b);
     }
 
     #[test]
-    fn test_equality() {
-        let a = BIint::<2>::from(-9049873947589473745i128);
-        let b = BIint::<2>::from(-9049873947589473745i128);
+    fn equality() {
+        let a = I128::from(-9049873947589473745i128);
+        let b = I128::from(-9049873947589473745i128);
         assert_eq!(a, b);
         
-        let a = BIint::<2>::from(34578394758934759478789354i128);
-        let b = BIint::<2>::from(34578394758934759478789354i128);
+        let a = I128::from(34578394758934759478789354i128);
+        let b = I128::from(34578394758934759478789354i128);
         assert_eq!(a, b);
     }
 }

@@ -52,3 +52,22 @@ pub enum ParseIntErrorReason {
     TooLarge,
     InvalidDigit,
 }
+
+pub struct ParseRationalError {
+    pub reason: ParseRationalErrorReason,
+}
+
+impl Display for ParseRationalError {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        match &self.reason {
+            ParseRationalErrorReason::ParseIntError(e) => Display::fmt(e, f),
+            ParseRationalErrorReason::ZeroDenominator => write!(f, "Denominator is zero"),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum ParseRationalErrorReason {
+    ParseIntError(ParseIntError),
+    ZeroDenominator,
+}

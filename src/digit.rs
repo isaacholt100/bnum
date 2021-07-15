@@ -1,34 +1,53 @@
-pub type Digit = u64;
+#[cfg(feature = "u8_digit")]
+mod types {
+    pub type Digit = u8;
+    
+    pub type SignedDigit = i8;
+    
+    pub type DoubleDigit = u16;
+    
+    pub type SignedDoubleDigit = i16;
+}
+#[cfg(not(feature = "u8_digit"))]
+mod types {
+    pub type Digit = u64;
 
-pub type SignedDigit = i64;
+    pub type SignedDigit = i64;
 
-pub type DoubleDigit = u128;
+    pub type DoubleDigit = u128;
 
-pub type SignedDoubleDigit = i128;
+    pub type SignedDoubleDigit = i128;
+}
 
-pub const BITS: usize = 64;
+use crate::ExpType;
 
-pub const BITS_U32: u32 = BITS as u32;
+pub use types::*;
 
-pub const BYTES: usize = BITS / 8;
+//pub const HALF_MAX: Digit = Digit::MAX / 2;
 
-pub const BYTE_SHIFT: usize = BYTES.trailing_zeros() as usize;
+pub const BITS: ExpType = Digit::BITS as ExpType;
+
+pub const BITS_MINUS_1: ExpType = BITS - 1;
+
+pub const BYTES: ExpType = BITS / 8;
+
+pub const BYTE_SHIFT: ExpType = BYTES.trailing_zeros() as ExpType;
 // This calculates log2 of BYTES as BYTES is guaranteed to only have one '1' bit.
 
-pub const BIT_SHIFT: usize = BITS.trailing_zeros() as usize;
+pub const BIT_SHIFT: ExpType = BITS.trailing_zeros() as ExpType;
 
-pub const HALF_BITS: usize = BITS / 2;
+pub const HALF_BITS: ExpType = BITS / 2;
 
 pub const HALF: Digit = (1 << HALF_BITS) - 1;
 
 pub const fn to_double_digit(high: Digit, low: Digit) -> DoubleDigit {
     ((high as DoubleDigit) << BITS) | low as DoubleDigit
 }
-
+/*
 pub const fn to_signed_double_digit(high: Digit, low: Digit) -> SignedDoubleDigit {
     ((high as SignedDoubleDigit) << BITS) | low as SignedDoubleDigit
 }
 
 pub const fn from_double_digit(double: DoubleDigit) -> (Digit, Digit) {
     ((double >> BITS) as Digit, double as Digit)
-}
+}*/

@@ -1,4 +1,3 @@
-#[macro_use]
 macro_rules! div_zero {
     () => {
         panic!("attempt to divide by zero")
@@ -6,7 +5,6 @@ macro_rules! div_zero {
 }
 pub(crate) use div_zero;
 
-#[macro_use]
 macro_rules! rem_zero {
     () => {
         panic!("attempt to calculate remainder with a divisor of zero")
@@ -14,7 +12,6 @@ macro_rules! rem_zero {
 }
 pub(crate) use rem_zero;
 
-#[macro_use]
 macro_rules! try_int_impl {
     ($Struct: tt, $int: ty, $method: ident, $err: expr) => {
         impl<const N: usize> TryFrom<$Struct<N>> for $int {
@@ -32,7 +29,6 @@ macro_rules! try_int_impl {
 }
 pub(crate) use try_int_impl;
 
-#[macro_use]
 macro_rules! all_try_int_impls {
     ($Struct: tt) => {
         crate::macros::try_int_impl!($Struct, u128, to_u128, "BUint is too large to cast to u128");
@@ -52,10 +48,9 @@ macro_rules! all_try_int_impls {
 }
 pub(crate) use all_try_int_impls;
 
-#[macro_use]
 macro_rules! checked_pow {
     () => {
-        pub const fn checked_pow(self, exp: u32) -> Option<Self> {
+        pub const fn checked_pow(self, exp: crate::ExpType) -> Option<Self> {
             if exp == 0 {
                 return Some(Self::ONE);
             }
@@ -97,10 +92,9 @@ macro_rules! checked_pow {
 }
 pub(crate) use checked_pow;
 
-#[macro_use]
 macro_rules! overflowing_pow {
     () => {
-        pub const fn overflowing_pow(self, exp: u32) -> (Self, bool) {
+        pub const fn overflowing_pow(self, exp: crate::ExpType) -> (Self, bool) {
             if exp == 0 {
                 return (Self::ONE, false);
             }
@@ -116,9 +110,7 @@ macro_rules! overflowing_pow {
                 ($var: ident) => {
                     let (prod, o) = x.overflowing_mul($var);
                     $var = prod;
-                    if o {
-                        overflow = o;
-                    }
+                    overflow |= o;
                 }
             }
     
@@ -143,7 +135,6 @@ macro_rules! overflowing_pow {
 }
 pub(crate) use overflowing_pow;
 
-#[macro_use]
 macro_rules! expect {
     ($option: expr, $msg: expr) => {
         match $option {
@@ -154,7 +145,6 @@ macro_rules! expect {
 }
 pub(crate) use expect;
 
-#[macro_use]
 macro_rules! op_ref_impl {
     ($tr: tt <$rhs: ty> for $Struct: tt, $method: ident) => {
         impl<const N: usize> $tr<&$rhs> for $Struct<N> {
@@ -184,7 +174,6 @@ macro_rules! op_ref_impl {
 }
 pub(crate) use op_ref_impl;
 
-#[macro_use]
 macro_rules! assign_ref_impl {
     ($tr: tt <$rhs: ty> for $Struct: tt, $method: ident) => {
         impl<const N: usize> $tr<&$rhs> for $Struct<N> {
@@ -196,7 +185,6 @@ macro_rules! assign_ref_impl {
 }
 pub(crate) use assign_ref_impl;
 
-#[macro_use]
 macro_rules! shift_impl {
     ($Struct: tt, $tr: tt, $method: ident, $assign_tr: tt, $assign_method: ident, $($rhs: ty), *) => {
         $(
@@ -204,7 +192,8 @@ macro_rules! shift_impl {
                 type Output = Self;
 
                 fn $method(self, rhs: $rhs) -> Self {
-                    self.$method(rhs as u32)
+                    use crate::ExpType;
+                    self.$method(rhs as ExpType)
                 }
             }
 
@@ -214,7 +203,6 @@ macro_rules! shift_impl {
 }
 pub(crate) use shift_impl;
 
-#[macro_use]
 macro_rules! try_shift_impl {
     ($Struct: tt, $tr: tt, $method: ident, $assign_tr: tt, $assign_method: ident, $err: expr, $($rhs: ty), *) => {
         $(
@@ -222,7 +210,11 @@ macro_rules! try_shift_impl {
                 type Output = Self;
 
                 fn $method(self, rhs: $rhs) -> Self {
-                    let rhs: u32 = expect!(rhs.try_into().ok(), $err);
+                    use crate::ExpType;
+                    #[cfg(debug_assertions)]
+                    let rhs: ExpType = expect!(rhs.try_into().ok(), $err);
+                    #[cfg(not(debug_assertions))]
+                    let rhs = rhs as ExpType;
                     self.$method(rhs)
                 }
             }
@@ -233,7 +225,6 @@ macro_rules! try_shift_impl {
 }
 pub(crate) use try_shift_impl;
 
-#[macro_use]
 macro_rules! shift_self_impl {
     ($Struct: tt, $tr: tt<$rhs: tt>, $method: ident, $assign_tr: tt, $assign_method: ident, $err: expr) => {
 
@@ -241,7 +232,8 @@ macro_rules! shift_self_impl {
             type Output = Self;
         
             fn $method(self, rhs: $rhs<M>) -> Self {
-                let rhs: u32 = expect!(rhs.try_into().ok(), $err);
+                use crate::ExpType;
+                let rhs: ExpType = expect!(rhs.try_into().ok(), $err);
                 self.$method(rhs)
             }
         }
@@ -273,18 +265,17 @@ macro_rules! shift_self_impl {
 }
 pub(crate) use shift_self_impl;
 
-#[macro_use]
 macro_rules! all_shift_impls {
     ($Struct: tt) => {
         use core::convert::TryInto;
 
-        crate::macros::try_shift_impl!($Struct, Shl, shl, ShlAssign, shl_assign, "attempt to shift left by negative integer", i8, i16, i32, isize, i64, i128);
+        crate::macros::try_shift_impl!($Struct, Shl, shl, ShlAssign, shl_assign, "attempt to shift left with overflow", i8, i16, i32, isize, i64, i128);
 
-        crate::macros::try_shift_impl!($Struct, Shr, shr, ShrAssign, shr_assign, "attempt to shift right by negative integer", i8, i16, i32, isize, i64, i128);
+        crate::macros::try_shift_impl!($Struct, Shr, shr, ShrAssign, shr_assign, "attempt to shift right with overflow", i8, i16, i32, isize, i64, i128);
 
-        crate::macros::try_shift_impl!($Struct, Shl, shl, ShlAssign, shl_assign, "attempt to shift left with overflow", usize, u64, u128);
+        crate::macros::try_shift_impl!($Struct, Shl, shl, ShlAssign, shl_assign, "attempt to shift left with overflow", u32, u64, u128);
 
-        crate::macros::try_shift_impl!($Struct, Shr, shr, ShrAssign, shr_assign, "attempt to shift right with overflow", usize, u64, u128);
+        crate::macros::try_shift_impl!($Struct, Shr, shr, ShrAssign, shr_assign, "attempt to shift right with overflow", u32, u64, u128);
 
         crate::macros::shift_impl!($Struct, Shl, shl, ShlAssign, shl_assign, u8, u16);
 
@@ -300,3 +291,24 @@ macro_rules! all_shift_impls {
     }
 }
 pub(crate) use all_shift_impls;
+
+macro_rules! test_fmt {
+    {
+        int: $int: ty,
+        name: $name: ident,
+        format: $format: expr,
+        numbers: {
+            $($number: expr), *
+        }
+    } => {
+        #[test]
+        fn $name() {
+            $(
+                let buint = <$int>::from($number);
+                assert_eq!(format!($format, buint), format!($format, $number));
+            )*
+        }
+    }
+}
+
+pub(crate) use test_fmt;

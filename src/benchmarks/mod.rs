@@ -27,17 +27,6 @@ fn bench_eq(b: &mut Bencher) {
     });
 }*/
 
-use num_bigint::BigUint;
-
-#[bench]
-fn bench_biguint_add(b: &mut Bencher) {
-    let u1 = 394857209495782456444589679u128;
-    let u2 = 30249568710094856749560704u128;
-    b.iter(|| {
-        test::black_box(BigUint::from_bytes_be(&u1.to_be_bytes()) + BigUint::from_bytes_be(&u2.to_be_bytes()));
-    });
-}
-
 #[bench]
 fn bench_buint_add(b: &mut Bencher) {
     let u1 = 394857209495782456444589679u128;
@@ -47,4 +36,19 @@ fn bench_buint_add(b: &mut Bencher) {
     b.iter(|| {
         test::black_box(u2 + u1);
     });
+}
+
+#[bench]
+fn bench_test(b: &mut Bencher) {
+    let u1 = 2456799254794579u128;
+    let u = U128::from(u1);
+    b.iter(|| {
+        for i in 0..1000000 {
+            test::black_box({
+                let d = u.digits();
+                let u = U128::from(d);
+                //u + u;
+            });
+        }
+    })
 }

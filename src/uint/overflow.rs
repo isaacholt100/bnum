@@ -1,6 +1,8 @@
 use super::BUint;
 use crate::arithmetic;
 use crate::macros::overflowing_pow;
+use crate::ExpType;
+use crate::digit::Digit;
 
 //const LONG_MUL_THRESHOLD: usize = 32;
 //const KARATSUBA_THRESHOLD: usize = 256;
@@ -33,9 +35,10 @@ impl<const N: usize> BUint<N> {
     const fn long_mul(self, rhs: Self) -> (Self, bool) {
         let mut overflow = false;
         let mut out = Self::ZERO;
+        let mut carry: Digit;
         let mut i = 0;
         while i < N {
-            let mut carry = 0;
+            carry = 0;
             let mut j = 0;
             while j < N {
                 let index = i + j;
@@ -87,15 +90,15 @@ impl<const N: usize> BUint<N> {
             (self.not().add(Self::ONE), true)
         }
     }
-    pub const fn overflowing_shl(self, rhs: u32) -> (Self, bool) {
-        if rhs as usize >= Self::BITS {
+    pub const fn overflowing_shl(self, rhs: ExpType) -> (Self, bool) {
+        if rhs >= Self::BITS {
             (super::unchecked_shl(self, rhs & Self::BITS_MINUS_1), true)
         } else {
             (super::unchecked_shl(self, rhs), false)
         }
     }
-    pub const fn overflowing_shr(self, rhs: u32) -> (Self, bool) {
-        if rhs as usize >= Self::BITS {
+    pub const fn overflowing_shr(self, rhs: ExpType) -> (Self, bool) {
+        if rhs >= Self::BITS {
             (super::unchecked_shr(self, rhs & Self::BITS_MINUS_1), true)
         } else {
             (super::unchecked_shr(self, rhs), false)
@@ -106,14 +109,14 @@ impl<const N: usize> BUint<N> {
 
 #[cfg(test)]
 mod tests {
-    use crate::U128;
+    use crate::{U128};
 
     fn converter(tuple: (u128, bool)) -> (U128, bool) {
         (tuple.0.into(), tuple.1)
     }
 
     test_unsigned! {
-        test_name: test_overflowing_add,
+        name: overflowing_add,
         method: {
             overflowing_add(u128::MAX - 35348957, 34059304859034578959083490834850937458u128);
             overflowing_add(34987358947598374835u128, 340593453454564568u128);
@@ -121,7 +124,7 @@ mod tests {
         converter: converter
     }
     test_unsigned! {
-        test_name: test_overflowing_sub,
+        name: overflowing_sub,
         method: {
             overflowing_sub(34053457987u128, 34059304859034578959083490834850937458u128);
             overflowing_sub(34987358947598374835345345345454645645u128, 9856946974958764564564508456849058u128);
@@ -129,7 +132,7 @@ mod tests {
         converter: converter
     }
     test_unsigned! {
-        test_name: test_overflowing_mul,
+        name: overflowing_mul,
         method: {
             overflowing_mul(93875893745946675675675675745687345u128, 394857456456456456434534355645384975u128);
             overflowing_mul(103453534455674958789u128, 509u128);
@@ -137,7 +140,7 @@ mod tests {
         converter: converter
     }
     test_unsigned! {
-        test_name: test_overflowing_div,
+        name: overflowing_div,
         method: {
             overflowing_div(103573984758937498573594857389345u128, 3453454545345345345987u128);
             overflowing_div(193679457916593485358497389457u128, 684u128);
@@ -145,7 +148,7 @@ mod tests {
         converter: converter
     }
     test_unsigned! {
-        test_name: test_overflowing_div_euclid,
+        name: overflowing_div_euclid,
         method: {
             overflowing_div_euclid(349573947593745898375u128, 349573947593745898375u128);
             overflowing_div_euclid(0u128, 3459745734895734957984579u128);
@@ -153,7 +156,7 @@ mod tests {
         converter: converter
     }
     test_unsigned! {
-        test_name: test_overflowing_rem,
+        name: overflowing_rem,
         method: {
             overflowing_rem(2973459793475897343495439857u128, 56u128);
             overflowing_rem(1u128 << 64, 2u128);
@@ -161,7 +164,7 @@ mod tests {
         converter: converter
     }
     test_unsigned! {
-        test_name: test_overflowing_rem_euclid,
+        name: overflowing_rem_euclid,
         method: {
             overflowing_rem_euclid(27943758345638459034898756847983745u128, 37589734758937458973459u128);
             overflowing_rem_euclid(0u128, 93745934953894u128);
@@ -169,7 +172,7 @@ mod tests {
         converter: converter
     }
     test_unsigned! {
-        test_name: test_overflowing_neg,
+        name: overflowing_neg,
         method: {
             overflowing_neg(0u128);
             overflowing_neg(93498734534534273984577u128);
@@ -177,26 +180,26 @@ mod tests {
         converter: converter
     }
     test_unsigned! {
-        test_name: test_overflowing_shl,
+        name: overflowing_shl,
         method: {
-            overflowing_shl(u128::MAX - 3453475, 5u32);
-            overflowing_shl(934987774987u128, 55645u32);
+            overflowing_shl(u128::MAX - 3453475, 5 as u16);
+            overflowing_shl(934987774987u128, 55645 as u16);
         },
         converter: converter
     }
     test_unsigned! {
-        test_name: test_overflowing_shr,
+        name: overflowing_shr,
         method: {
-            overflowing_shr(349573947593475973453348759u128, 10u32);
-            overflowing_shr(972456948567894576895749857u128, 5897659u32);
+            overflowing_shr(349573947593475973453348759u128, 10 as u16);
+            overflowing_shr(972456948567894576895749857u128, 58969 as u16);
         },
         converter: converter
     }
     test_unsigned! {
-        test_name: test_overflowing_pow,
+        name: overflowing_pow,
         method: {
-            overflowing_pow(3444334u128, 3345334345u32);
-            overflowing_pow(23u128, 31u32);
+            overflowing_pow(3444334u128, 34345 as u16);
+            overflowing_pow(23u128, 31 as u16);
         },
         converter: converter
     }

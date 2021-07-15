@@ -6,7 +6,7 @@ use num_integer::Integer;
 use alloc::string::String;
 use alloc::vec::Vec;
 use crate::error::ParseIntErrorReason::*;
-use super::radix_bases;
+use crate::radix_bases;
 
 const BITS_U8: u8 = digit::BITS as u8;
 
@@ -155,6 +155,11 @@ impl<const N: usize> BUint<N> {
         if buf.is_empty() {
             return Some(Self::ZERO);
         }
+        #[cfg(feature = "u8_digit")]
+        if radix == 256 {
+            return Self::from_be_slice(buf);
+        }
+        
         if radix != 256 && buf.iter().any(|&b| b >= radix as u8) {
             return None;
         }
@@ -215,6 +220,11 @@ impl<const N: usize> BUint<N> {
         if buf.is_empty() {
             return Some(Self::ZERO);
         }
+        #[cfg(feature = "u8_digit")]
+        if radix == 256 {
+            return Self::from_le_slice(buf);
+        }
+
         if radix != 256 && buf.iter().any(|&b| b >= radix as u8) {
             return None;
         }
@@ -429,6 +439,11 @@ impl<const N: usize> BUint<N> {
         if self.is_zero() {
             vec![0]
         } else if radix.is_power_of_two() {
+            #[cfg(feature = "u8_digit")]
+            if radix == 256 {
+                return (&self.digits[0..=self.last_digit_index()]).to_vec();
+            }
+        
             let bits = ilog2(radix);
             if BITS_U8 % bits == 0 {
                 self.to_bitwise_digits_le(bits)
@@ -524,7 +539,7 @@ mod tests {
     use crate::BUint;
 
     test_unsigned! {
-        test_name: test_from_str_radix,
+        name: from_str_radix,
         method: {
             from_str_radix("af7345asdofiuweor", 35u32);
             from_str_radix("945hhdgi73945hjdfj", 32u32);
@@ -536,7 +551,7 @@ mod tests {
         }
     }
     #[test]
-    fn test_from_to_radix_le() {
+    fn from_to_radix_le() {
         let buf = &[23, 100, 45, 58, 44, 56, 55, 100, 76, 54, 10, 100, 100, 100, 100, 100, 200, 200, 200, 200, 255, 255, 255, 255, 255, 100, 100, 44, 60, 56, 48, 69, 160, 59, 50, 50, 200, 250, 250, 250, 250, 250, 240, 120];
         let u = BUint::<100>::from_radix_le(buf, 256).unwrap();
         let v = u.to_radix_le(256);
@@ -552,7 +567,7 @@ mod tests {
         assert_eq!(v, buf);
     }
     #[test]
-    fn test_from_to_radix_be() {
+    fn from_to_radix_be() {
         let buf = &[34, 57, 100, 184, 54, 40, 78, 10, 5, 200, 45, 67];
         let u = BUint::<100>::from_radix_be(buf, 201).unwrap();
         let v = u.to_radix_be(201);
@@ -573,7 +588,7 @@ mod tests {
         assert_eq!(v, buf);
     }
     #[test]
-    fn test_from_to_str_radix() {
+    fn from_to_str_radix() {
         let src = "34985789aasdfhoehdghjkh93485797df";
         let u = BUint::<100>::from_str_radix(src, 32).unwrap();
         let v = u.to_str_radix(32);
@@ -588,7 +603,7 @@ mod tests {
         assert_eq!(u.to_str_radix(4), src);
     }
     #[test]
-    fn test_parse_bytes() {
+    fn parse_bytes() {
         let src = "134957dkbhadoinegrhi983475hdgkhgdhiu3894hfd";
         let u = BUint::<100>::parse_bytes(src.as_bytes(), 35).unwrap();
         let v = BUint::<100>::from_str_radix(src, 35).unwrap();

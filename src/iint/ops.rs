@@ -1,16 +1,32 @@
 use super::BIint;
 use core::ops::{Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Div, DivAssign, Mul, MulAssign, Neg, Not, Rem, RemAssign, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign};
 use crate::macros::{expect, op_ref_impl, assign_ref_impl, all_shift_impls};
+use crate::ExpType;
 
 impl<const N: usize> BIint<N> {
+    #[cfg(debug_assertions)]
     pub const fn add(self, rhs: Self) -> Self {
         expect!(self.checked_add(rhs), "attempt to add with overflow")
     }
+    #[cfg(not(debug_assertions))]
+    pub const fn add(self, rhs: Self) -> Self {
+        self.wrapping_add(rhs)
+    }
+    #[cfg(debug_assertions)]
     pub const fn sub(self, rhs: Self) -> Self {
         expect!(self.checked_sub(rhs), "attempt to subtract with overflow")
     }
+    #[cfg(not(debug_assertions))]
+    pub const fn sub(self, rhs: Self) -> Self {
+        self.wrapping_sub(rhs)
+    }
+    #[cfg(debug_assertions)]
     pub const fn neg(self) -> Self {
-        expect!(self.checked_neg(), "attempt to negative with overflow")
+        expect!(self.checked_neg(), "attempt to negate with overflow")
+    }
+    #[cfg(not(debug_assertions))]
+    pub const fn neg(self) -> Self {
+        self.wrapping_neg()
     }
 }
 
@@ -103,8 +119,13 @@ assign_ref_impl!(DivAssign<BIint<N>> for BIint, div_assign);
 impl<const N: usize> Mul for BIint<N> {
     type Output = Self;
 
+    #[cfg(debug_assertions)]
     fn mul(self, rhs: Self) -> Self {
         expect!(self.checked_mul(rhs), "attempt to multiply with overflow")
+    }
+    #[cfg(not(debug_assertions))]
+    fn mul(self, rhs: Self) -> Self {
+        self.wrapping_mul(rhs)
     }
 }
 
@@ -145,8 +166,13 @@ impl<const N: usize> Not for &BIint<N> {
 impl<const N: usize> Neg for BIint<N> {
     type Output = Self;
 
+    #[cfg(debug_assertions)]
     fn neg(self) -> Self {
         expect!(self.checked_neg(), "attempt to negative with overflow")
+    }
+    #[cfg(not(debug_assertions))]
+    fn neg(self) -> Self {
+        self.wrapping_neg()
     }
 }
 
@@ -166,41 +192,51 @@ impl<const N: usize> RemAssign for BIint<N> {
 
 assign_ref_impl!(RemAssign<BIint<N>> for BIint, rem_assign);
 
-impl<const N: usize> Shl<u32> for BIint<N> {
+impl<const N: usize> Shl<ExpType> for BIint<N> {
     type Output = Self;
 
-    fn shl(self, rhs: u32) -> Self {
+    #[cfg(debug_assertions)]
+    fn shl(self, rhs: ExpType) -> Self {
         expect!(self.checked_shl(rhs), "attempt to shift left with overflow")
+    }
+    #[cfg(not(debug_assertions))]
+    fn shl(self, rhs: ExpType) -> Self {
+        self.wrapping_shl(rhs)
     }
 }
 
-op_ref_impl!(Shl<u32> for BIint, shl);
+op_ref_impl!(Shl<ExpType> for BIint, shl);
 
-impl<const N: usize> ShlAssign<u32> for BIint<N> {
-    fn shl_assign(&mut self, rhs: u32) {
+impl<const N: usize> ShlAssign<ExpType> for BIint<N> {
+    fn shl_assign(&mut self, rhs: ExpType) {
         *self = self.shl(rhs);
     }
 }
 
-assign_ref_impl!(ShlAssign<u32> for BIint, shl_assign);
+assign_ref_impl!(ShlAssign<ExpType> for BIint, shl_assign);
 
-impl<const N: usize> Shr<u32> for BIint<N> {
+impl<const N: usize> Shr<ExpType> for BIint<N> {
     type Output = Self;
 
-    fn shr(self, rhs: u32) -> Self {
+    #[cfg(debug_assertions)]
+    fn shr(self, rhs: ExpType) -> Self {
         expect!(self.checked_shr(rhs), "attempt to shift left with overflow")
+    }
+    #[cfg(not(debug_assertions))]
+    fn shr(self, rhs: ExpType) -> Self {
+        self.wrapping_shr(rhs)
     }
 }
 
-op_ref_impl!(Shr<u32> for BIint, shr);
+op_ref_impl!(Shr<ExpType> for BIint, shr);
 
-impl<const N: usize> ShrAssign<u32> for BIint<N> {
-    fn shr_assign(&mut self, rhs: u32) {
+impl<const N: usize> ShrAssign<ExpType> for BIint<N> {
+    fn shr_assign(&mut self, rhs: ExpType) {
         *self = self.shr(rhs);
     }
 }
 
-assign_ref_impl!(ShrAssign<u32> for BIint, shr_assign);
+assign_ref_impl!(ShrAssign<ExpType> for BIint, shr_assign);
 
 use crate::uint::BUint;
 
@@ -210,7 +246,7 @@ impl<const N: usize> Sub for BIint<N> {
     type Output = Self;
 
     fn sub(self, rhs: Self) -> Self {
-        expect!(self.checked_sub(rhs), "attempt to subtract with overflow")
+        Self::sub(self, rhs)
     }
 }
 

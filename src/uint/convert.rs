@@ -4,7 +4,7 @@ use core::convert::{TryFrom, TryInto};
 use core::str::FromStr;
 use crate::{TryFromIntError, ParseIntError};
 use crate::error::TryFromErrorReason::*;
-use crate::digit;
+use crate::digit::{self, Digit};
 use crate::macros::all_try_int_impls;
 
 impl<const N: usize> FromStr for BUint<N> {
@@ -32,19 +32,28 @@ impl<const N: usize> From<char> for BUint<N> {
     }
 }
 
+use crate::bound::{Assert, IsTrue};
+
 macro_rules! from_uint {
     ($($uint: tt),*) => {
-        $(impl<const N: usize> From<$uint> for BUint<N> {
-            fn from(int: $uint) -> Self {
-                let mut out = Self::ZERO;
-                out.digits[0] = int as u64;
-                out
+        $(
+            impl<const N: usize> From<$uint> for BUint<N> {
+                fn from(int: $uint) -> Self {
+                    const UINT_BITS: usize = $uint::BITS as usize;
+                    let mut out = Self::ZERO;
+                    let mut i = 0;
+                    while i << digit::BIT_SHIFT < UINT_BITS {
+                        out.digits[i] = (int >> (i << digit::BIT_SHIFT)) as Digit;
+                        i += 1;
+                    }
+                    out
+                }
             }
-        })*
+        )*
     }
 }
 
-from_uint!(u8, u16, u32, usize, u64);
+from_uint!(u8, u16, u32, usize, u64, u128);
 
 impl<const N: usize> TryFrom<f64> for BUint<N> {
     type Error = TryFromIntError;
@@ -120,17 +129,6 @@ macro_rules! try_from_iint {
 
 try_from_iint!(i8 -> u8, i16 -> u16, i32 -> u32, isize -> usize, i64 -> u64, i128 -> u128);
 
-impl<const N: usize> From<u128> for BUint<N> {
-    fn from(int: u128) -> Self {
-        let (high, low) = digit::from_double_digit(int);
-
-        let mut out = Self::ZERO;
-        out.digits[0] = low;
-        out.digits[1] = high;
-        out
-    }
-}
-
 all_try_int_impls!(BUint);
 
 impl<const N: usize> TryFrom<BUint<N>> for f32 {
@@ -149,13 +147,13 @@ impl<const N: usize> TryFrom<BUint<N>> for f64 {
     }
 }
 
-impl<const N: usize> From<[u64; N]> for BUint<N> {
-    fn from(digits: [u64; N]) -> Self {
+impl<const N: usize> From<[Digit; N]> for BUint<N> {
+    fn from(digits: [Digit; N]) -> Self {
         Self::from_digits(digits)
     }
 }
 
-impl<const N: usize> From<BUint<N>> for [u64; N] {
+impl<const N: usize> From<BUint<N>> for [Digit; N] {
     fn from(uint: BUint<N>) -> Self {
         uint.digits
     }
@@ -165,21 +163,20 @@ impl<const N: usize> From<BUint<N>> for [u64; N] {
 mod tests {
     use super::*;
     use crate::U128;
-    use crate::digit::Digit;
 
     #[test]
-    fn test_from_bool() {
+    fn from_bool() {
         assert_eq!(U128::from(true), u128::from(true).into());
         assert_eq!(U128::from(false), u128::from(false).into());
     }
 
     #[test]
-    fn test_from_char() {
+    fn from_char() {
         assert_eq!(U128::from('c'), u128::from('c').into());
     }
 
     test_unsigned! {
-        test_name: test_from_str,
+        name: from_str,
         method: {
             from_str("398475394875230495745");
         },
@@ -195,30 +192,24 @@ mod tests {
     fn it_converts_u8() {
         let u = 33u8;
         let a = U128::from(u);
-        assert_eq!(a.digits[0], u.into());
         let into: u8 = a.try_into().unwrap();
         assert_eq!(into, u);
-        assert_eq!(a.last_digit_index(), 0);
     }
 
     #[test]
     fn it_converts_u16() {
         let u = 48975u16;
         let a = U128::from(u);
-        assert_eq!(a.digits[0], u.into());
         let into: u16 = a.try_into().unwrap();
         assert_eq!(into, u);
-        assert_eq!(a.last_digit_index(), 0);
     }
 
     #[test]
     fn it_converts_u32() {
         let u = 903487869u32;
         let a = U128::from(u);
-        assert_eq!(a.digits[0], u.into());
         let into: u32 = a.try_into().unwrap();
         assert_eq!(into, u);
-        assert_eq!(a.last_digit_index(), 0);
     }
 
     #[test]
@@ -227,7 +218,6 @@ mod tests {
         let a = U128::from(u);
         let into: usize = a.try_into().unwrap();
         assert_eq!(into, u);
-        assert_eq!(a.last_digit_index(), 0);
     }
 
     #[test]
@@ -236,7 +226,6 @@ mod tests {
         let a = U128::from(u);
         let into: u64 = a.try_into().unwrap();
         assert_eq!(into, u);
-        assert_eq!(a.last_digit_index(), 0);
     }
 
     #[test]
@@ -245,17 +234,14 @@ mod tests {
         let a = U128::from(u);
         let into: u128 = a.try_into().unwrap();
         assert_eq!(into, u);
-        assert_eq!(a.last_digit_index(), 1);
     }
 
     #[test]
     fn it_converts_i8() {
         let u = 85i8;
         let a = U128::try_from(u).unwrap();
-        assert_eq!(a.digits[0], u as Digit);
         let into: i8 = a.try_into().unwrap();
         assert_eq!(into, u);
-        assert_eq!(a.last_digit_index(), 0);
         assert!(U128::try_from(-u).is_err());
     }
 
@@ -263,10 +249,8 @@ mod tests {
     fn it_converts_i16() {
         let u = 23422i16;
         let a = U128::try_from(u).unwrap();
-        assert_eq!(a.digits[0], u as Digit);
         let into: i16 = a.try_into().unwrap();
         assert_eq!(into, u);
-        assert_eq!(a.last_digit_index(), 0);
         assert!(U128::try_from(-u).is_err());
     }
 
@@ -274,10 +258,8 @@ mod tests {
     fn it_converts_i32() {
         let u = 5678943i32;
         let a = U128::try_from(u).unwrap();
-        assert_eq!(a.digits[0], u as Digit);
         let into: i32 = a.try_into().unwrap();
         assert_eq!(into, u);
-        assert_eq!(a.last_digit_index(), 0);
         assert!(U128::try_from(-u).is_err());
     }
 
@@ -287,7 +269,6 @@ mod tests {
         let a = U128::try_from(u).unwrap();
         let into: isize = a.try_into().unwrap();
         assert_eq!(into, u);
-        assert_eq!(a.last_digit_index(), 0);
         assert!(U128::try_from(-u).is_err());
     }
 
@@ -297,7 +278,6 @@ mod tests {
         let a = U128::try_from(u).unwrap();
         let into: i64 = a.try_into().unwrap();
         assert_eq!(into, u);
-        assert_eq!(a.last_digit_index(), 0);
         assert!(U128::try_from(-u).is_err());
     }
 
@@ -307,7 +287,6 @@ mod tests {
         let a = U128::try_from(u).unwrap();
         let into: i128 = a.try_into().unwrap();
         assert_eq!(into, u);
-        assert_eq!(a.last_digit_index(), 1);
         assert!(U128::try_from(-u).is_err());
     }
 

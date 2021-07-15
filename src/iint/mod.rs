@@ -3,11 +3,12 @@ use crate::uint::BUint;
 #[allow(unused_imports)]
 use crate::I128;
 use crate::macros::expect;
+use crate::ExpType;
 
 #[allow(unused)]
 macro_rules! test_signed {
     {
-        test_name: $test_name: ident,
+        name: $name: ident,
         method: {
             $($method: ident ($($arg: expr), *) ;) *
         }
@@ -15,14 +16,14 @@ macro_rules! test_signed {
         test! {
             big: I128,
             primitive: i128,
-            test_name: $test_name,
+            name: $name,
             method: {
                 $($method ($($arg), *) ;) *
             }
         }
     };
     {
-        test_name: $test_name: ident,
+        name: $name: ident,
         method: {
             $($method: ident ($($arg: expr), *) ;) *
         },
@@ -31,7 +32,7 @@ macro_rules! test_signed {
         test! {
             big: I128,
             primitive: i128,
-            test_name: $test_name,
+            name: $name,
             method: {
                 $($method ($($arg), *) ;) *
             },
@@ -66,19 +67,26 @@ mod fmt;
 mod endian;
 mod radix;
 
+#[cfg(feature = "serde_all")]
 use serde::{Serialize, Deserialize};
 
-/// Stored similarly to two's complement
-#[derive(Clone, Copy, Hash, Debug, Serialize, Deserialize)]
+#[cfg(feature = "serde_all")]
+#[derive(Clone, Copy, Hash, /*Debug,*/Serialize, Deserialize)]
 pub struct BIint<const N: usize> {
     uint: BUint<N>,
 }
-/// impl containing constants
 
+#[cfg(not(feature = "serde_all"))]
+#[derive(Clone, Copy, Hash, /*Debug,*/)]
+pub struct BIint<const N: usize> {
+    uint: BUint<N>,
+}
+
+/// impl containing constants
 impl<const N: usize> BIint<N> {
     pub const MIN: Self = {
         let mut digits = [0; N];
-        digits[N - 1] = 1;
+        digits[N - 1] = 1 << (digit::BITS - 1);
         Self {
             uint: BUint::from_digits(digits),
         }
@@ -105,27 +113,42 @@ impl<const N: usize> BIint<N> {
             uint: BUint::MAX,
         }
     };
-    pub const BYTES: usize = Self::BITS / 8;
-    pub const BITS: usize = N * digit::BITS;
+    pub const BYTES: usize = BUint::<N>::BYTES;
+    pub const BITS: usize = BUint::<N>::BITS;
     const N_MINUS_1: usize = N - 1;
+}
+
+macro_rules! log {
+    ($method: ident $(, $base: ident : $ty: ty)?) => {
+        pub const fn $method(self, $($base : $ty),*) -> ExpType {
+            if self.is_negative() {
+                #[cfg(debug_assertions)]
+                panic!("attempt to calculate log of negative number");
+                #[cfg(not(debug_assertions))]
+                0
+            } else {
+                self.uint.$method($($base.uint)?)
+            }
+        }
+    }
 }
 
 impl<const N: usize> BIint<N> {
     uint_method! {
-        fn count_ones(self) -> u32,
-        fn count_zeros(self) -> u32,
-        fn leading_zeros(self) -> u32,
-        fn trailing_zeros(self) -> u32,
-        fn leading_ones(self) -> u32,
-        fn trailing_ones(self) -> u32
+        fn count_ones(self) -> ExpType,
+        fn count_zeros(self) -> ExpType,
+        fn leading_zeros(self) -> ExpType,
+        fn trailing_zeros(self) -> ExpType,
+        fn leading_ones(self) -> ExpType,
+        fn trailing_ones(self) -> ExpType
     }
 
-    pub const fn rotate_left(self, n: u32) -> Self {
+    pub const fn rotate_left(self, n: ExpType) -> Self {
         Self {
             uint: self.uint.rotate_left(n),
         }
     }
-    pub const fn rotate_right(self, n: u32) -> Self {
+    pub const fn rotate_right(self, n: ExpType) -> Self {
         Self {
             uint: self.uint.rotate_right(n),
         }
@@ -147,15 +170,25 @@ impl<const N: usize> BIint<N> {
             self.uint
         }
     }
-    pub const fn pow(self, exp: u32) -> Self {
+
+    #[cfg(debug_assertions)]
+    pub const fn pow(self, exp: ExpType) -> Self {
         expect!(self.checked_pow(exp), "attempt to calculate power with overflow")
     }
+    #[cfg(not(debug_assertions))]
+    pub const fn pow(self, exp: ExpType) -> Self {
+        self.wrapping_pow(exp)
+    }
+
     pub const fn div_euclid(self, rhs: Self) -> Self {
-        expect!(self.checked_div_euclid(rhs), "attempt to divide by zero")
+        assert!(self.eq(&Self::MIN) && rhs.eq(&Self::NEG_ONE), "attempt to divide with overflow");
+        self.wrapping_div_euclid(rhs)
     }
     pub const fn rem_euclid(self, rhs: Self) -> Self {
-        expect!(self.checked_rem_euclid(rhs), "attempt to calculate remainder with a divisor of zero")
+        assert!(self.eq(&Self::MIN) && rhs.eq(&Self::NEG_ONE), "attempt to divide with overflow");
+        self.wrapping_rem_euclid(rhs)
     }
+
     #[cfg(debug_assertions)]
     pub const fn abs(self) -> Self {
         expect!(self.checked_abs(), "attempt to negate with overflow")
@@ -167,6 +200,7 @@ impl<const N: usize> BIint<N> {
             None => Self::MIN,
         }
     }
+
     pub const fn signum(self) -> Self {
         if self.is_negative() {
             Self::NEG_ONE
@@ -190,6 +224,7 @@ impl<const N: usize> BIint<N> {
             self.uint.is_power_of_two()
         }
     }
+
     #[cfg(debug_assertions)]
     pub const fn next_power_of_two(self) -> Self {
         expect!(self.checked_next_power_of_two(), "attempt to calculate next power of two with overflow")
@@ -198,6 +233,7 @@ impl<const N: usize> BIint<N> {
     pub const fn next_power_of_two(self) -> Self {
         self.wrapping_next_power_of_two()
     }
+
     pub const fn checked_next_power_of_two(self) -> Option<Self> {
         if self.is_negative() {
             Some(Self::ONE)
@@ -223,6 +259,9 @@ impl<const N: usize> BIint<N> {
             None => Self::MIN,
         }
     }
+    log!(log, base: Self);
+    log!(log2);
+    log!(log10);
 }
 
 #[cfg(test)]
@@ -230,97 +269,111 @@ mod tests {
     use super::*;
 
     test_signed! {
-        test_name: test_count_ones,
+        name: count_ones,
         method: {
             count_ones(34579834758459769875878374593749837548i128);
-            count_ones(-34579834758945986784957689473749837548i128);
-        }
+            count_ones(-720496794375698745967489576984655i128);
+        },
+        converter: crate::u32_to_exp
     }
     test_signed! {
-        test_name: test_count_zeros,
+        name: count_zeros,
         method: {
             count_zeros(97894576897934857979834753847877889734i128);
-            count_zeros(-97894576897934857979834753847877889734i128);
-        }
+            count_zeros(-302984759749756756756756756756756i128);
+        },
+        converter: crate::u32_to_exp
     }
 
     #[test]
-    fn test_is_positive() {
+    fn is_positive() {
         assert!(I128::from(304950490384054358903845i128).is_positive());
         assert!(!I128::from(-304950490384054358903845i128).is_positive());
         assert!(!I128::from(0).is_positive());
     }
     #[test]
-    fn test_is_negative() {
+    fn is_negative() {
         assert!(!I128::from(30890890894345345343453434i128).is_negative());
         assert!(I128::from(-8783947895897346938745873443i128).is_negative());
         assert!(!I128::from(0).is_negative());
     }
 
     test_signed! {
-        test_name: test_leading_zeros,
+        name: leading_zeros,
         method: {
             leading_zeros(1234897937459789793445634456858978937i128);
-            leading_zeros(-1234897937459789793445634456858978937i128);
-        }
+            leading_zeros(-30979347598678947567567567i128);
+            leading_zeros(0i128);
+        },
+        converter: crate::u32_to_exp
     }
     test_signed! {
-        test_name: test_trailing_zeros,
+        name: trailing_zeros,
         method: {
             trailing_zeros(8003849534758937495734957034534073957i128);
-            trailing_zeros(-8003849534758937495734957034534073957i128);
-        }
+            trailing_zeros(-972079507984789567894375674857645i128);
+            trailing_zeros(0i128);
+        },
+        converter: crate::u32_to_exp
     }
     test_signed! {
-        test_name: test_leading_ones,
+        name: leading_ones,
         method: {
             leading_ones(1);
+            leading_ones(290758976947569734598679898445i128);
             leading_ones(-1);
-        }
+            leading_ones(-923759647398567894358976894546i128);
+        },
+        converter: crate::u32_to_exp
     }
     test_signed! {
-        test_name: test_trailing_ones,
+        name: trailing_ones,
         method: {
-            trailing_ones(1);
+            trailing_ones(i128::MAX);
+            trailing_ones(72984756897458906798456456456i128);
             trailing_ones(-1);
-        }
+            trailing_ones(-293745027465978924758697459867i128);
+        },
+        converter: crate::u32_to_exp
     }
     test_signed! {
-        test_name: test_rotate_left,
+        name: rotate_left,
         method: {
-            rotate_left(3457894375984563459457i128, 69845u32);
-            rotate_left(-34598792345789i128, 4u32);
+            rotate_left(3457894375984563459457i128, 61845 as u16);
+            rotate_left(-34598792345789i128, 4 as u16);
         }
     }
     test_signed! {
-        test_name: test_rotate_right,
+        name: rotate_right,
         method: {
-            rotate_right(109375495687201345976994587i128, 354u32);
-            rotate_right(-4598674589769i128, 75u32);
+            rotate_right(109375495687201345976994587i128, 354 as u16);
+            rotate_right(-4598674589769i128, 75 as u16);
         }
     }
     test_signed! {
-        test_name: test_swap_bytes,
+        name: swap_bytes,
         method: {
             swap_bytes(98934757983792102304988394759834587i128);
             swap_bytes(-234i128);
         }
     }
     test_signed! {
-        test_name: test_reverse_bits,
+        name: reverse_bits,
         method: {
             reverse_bits(349579348509348374589749083490580i128);
             reverse_bits(-22003495898345i128);
         }
     }
     test_signed! {
-        test_name: test_unsigned_abs,
+        name: unsigned_abs,
         method: {
             unsigned_abs(i128::MIN);
-            unsigned_abs(45645634534534i128);
-            unsigned_abs(-456456345334534i128);
+            unsigned_abs(0);
+            unsigned_abs(45645634534564264564534i128);
+            unsigned_abs(-9729307972495769745965545i128);
         }
     }
+    // TODO: test other methods
 }
 
 impl<const N: usize> BIint<N> {

@@ -87,27 +87,11 @@ impl<const N: usize> UpperHex for BUint<N> {
 #[cfg(test)]
 mod tests {
     use crate::U128;
-
-    macro_rules! test_fmt {
-        {
-            test_name: $name: ident,
-            format: $format: expr,
-            numbers: {
-                $($number: expr), *
-            }
-        } => {
-            #[test]
-            fn $name() {
-                $(
-                    let buint = U128::from($number);
-                    assert_eq!(format!($format, buint), format!($format, $number));
-                )*
-            }
-        }
-    }
+    use crate::macros::test_fmt;
 
     test_fmt! {
-        test_name: test_binary_format,
+        int: U128,
+        name: binary_format,
         format: "{:b}",
         numbers: {
             30034348u128,
@@ -117,7 +101,8 @@ mod tests {
         }
     }
     test_fmt! {
-        test_name: test_binary_verbose_format,
+        int: U128,
+        name: binary_verbose_format,
         format: "{:#b}",
         numbers: {
             34967984576947586764957u128,
@@ -127,7 +112,8 @@ mod tests {
         }
     }
     test_fmt! {
-        test_name: test_lower_hex_format,
+        int: U128,
+        name: lower_hex_format,
         format: "{:x}",
         numbers: {
             0x45435345u128,
@@ -137,7 +123,8 @@ mod tests {
         }
     }
     test_fmt! {
-        test_name: test_lower_hex_verbose_format,
+        int: U128,
+        name: lower_hex_verbose_format,
         format: "{:#x}",
         numbers: {
             0x34534400000000000000000000434345u128,
@@ -147,7 +134,8 @@ mod tests {
         }
     }
     test_fmt! {
-        test_name: test_octal_format,
+        int: U128,
+        name: octal_format,
         format: "{:o}",
         numbers: {
             0o30000000000000000000000000000000000001u128,
@@ -157,7 +145,8 @@ mod tests {
         }
     }
     test_fmt! {
-        test_name: test_octal_verbose_format,
+        int: U128,
+        name: octal_verbose_format,
         format: "{:#o}",
         numbers: {
             0o30000000000000000000000000000000000001u128,
@@ -167,7 +156,8 @@ mod tests {
         }
     }
     test_fmt! {
-        test_name: test_upper_hex_format,
+        int: U128,
+        name: upper_hex_format,
         format: "{:X}",
         numbers: {
             0x18000000000000000000000000001u128,
@@ -177,7 +167,8 @@ mod tests {
         }
     }
     test_fmt! {
-        test_name: test_upper_hex_verbose_format,
+        int: U128,
+        name: upper_hex_verbose_format,
         format: "{:#X}",
         numbers: {
             0x49867ABBBB34754975CC454u128,
@@ -187,7 +178,8 @@ mod tests {
         }
     }
     test_fmt! {
-        test_name: test_display_format,
+        int: U128,
+        name: display_format,
         format: "{}",
         numbers: {
             349578347589374664564568395748345u128,
@@ -197,7 +189,8 @@ mod tests {
         }
     }
     test_fmt! {
-        test_name: test_lower_exp_format,
+        int: U128,
+        name: lower_exp_format,
         format: "{:e}",
         numbers: {
             831647298645678945768947500000u128,
@@ -209,7 +202,8 @@ mod tests {
         }
     }
     test_fmt! {
-        test_name: test_upper_exp_format,
+        int: U128,
+        name: upper_exp_format,
         format: "{:E}",
         numbers: {
             982736597459678457689674000000u128,

@@ -1,10 +1,13 @@
 use crate::digit::{Digit, self};
 use crate::macros::expect;
+use crate::ExpType;
+use core::cmp::Ordering;
+use alloc::vec::Vec;
 
 #[allow(unused)]
 macro_rules! test_unsigned {
     {
-        test_name: $test_name: ident,
+        name: $name: ident,
         method: {
             $($method: ident ($($arg: expr), *) ;) *
         }
@@ -12,14 +15,14 @@ macro_rules! test_unsigned {
         test! {
             big: U128,
             primitive: u128,
-            test_name: $test_name,
+            name: $name,
             method: {
                 $($method ($($arg), *) ;) *
             }
         }
     };
     {
-        test_name: $test_name: ident,
+        name: $name: ident,
         method: {
             $($method: ident ($($arg: expr), *) ;) *
         },
@@ -28,7 +31,7 @@ macro_rules! test_unsigned {
         test! {
             big: U128,
             primitive: u128,
-            test_name: $test_name,
+            name: $name,
             method: {
                 $($method ($($arg), *) ;) *
             },
@@ -37,8 +40,7 @@ macro_rules! test_unsigned {
     }
 }
 
-#[allow(unused)]
-#[macro_use]
+/*#[allow(unused)]
 macro_rules! possible_const_fn {
     ($self: ident, fn $name: ident (self $(,$param: ident : $Type: ty)*) -> $ret: ty $body: block) => {
         #[cfg(feature = "intrinsics")]
@@ -46,8 +48,7 @@ macro_rules! possible_const_fn {
         #[cfg(not(feature = "intrinsics"))]
         pub const fn $name($self $(,$param: $Type)*) -> $ret $body
     };
-}
-use serde::{Serialize, Deserialize};
+}*/
 
 mod cmp;
 mod convert;
@@ -61,17 +62,20 @@ mod fmt;
 mod endian;
 mod radix;
 mod cast;
-mod radix_bases;
 
+#[cfg(feature = "nightly")]
 pub use cast::{cast_up, cast_down};
 
-const fn unchecked_shl<const N: usize>(u: BUint<N>, rhs: u32) -> BUint<N> {
+//pub use checked::div_float;
+
+pub const fn unchecked_shl<const N: usize>(u: BUint<N>, rhs: ExpType) -> BUint<N> {
+    // This is to make sure that the number of bits in `u` doesn't overflow a usize, which would cause unexpected behaviour for shifting
+    assert!(BUint::<N>::BITS <= usize::MAX);
     if rhs == 0 {
         u
     } else {
-        const BITS_MINUS_1: u32 = digit::BITS_U32 - 1;
         let digit_shift = (rhs >> digit::BIT_SHIFT) as usize;
-        let shift = (rhs & BITS_MINUS_1) as u8;
+        let shift = (rhs & digit::BITS_MINUS_1) as u8;
         
         let mut out = BUint::ZERO;
         let mut i = digit_shift;
@@ -84,7 +88,7 @@ const fn unchecked_shl<const N: usize>(u: BUint<N>, rhs: u32) -> BUint<N> {
             }
         } else {
             let mut carry = 0;
-            let carry_shift = digit::BITS_U32 as u8 - shift;
+            let carry_shift = Digit::BITS as u8 - shift;
             let mut last_index = digit_shift;
             while i < N {
                 let digit = u.digits[i - digit_shift];
@@ -109,14 +113,16 @@ const fn unchecked_shl<const N: usize>(u: BUint<N>, rhs: u32) -> BUint<N> {
         out
     }
 }
-const fn unchecked_shr<const N: usize>(u: BUint<N>, rhs: u32) -> BUint<N> {
+
+pub const fn unchecked_shr<const N: usize>(u: BUint<N>, rhs: ExpType) -> BUint<N> {
+    // This is to make sure that the number of bits in `u` doesn't overflow a usize, which would cause unexpected behaviour for shifting
+    assert!(BUint::<N>::BITS <= usize::MAX);
     if rhs == 0 {
         u
     } else {
-        const BITS_MINUS_1: u32 = digit::BITS_U32 - 1;
         let digit_shift = (rhs >> digit::BIT_SHIFT) as usize;
-        let shift = (rhs & BITS_MINUS_1) as u8;
-        
+        let shift = (rhs & digit::BITS_MINUS_1) as u8;
+
         let mut out = BUint::ZERO;
         let mut i = digit_shift;
 
@@ -128,7 +134,7 @@ const fn unchecked_shr<const N: usize>(u: BUint<N>, rhs: u32) -> BUint<N> {
             }
         } else {
             let mut borrow = 0;
-            let borrow_shift = digit::BITS_U32 as u8 - shift;
+            let borrow_shift = Digit::BITS as u8 - shift;
             while i < N {
                 let digit = u.digits[BUint::<N>::N_MINUS_1 + digit_shift - i];
                 let new_borrow = digit << borrow_shift;
@@ -143,13 +149,24 @@ const fn unchecked_shr<const N: usize>(u: BUint<N>, rhs: u32) -> BUint<N> {
     }
 }
 
+#[cfg(feature = "serde_all")]
 use serde_big_array::BigArray;
+#[cfg(feature = "serde_all")]
+use serde::{Serialize, Deserialize};
 
-#[derive(Clone, Copy, Hash, Debug, Serialize, Deserialize)]
 
 /// Big unsigned integer type. Base 2^64 digits are stored as little endian (least significant bit first);
+#[cfg(feature = "serde_all")]
+#[derive(Clone, Copy, Hash, Debug, Serialize, Deserialize)]
 pub struct BUint<const N: usize> {
     #[serde(with = "BigArray")]
+    digits: [Digit; N],
+}
+
+/// Big unsigned integer type. Base 2^64 digits are stored as little endian (least significant bit first);
+#[cfg(not(feature = "serde_all"))]
+#[derive(Clone, Copy, Hash, Debug)]
+pub struct BUint<const N: usize> {
     digits: [Digit; N],
 }
 
@@ -205,11 +222,7 @@ impl<const N: usize> BUint<N> {
     /// let u128_one = 1u128;
     /// assert_eq!(BUint::<2>::from(u128_one), BUint::<2>::ONE);
     /// ```
-    pub const ONE: Self = {
-        let mut out = Self::ZERO;
-        out.digits[0] = 1;
-        out
-    };
+    pub const ONE: Self = Self::from_digit(1);
     /// The size of this type in bits.
     /// 
     /// # Examples
@@ -232,13 +245,13 @@ impl<const N: usize> BUint<N> {
     pub const BYTES: usize = Self::BITS / 8;
 }
 
-pub const fn trailing_zeros<const N: usize>(uint: BUint<N>) -> (u32, bool) {
+pub const fn trailing_zeros<const N: usize>(uint: BUint<N>) -> (ExpType, bool) {
     let mut zeros = 0;
     let mut did_break = false;
     let mut i = 0;
     while i < N {
         let digit = uint.digits[i];
-        zeros += digit.trailing_zeros();
+        zeros += digit.trailing_zeros() as ExpType;
         if digit != Digit::MIN {
             did_break = true;
             break;
@@ -248,13 +261,13 @@ pub const fn trailing_zeros<const N: usize>(uint: BUint<N>) -> (u32, bool) {
     (zeros, did_break)
 }
 
-pub const fn trailing_ones<const N: usize>(uint: BUint<N>) -> (u32, bool) {
+pub const fn trailing_ones<const N: usize>(uint: BUint<N>) -> (ExpType, bool) {
     let mut ones = 0;
     let mut did_break = false;
     let mut i = 0;
     while i < N {
         let digit = uint.digits[i];
-        ones += digit.trailing_ones();
+        ones += digit.trailing_ones() as ExpType;
         if digit != Digit::MAX {
             did_break = true;
             break;
@@ -265,7 +278,6 @@ pub const fn trailing_ones<const N: usize>(uint: BUint<N>) -> (u32, bool) {
 }
 
 impl<const N: usize> BUint<N> {
-
     /// Returns the number of ones in the binary representation of `self`.
     /// 
     /// # Examples
@@ -276,11 +288,11 @@ impl<const N: usize> BUint<N> {
     /// let n = BUint::<4>::from(0b010111101010000u64);
     /// assert_eq!(n.count_ones(), 7);
     /// ```
-    pub const fn count_ones(self) -> u32 {
+    pub const fn count_ones(self) -> ExpType {
         let mut ones = 0;
         let mut i = 0;
         while i < N {
-            ones += self.digits[i].count_ones();
+            ones += self.digits[i].count_ones() as ExpType;
             i += 1;
         }
         ones
@@ -295,11 +307,11 @@ impl<const N: usize> BUint<N> {
     /// 
     /// assert_eq!(BUint::<5>::MAX.count_zeros(), 0);
     /// ```
-    pub const fn count_zeros(self) -> u32 {
+    pub const fn count_zeros(self) -> ExpType {
         let mut zeros = 0;
         let mut i = 0;
         while i < N {
-            zeros += self.digits[i].count_zeros();
+            zeros += self.digits[i].count_zeros() as ExpType;
             i += 1;
         }
         zeros
@@ -315,13 +327,13 @@ impl<const N: usize> BUint<N> {
     /// let n: BUint::<3> = BUint::<3>::MAX >> 4;
     /// assert_eq!(n.leading_zeros(), 4);
     /// ```
-    pub const fn leading_zeros(self) -> u32 {
+    pub const fn leading_zeros(self) -> ExpType {
         let mut zeros = 0;
         let mut i = N;
         while i > 0 {
             i -= 1;
             let digit = self.digits[i];
-            zeros += digit.leading_zeros();
+            zeros += digit.leading_zeros() as ExpType;
             if digit != Digit::MIN {
                 break;
             }
@@ -339,7 +351,7 @@ impl<const N: usize> BUint<N> {
     /// let n = BUint::<2>::from(0b01111010100000u128);
     /// assert_eq!(n.trailing_zeros(), 5);
     /// ```
-    pub const fn trailing_zeros(self) -> u32 {
+    pub const fn trailing_zeros(self) -> ExpType {
         trailing_zeros(self).0
     }
 
@@ -353,13 +365,13 @@ impl<const N: usize> BUint<N> {
     /// let n: BUint::<3> = BUint::<3>::MAX >> 6;
     /// assert_eq!((!n).leading_ones(), 6);
     /// ```
-    pub const fn leading_ones(self) -> u32 {
+    pub const fn leading_ones(self) -> ExpType {
         let mut ones = 0;
         let mut i = N;
         while i > 0 {
             i -= 1;
             let digit = self.digits[i];
-            ones += digit.leading_ones();
+            ones += digit.leading_ones() as ExpType;
             if digit != Digit::MAX {
                 break;
             }
@@ -377,19 +389,19 @@ impl<const N: usize> BUint<N> {
     /// let n = BUint::<2>::from(0b1000101011011u128);
     /// assert_eq!(n.trailing_ones(), 2);
     /// ```
-    pub const fn trailing_ones(self) -> u32 {
+    pub const fn trailing_ones(self) -> ExpType {
         trailing_ones(self).0
     }
-    const fn unchecked_rotate_left(self, n: u32) -> Self {
+    const fn unchecked_rotate_left(self, n: ExpType) -> Self {
         if n == 0 {
             self
         } else {
-            let digit_shift = (n >> digit::BIT_SHIFT) as usize;
-            let shift = (n % digit::BITS_U32) as u8;
+            let digit_shift = (n >> digit::BIT_SHIFT) as usize % N;
+            let shift = (n % digit::BITS) as u8;
             
             let mut out = Self::ZERO;
             let mut carry = 0;
-            let carry_shift = digit::BITS_U32 as u8 - shift;
+            let carry_shift = Digit::BITS as u8 - shift;
 
             let mut i = 0;
             while i < N - digit_shift {
@@ -414,7 +426,7 @@ impl<const N: usize> BUint<N> {
             out
         }
     }
-    const BITS_MINUS_1: u32 = (Self::BITS - 1) as u32;
+    const BITS_MINUS_1: ExpType = (Self::BITS - 1) as ExpType;
 
     /// Shifts the bits to the left by a specified amount, `n`, wrapping the truncated bits to the end of the resulting integer.
     /// 
@@ -430,9 +442,8 @@ impl<const N: usize> BUint<N> {
     ///
     /// assert_eq!(n.rotate_left(16), m);
     /// ```
-    pub const fn rotate_left(self, n: u32) -> Self {
-        let n = n & Self::BITS_MINUS_1;
-        self.unchecked_rotate_left(n)
+    pub const fn rotate_left(self, n: ExpType) -> Self {
+        self.unchecked_rotate_left(n & Self::BITS_MINUS_1)
     }
 
     /// Shifts the bits to the right by a specified amount, `n`, wrapping the truncated bits to the beginning of the resulting integer.
@@ -451,9 +462,9 @@ impl<const N: usize> BUint<N> {
     ///
     /// assert_eq!(n.rotate_right(16), m);
     /// ```
-    pub const fn rotate_right(self, n: u32) -> Self {
+    pub const fn rotate_right(self, n: ExpType) -> Self {
         let n = n & Self::BITS_MINUS_1;
-        self.unchecked_rotate_left(Self::BITS as u32 - n)
+        self.unchecked_rotate_left(Self::BITS as ExpType - n)
     }
     const N_MINUS_1: usize = N - 1;
 
@@ -500,6 +511,7 @@ impl<const N: usize> BUint<N> {
         }
         uint
     }
+
     /// Raises `self` to the power of `exp`, using exponentiation by squaring.
     /// 
     /// # Examples
@@ -511,8 +523,13 @@ impl<const N: usize> BUint<N> {
     /// let m = BUint::<2>::from(3u128.pow(5));
     /// assert_eq!(n.pow(5), m);
     /// ```
-    pub const fn pow(self, exp: u32) -> Self {
+    #[cfg(debug_assertions)]
+    pub const fn pow(self, exp: ExpType) -> Self {
         expect!(self.checked_pow(exp), "attempt to calculate power with overflow")
+    }
+    #[cfg(not(debug_assertions))]
+    pub const fn pow(self, exp: ExpType) -> Self {
+        self.wrapping_pow(exp)
     }
 
     /// Performs Euclidean division.
@@ -639,7 +656,7 @@ impl<const N: usize> BUint<N> {
             }
         } else {
             let mut out = Self::ZERO;
-            out.digits[last_set_digit_index] = 1 << (digit::BITS_U32 - leading_zeros);
+            out.digits[last_set_digit_index] = 1 << (Digit::BITS - leading_zeros);
             Some(out)
         }
     }
@@ -662,20 +679,58 @@ impl<const N: usize> BUint<N> {
             None => Self::ZERO,
         }
     }
+
+    #[cfg(debug_assertions)]
+    pub const fn log2(self) -> ExpType {
+        expect!(self.checked_log2(), "attempt to calculate log2 of zero")
+    }
+    #[cfg(not(debug_assertions))]
+    pub const fn log2(self) -> ExpType {
+        match self.checked_log2() {
+            Some(n) => n,
+            None => 0,
+        }
+    }
+
+    #[cfg(debug_assertions)]
+    pub const fn log10(self) -> ExpType {
+        expect!(self.checked_log10(), "attempt to calculate log10 of zero")
+    }
+    #[cfg(not(debug_assertions))]
+    pub const fn log10(self) -> ExpType {
+        match self.checked_log10() {
+            Some(n) => n,
+            None => 0,
+        }
+    }
+
+    #[cfg(debug_assertions)]
+    pub const fn log(self, base: Self) -> ExpType {
+        expect!(self.checked_log(base), "attempt to calculate log of zero")
+    }
+    #[cfg(not(debug_assertions))]
+    pub const fn log(self, base: Self) -> ExpType {
+        match self.checked_log(base) {
+            Some(n) => n,
+            None => 0,
+        }
+    }
 }
 
 impl<const N: usize> BUint<N> {
     const fn to_mantissa(&self) -> u64 {
+        if N == 0 {
+            return 0;
+        }
         let bits = self.bits();
         if bits <= digit::BITS {
-            return self.digits[0];
+            return self.digits[0] as u64;
         }
-        let mut bits = bits as u64;
+        let mut bits = bits;
         let mut out: u64 = 0;
         let mut out_bits = 0;
-        const BITS_MINUS_1: u64 = digit::BITS as u64 - 1;
 
-        const fn min(a: u64, b: u64) -> u64 {
+        const fn min(a: ExpType, b: ExpType) -> ExpType {
             if a < b {
                 a
             } else {
@@ -683,16 +738,16 @@ impl<const N: usize> BUint<N> {
             }
         }
 
-        let mut i = N;
+        let mut i = self.last_digit_index() + 1;
         while i > 0 {
             i -= 1;
-            let digit_bits = ((bits - 1) & BITS_MINUS_1) + 1;
+            let digit_bits = ((bits - 1) & digit::BITS_MINUS_1) + 1;
             let bits_want = min(64 - out_bits, digit_bits);
             if bits_want != 64 {
                 out <<= bits_want;
             }
-            let d0 = self.digits[i] >> (digit_bits - bits_want);
-            out |= d0;
+            let d0 = self.digits[i] as u64 >> (digit_bits - bits_want);
+            out |= d0 as u64;
             out_bits += bits_want;
             bits -= bits_want;
 
@@ -718,8 +773,8 @@ impl<const N: usize> BUint<N> {
     /// let m = BUint::<2>::from(99384759374394579457u128);
     /// assert_eq!(m.bits(), BUint::<2>::BITS - m.leading_zeros() as usize);
     /// ```
-    pub const fn bits(&self) -> usize {
-        Self::BITS - self.leading_zeros() as usize
+    pub const fn bits(&self) -> ExpType {
+        Self::BITS as ExpType - self.leading_zeros()
     }
 
     /// Returns a boolean of the bit in the given position (`true` if the bit is set).
@@ -735,10 +790,8 @@ impl<const N: usize> BUint<N> {
     /// assert!(!n.bit(BUint::<2>::BITS - 1));
     /// ```
     pub const fn bit(&self, index: usize) -> bool {
-        const BITS_MINUS_1: usize = digit::BITS - 1;
-
         let digit = self.digits[index >> digit::BIT_SHIFT];
-        digit & (1 << (index & BITS_MINUS_1)) != 0
+        digit & (1 << (index & digit::BITS_MINUS_1)) != 0
     }
 
     /// Returns a `BUint` whose value is `2^power`.
@@ -791,6 +844,66 @@ impl<const N: usize> BUint<N> {
         }
         true
     }
+
+    /// Returns whether `self` is one.
+    pub const fn is_one(&self) -> bool {
+        if N == 0 || self.digits[0] != 1 {
+            return false;
+        }
+        let mut i = 1;
+        while i < N {
+            if (&self.digits)[i] != 0 {
+                return false;
+            }
+            i += 1;
+        }
+        true
+    }
+
+    /// Returns the smallest of `self` and `other`.
+    pub const fn min(&self, other: &Self) -> Self {
+        match Self::cmp(&self, &other) {
+            Ordering::Greater => *other,
+            _ => *self,
+        }
+    }
+
+    /// Returns the largest of `self` and `other`.
+    pub const fn max(&self, other: &Self) -> Self {
+        match Self::cmp(&self, &other) {
+            Ordering::Less => *other,
+            _ => *self,
+        }
+    }
+
+    /// Calculates the greatest common denominator of `self` and `other`.
+    pub const fn gcd(self, other: Self) -> Self {
+        //use std::mem;
+        let (mut u, mut v) = (self, other);
+        if u.is_zero() {
+            return v;
+        } else if v.is_zero() {
+            return u;
+        }
+        let i = u.trailing_zeros();
+        u = unchecked_shr(u, i);
+        let j = v.trailing_zeros();
+        v = unchecked_shr(v, j);
+        let k = if i > j { j } else { i };
+
+        loop {
+            if let Ordering::Greater = u.cmp(&v)  {
+                let t = (u, v);
+                v = t.0;
+                u = t.1;
+            }
+            v = v.wrapping_sub(u);
+            if v.is_zero() {
+                return unchecked_shl(u, k);
+            }
+            v = unchecked_shr(v, v.trailing_zeros());
+        }
+    }
     const fn last_digit_index(&self) -> usize {
         let mut index = 0;
         let mut i = 1;
@@ -802,6 +915,19 @@ impl<const N: usize> BUint<N> {
         }
         index
     }
+    /*fn pollard_rho(&self) -> Vec<Self> {
+
+    }
+    pub fn factors(&self) -> Vec<Self> {
+        use num_traits::ToPrimitive;
+        if let Some(n) = self.to_u16() {
+            crate::factors::FACTORS[n as usize].iter().map(|n| {
+                Self::from(*n)
+            }).collect()
+        } else {
+            todo!()
+        }
+    }*/
 }
 
 use core::default::Default;
@@ -841,108 +967,114 @@ impl<'a, const N: usize> Sum<&'a Self> for BUint<N> {
 
 #[cfg(test)]
 mod tests {
-    use crate::U128;
+    use crate::{U128};
 
     test_unsigned! {
-        test_name: test_count_ones,
+        name: count_ones,
         method: {
             count_ones(203583443659837459073490583937485738404u128);
             count_ones(3947594755489u128);
-        }
+        },
+        converter: crate::u32_to_exp
     }
     test_unsigned! {
-        test_name: test_count_zeros,
+        name: count_zeros,
         method: {
             count_zeros(7435098345734853045348057390485934908u128);
             count_zeros(3985789475546u128);
-        }
+        },
+        converter: crate::u32_to_exp
     }
     test_unsigned! {
-        test_name: test_leading_ones,
+        name: leading_ones,
         method: {
             leading_ones(3948590439409853946593894579834793459u128);
             leading_ones(u128::MAX - 0b111);
-        }
+        },
+        converter: crate::u32_to_exp
     }
     test_unsigned! {
-        test_name: test_leading_zeros,
+        name: leading_zeros,
         method: {
             leading_zeros(49859830845963457783945789734895834754u128);
             leading_zeros(40545768945769u128);
-        }
+        },
+        converter: crate::u32_to_exp
     }
     test_unsigned! {
-        test_name: test_trailing_ones,
+        name: trailing_ones,
         method: {
             trailing_ones(45678345973495637458973488509345903458u128);
             trailing_ones(u128::MAX);
-        }
+        },
+        converter: crate::u32_to_exp
     }
     test_unsigned! {
-        test_name: test_trailing_zeros,
+        name: trailing_zeros,
         method: {
             trailing_zeros(23488903477439859084534857349857034599u128);
             trailing_zeros(343453454565u128);
-        }
+        },
+        converter: crate::u32_to_exp
     }
     test_unsigned! {
-        test_name: test_rotate_left,
+        name: rotate_left,
         method: {
-            rotate_left(394857348975983475983745983798579483u128, 5555u32);
-            rotate_left(4056890546059u128, 12u32);
+            rotate_left(394857348975983475983745983798579483u128, 5555 as u16);
+            rotate_left(4056890546059u128, 12 as u16);
         }
     }
     test_unsigned! {
-        test_name: test_rotate_right,
+        name: rotate_right,
         method: {
-            rotate_right(90845674987957297107197973489575938457u128, 10934u32);
-            rotate_right(1345978945679u128, 33u32);
+            rotate_right(90845674987957297107197973489575938457u128, 10934 as u16);
+            rotate_right(1345978945679u128, 33 as u16);
         }
     }
     test_unsigned! {
-        test_name: test_swap_bytes,
+        name: swap_bytes,
         method: {
             swap_bytes(3749589304858934758390485937458349058u128);
             swap_bytes(3405567798345u128);
         }
     }
     test_unsigned! {
-        test_name: test_reverse_bits,
+        name: reverse_bits,
         method: {
             reverse_bits(3345565093489578938485934957893745984u128);
             reverse_bits(608670986790835u128);
         }
     }
     test_unsigned! {
-        test_name: test_pow,
+        name: pow,
         method: {
-            pow(59345u128, 4u32);
-            pow(54u128, 9u32);
+            pow(59345u128, 4 as u16);
+            pow(54u128, 9 as u16);
         }
     }
     test_unsigned! {
-        test_name: test_div_euclid,
+        name: div_euclid,
         method: {
             div_euclid(345987945738945789347u128, 345987945738945789347u128);
             div_euclid(139475893475987093754099u128, 3459837453479u128);
         }
     }
     test_unsigned! {
-        test_name: test_rem_euclid,
+        name: rem_euclid,
         method: {
             rem_euclid(8094589656797897987u128, 8094589656797897987u128);
             rem_euclid(3734597349574397598374594598u128, 3495634895793845783745897u128);
         }
     }
     #[test]
-    fn test_is_power_of_two() {
+    fn is_power_of_two() {
         let power = U128::from(1u128 << 88);
         let non_power = U128::from((1u128 << 88) - 5);
         assert!(power.is_power_of_two());
         assert!(!non_power.is_power_of_two());
     }
     test_unsigned! {
-        test_name: test_checked_next_power_of_two,
+        name: checked_next_power_of_two,
         method: {
             checked_next_power_of_two(1340539475937597893475987u128);
             checked_next_power_of_two(u128::MAX);
@@ -955,21 +1087,21 @@ mod tests {
         }
     }
     test_unsigned! {
-        test_name: test_next_power_of_two,
+        name: next_power_of_two,
         method: {
             next_power_of_two(394857834758937458973489573894759879u128);
             next_power_of_two(800345894358459u128);
         }
     }
     /*test_unsigned! {
-        test_name: test_wrapping_next_power_of_two,
+        name: wrapping_next_power_of_two,
         method: {
             wrapping_next_power_of_two(97495768945869084687890u128);
             wrapping_next_power_of_two(u128::MAX);
         }
     }*/
     #[test]
-    fn test_bit() {
+    fn bit() {
         let u = U128::from(0b001010100101010101u128);
         assert!(u.bit(0));
         assert!(!u.bit(1));
@@ -978,13 +1110,13 @@ mod tests {
         assert!(u.bit(15));
     }
     #[test]
-    fn test_is_zero() {
+    fn is_zero() {
         assert!(U128::MIN.is_zero());
         assert!(!U128::MAX.is_zero());
         assert!(!U128::ONE.is_zero());
     }
     #[test]
-    fn test_bits() {
+    fn bits() {
         let u = U128::from(0b1001010100101010101u128);
         assert_eq!(u.bits(), 19);
 

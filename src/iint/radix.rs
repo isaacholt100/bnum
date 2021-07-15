@@ -59,7 +59,6 @@ impl<const N: usize> BIint<N> {
             }
         }
     }
-    // Might change so it outputs a '-' sign if necessary instead of two's complement representation
     pub fn to_str_radix(&self, radix: u32) -> String {
         if self.is_negative() {
             format!("-{}", self.unsigned_abs().to_str_radix(radix))
@@ -80,7 +79,7 @@ mod tests {
     use crate::I128;
 
     test_signed! {
-        test_name: test_from_str_radix,
+        name: from_str_radix,
         method: {
             from_str_radix("-3459dsdhtert98345", 31u32);
         },
@@ -88,4 +87,5 @@ mod tests {
             Ok(result.unwrap().into())
         }
     }
+    // TODO: test other methods
 }

@@ -1,10 +1,15 @@
-use super::BUint;
+use super::{BUint, ExpType};
 use core::ops::{Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Div, DivAssign, Mul, MulAssign, Not, Rem, RemAssign, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign};
 use crate::macros::{expect, op_ref_impl, all_shift_impls};
 
 impl<const N: usize> BUint<N> {
+    #[cfg(debug_assertions)]
     pub const fn add(self, rhs: Self) -> Self {
         expect!(self.checked_add(rhs), "attempt to add with overflow")
+    }
+    #[cfg(not(debug_assertions))]
+    pub const fn add(self, rhs: Self) -> Self {
+        self.wrapping_add(rhs)
     }
 }
 
@@ -115,8 +120,13 @@ impl<T, const N: usize> DivAssign<T> for BUint<N> where Self: Div<T, Output = Se
 impl<const N: usize> Mul for BUint<N> {
     type Output = Self;
 
+    #[cfg(debug_assertions)]
     fn mul(self, rhs: Self) -> Self {
         expect!(self.checked_mul(rhs), "attempt to multiply with overflow")
+    }
+    #[cfg(not(debug_assertions))]
+    fn mul(self, rhs: Self) -> Self {
+        self.wrapping_mul(rhs)
     }
 }
 
@@ -172,15 +182,20 @@ impl<T, const N: usize> RemAssign<T> for BUint<N> where Self: Rem<T, Output = Se
     }
 }
 
-impl<const N: usize> Shl<u32> for BUint<N> {
+impl<const N: usize> Shl<ExpType> for BUint<N> {
     type Output = Self;
 
-    fn shl(self, rhs: u32) -> Self {
+    #[cfg(debug_assertions)]
+    fn shl(self, rhs: ExpType) -> Self {
         expect!(self.checked_shl(rhs), "attempt to shift left with overflow")
+    }
+    #[cfg(not(debug_assertions))]
+    fn shl(self, rhs: ExpType) -> Self {
+        self.wrapping_shl(rhs)
     }
 }
 
-op_ref_impl!(Shl<u32> for BUint, shl);
+op_ref_impl!(Shl<ExpType> for BUint, shl);
 
 impl<T, const N: usize> ShlAssign<T> for BUint<N> where Self: Shl<T, Output = Self> {
     fn shl_assign(&mut self, rhs: T) {
@@ -188,15 +203,20 @@ impl<T, const N: usize> ShlAssign<T> for BUint<N> where Self: Shl<T, Output = Se
     }
 }
 
-impl<const N: usize> Shr<u32> for BUint<N> {
+impl<const N: usize> Shr<ExpType> for BUint<N> {
     type Output = Self;
 
-    fn shr(self, rhs: u32) -> Self {
+    #[cfg(debug_assertions)]
+    fn shr(self, rhs: ExpType) -> Self {
         expect!(self.checked_shr(rhs), "attempt to shift right with overflow")
+    }
+    #[cfg(not(debug_assertions))]
+    fn shr(self, rhs: ExpType) -> Self {
+        self.wrapping_shr(rhs)
     }
 }
 
-op_ref_impl!(Shr<u32> for BUint, shr);
+op_ref_impl!(Shr<ExpType> for BUint, shr);
 
 impl<T, const N: usize> ShrAssign<T> for BUint<N> where Self: Shr<T, Output = Self> {
     fn shr_assign(&mut self, rhs: T) {
@@ -211,8 +231,13 @@ all_shift_impls!(BUint);
 impl<const N: usize> Sub for BUint<N> {
     type Output = Self;
 
+    #[cfg(debug_assertions)]
     fn sub(self, rhs: Self) -> Self {
         expect!(self.checked_sub(rhs), "attempt to subtract with overflow")
+    }
+    #[cfg(not(debug_assertions))]
+    fn sub(self, rhs: Self) -> Self {
+        self.wrapping_sub(rhs)
     }
 }
 
@@ -229,25 +254,25 @@ mod tests {
     use crate::U128;
 
     #[test]
-    fn test_bitand() {
+    fn bitand() {
         let a = 934539445645648753475987u128;
         let b = 9384592074589749679475697u128;
         assert_eq!(U128::from(a) & U128::from(b), U128::from(a & b));
     }
     #[test]
-    fn test_bitor() {
+    fn bitor() {
         let a = 345797465893865897346983548797u128;
         let b = 23496529846782457694586979779465u128;
         assert_eq!(U128::from(a) | U128::from(b), U128::from(a | b));
     }
     #[test]
-    fn test_bitxor() {
+    fn bitxor() {
         let a = 1873649845684389645897456757697889u128;
         let b = 2384689734763458437865873468485789u128;
         assert_eq!(U128::from(a) ^ U128::from(b), U128::from(a ^ b));
     }
     #[test]
-    fn test_not() {
+    fn not() {
         let a = 2903646984856974586794084057698457689u128;
         assert_eq!(!U128::from(a), U128::from(!a));
     }
