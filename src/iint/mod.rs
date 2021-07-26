@@ -18,7 +18,7 @@ macro_rules! test_signed {
             primitive: i128,
             name: $name,
             method: {
-                $($method ($($arg), *) ;) *
+                $($name ($($arg), *) ;) *
             }
         }
     };
@@ -34,7 +34,7 @@ macro_rules! test_signed {
             primitive: i128,
             name: $name,
             method: {
-                $($method ($($arg), *) ;) *
+                $($name ($($arg), *) ;) *
             },
             converter: $converter
         }
@@ -71,13 +71,13 @@ mod radix;
 use serde::{Serialize, Deserialize};
 
 #[cfg(feature = "serde_all")]
-#[derive(Clone, Copy, Hash, /*Debug,*/Serialize, Deserialize)]
+#[derive(Clone, Copy, Hash, Debug, Serialize, Deserialize)]
 pub struct BIint<const N: usize> {
     uint: BUint<N>,
 }
 
 #[cfg(not(feature = "serde_all"))]
-#[derive(Clone, Copy, Hash, /*Debug,*/)]
+#[derive(Clone, Copy, Hash, Debug)]
 pub struct BIint<const N: usize> {
     uint: BUint<N>,
 }
@@ -181,11 +181,11 @@ impl<const N: usize> BIint<N> {
     }
 
     pub const fn div_euclid(self, rhs: Self) -> Self {
-        assert!(self.eq(&Self::MIN) && rhs.eq(&Self::NEG_ONE), "attempt to divide with overflow");
+        assert!(!self.eq(&Self::MIN) && !rhs.eq(&Self::NEG_ONE), "attempt to divide with overflow");
         self.wrapping_div_euclid(rhs)
     }
     pub const fn rem_euclid(self, rhs: Self) -> Self {
-        assert!(self.eq(&Self::MIN) && rhs.eq(&Self::NEG_ONE), "attempt to divide with overflow");
+        assert!(!self.eq(&Self::MIN) && !rhs.eq(&Self::NEG_ONE), "attempt to calculate remainder with overflow");
         self.wrapping_rem_euclid(rhs)
     }
 
@@ -211,8 +211,9 @@ impl<const N: usize> BIint<N> {
         }
     }
     pub const fn is_positive(self) -> bool {
-        self.signed_digit().is_positive() ||
-        (self.signed_digit() == 0 && !self.uint.is_zero())
+        let signed_digit = self.signed_digit();
+        signed_digit.is_positive() ||
+        (signed_digit == 0 && !self.uint.is_zero())
     }
     pub const fn is_negative(self) -> bool {
         self.signed_digit().is_negative()
@@ -284,20 +285,6 @@ mod tests {
         },
         converter: crate::u32_to_exp
     }
-
-    #[test]
-    fn is_positive() {
-        assert!(I128::from(304950490384054358903845i128).is_positive());
-        assert!(!I128::from(-304950490384054358903845i128).is_positive());
-        assert!(!I128::from(0).is_positive());
-    }
-    #[test]
-    fn is_negative() {
-        assert!(!I128::from(30890890894345345343453434i128).is_negative());
-        assert!(I128::from(-8783947895897346938745873443i128).is_negative());
-        assert!(!I128::from(0).is_negative());
-    }
-
     test_signed! {
         name: leading_zeros,
         method: {
@@ -372,6 +359,59 @@ mod tests {
             unsigned_abs(45645634534564264564534i128);
             unsigned_abs(-9729307972495769745965545i128);
         }
+    }
+    test_signed! {
+        name: pow,
+        method: {
+            pow(-564i128, 6 as u16);
+            pow(6957i128, 8 as u16);
+            pow(-67i128, 19 as u16);
+        }
+    }
+    test_signed! {
+        name: div_euclid,
+        method: {
+            div_euclid(-29475698745698i128 * 4685684568, 29475698745698i128);
+            div_euclid(4294567897594568765i128, 249798748956i128);
+            div_euclid(27456979757i128, 45i128);
+        }
+    }
+    test_signed! {
+        name: rem_euclid,
+        method: {
+            rem_euclid(-7902709857689456456i128 * 947659873456, 7902709857689456456i128);
+            rem_euclid(-46945656i128, 896794576985645i128);
+            rem_euclid(-45679i128, -8i128);
+        }
+    }
+    test_signed! {
+        name: abs,
+        method: {
+            abs(0i128);
+            abs(i128::MAX);
+            abs(-249576984756i128);
+        }
+    }
+    test_signed! {
+        name: signum,
+        method: {
+            signum(0i128);
+            signum(275966456345645635473947569i128);
+            signum(-972945769613987589476598745i128);
+        }
+    }
+
+    #[test]
+    fn is_positive() {
+        assert!(I128::from(304950490384054358903845i128).is_positive());
+        assert!(!I128::from(-304950490384054358903845i128).is_positive());
+        assert!(!I128::from(0).is_positive());
+    }
+    #[test]
+    fn is_negative() {
+        assert!(!I128::from(30890890894345345343453434i128).is_negative());
+        assert!(I128::from(-8783947895897346938745873443i128).is_negative());
+        assert!(!I128::from(0).is_negative());
     }
     // TODO: test other methods
 }

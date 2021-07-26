@@ -2,7 +2,6 @@ use crate::digit::{Digit, self};
 use crate::macros::expect;
 use crate::ExpType;
 use core::cmp::Ordering;
-use alloc::vec::Vec;
 
 #[allow(unused)]
 macro_rules! test_unsigned {

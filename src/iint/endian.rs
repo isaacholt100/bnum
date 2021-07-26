@@ -63,7 +63,6 @@ impl<const N: usize> BIint<N> {
         } else {
             Digit::MIN
         };
-        //let len = slice.len();
         let mut out_digits = if is_negative {
             [Digit::MAX; N]
         } else {
@@ -97,13 +96,6 @@ impl<const N: usize> BIint<N> {
             set_digit!(out_digits, i, digit, is_negative, sign_bits);
             Some(Self::from_digits(out_digits))
         }
-        /*let option = BUint::from_be_slice(slice);
-        match option {
-            None => None,
-            Some(uint) => Some(Self {
-                uint,
-            })
-        }*/
     }
     pub const fn from_le_slice(slice: &[u8]) -> Option<Self> {
         let len = slice.len();
@@ -116,7 +108,6 @@ impl<const N: usize> BIint<N> {
         } else {
             Digit::MIN
         };
-        //let len = slice.len();
         let mut out_digits = if is_negative {
             [Digit::MAX; N]
         } else {

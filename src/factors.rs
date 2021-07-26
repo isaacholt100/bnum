@@ -1,4 +1,3 @@
-
 pub static FACTORS: &'static [&'static [u16]] = &[
     &[],
     &[1],

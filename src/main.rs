@@ -1,5 +1,5 @@
 fn main() {
-    
+    println!("{:?}", i8::from_str_radix("-10000000", 2));
 }
 
 fn factors(n: u16) -> Vec<u16> {

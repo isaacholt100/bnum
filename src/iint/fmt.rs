@@ -19,11 +19,11 @@ impl<const N: usize> Display for BIint<N> {
     }
 }
 
-impl<const N: usize> fmt::Debug for BIint<N> {
+/*impl<const N: usize> fmt::Debug for BIint<N> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         Binary::fmt(self, f)
     }
-}
+}*/
 
 impl<const N: usize> LowerExp for BIint<N> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {

@@ -126,14 +126,42 @@ macro_rules! overflowing_pow {
                 }
             }
             let (prod, o) = x.overflowing_mul(y);
-            if o {
-                overflow = o;
-            }
+            overflow |= o;
             (prod, overflow)
         }
     }
 }
 pub(crate) use overflowing_pow;
+
+macro_rules! wrapping_pow {
+    () => {
+        pub const fn wrapping_pow(self, exp: crate::ExpType) -> Self {
+            if exp == 0 {
+                return Self::ONE;
+            }
+            if self.is_zero() {
+                return Self::ZERO;
+            }
+            let mut y = Self::ONE;
+            let mut n = exp;
+            let mut x = self;
+    
+            while n > 1 {
+                if n & 1 == 0 {
+                    x = x.wrapping_mul(x);
+                    n >>= 1;
+                } else {
+                    y = x.wrapping_mul(y);
+                    x = x.wrapping_mul(x);
+                    n -= 1;
+                    n >>= 1;
+                }
+            }
+            x.wrapping_mul(y)
+        }
+    }
+}
+pub(crate) use wrapping_pow;
 
 macro_rules! expect {
     ($option: expr, $msg: expr) => {
@@ -292,6 +320,7 @@ macro_rules! all_shift_impls {
 }
 pub(crate) use all_shift_impls;
 
+#[allow(unused)]
 macro_rules! test_fmt {
     {
         int: $int: ty,
@@ -311,4 +340,5 @@ macro_rules! test_fmt {
     }
 }
 
+#[allow(unused_imports)]
 pub(crate) use test_fmt;

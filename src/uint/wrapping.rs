@@ -1,5 +1,5 @@
 use super::{BUint, ExpType};
-use crate::macros::expect;
+use crate::macros::{expect, wrapping_pow};
 
 impl<const N: usize> BUint<N> {
     pub const fn wrapping_add(self, rhs: Self) -> Self {
@@ -32,9 +32,7 @@ impl<const N: usize> BUint<N> {
     pub const fn wrapping_shr(self, rhs: ExpType) -> Self {
         self.overflowing_shr(rhs).0
     }
-    pub const fn wrapping_pow(self, exp: ExpType) -> Self {
-        self.overflowing_pow(exp).0
-    }
+    wrapping_pow!();
 }
 
 #[cfg(test)]
