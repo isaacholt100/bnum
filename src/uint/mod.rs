@@ -814,11 +814,13 @@ impl<const N: usize> BUint<N> {
     }
 
     /// Returns the digits stored in `self` as an array. Digits are little endian (least significant digit first).
-    pub const fn digits(&self) -> [Digit; N] {
-        self.digits
+    #[inline(always)]
+    pub const fn digits(&self) -> &[Digit; N] {
+        &self.digits
     }
 
     /// Creates a new `BUint` from the given array of digits. Digits are stored as little endian (least significant digit first).
+    #[inline(always)]
     pub const fn from_digits(digits: [Digit; N]) -> Self {
         Self {
             digits,
@@ -826,6 +828,7 @@ impl<const N: usize> BUint<N> {
     }
 
     /// Creates a new `BUint` from the given digit. The given digit is stored as the least significant digit.
+    #[inline(always)]
     pub const fn from_digit(digit: Digit) -> Self {
         let mut out = Self::ZERO;
         out.digits[0] = digit;

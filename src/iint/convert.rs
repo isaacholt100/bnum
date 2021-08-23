@@ -93,9 +93,9 @@ impl<const N: usize> TryFrom<f32> for BIint<N> {
     fn try_from(f: f32) -> Result<Self, Self::Error> {
         if f.is_sign_negative() {
             let x = BUint::try_from(-f)?;
-            Ok(-Self::from_buint(x))
+            Ok(-Self::from_bits(x))
         } else {
-            Ok(Self::from_buint(BUint::try_from(f)?))
+            Ok(Self::from_bits(BUint::try_from(f)?))
         }
     }
 }
@@ -106,9 +106,9 @@ impl<const N: usize> TryFrom<f64> for BIint<N> {
     fn try_from(f: f64) -> Result<Self, Self::Error> {
         if f < 0.0 {
             let x = BUint::try_from(-f)?;
-            Ok(-Self::from_buint(x))
+            Ok(-Self::from_bits(x))
         } else {
-            Ok(Self::from_buint(BUint::try_from(f)?))
+            Ok(Self::from_bits(BUint::try_from(f)?))
         }
     }
 }

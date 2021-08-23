@@ -11,7 +11,7 @@
     test,
     unchecked_math,
 ))]
-#![no_std]
+//#![no_std]
 
 #[allow(unused)]
 fn u32_to_exp(u: u32) -> ExpType {
@@ -71,7 +71,7 @@ mod digit;
 mod iint;
 mod error;
 mod bound;
-//mod float;
+mod float_old;
 #[macro_use]
 mod macros;
 mod fraction;
@@ -82,6 +82,8 @@ mod factors;
 mod benchmarks;
 
 type ExpType = usize;
+
+pub use float_old::Float;
 
 //pub use float::{Float, Rounding};
 

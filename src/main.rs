@@ -1,5 +1,6 @@
 fn main() {
-    println!("{:?}", i8::from_str_radix("-10000000", 2));
+    println!("{}", bint::Float::<8, 52>::DIGITS);
+    println!("{:b}", f32::EPSILON.to_bits());
 }
 
 fn factors(n: u16) -> Vec<u16> {

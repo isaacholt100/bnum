@@ -1,6 +1,7 @@
 use super::{BUint, ExpType};
 use core::ops::{Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Div, DivAssign, Mul, MulAssign, Not, Rem, RemAssign, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign};
 use crate::macros::{expect, op_ref_impl, all_shift_impls};
+use crate::digit::Digit;
 
 impl<const N: usize> BUint<N> {
     #[cfg(debug_assertions)]
@@ -10,6 +11,27 @@ impl<const N: usize> BUint<N> {
     #[cfg(not(debug_assertions))]
     pub const fn add(self, rhs: Self) -> Self {
         self.wrapping_add(rhs)
+    }
+}
+
+use crate::arithmetic;
+
+impl<const N: usize> Add<Digit> for BUint<N> {
+    type Output = Self;
+
+    fn add(self, rhs: Digit) -> Self {
+        let mut out = Self::ZERO;
+        let result = arithmetic::add_carry_unsigned(0, self.digits[0], rhs);
+        out.digits[0] = result.0;
+        let mut carry = result.1;
+        let mut i = 1;
+        while i < N {
+            let result = arithmetic::add_carry_unsigned(carry, self.digits[i], 0);
+            out.digits[i] = result.0;
+            carry = result.1;
+            i += 1;
+        }
+        out
     }
 }
 
@@ -106,6 +128,14 @@ impl<const N: usize> Div for BUint<N> {
 
     fn div(self, rhs: Self) -> Self {
         self.wrapping_div(rhs)
+    }
+}
+
+impl<const N: usize> Div<Digit> for BUint<N> {
+    type Output = Self;
+
+    fn div(self, rhs: Digit) -> Self {
+        self.div_rem_digit(rhs).0
     }
 }
 

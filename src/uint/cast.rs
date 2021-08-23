@@ -193,7 +193,7 @@ impl<const N: usize> BUint<N> {
 
     #[cfg(feature = "nightly")]
     pub const fn as_biint<const M: usize>(&self) -> BIint<M> where [Digit; M - N]: Sized {
-        BIint::from_buint(self.as_buint())
+        BIint::from_bits(self.as_buint())
     }
 }
 

@@ -265,6 +265,69 @@ impl<const N: usize> BIint<N> {
     log!(log10);
 }
 
+impl<const N: usize> BIint<N> {
+    uint_method! {
+        fn bit(&self, index: usize) -> bool,
+        fn bits(&self) -> usize
+    }
+    const fn signed_digit(&self) -> SignedDigit {
+        self.uint.digits()[N - 1] as SignedDigit
+    }
+    pub const fn is_zero(self) -> bool {
+        self.uint.is_zero()
+    }
+    #[inline(always)]
+    pub const fn digits(&self) -> &[Digit; N] {
+        &self.uint.digits()
+    }
+    #[inline(always)]
+    pub const fn from_digits(digits: [Digit; N]) -> Self {
+        Self {
+            uint: BUint::from_digits(digits),
+        }
+    }
+    #[inline(always)]
+    pub const fn from_bits(uint: BUint<N>) -> Self {
+        Self {
+            uint,
+        }
+    }
+}
+
+use core::default::Default;
+
+impl<const N: usize> Default for BIint<N> {
+    fn default() -> Self {
+        Self::ZERO
+    }
+}
+
+use core::iter::{Iterator, Product, Sum};
+
+impl<const N: usize> Product<Self> for BIint<N> {
+    fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.fold(Self::ONE, |a, b| a * b)
+    }
+}
+
+impl<'a, const N: usize> Product<&'a Self> for BIint<N> {
+    fn product<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
+        iter.fold(Self::ONE, |a, b| a * b)
+    }
+}
+
+impl<const N: usize> Sum<Self> for BIint<N> {
+    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.fold(Self::ZERO, |a, b| a + b)
+    }
+}
+
+impl<'a, const N: usize> Sum<&'a Self> for BIint<N> {
+    fn sum<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
+        iter.fold(Self::ZERO, |a, b| a + b)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -413,63 +476,33 @@ mod tests {
         assert!(I128::from(-8783947895897346938745873443i128).is_negative());
         assert!(!I128::from(0).is_negative());
     }
+
+    #[test]
+    fn is_power_of_two() {
+        assert!(!I128::from(-94956729465i128).is_power_of_two());
+        assert!(!I128::from(79458945i128).is_power_of_two());
+        assert!(I128::from(1i128 << 17).is_power_of_two());
+    }
+
+    #[test]
+    fn next_power_of_two() {
+        assert_eq!(I128::from(-372979834534345587i128).next_power_of_two(), 1i128.into());
+        assert_eq!(I128::from((1i128 << 88) - 5).next_power_of_two(), (1i128 << 88).into());
+        assert_eq!(I128::from(1i128 << 56).next_power_of_two(), (1i128 << 56).into());
+    }
+
+    #[test]
+    fn checked_next_power_of_two() {
+        assert_eq!(I128::from(-979457698).checked_next_power_of_two(), Some(1i128.into()));
+        assert_eq!(I128::from(5).checked_next_power_of_two(), Some(8i32.into()));
+        assert_eq!(I128::from(i128::MAX - 5).checked_next_power_of_two(), None);
+    }
+
+    #[test]
+    fn wrapping_next_power_of_two() {
+        assert_eq!(I128::from(-89i128).wrapping_next_power_of_two(), 1i128.into());
+        assert_eq!(I128::from((1i128 << 75) + 4).wrapping_next_power_of_two(), (1i128 << 76).into());
+        assert_eq!(I128::from(i128::MAX / 2 + 4).wrapping_next_power_of_two(), I128::MIN);
+    }
     // TODO: test other methods
-}
-
-impl<const N: usize> BIint<N> {
-    uint_method! {
-        fn bit(&self, index: usize) -> bool,
-        fn bits(&self) -> usize,
-        fn digits(&self) -> [Digit; N]
-    }
-    const fn signed_digit(&self) -> SignedDigit {
-        self.uint.digits()[N - 1] as SignedDigit
-    }
-    pub const fn is_zero(self) -> bool {
-        self.uint.is_zero()
-    }
-    pub const fn from_digits(digits: [Digit; N]) -> Self {
-        Self {
-            uint: BUint::from_digits(digits),
-        }
-    }
-    pub const fn from_buint(uint: BUint<N>) -> Self {
-        Self {
-            uint,
-        }
-    }
-}
-
-use core::default::Default;
-
-impl<const N: usize> Default for BIint<N> {
-    fn default() -> Self {
-        Self::ZERO
-    }
-}
-
-use core::iter::{Iterator, Product, Sum};
-
-impl<const N: usize> Product<Self> for BIint<N> {
-    fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
-        iter.fold(Self::ONE, |a, b| a * b)
-    }
-}
-
-impl<'a, const N: usize> Product<&'a Self> for BIint<N> {
-    fn product<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
-        iter.fold(Self::ONE, |a, b| a * b)
-    }
-}
-
-impl<const N: usize> Sum<Self> for BIint<N> {
-    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
-        iter.fold(Self::ZERO, |a, b| a + b)
-    }
-}
-
-impl<'a, const N: usize> Sum<&'a Self> for BIint<N> {
-    fn sum<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
-        iter.fold(Self::ZERO, |a, b| a + b)
-    }
 }

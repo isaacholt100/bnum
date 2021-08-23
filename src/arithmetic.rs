@@ -25,6 +25,7 @@ pub const fn sub_borrow_signed(borrow: u8, a: SignedDigit, b: SignedDigit) -> (S
 }
 
 /// Tuple of (product, carry)
+#[inline]
 pub const fn mul_carry_unsigned(carry: Digit, current: Digit, a: Digit, b: Digit) -> (Digit, Digit) {
     let prod = carry as DoubleDigit + current as DoubleDigit + (a as DoubleDigit) * (b as DoubleDigit);
     (prod as Digit, (prod >> digit::BITS) as Digit)
