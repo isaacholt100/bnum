@@ -18,9 +18,23 @@ pub struct Float<const W: usize, const MANTISSA_BITS: usize> {
 }
 
 impl<const W: usize, const MANTISSA_BITS: usize> Float<W, MANTISSA_BITS> {
-    const BITS: usize = W * digit::BITS as usize;
-    const EXPONENT_BITS: usize = Self::BITS - MANTISSA_BITS;
-    const MANTISSA_WORDS: (usize, usize) = (MANTISSA_BITS / digit::BITS as usize, MANTISSA_BITS % digit::BITS as usize);
+    pub const fn normalize(self) -> Self {
+        if self.is_subnormal() {
+            todo!()
+        } else {
+            self
+        }
+    }
+    pub const fn from_parts(sign: bool, exponent: BIint<W>, mantissa: BUint<W>) -> Self {
+        let sign = if sign {
+            Self::NEG_ZERO.to_bits()
+        } else {
+            Self::ZERO.to_bits()
+        };
+        let exp = exponent.to_bits().wrapping_shl(MANTISSA_BITS as ExpType);
+        let u = sign.bitor(exp).bitor(mantissa);
+        Self::from_bits(u)
+    }
     #[inline(always)]
     const fn from_words(digits: [Digit; W]) -> Self {
         Self {
@@ -39,19 +53,18 @@ impl<const W: usize, const MANTISSA_BITS: usize> Float<W, MANTISSA_BITS> {
     }
     pub const fn abs(self) -> Self {
         if self.is_sign_negative() {
-            let mut digits = *self.words();
-            digits[0] |= 1 << (Digit::BITS - 1);
-            Self::from_words(digits)
+            self.neg()
         } else {
             self
         }
     }
     const fn exponent(self) -> BIint<W> {
-        let u: BUint<W> = self.to_bits().wrapping_shl(1).wrapping_shr(MANTISSA_BITS + 1);
+        let u: BUint<W> = self.to_bits().bitand(BIint::MAX.to_bits()).wrapping_shr(MANTISSA_BITS);
         BIint::from_bits(u)
     }
+    const MANTISSA_MASK: BUint<W> = BUint::MAX.wrapping_shr(Self::EXPONENT_BITS + 1);
     const fn mantissa(self) -> BUint<W> {
-        self.to_bits().wrapping_shl(Self::EXPONENT_BITS + 1).wrapping_shr(Self::EXPONENT_BITS + 1)
+        self.to_bits().bitand(Self::MANTISSA_MASK)
     }
     #[inline(always)]
     pub const fn to_bits(self) -> BUint<W> {
@@ -68,13 +81,13 @@ impl<const W: usize, const MANTISSA_BITS: usize> Float<W, MANTISSA_BITS> {
         }
     }
     pub const fn is_finite(self) -> bool {
-        self.exponent().trailing_ones() as usize != Self::EXPONENT_BITS
+        (self.to_bits().wrapping_shl(1).leading_ones() as usize) < Self::EXPONENT_BITS
     }
     pub const fn is_nan(self) -> bool {
         !(self.mantissa().is_zero() || self.is_finite())
     }
     pub const fn is_subnormal(self) -> bool {
-        self.exponent().is_zero() && !self.is_zero()
+        !self.is_zero() && self.exponent().is_zero()
     }
     pub const fn is_normal(self) -> bool {
         matches!(self.classify(), FpCategory::Normal)
@@ -91,6 +104,7 @@ impl<const W: usize, const MANTISSA_BITS: usize> Float<W, MANTISSA_BITS> {
         last.trailing_zeros() >= Digit::BITS - 1
     }
     pub const fn classify(self) -> FpCategory {
+        // TODO: optimise this method better
         if self.is_finite() {
             if self.exponent().is_zero() {
                 if self.is_zero() {
@@ -277,12 +291,64 @@ impl<const W: usize, const MANTISSA_BITS: usize> Add for Float<W, MANTISSA_BITS>
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self {
-        let (a, b) = if self.exponent() > rhs.exponent() {
-            (self.exponent(), rhs.exponent())
+        handle_nan!(Self::NAN; self, rhs);
+        if self == Self::INFINITY {
+            if rhs == Self::NEG_INFINITY {
+                return Self::NAN;
+            }
+            return self;
+        } else if self == Self::NEG_INFINITY {
+            if rhs == Self::INFINITY {
+                return Self::NAN;
+            }
+            return self;
+        } else if rhs == Self::INFINITY {
+            if self == Self::NEG_INFINITY {
+                return Self::NAN;
+            }
+            return rhs;
+        } else if rhs == Self::NEG_INFINITY {
+            if self == Self::INFINITY {
+                return Self::NAN;
+            }
+            return rhs;
+        }
+        let self_e = self.exponent();
+        let rhs_e = rhs.exponent();
+        let exp_diff = self_e - rhs_e;
+        let (mut a, mut b, mut exponent) = if exp_diff.is_negative() {
+            (rhs, self, rhs_e)
         } else {
-            (rhs.exponent(), self.exponent())
+            (self, rhs, self_e)
         };
-        todo!()
+        let am = if a.is_normal() {
+            a.mantissa() | (BUint::ONE << MANTISSA_BITS)
+        } else {
+            a.mantissa()
+        };
+        let bm = if b.is_normal() {
+            (b.mantissa() | (BUint::ONE << MANTISSA_BITS)) >> exp_diff.abs()
+        } else {
+            b.mantissa().checked_shr(exp_diff.abs().as_usize()).unwrap_or(BUint::ZERO)
+        };
+        println!("{}", exp_diff);
+        let mut mantissa = am + bm;
+        println!("{:?}", mantissa);
+        //mantissa = mantissa ^ (BUint::ONE << (mantissa.bits() - 1));
+        if mantissa.leading_zeros() == (Self::BITS - MANTISSA_BITS - 2) as ExpType {
+            exponent = exponent.wrapping_add(BIint::ONE);
+            if exponent.trailing_ones() == Self::EXPONENT_BITS as ExpType {
+                return Self::INFINITY;
+            }
+            if mantissa.digits()[0] & 1 == 1 {
+                mantissa += BUint::ONE;
+            }
+            mantissa >>= 1;
+        }
+        if !exponent.is_zero() {
+            mantissa = mantissa & !(BUint::ONE << MANTISSA_BITS);
+        }
+        Self::from_parts(a.is_sign_negative(), exponent, mantissa)
     }
 }
 
@@ -295,8 +361,12 @@ impl<const W: usize, const MANTISSA_BITS: usize> Neg for Float<W, MANTISSA_BITS>
 }
 
 impl<const W: usize, const MANTISSA_BITS: usize> Float<W, MANTISSA_BITS> {
+    const BITS: usize = W * digit::BITS as usize;
+    const EXPONENT_BITS: usize = Self::BITS - MANTISSA_BITS - 1;
+    const MANTISSA_WORDS: (usize, usize) = (MANTISSA_BITS / digit::BITS as usize, MANTISSA_BITS % digit::BITS as usize);
+
     pub const RADIX: u32 = 2;
-    pub const MANTISSA_DIGITS: u32 = MANTISSA_BITS as u32;
+    pub const MANTISSA_DIGITS: u32 = MANTISSA_BITS as u32 + 1;
     pub const DIGITS: u32 = BUint::<W>::ONE.wrapping_shl(MANTISSA_BITS as ExpType).log10() as u32;
     pub const EPSILON: Self = todo!();
     pub const EXP_BIAS: BIint<W> = BIint::MAX.wrapping_shr(MANTISSA_BITS + 1);
@@ -323,6 +393,15 @@ impl<const W: usize, const MANTISSA_BITS: usize> Float<W, MANTISSA_BITS> {
     pub const MAX_EXP: BIint<W> = Self::EXP_BIAS.wrapping_add(BIint::ONE);
     pub const MIN_10_EXP: Self = todo!();
     pub const MAX_10_EXP: Self = todo!();
+
+    pub const MAX_SUBNORMAL: Self = Self {
+        uint: BUint::MAX.wrapping_shr(Self::EXPONENT_BITS as ExpType + 1),
+    };
+    pub const MIN_SUBNORMAL: Self = Self::MAX_SUBNORMAL.neg();
+    pub const MIN_POSITIVE_SUBNORMAL: Self = Self {
+        uint: BUint::ONE,
+    };
+    pub const MAX_NEGATIVE_SUBNORMAL: Self = Self::MIN_POSITIVE_SUBNORMAL.neg();
 
     pub const NAN: Self = {
         let mut u = BUint::MAX;
@@ -360,4 +439,76 @@ impl<const W: usize, const MANTISSA_BITS: usize> Float<W, MANTISSA_BITS> {
         Self::from_bits(u)
     };
     pub const NEG_ONE: Self = Self::from_bits(Self::ONE.uint.bitor(Self::NEG_ZERO.uint));
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::F64;
+    type F32 = crate::Float::<4, 23>;
+
+    #[test]
+    fn test_constants() {
+        macro_rules! test_constant {
+            ($($constant: ident), *) => {
+                $(
+                    assert_eq!(F64::$constant.to_bits(), f64::$constant.to_bits().into(), "constant `{}` not equal to the primitive equivalent", stringify!($constant));
+                )*
+            }
+        }
+        test_constant!(NAN, INFINITY, NEG_INFINITY, MAX, MIN, MIN_POSITIVE);
+
+        assert_eq!(F64::ZERO.to_bits(), 0.0f64.to_bits().into());
+        assert_eq!(F64::NEG_ZERO.to_bits(), (-0.0f64).to_bits().into());
+        assert_eq!(F64::ONE.to_bits(), 1.0f64.to_bits().into());
+        assert_eq!(F64::NEG_ONE.to_bits(), (-1.0f64).to_bits().into());
+
+        assert_eq!(F64::MAX_NEGATIVE.to_bits(), (-f64::MIN_POSITIVE).to_bits().into());
+
+        assert_eq!(F64::MIN_EXP, f64::MIN_EXP.into());
+        assert_eq!(F64::MAX_EXP, f64::MAX_EXP.into());
+
+        assert_eq!(F64::RADIX, f64::RADIX);
+        assert_eq!(F64::MANTISSA_DIGITS, f64::MANTISSA_DIGITS);
+        assert_eq!(F64::DIGITS, f64::DIGITS);
+
+        assert_eq!(F64::BITS, 64);
+        assert_eq!(F64::EXPONENT_BITS, 11);
+        assert_eq!(F64::EXP_BIAS, 1023i32.into());
+    }
+
+    #[test]
+    fn test_add() {
+        let (u1, u2) = (0x37FF013484968490u64, 0x35D0EE71100010FFu64);
+        let (f1, f2) = (f64::from_bits(u1), f64::from_bits(u2));
+        let (float1, float2) = (F64::from_bits(u1.into()), F64::from_bits(u2.into()));
+        assert_eq!((float1 + float2).to_bits(), (f1 + f2).to_bits().into());
+
+        let (u1, u2) = (0xFFFFFFFFFFFFF, 0x10000000000000);
+        let (f1, f2) = (f64::from_bits(u1), f64::from_bits(u2));
+        let (float1, float2) = (F64::from_bits(u1.into()), F64::from_bits(u2.into()));
+        assert_eq!((float1 + float2).to_bits(), (f1 + f2).to_bits().into());
+
+        let (u1, u2) = (0, 0);
+        let (f1, f2) = (f64::from_bits(u1), f64::from_bits(u2));
+        let (float1, float2) = (F64::from_bits(u1.into()), F64::from_bits(u2.into()));
+        assert_eq!((float1 + float2).to_bits(), (f1 + f2).to_bits().into());
+
+        let (u1, u2) = (0xFFFFFFFFFFFF3, 0xFFFF2F3FFFFF3);
+        let (f1, f2) = (f64::from_bits(u1), f64::from_bits(u2));
+        let (float1, float2) = (F64::from_bits(u1.into()), F64::from_bits(u2.into()));
+        assert_eq!((float1 + float2).to_bits(), (f1 + f2).to_bits().into());
+    }
+
+    #[test]
+    fn test_speed() {
+        //panic!("{:b}", F32::from_bits(0b10000000000000001000000000000000u32.into()).exponent());
+        for i in 0..i32::MAX as u32 {
+            let float = F32::from_bits(i.into());
+            let f = f32::from_bits(i);
+            let s1 = (float + float).to_bits();
+            let s2 = (f + f).to_bits();
+            assert_eq!(s1.as_u32(), s2, "expected: {:032b} got: {:032b} at number {} (float = {})", s2, s1, i, f);
+            //assert_eq!(i + 1, ((i as i128) + 1) as u128);
+        }
+    }
 }

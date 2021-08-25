@@ -292,6 +292,10 @@ impl<const N: usize> BIint<N> {
             uint,
         }
     }
+    #[inline(always)]
+    pub const fn to_bits(self) -> BUint<N> {
+        self.uint
+    }
 }
 
 use core::default::Default;

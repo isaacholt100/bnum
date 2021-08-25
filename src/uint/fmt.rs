@@ -29,11 +29,11 @@ impl<const N: usize> Binary for BUint<N> {
     fmt!("{:b}", "{:01$b}", digit::BITS, "0b");
 }
 
-/*impl<const N: usize> Debug for BUint<N> {
+impl<const N: usize> core::fmt::Debug for BUint<N> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        Display::fmt(&self, f)
+        write!(f, "{:0width$b}", &self, width = Self::BITS)
     }
-}*/
+}
 
 impl<const N: usize> Display for BUint<N> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {

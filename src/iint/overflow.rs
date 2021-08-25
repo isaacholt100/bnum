@@ -6,6 +6,7 @@ use crate::ExpType;
 use crate::digit;
 
 impl<const N: usize> BIint<N> {
+    #[inline]
     pub const fn overflowing_add(self, rhs: Self) -> (Self, bool) {
         let mut digits = [0; N];
         let mut carry = 0u8;
@@ -29,6 +30,7 @@ impl<const N: usize> BIint<N> {
 
         (Self::from_digits(digits), carry)
     }
+    #[inline]
     pub const fn overflowing_sub(self, rhs: Self) -> (Self, bool) {
         let mut digits = [0; N];
         let mut borrow = 0u8;
@@ -52,6 +54,7 @@ impl<const N: usize> BIint<N> {
 
         (Self::from_digits(digits), borrow)
     }
+    #[inline]
     pub const fn overflowing_mul(self, rhs: Self) -> (Self, bool) {
         let (uint, overflow) = self.unsigned_abs().overflowing_mul(rhs.unsigned_abs());
         let out = Self {
@@ -66,6 +69,7 @@ impl<const N: usize> BIint<N> {
             }
         }
     }
+    #[inline]
     const fn div_rem_unchecked(self, rhs: Self) -> (Self, Self) {
         let (div, rem) = self.unsigned_abs().div_rem_unchecked(rhs.unsigned_abs());
         let div = Self {
@@ -86,6 +90,7 @@ impl<const N: usize> BIint<N> {
             (div, rem)
         }
     }
+    #[inline]
     pub const fn overflowing_div(self, rhs: Self) -> (Self, bool) {
         if self.eq(&Self::MIN) && rhs.eq(&Self::NEG_ONE) {
             (self, true)
@@ -96,6 +101,7 @@ impl<const N: usize> BIint<N> {
             (self.div_rem_unchecked(rhs).0, false)
         }
     }
+    #[inline]
     pub const fn overflowing_div_euclid(self, rhs: Self) -> (Self, bool) {
         if self.eq(&Self::MIN) && rhs.eq(&Self::NEG_ONE) {
             (self, true)
@@ -120,6 +126,7 @@ impl<const N: usize> BIint<N> {
             }
         }
     }
+    #[inline]
     pub const fn overflowing_rem(self, rhs: Self) -> (Self, bool) {
         if self.eq(&Self::MIN) && rhs.eq(&Self::NEG_ONE) {
             (Self::ZERO, true)
@@ -130,6 +137,7 @@ impl<const N: usize> BIint<N> {
             (self.div_rem_unchecked(rhs).1, false)
         }
     }
+    #[inline]
     pub const fn overflowing_rem_euclid(self, rhs: Self) -> (Self, bool) {
         if self.eq(&Self::MIN) && rhs.eq(&Self::NEG_ONE) {
             (Self::ZERO, true)
@@ -145,35 +153,38 @@ impl<const N: usize> BIint<N> {
             }
         }
     }
+    #[inline]
     pub const fn overflowing_neg(self) -> (Self, bool) {
         self.not().overflowing_add(Self::ONE)
     }
+    #[inline]
     pub const fn overflowing_shl(self, rhs: ExpType) -> (Self, bool) {
         let (uint, overflow) = self.uint.overflowing_shl(rhs);
         (Self { uint }, overflow)
     }
+    #[inline]
     const fn shr_internal(self, rhs: ExpType) -> Self {
         if rhs == 0 {
             self
         } else {
             let digit_shift = (rhs >> digit::BIT_SHIFT) as usize;
             let shift = (rhs & digit::BITS_MINUS_1) as u8;
-            let self_digits = self.digits();
     
             let mut out_digits = [Digit::MAX; N];
-            let mut i = digit_shift;
+            let digits_ptr = self.digits().as_ptr();
+            let out_ptr = out_digits.as_mut_ptr() as *mut Digit;
+            unsafe {
+                digits_ptr.add(digit_shift).copy_to_nonoverlapping(out_ptr, N - digit_shift);
+                core::mem::forget(self);
+            }
     
-            if shift == 0 {
-                while i < N {
-                    let digit = self_digits[Self::N_MINUS_1 + digit_shift - i];
-                    out_digits[Self::N_MINUS_1 - i] = digit;
-                    i += 1;
-                }
-            } else {
+            if shift > 0 {
                 let mut borrow = 0;
                 let borrow_shift = Digit::BITS as u8 - shift;
+
+                let mut i = digit_shift;
                 while i < N {
-                    let digit = self_digits[Self::N_MINUS_1 + digit_shift - i];
+                    let digit = out_digits[Self::N_MINUS_1 - i];
                     let new_borrow = digit << borrow_shift;
                     let new_digit = (digit >> shift) | borrow;
                     out_digits[Self::N_MINUS_1 - i] = new_digit;
@@ -187,6 +198,7 @@ impl<const N: usize> BIint<N> {
         }
     }
     const BITS_MINUS_1: ExpType = (Self::BITS - 1) as ExpType;
+    #[inline]
     pub const fn overflowing_shr(self, rhs: ExpType) -> (Self, bool) {
         if self.is_negative() {
             if rhs >= Self::BITS {
@@ -199,6 +211,7 @@ impl<const N: usize> BIint<N> {
             (Self { uint }, overflow)
         }
     }
+    #[inline]
     pub const fn overflowing_abs(self) -> (Self, bool) {
         if self.is_negative() {
             self.overflowing_neg()

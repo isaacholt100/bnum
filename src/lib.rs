@@ -85,17 +85,14 @@ type ExpType = usize;
 
 pub use float_old::Float;
 
-//pub use float::{Float, Rounding};
-
 pub use uint::BUint;
 pub use iint::BIint;
 pub use error::*;
 pub use digit::Digit;
 
-//pub use float::Float;
-
 pub use fraction::Fraction;
 
+pub type U64 = BUint::<{64 / digit::BITS}>;
 pub type U128 = BUint::<{128 / digit::BITS}>;
 pub type U256 = BUint::<{256 / digit::BITS}>;
 pub type U512 = BUint::<{512 / digit::BITS}>;
@@ -105,3 +102,5 @@ pub type U4096 = BUint::<{4096 / digit::BITS}>;
 pub type U8192 = BUint::<{8192 / digit::BITS}>;
 
 pub type I128 = iint::BIint::<{128 / digit::BITS}>;
+
+pub type F64 = float_old::Float::<{64 / digit::BITS}, 52>;

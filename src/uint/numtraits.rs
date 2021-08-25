@@ -517,7 +517,10 @@ macro_rules! to_uint {
             let mut out = 0;
             let mut i = 0;
             let last_index = self.last_digit_index();
-            if last_index << digit::BIT_SHIFT >= <$uint>::BITS as usize {
+            if self.digits[last_index] == 0 {
+                return Some(0);
+            }
+            if (last_index + 1) << digit::BIT_SHIFT >= <$uint>::BITS as usize {
                 return None;
             }
             while i << digit::BIT_SHIFT < <$uint>::BITS as usize {

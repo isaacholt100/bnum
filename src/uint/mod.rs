@@ -2,6 +2,7 @@ use crate::digit::{Digit, self};
 use crate::macros::expect;
 use crate::ExpType;
 use core::cmp::Ordering;
+use core::mem::MaybeUninit;
 
 #[allow(unused)]
 macro_rules! test_unsigned {
@@ -77,26 +78,27 @@ pub const fn unchecked_shl<const N: usize>(u: BUint<N>, rhs: ExpType) -> BUint<N
         let shift = (rhs & digit::BITS_MINUS_1) as u8;
         
         let mut out = BUint::ZERO;
-        let mut i = digit_shift;
+        let digits_ptr = u.digits.as_ptr();
+        let out_ptr = out.digits.as_mut_ptr() as *mut Digit;
+        unsafe {
+            digits_ptr.copy_to_nonoverlapping(out_ptr.add(digit_shift), N - digit_shift);
+            core::mem::forget(u);
+        }
 
-        if shift == 0 {
-            while i < N {
-                let digit = u.digits[i - digit_shift];
-                out.digits[i] = digit;
-                i += 1;
-            }
-        } else {
+        if shift > 0 {
             let mut carry = 0;
             let carry_shift = Digit::BITS as u8 - shift;
             let mut last_index = digit_shift;
+
+            let mut i = digit_shift;
             while i < N {
-                let digit = u.digits[i - digit_shift];
+                let digit = out.digits[i];
                 let new_carry = digit >> carry_shift;
                 let new_digit = (digit << shift) | carry;
                 if new_digit != 0 {
                     last_index = i;
-                    out.digits[i] = new_digit;
                 }
+                out.digits[i] = new_digit;
                 carry = new_carry;
                 i += 1;
             }
@@ -123,19 +125,20 @@ pub const fn unchecked_shr<const N: usize>(u: BUint<N>, rhs: ExpType) -> BUint<N
         let shift = (rhs & digit::BITS_MINUS_1) as u8;
 
         let mut out = BUint::ZERO;
-        let mut i = digit_shift;
+        let digits_ptr = u.digits.as_ptr();
+        let out_ptr = out.digits.as_mut_ptr() as *mut Digit;
+        unsafe {
+            digits_ptr.add(digit_shift).copy_to_nonoverlapping(out_ptr, N - digit_shift);
+            core::mem::forget(u);
+        }
 
-        if shift == 0 {
-            while i < N {
-                let digit = u.digits[BUint::<N>::N_MINUS_1 + digit_shift - i];
-                out.digits[BUint::<N>::N_MINUS_1 - i] = digit;
-                i += 1;
-            }
-        } else {
+        if shift > 0 {
             let mut borrow = 0;
             let borrow_shift = Digit::BITS as u8 - shift;
+
+            let mut i = digit_shift;
             while i < N {
-                let digit = u.digits[BUint::<N>::N_MINUS_1 + digit_shift - i];
+                let digit = out.digits[BUint::<N>::N_MINUS_1 - i];
                 let new_borrow = digit << borrow_shift;
                 let new_digit = (digit >> shift) | borrow;
                 out.digits[BUint::<N>::N_MINUS_1 - i] = new_digit;
@@ -153,18 +156,17 @@ use serde_big_array::BigArray;
 #[cfg(feature = "serde_all")]
 use serde::{Serialize, Deserialize};
 
-
-/// Big unsigned integer type. Base 2^64 digits are stored as little endian (least significant bit first);
+/// Big unsigned integer type. Digits are stored as little endian (least significant bit first);
 #[cfg(feature = "serde_all")]
-#[derive(Clone, Copy, Hash, Debug, Serialize, Deserialize)]
+#[derive(Clone, Copy, Hash, /*Debug, */Serialize, Deserialize)]
 pub struct BUint<const N: usize> {
     #[serde(with = "BigArray")]
     digits: [Digit; N],
 }
 
-/// Big unsigned integer type. Base 2^64 digits are stored as little endian (least significant bit first);
+/// Big unsigned integer type. Digits are stored as little endian (least significant bit first);
 #[cfg(not(feature = "serde_all"))]
-#[derive(Clone, Copy, Hash, Debug)]
+#[derive(Clone, Copy, Hash, /*Debug*/)]
 pub struct BUint<const N: usize> {
     digits: [Digit; N],
 }
@@ -186,6 +188,7 @@ impl<const N: usize> BUint<N> {
             digits: [Digit::MIN; N],
         }
     };
+
     /// The largest value that can be represented by this integer type (i.e. 2^(64N) - 1).
     /// 
     /// # Examples
@@ -201,6 +204,7 @@ impl<const N: usize> BUint<N> {
             digits: [Digit::MAX; N],
         }
     };
+
     /// The value of zero represented by this type.
     /// 
     /// # Examples
@@ -211,6 +215,7 @@ impl<const N: usize> BUint<N> {
     /// assert_eq!(BUint::<2>::MIN, BUint::<2>::ZERO);
     /// ```
     pub const ZERO: Self = Self::MIN;
+    
     /// The value of one represented by this type.
     /// 
     /// # Examples
@@ -222,6 +227,7 @@ impl<const N: usize> BUint<N> {
     /// assert_eq!(BUint::<2>::from(u128_one), BUint::<2>::ONE);
     /// ```
     pub const ONE: Self = Self::from_digit(1);
+
     /// The size of this type in bits.
     /// 
     /// # Examples
@@ -232,6 +238,7 @@ impl<const N: usize> BUint<N> {
     /// assert_eq!(BUint::<4>::BITS, 4 * 64);
     /// ```
     pub const BITS: usize = digit::BITS * N;
+
     /// The size of this type in bytes.
     /// 
     /// # Examples
@@ -242,38 +249,6 @@ impl<const N: usize> BUint<N> {
     /// assert_eq!(BUint::<6>::BYTES, 6 * 8);
     /// ```
     pub const BYTES: usize = Self::BITS / 8;
-}
-
-pub const fn trailing_zeros<const N: usize>(uint: BUint<N>) -> (ExpType, bool) {
-    let mut zeros = 0;
-    let mut did_break = false;
-    let mut i = 0;
-    while i < N {
-        let digit = uint.digits[i];
-        zeros += digit.trailing_zeros() as ExpType;
-        if digit != Digit::MIN {
-            did_break = true;
-            break;
-        }
-        i += 1;
-    }
-    (zeros, did_break)
-}
-
-pub const fn trailing_ones<const N: usize>(uint: BUint<N>) -> (ExpType, bool) {
-    let mut ones = 0;
-    let mut did_break = false;
-    let mut i = 0;
-    while i < N {
-        let digit = uint.digits[i];
-        ones += digit.trailing_ones() as ExpType;
-        if digit != Digit::MAX {
-            did_break = true;
-            break;
-        }
-        i += 1;
-    }
-    (ones, did_break)
 }
 
 impl<const N: usize> BUint<N> {
@@ -351,7 +326,17 @@ impl<const N: usize> BUint<N> {
     /// assert_eq!(n.trailing_zeros(), 5);
     /// ```
     pub const fn trailing_zeros(self) -> ExpType {
-        trailing_zeros(self).0
+        let mut zeros = 0;
+        let mut i = 0;
+        while i < N {
+            let digit = self.digits[i];
+            zeros += digit.trailing_zeros() as ExpType;
+            if digit != Digit::MIN {
+                break;
+            }
+            i += 1;
+        }
+        zeros
     }
 
     /// Returns the number of leading ones in the binary representation of `self`.
@@ -389,38 +374,58 @@ impl<const N: usize> BUint<N> {
     /// assert_eq!(n.trailing_ones(), 2);
     /// ```
     pub const fn trailing_ones(self) -> ExpType {
-        trailing_ones(self).0
+        let mut ones = 0;
+        let mut i = 0;
+        while i < N {
+            let digit = self.digits[i];
+            ones += digit.trailing_ones() as ExpType;
+            if digit != Digit::MAX {
+                break;
+            }
+            i += 1;
+        }
+        ones
     }
+
+    #[inline]
+    const fn rotate_digits_left(self, n: usize) -> Self {
+        let mut uninit = MaybeUninit::<[Digit; N]>::uninit();
+        let digits_ptr = self.digits.as_ptr();
+        let uninit_ptr = uninit.as_mut_ptr() as *mut Digit;
+        unsafe {
+            digits_ptr.copy_to_nonoverlapping(uninit_ptr.add(n), N - n);
+            digits_ptr.add(N - n).copy_to_nonoverlapping(uninit_ptr, n);
+            core::mem::forget(self);
+            Self::from_digits(uninit.assume_init())
+        }
+    }
+
+    #[inline]
     const fn unchecked_rotate_left(self, n: ExpType) -> Self {
         if n == 0 {
             self
         } else {
             let digit_shift = (n >> digit::BIT_SHIFT) as usize % N;
             let shift = (n % digit::BITS) as u8;
-            
-            let mut out = Self::ZERO;
-            let mut carry = 0;
+
             let carry_shift = Digit::BITS as u8 - shift;
 
-            let mut i = 0;
-            while i < N - digit_shift {
-                let digit = self.digits[i];
-                let new_carry = digit.wrapping_shr(carry_shift as u32);
-                let new_digit = (digit << shift) | carry;
-                carry = new_carry;
-                out.digits[i + digit_shift] = new_digit;
-                i += 1;
-            }
-            while i < N {
-                let digit = self.digits[i];
-                let new_carry = digit.wrapping_shr(carry_shift as u32);
-                let new_digit = (digit << shift) | carry;
-                carry = new_carry;
-                out.digits[i + digit_shift - N] = new_digit;
-                i += 1;
-            }
+            let mut out = self.rotate_digits_left(digit_shift);
 
-            out.digits[digit_shift] |= carry;
+            if shift > 0 {
+                let mut carry = 0;
+
+                let mut i = 0;
+                while i < N {
+                    let digit = out.digits[i];
+                    let new_carry = digit >> carry_shift;
+                    out.digits[i] = (digit << shift) | carry;
+                    carry = new_carry;
+                    i += 1;
+                }
+    
+                out.digits[0] |= carry;
+            }
 
             out
         }

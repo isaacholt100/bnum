@@ -27,8 +27,9 @@ fn bench_eq(b: &mut Bencher) {
     });
 }*/
 
-#[bench]
+/*#[bench]
 fn bench_recursion(b: &mut Bencher) {
+    #[inline(always)]
     fn sum(v: &mut Vec<u128>) -> u128 {
         if v.len() == 0 {
             0
@@ -44,7 +45,7 @@ fn bench_recursion(b: &mut Bencher) {
             });
         }
     });
-}
+}*/
 
 #[bench]
 fn bench_iter(b: &mut Bencher) {

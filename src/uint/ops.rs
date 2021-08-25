@@ -12,6 +12,33 @@ impl<const N: usize> BUint<N> {
     pub const fn add(self, rhs: Self) -> Self {
         self.wrapping_add(rhs)
     }
+    pub const fn bitor(self, rhs: Self) -> Self {
+        let mut out = Self::ZERO;
+        let mut i = 0;
+        while i < N {
+            out.digits[i] = self.digits[i] | rhs.digits[i];
+            i += 1;
+        }
+        out
+    }
+    pub const fn bitand(self, rhs: Self) -> Self {
+        let mut out = Self::ZERO;
+        let mut i = 0;
+        while i < N {
+            out.digits[i] = self.digits[i] & rhs.digits[i];
+            i += 1;
+        }
+        out
+    }
+    pub const fn bitxor(self, rhs: Self) -> Self {
+        let mut out = Self::ZERO;
+        let mut i = 0;
+        while i < N {
+            out.digits[i] = self.digits[i] ^ rhs.digits[i];
+            i += 1;
+        }
+        out
+    }
 }
 
 use crate::arithmetic;
@@ -55,13 +82,7 @@ impl<const N: usize> BitAnd for BUint<N> {
     type Output = Self;
 
     fn bitand(self, rhs: Self) -> Self {
-        let mut out = Self::ZERO;
-        let mut i = 0;
-        while i < N {
-            out.digits[i] = self.digits[i] & rhs.digits[i];
-            i += 1;
-        }
-        out
+        Self::bitand(self, rhs)
     }
 }
 
@@ -69,7 +90,7 @@ op_ref_impl!(BitAnd<BUint<N>> for BUint, bitand);
 
 impl<T, const N: usize> BitAndAssign<T> for BUint<N> where Self: BitAnd<T, Output = Self> {
     fn bitand_assign(&mut self, rhs: T) {
-        *self = self.bitand(rhs);
+        *self = BitAnd::bitand(*self, rhs);
     }
 }
 
@@ -78,18 +99,6 @@ impl<const N: usize> BitOr for BUint<N> {
 
     fn bitor(self, rhs: Self) -> Self {
         Self::bitor(self, rhs)
-    }
-}
-
-impl<const N: usize> BUint<N> {
-    pub const fn bitor(self, rhs: Self) -> Self {
-        let mut out = Self::ZERO;
-        let mut i = 0;
-        while i < N {
-            out.digits[i] = self.digits[i] | rhs.digits[i];
-            i += 1;
-        }
-        out
     }
 }
 
@@ -105,13 +114,7 @@ impl<const N: usize> BitXor for BUint<N> {
     type Output = Self;
 
     fn bitxor(self, rhs: Self) -> Self {
-        let mut out = Self::ZERO;
-        let mut i = 0;
-        while i < N {
-            out.digits[i] = self.digits[i] ^ rhs.digits[i];
-            i += 1;
-        }
-        out
+        Self::bitxor(self, rhs)
     }
 }
 
@@ -119,7 +122,7 @@ op_ref_impl!(BitXor<BUint<N>> for BUint, bitxor);
 
 impl<T, const N: usize> BitXorAssign<T> for BUint<N> where Self: BitXor<T, Output = Self> {
     fn bitxor_assign(&mut self, rhs: T) {
-        *self = self.bitxor(rhs);
+        *self = BitXor::bitxor(*self, rhs);
     }
 }
 
