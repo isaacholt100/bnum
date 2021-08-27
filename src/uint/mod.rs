@@ -493,6 +493,26 @@ impl<const N: usize> BUint<N> {
         uint
     }
 
+    const fn uninit() -> [MaybeUninit<Digit>; N] {
+        unsafe { MaybeUninit::<[MaybeUninit<Digit>; N]>::uninit().assume_init() }
+    }
+
+    fn init(arr: [MaybeUninit<Digit>; N]) -> Self {
+        let digits = unsafe {*(&arr as *const _ as *const [Digit; N])};
+        Self::from_digits(digits)
+    }
+
+    pub fn swap_bytes_test(self) -> Self {
+        let mut digits = Self::uninit();
+        //let mut uint = Self::ZERO;
+        let mut i = 0;
+        while i < N {
+            digits[i] = MaybeUninit::new(self.digits[Self::N_MINUS_1 - i].swap_bytes());
+            i += 1;
+        }
+        Self::init(digits)
+    }
+
     /// Reverses the order of bits in the integer. The least significant bit becomes the most significant bit, second least-significant bit becomes second most-significant bit, etc.
     /// 
     /// # Examples

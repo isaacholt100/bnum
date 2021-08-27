@@ -45,7 +45,7 @@ fn bench_recursion(b: &mut Bencher) {
             });
         }
     });
-}*/
+}
 
 #[bench]
 fn bench_iter(b: &mut Bencher) {
@@ -137,6 +137,87 @@ fn bench_vec(b: &mut Bencher) {
             test::black_box(set.contains(&i));
         }
     })
+}
+
+fn split_array_mut<T, const N: usize>(arr: &mut [T; N], mid: usize) -> (&mut [T], &mut [T]) {
+    let arr_ptr = arr.as_mut_ptr();
+    unsafe {
+        let left = core::ptr::slice_from_raw_parts(arr_ptr, mid) as *mut [T];
+        let right = core::ptr::slice_from_raw_parts(arr_ptr.add(mid), N - mid) as *mut [T];
+        (&mut *left, &mut *right)
+    }
+}
+
+fn reverse_array<T, const N: usize>(arr: &mut [T; N]) {
+    let (head, tail) = split_array_mut::<T, N>(arr, N >> 1);
+    let tail_end = N - 1 - (N >> 1);
+    println!("{}", tail_end);
+    let mut i = 0;
+    while i < (N) >> 1 {
+        core::mem::swap(&mut head[i], &mut tail[tail_end - i]);
+        i += 1;
+    }
+}*/
+
+fn init<const N: usize>(arr: [u8; N]) -> [u8; N] {
+    let mut out = [0; N];
+    let mut i = 0;
+    while i < N {
+        out[i] = arr[i];
+        i += 1;
+    }
+    out
+}
+
+fn init_uninit<const N: usize>(arr: [u8; N]) -> [u8; N] {
+    use core::mem::MaybeUninit;
+    let mut out = unsafe { MaybeUninit::<[MaybeUninit<u8>; N]>::uninit().assume_init() };
+    let mut i = 0;
+    while i < N {
+        out[i] = MaybeUninit::new(arr[i]);
+        i += 1;
+    }
+    unsafe {(&out as *const _ as *const [u8; N]).read()}
+}
+
+#[bench]
+fn test_swap_bytes_fast(b: &mut Bencher) {
+    let u = BUint::<1000>::MIN;
+    b.iter(|| {
+        for _ in 0..10000 {
+            test::black_box(u.swap_bytes_test());
+        }
+    });
+}
+
+#[bench]
+fn test_swap_bytes(b: &mut Bencher) {
+    let u = BUint::<1000>::MIN;
+    b.iter(|| {
+        for _ in 0..10000 {
+            test::black_box(u.swap_bytes());
+        }
+    });
+}
+
+#[bench]
+fn bench_init(b: &mut Bencher) {
+    let arr = [0; 100000];
+    b.iter(|| {
+        for _ in 0..100 {
+        test::black_box(init(arr));
+        }
+    });
+}
+
+#[bench]
+fn bench_uninit(b: &mut Bencher) {
+    let arr = [0; 100000];
+    b.iter(|| {
+        for _ in 0..10000 {
+        test::black_box(init_uninit(arr));
+        }
+    });
 }
 
 trait Overload {

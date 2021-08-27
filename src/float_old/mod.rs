@@ -25,15 +25,12 @@ impl<const W: usize, const MANTISSA_BITS: usize> Float<W, MANTISSA_BITS> {
             self
         }
     }
-    pub const fn from_parts(sign: bool, exponent: BIint<W>, mantissa: BUint<W>) -> Self {
-        let sign = if sign {
-            Self::NEG_ZERO.to_bits()
-        } else {
-            Self::ZERO.to_bits()
-        };
-        let exp = exponent.to_bits().wrapping_shl(MANTISSA_BITS as ExpType);
-        let u = sign.bitor(exp).bitor(mantissa);
-        Self::from_bits(u)
+    pub const fn from_parts(negative: bool, exponent: BUint<W>, mantissa: BUint<W>) -> Self {
+        let mut words = *exponent.bitor(mantissa).digits();
+        if negative {
+            words[W - 1] |= 1 << (digit::BITS - 1);
+        }
+        Self::from_words(words)
     }
     #[inline(always)]
     const fn from_words(digits: [Digit; W]) -> Self {
@@ -61,6 +58,10 @@ impl<const W: usize, const MANTISSA_BITS: usize> Float<W, MANTISSA_BITS> {
     const fn exponent(self) -> BIint<W> {
         let u: BUint<W> = self.to_bits().bitand(BIint::MAX.to_bits()).wrapping_shr(MANTISSA_BITS);
         BIint::from_bits(u)
+    }
+    const EXPONENT_MASK: BUint<W> = BUint::MAX.wrapping_shl(MANTISSA_BITS as ExpType).bitxor(BIint::MIN.to_bits());
+    const fn unshifted_exponent(self) -> BIint<W> {
+        BIint::from_bits(self.to_bits().bitand(Self::EXPONENT_MASK))
     }
     const MANTISSA_MASK: BUint<W> = BUint::MAX.wrapping_shr(Self::EXPONENT_BITS + 1);
     const fn mantissa(self) -> BUint<W> {
@@ -269,6 +270,171 @@ impl<const W: usize, const MANTISSA_BITS: usize> Float<W, MANTISSA_BITS> {
             }
         }*/
     }
+    #[inline]    
+    const fn add_internal(self, rhs: Self, negative: bool) -> Self {
+        //debug_assert_eq!(self.is_sign_negative(), rhs.is_sign_negative());
+        let exp_diff: BIint<W>;
+        let self_e: BIint<W>;
+        let rhs_e: BIint<W>;
+        let self_normal: bool;
+        let rhs_normal: bool;
+
+        match (self.classify(), rhs.classify()) {
+            (FpCategory::Nan, _) => return self,
+            (_, FpCategory::Nan) => return rhs,
+            (FpCategory::Infinite, _) => return self,
+            (_, FpCategory::Infinite) => return rhs,
+            (FpCategory::Normal, FpCategory::Normal) => {
+                self_normal = true;
+                rhs_normal = true;
+                self_e = self.exponent();
+                rhs_e = rhs.exponent();
+                exp_diff = self_e.wrapping_sub(rhs_e);
+            },
+            (FpCategory::Normal, _) => {
+                self_normal = true;
+                rhs_normal = false;
+                self_e = self.exponent();
+                rhs_e = rhs.exponent();
+                exp_diff = self_e.wrapping_sub(rhs_e.wrapping_add(BIint::ONE));
+            },
+            (_, FpCategory::Normal) => {
+                self_normal = false;
+                rhs_normal = true;
+                self_e = self.exponent();
+                rhs_e = rhs.exponent();
+                exp_diff = self_e.wrapping_sub(rhs_e).wrapping_add(BIint::ONE);
+            },
+            (_, _) => {
+                self_normal = false;
+                rhs_normal = false;
+                self_e = self.exponent();
+                rhs_e = rhs.exponent();
+                exp_diff = self_e.wrapping_sub(rhs_e);
+            },
+        };
+        let (a, b, mut exponent, a_normal, b_normal) = if exp_diff.is_negative() {
+            (rhs, self, rhs_e, rhs_normal, self_normal)
+        } else {
+            (self, rhs, self_e, self_normal, rhs_normal)
+        };
+        let am = if a_normal {
+            a.mantissa().bitor(BUint::ONE.wrapping_shl(MANTISSA_BITS))
+        } else {
+            a.mantissa()
+        };
+        let bm = if b_normal {
+            match (b.mantissa().bitor(BUint::ONE.wrapping_shl(MANTISSA_BITS))).checked_shr(exp_diff.abs().as_usize()) {
+                Some(u) => u,
+                None => BUint::ZERO,
+            }//.unwrap_or(BUint::ZERO)
+        } else {
+            match b.mantissa().checked_shr(exp_diff.abs().as_usize()) {
+                Some(u) => u,
+                None => BUint::ZERO,
+            }//.unwrap_or(BUint::ZERO)
+        };
+        let mut mantissa = am.wrapping_add(bm);
+        //mantissa = mantissa ^ (BUint::ONE << (mantissa.bits() - 1));
+        if mantissa.leading_zeros() == (Self::BITS - MANTISSA_BITS - 2) as ExpType {
+            exponent = exponent.wrapping_add(BIint::ONE);
+            if exponent.trailing_ones() == Self::EXPONENT_BITS as ExpType {
+                return Self::INFINITY;
+            }
+            if mantissa.digits()[0] & 1 == 1 {
+                mantissa = mantissa.wrapping_add(BUint::ONE);
+            }
+            mantissa = mantissa.wrapping_shr(1);
+        }
+        if !exponent.is_zero() {
+            mantissa = mantissa.bitand((BUint::ONE.wrapping_shl(MANTISSA_BITS)).not());
+        }
+        Self::from_parts(negative, exponent.to_bits().wrapping_shl(MANTISSA_BITS as ExpType), mantissa)
+    }
+    #[inline]
+    fn sub_internal(self, rhs: Self) -> Self {
+        //debug_assert_ne!(self.is_sign_negative(), rhs.is_sign_negative());
+        let exp_diff: BIint<W>;
+        let self_e: BIint<W>;
+        let rhs_e: BIint<W>;
+        let self_normal: bool;
+        let rhs_normal: bool;
+
+        match (self.classify(), rhs.classify()) {
+            (FpCategory::Nan, _) => return self,
+            (_, FpCategory::Nan) => return rhs,
+            (FpCategory::Infinite, FpCategory::Infinite) => return Self::NAN,
+            (FpCategory::Infinite, _) => return self,
+            (_, FpCategory::Infinite) => return rhs,
+            (FpCategory::Normal, FpCategory::Normal) => {
+                self_normal = true;
+                rhs_normal = true;
+                self_e = self.exponent();
+                rhs_e = rhs.exponent();
+                exp_diff = self_e.wrapping_sub(rhs_e);
+
+            },
+            (FpCategory::Normal, _) => {
+                self_normal = true;
+                rhs_normal = false;
+                self_e = self.exponent();
+                rhs_e = rhs.exponent();
+                exp_diff = self_e.wrapping_sub(rhs_e.wrapping_add(BIint::ONE));
+            },
+            (_, FpCategory::Normal) => {
+                self_normal = false;
+                rhs_normal = true;
+                self_e = self.exponent();
+                rhs_e = rhs.exponent();
+                exp_diff = self_e.wrapping_sub(rhs_e).wrapping_add(BIint::ONE);
+            },
+            (_, _) => {
+                self_normal = false;
+                rhs_normal = false;
+                self_e = self.exponent();
+                rhs_e = rhs.exponent();
+                exp_diff = self_e.wrapping_sub(rhs_e);
+            },
+        };
+        let (a, b, mut exponent, a_normal, b_normal, is_rhs) = if Self::total_cmp(&self.abs(), &rhs.abs()) == Ordering::Less {
+            (rhs, self, rhs_e, rhs_normal, self_normal, true)
+        } else {
+            (self, rhs, self_e, self_normal, rhs_normal, false)
+        };
+        let am = if a_normal {
+            a.mantissa().bitor(BUint::ONE.wrapping_shl(MANTISSA_BITS))
+        } else {
+            a.mantissa()
+        };
+        let bm = if b_normal {
+            match (b.mantissa().bitor(BUint::ONE.wrapping_shl(MANTISSA_BITS))).checked_shr(exp_diff.abs().as_usize()) {
+                Some(u) => u,
+                None => BUint::ZERO,
+            }//.unwrap_or(BUint::ZERO)
+        } else {
+            match b.mantissa().checked_shr(exp_diff.abs().as_usize()) {
+                Some(u) => u,
+                None => BUint::ZERO,
+            }//.unwrap_or(BUint::ZERO)
+        };
+        let mut mantissa = am.wrapping_sub(bm);
+        //mantissa = mantissa ^ (BUint::ONE << (mantissa.bits() - 1));
+        if mantissa.leading_zeros() >= (Self::BITS - MANTISSA_BITS) as ExpType && (a_normal || b_normal) {
+            exponent = exponent.wrapping_sub(BIint::ONE);
+            /*if exponent.trailing_ones() == Self::EXPONENT_BITS as ExpType {
+                return Self::INFINITY;
+            }*/
+            /*if mantissa.digits()[0] & 1 == 1 {
+                mantissa = mantissa.wrapping_add(BUint::ONE);
+            }*/
+            //mantissa = mantissa.wrapping_shr(1);
+        }
+        if !exponent.is_zero() {
+            mantissa = mantissa.bitand((BUint::ONE.wrapping_shl(MANTISSA_BITS)).not());
+        }
+        println!("{}", exponent);
+        Self::from_parts(is_rhs, exponent.to_bits().wrapping_shl(MANTISSA_BITS as ExpType), mantissa)
+    }
 }
 
 use core::cmp::{PartialEq, PartialOrd, Ordering};
@@ -285,70 +451,33 @@ impl<const W: usize, const MANTISSA_BITS: usize> PartialOrd for Float<W, MANTISS
     }
 }
 
-use core::ops::{Add, Neg};
+use core::ops::{Add, Sub, Neg};
 
 impl<const W: usize, const MANTISSA_BITS: usize> Add for Float<W, MANTISSA_BITS> {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self {
-        handle_nan!(Self::NAN; self, rhs);
-        if self == Self::INFINITY {
-            if rhs == Self::NEG_INFINITY {
-                return Self::NAN;
-            }
-            return self;
-        } else if self == Self::NEG_INFINITY {
-            if rhs == Self::INFINITY {
-                return Self::NAN;
-            }
-            return self;
-        } else if rhs == Self::INFINITY {
-            if self == Self::NEG_INFINITY {
-                return Self::NAN;
-            }
-            return rhs;
-        } else if rhs == Self::NEG_INFINITY {
-            if self == Self::INFINITY {
-                return Self::NAN;
-            }
-            return rhs;
-        }
-        let self_e = self.exponent();
-        let rhs_e = rhs.exponent();
-        let exp_diff = self_e - rhs_e;
-        let (mut a, mut b, mut exponent) = if exp_diff.is_negative() {
-            (rhs, self, rhs_e)
+        let self_negative = self.is_sign_negative();
+        let rhs_negative = rhs.is_sign_negative();
+        if self_negative ^ rhs_negative {
+            self.sub_internal(rhs)
         } else {
-            (self, rhs, self_e)
-        };
-        let am = if a.is_normal() {
-            a.mantissa() | (BUint::ONE << MANTISSA_BITS)
-        } else {
-            a.mantissa()
-        };
-        let bm = if b.is_normal() {
-            (b.mantissa() | (BUint::ONE << MANTISSA_BITS)) >> exp_diff.abs()
-        } else {
-            b.mantissa().checked_shr(exp_diff.abs().as_usize()).unwrap_or(BUint::ZERO)
-        };
-        println!("{}", exp_diff);
-        let mut mantissa = am + bm;
-        println!("{:?}", mantissa);
-        //mantissa = mantissa ^ (BUint::ONE << (mantissa.bits() - 1));
-        if mantissa.leading_zeros() == (Self::BITS - MANTISSA_BITS - 2) as ExpType {
-            exponent = exponent.wrapping_add(BIint::ONE);
-            if exponent.trailing_ones() == Self::EXPONENT_BITS as ExpType {
-                return Self::INFINITY;
-            }
-            if mantissa.digits()[0] & 1 == 1 {
-                mantissa += BUint::ONE;
-            }
-            mantissa >>= 1;
+            self.add_internal(rhs, self_negative)
         }
-        if !exponent.is_zero() {
-            mantissa = mantissa & !(BUint::ONE << MANTISSA_BITS);
+    }
+}
+
+impl<const W: usize, const MANTISSA_BITS: usize> Sub for Float<W, MANTISSA_BITS> {
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self {
+        let self_negative = self.is_sign_negative();
+        let rhs_negative = rhs.is_sign_negative();
+        if self_negative ^ rhs_negative {
+            self.add_internal(rhs, self_negative)
+        } else {
+            self.sub_internal(rhs)
         }
-        Self::from_parts(a.is_sign_negative(), exponent, mantissa)
     }
 }
 
@@ -478,12 +607,12 @@ mod tests {
 
     #[test]
     fn test_add() {
-        let (u1, u2) = (0x37FF013484968490u64, 0x35D0EE71100010FFu64);
+        let (u1, u2) = (0xFFFFFFFFFFFF3, 0xFFFF2F3FFFFF3);
         let (f1, f2) = (f64::from_bits(u1), f64::from_bits(u2));
         let (float1, float2) = (F64::from_bits(u1.into()), F64::from_bits(u2.into()));
         assert_eq!((float1 + float2).to_bits(), (f1 + f2).to_bits().into());
 
-        let (u1, u2) = (0xFFFFFFFFFFFFF, 0x10000000000000);
+        let (u1, u2) = (0x37FF013484968490u64, 0x35D0EE71100010FFu64);
         let (f1, f2) = (f64::from_bits(u1), f64::from_bits(u2));
         let (float1, float2) = (F64::from_bits(u1.into()), F64::from_bits(u2.into()));
         assert_eq!((float1 + float2).to_bits(), (f1 + f2).to_bits().into());
@@ -493,10 +622,53 @@ mod tests {
         let (float1, float2) = (F64::from_bits(u1.into()), F64::from_bits(u2.into()));
         assert_eq!((float1 + float2).to_bits(), (f1 + f2).to_bits().into());
 
-        let (u1, u2) = (0xFFFFFFFFFFFF3, 0xFFFF2F3FFFFF3);
+        let (u1, u2) = (0xFFFFFFFFFFFFF, 0x10000000000000);
         let (f1, f2) = (f64::from_bits(u1), f64::from_bits(u2));
         let (float1, float2) = (F64::from_bits(u1.into()), F64::from_bits(u2.into()));
         assert_eq!((float1 + float2).to_bits(), (f1 + f2).to_bits().into());
+
+        let (u1, u2) = (0xFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFF);
+        let (f1, f2) = (f64::from_bits(u1), f64::from_bits(u2));
+        let (float1, float2) = (F64::from_bits(u1.into()), F64::from_bits(u2.into()));
+        assert_eq!((float1 + float2).to_bits(), (f1 + f2).to_bits().into());
+
+        let (u1, u2) = (0xFFFFFFFFFFFFF, 0x0000000000001);
+        let (f1, f2) = (f64::from_bits(u1), f64::from_bits(u2));
+        let (float1, float2) = (F64::from_bits(u1.into()), F64::from_bits(u2.into()));
+        assert_eq!((float1 + float2).to_bits(), (f1 + f2).to_bits().into());
+    }
+
+    #[test]
+    fn test_sub() {
+        let (u1, u2) = (0xFFFFFFFFFFFF3, 0xFFFF2F3FFFFF3);
+        let (f1, f2) = (f64::from_bits(u1), f64::from_bits(u2));
+        let (float1, float2) = (F64::from_bits(u1.into()), F64::from_bits(u2.into()));
+        assert_eq!((float1 - float2).to_bits(), (f1 - f2).to_bits().into());
+
+        let (u1, u2) = (0x37FF013484968490u64, 0x35D0EE71100010FFu64);
+        let (f1, f2) = (f64::from_bits(u1), f64::from_bits(u2));
+        let (float1, float2) = (F64::from_bits(u1.into()), F64::from_bits(u2.into()));
+        assert_eq!((float1 - float2).to_bits(), (f1 - f2).to_bits().into());
+
+        let (u1, u2) = (0, 0);
+        let (f1, f2) = (f64::from_bits(u1), f64::from_bits(u2));
+        let (float1, float2) = (F64::from_bits(u1.into()), F64::from_bits(u2.into()));
+        assert_eq!((float1 - float2).to_bits(), (f1 - f2).to_bits().into());
+
+        let (u1, u2) = (0xFFFFFFFFFFFFFFF, 0xFFFFFFFFFFFFF);
+        let (f1, f2) = (f64::from_bits(u1), f64::from_bits(u2));
+        let (float1, float2) = (F64::from_bits(u1.into()), F64::from_bits(u2.into()));
+        assert_eq!((float1 - float2).to_bits(), (f1 - f2).to_bits().into());
+
+        let (u1, u2) = (0xFFFFFFFFFFFFF, 0x0000000000001);
+        let (f1, f2) = (f64::from_bits(u1), f64::from_bits(u2));
+        let (float1, float2) = (F64::from_bits(u1.into()), F64::from_bits(u2.into()));
+        assert_eq!((float1 - float2).to_bits(), (f1 - f2).to_bits().into());
+
+        let (u1, u2) = (0xFFFFFFFFFFFFF, 0x10000000000000);
+        let (f1, f2) = (f64::from_bits(u1), f64::from_bits(u2));
+        let (float1, float2) = (F64::from_bits(u1.into()), F64::from_bits(u2.into()));
+        assert_eq!((float1 - float2).to_bits(), (f1 - f2).to_bits().into());
     }
 
     #[test]
