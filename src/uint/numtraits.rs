@@ -84,19 +84,6 @@ impl<const N: usize> Pow<ExpType> for BUint<N> {
 
 use core::convert::TryFrom;
 
-#[cfg(feature = "u8_digit")]
-impl AsPrimitive<char> for BUint<1> {
-    fn as_(self) -> char {
-        self.as_char()
-    }
-}
-
-impl AsPrimitive<char> for BUint<0> {
-    fn as_(self) -> char {
-        self.as_char()
-    }
-}
-
 macro_rules! as_primitive_impl {
     ($ty: ty, $method: ident) => {
         impl<const N: usize> AsPrimitive<$ty> for BUint<N> {
@@ -205,7 +192,7 @@ macro_rules! int_as_buint_impl {
 int_as_buint_impl!(i8 -> u8, i16 -> u16, i32 -> u32, isize -> usize, i64 -> u64, i128 -> u128);
 
 #[cfg(feature = "nightly")]
-impl<const N: usize, const M: usize> AsPrimitive<BUint<M>> for BUint<N> where [(); M - N]: Sized {
+impl<const N: usize, const M: usize> AsPrimitive<BUint<M>> for BUint<N> where [(); M.saturating_sub(N)]: Sized {
     fn as_(self) -> BUint<M> {
         self.as_buint::<M>()
     }
@@ -216,7 +203,7 @@ impl<const N: usize, const M: usize> AsPrimitive<BUint<M>> for BUint<N> where [(
 use crate::BIint;
 
 #[cfg(feature = "nightly")]
-impl<const N: usize, const M: usize> AsPrimitive<BIint<M>> for BUint<N> where [(); M - N]: Sized {
+impl<const N: usize, const M: usize> AsPrimitive<BIint<M>> for BUint<N> where [(); M.saturating_sub(N)]: Sized {
     fn as_(self) -> BIint<M> {
         self.as_biint::<M>()
     }
@@ -514,16 +501,16 @@ impl<const N: usize> Roots for BUint<N> {
 macro_rules! to_uint {
     ($name: ident, $uint: ty) => {
         fn $name(&self) -> Option<$uint> {
-            let mut out = 0;
-            let mut i = 0;
             let last_index = self.last_digit_index();
             if self.digits[last_index] == 0 {
                 return Some(0);
             }
-            if (last_index + 1) << digit::BIT_SHIFT >= <$uint>::BITS as usize {
+            if last_index >= <$uint>::BITS as usize >> digit::BIT_SHIFT {
                 return None;
             }
-            while i << digit::BIT_SHIFT < <$uint>::BITS as usize {
+            let mut out = 0;
+            let mut i = 0;
+            while i <= last_index {
                 out |= self.digits[i] as $uint << (i << digit::BIT_SHIFT);
                 i += 1;
             }
@@ -540,12 +527,18 @@ impl<const N: usize> ToPrimitive for BUint<N> {
         }
     }
     fn to_i128(&self) -> Option<i128> {
+        //self.to_u128().map(|int| int.to_i128())
         match self.to_u128() {
             Some(int) => int.to_i128(),
             None => None,
         }
     }
-    to_uint!(to_u64, u64);
+    fn to_u64(&self) -> Option<u64> {
+        match self.to_u128() {
+            Some(int) => int.to_u64(),
+            None => None,
+        }
+    }
     to_uint!(to_u128, u128);
     fn to_f32(&self) -> Option<f32> {
         Some(self.as_f32())

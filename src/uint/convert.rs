@@ -43,7 +43,11 @@ macro_rules! from_uint {
                     let mut out = Self::ZERO;
                     let mut i = 0;
                     while i << digit::BIT_SHIFT < UINT_BITS {
-                        out.digits[i] = (int >> (i << digit::BIT_SHIFT)) as Digit;
+                        let d = (int >> (i << digit::BIT_SHIFT)) as Digit;
+                        if d != 0 {
+                            out.digits[i] = d;
+                        }
+                        //out.digits[i] = (int >> (i << digit::BIT_SHIFT)) as Digit;
                         i += 1;
                     }
                     out

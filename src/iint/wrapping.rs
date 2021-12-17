@@ -3,10 +3,14 @@ use crate::ExpType;
 
 impl<const N: usize> BIint<N> {
     pub const fn wrapping_add(self, rhs: Self) -> Self {
-        self.overflowing_add(rhs).0
+        Self {
+            uint: self.uint.wrapping_add(rhs.uint),
+        }
     }
     pub const fn wrapping_sub(self, rhs: Self) -> Self {
-        self.overflowing_sub(rhs).0
+        Self {
+            uint: self.uint.wrapping_sub(rhs.uint),
+        }
     }
     pub const fn wrapping_mul(self, rhs: Self) -> Self {
         Self {
@@ -38,7 +42,6 @@ impl<const N: usize> BIint<N> {
     pub const fn wrapping_abs(self) -> Self {
         self.overflowing_abs().0
     }
-    // TODO: test methods
 }
 
 

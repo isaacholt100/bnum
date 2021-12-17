@@ -3,6 +3,7 @@ use crate::macros::expect;
 use crate::ExpType;
 use core::cmp::Ordering;
 use core::mem::MaybeUninit;
+use crate::doc;
 
 #[allow(unused)]
 macro_rules! test_unsigned {
@@ -39,29 +40,6 @@ macro_rules! test_unsigned {
         }
     }
 }
-
-/*#[allow(unused)]
-macro_rules! possible_const_fn {
-    ($self: ident, fn $name: ident (self $(,$param: ident : $Type: ty)*) -> $ret: ty $body: block) => {
-        #[cfg(feature = "intrinsics")]
-        pub fn $name($self $(,$param: $Type)*) -> $ret $body
-        #[cfg(not(feature = "intrinsics"))]
-        pub const fn $name($self $(,$param: $Type)*) -> $ret $body
-    };
-}*/
-
-mod cmp;
-mod convert;
-mod ops;
-mod numtraits;
-mod overflow;
-mod checked;
-mod saturating;
-mod wrapping;
-mod fmt;
-mod endian;
-mod radix;
-mod cast;
 
 #[cfg(feature = "nightly")]
 pub use cast::{cast_up, cast_down};
@@ -156,7 +134,13 @@ use serde_big_array::BigArray;
 #[cfg(feature = "serde_all")]
 use serde::{Serialize, Deserialize};
 
-/// Big unsigned integer type. Digits are stored as little endian (least significant bit first);
+macro_rules! doc_desc {
+    () => {
+"Big unsigned integer type. Digits are stored as little endian (least significant bit first);"
+    }
+}
+
+#[doc=doc_desc!()]
 #[cfg(feature = "serde_all")]
 #[derive(Clone, Copy, Hash, /*Debug, */Serialize, Deserialize)]
 pub struct BUint<const N: usize> {
@@ -164,104 +148,68 @@ pub struct BUint<const N: usize> {
     digits: [Digit; N],
 }
 
-/// Big unsigned integer type. Digits are stored as little endian (least significant bit first);
+#[doc=doc_desc!()]
 #[cfg(not(feature = "serde_all"))]
 #[derive(Clone, Copy, Hash, /*Debug*/)]
 pub struct BUint<const N: usize> {
     digits: [Digit; N],
 }
 
+macro_rules! pos_const {
+    ($($name: ident $num: literal), *) => {
+        $(
+            #[doc=concat!("The value of ", $num, " represented by this type.")]
+            pub const $name: Self = Self::from_digit($num);
+        )*
+    }
+}
+
 /// Associated constants for this type.
 impl<const N: usize> BUint<N> {
-    /// The smallest value that can be represented by this integer type (i.e. 0).
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bint::BUint;
-    /// 
-    /// let u128_min = u128::MIN;
-    /// assert_eq!(BUint::<2>::from(u128_min), BUint::<2>::MIN);
-    /// ```
+    #[doc=doc::min_const!(BUint::<2>)]
     pub const MIN: Self = {
         Self {
             digits: [Digit::MIN; N],
         }
     };
 
-    /// The largest value that can be represented by this integer type (i.e. 2^(64N) - 1).
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bint::BUint;
-    /// 
-    /// let u128_max = u128::MAX;
-    /// assert_eq!(BUint::<2>::from(u128_max), BUint::<2>::MAX);
-    /// ```
+    #[doc=doc::max_const!(BUint::<2>)]
     pub const MAX: Self = {
         Self {
             digits: [Digit::MAX; N],
         }
     };
 
-    /// The value of zero represented by this type.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bint::BUint;
-    /// 
-    /// assert_eq!(BUint::<2>::MIN, BUint::<2>::ZERO);
-    /// ```
-    pub const ZERO: Self = Self::MIN;
-    
-    /// The value of one represented by this type.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bint::BUint;
-    /// 
-    /// let u128_one = 1u128;
-    /// assert_eq!(BUint::<2>::from(u128_one), BUint::<2>::ONE);
-    /// ```
-    pub const ONE: Self = Self::from_digit(1);
-
-    /// The size of this type in bits.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bint::BUint;
-    /// 
-    /// assert_eq!(BUint::<4>::BITS, 4 * 64);
-    /// ```
+    #[doc=doc::bits_const!(BUint::<2>, 64)]
     pub const BITS: usize = digit::BITS * N;
 
-    /// The size of this type in bytes.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bint::BUint;
-    /// 
-    /// assert_eq!(BUint::<6>::BYTES, 6 * 8);
-    /// ```
+    #[doc=doc::bytes_const!(BUint::<2>, 8)]
     pub const BYTES: usize = Self::BITS / 8;
+
+    #[doc=doc::zero_const!(BUint::<2>)]
+    pub const ZERO: Self = Self::MIN;
+    
+    #[doc=doc::one_const!(BUint::<2>)]
+    pub const ONE: Self = Self::from_digit(1);
+
+    pos_const!(TWO 2, THREE 3, FOUR 4, FIVE 5, SIX 6, SEVEN 7, EIGHT 8, NINE 9, TEN 10);
 }
 
+mod cmp;
+mod convert;
+mod ops;
+mod numtraits;
+mod overflow;
+mod checked;
+mod saturating;
+mod wrapping;
+mod fmt;
+mod endian;
+mod radix;
+mod cast;
+
 impl<const N: usize> BUint<N> {
-    /// Returns the number of ones in the binary representation of `self`.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bint::BUint;
-    /// 
-    /// let n = BUint::<4>::from(0b010111101010000u64);
-    /// assert_eq!(n.count_ones(), 7);
-    /// ```
+    #[doc=doc::count_ones!(BUint::<4>)]
     pub const fn count_ones(self) -> ExpType {
         let mut ones = 0;
         let mut i = 0;
@@ -272,15 +220,7 @@ impl<const N: usize> BUint<N> {
         ones
     }
 
-    /// Returns the number of zeros in the binary representation of `self`.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bint::BUint;
-    /// 
-    /// assert_eq!(BUint::<5>::MAX.count_zeros(), 0);
-    /// ```
+    #[doc=doc::count_zeros!(BUint::<5>)]
     pub const fn count_zeros(self) -> ExpType {
         let mut zeros = 0;
         let mut i = 0;
@@ -291,16 +231,7 @@ impl<const N: usize> BUint<N> {
         zeros
     }
 
-    /// Returns the number of leading zeros in the binary representation of `self`.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bint::BUint;
-    /// 
-    /// let n: BUint::<3> = BUint::<3>::MAX >> 4;
-    /// assert_eq!(n.leading_zeros(), 4);
-    /// ```
+    #[doc=doc::leading_zeros!(BUint::<3>)]
     pub const fn leading_zeros(self) -> ExpType {
         let mut zeros = 0;
         let mut i = N;
@@ -315,16 +246,7 @@ impl<const N: usize> BUint<N> {
         zeros
     }
 
-    /// Returns the number of trailing zeros in the binary representation of `self`.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bint::BUint;
-    /// 
-    /// let n = BUint::<2>::from(0b01111010100000u128);
-    /// assert_eq!(n.trailing_zeros(), 5);
-    /// ```
+    #[doc=doc::trailing_zeros!(BUint::<4>)]
     pub const fn trailing_zeros(self) -> ExpType {
         let mut zeros = 0;
         let mut i = 0;
@@ -339,16 +261,7 @@ impl<const N: usize> BUint<N> {
         zeros
     }
 
-    /// Returns the number of leading ones in the binary representation of `self`.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bint::BUint;
-    /// 
-    /// let n: BUint::<3> = BUint::<3>::MAX >> 6;
-    /// assert_eq!((!n).leading_ones(), 6);
-    /// ```
+    #[doc=doc::leading_ones!(BUint::<4>, MAX)]    
     pub const fn leading_ones(self) -> ExpType {
         let mut ones = 0;
         let mut i = N;
@@ -363,16 +276,7 @@ impl<const N: usize> BUint<N> {
         ones
     }
 
-    /// Returns the number of trailing ones in the binary representation of `self`.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bint::BUint;
-    /// 
-    /// let n = BUint::<2>::from(0b1000101011011u128);
-    /// assert_eq!(n.trailing_ones(), 2);
-    /// ```
+    #[doc=doc::trailing_ones!(BUint::<6>)]
     pub const fn trailing_ones(self) -> ExpType {
         let mut ones = 0;
         let mut i = 0;
@@ -432,57 +336,20 @@ impl<const N: usize> BUint<N> {
     }
     const BITS_MINUS_1: ExpType = (Self::BITS - 1) as ExpType;
 
-    /// Shifts the bits to the left by a specified amount, `n`, wrapping the truncated bits to the end of the resulting integer.
-    /// 
-    /// Please note this isn't the same operation as the `<<` shifting operator!
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bint::BUint;
-    /// 
-    /// let n = BUint::<2>::from(0x13f40000000000000000000000004f76u128);
-    /// let m = BUint::<2>::from(0x4f7613f4u128);
-    ///
-    /// assert_eq!(n.rotate_left(16), m);
-    /// ```
+    #[doc=doc::rotate_left!(BUint::<2>, "u")]
     pub const fn rotate_left(self, n: ExpType) -> Self {
         self.unchecked_rotate_left(n & Self::BITS_MINUS_1)
     }
 
-    /// Shifts the bits to the right by a specified amount, `n`, wrapping the truncated bits to the beginning of the resulting integer.
-    /// 
-    /// Please note this isn't the same operation as the `>>` shifting operator!
-    /// 
-    /// `rotate_right(n)` is equivalent to `rotate_left(Self::BITS - n)`.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bint::BUint;
-    /// 
-    /// let n = BUint::<2>::from(0x4f7613f4u128);
-    /// let m = BUint::<2>::from(0x13f40000000000000000000000004f76u128);
-    ///
-    /// assert_eq!(n.rotate_right(16), m);
-    /// ```
+    #[doc=doc::rotate_right!(BUint::<2>, "u")]
     pub const fn rotate_right(self, n: ExpType) -> Self {
         let n = n & Self::BITS_MINUS_1;
         self.unchecked_rotate_left(Self::BITS as ExpType - n)
     }
+
     const N_MINUS_1: usize = N - 1;
 
-    /// Reverses the byte order of the integer.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bint::BUint;
-    /// 
-    /// let n = BUint::<2>::from(0x12345678901234567890123456789012u128);
-    /// let m = BUint::<2>::from(0x12907856341290785634129078563412u128);
-    /// assert_eq!(n.swap_bytes(), m);
-    /// ```
+    #[doc=doc::swap_bytes!(BUint::<2>, "u")]
     pub const fn swap_bytes(self) -> Self {
         let mut uint = Self::ZERO;
         let mut i = 0;
@@ -493,39 +360,7 @@ impl<const N: usize> BUint<N> {
         uint
     }
 
-    const fn uninit() -> [MaybeUninit<Digit>; N] {
-        unsafe { MaybeUninit::<[MaybeUninit<Digit>; N]>::uninit().assume_init() }
-    }
-
-    fn init(arr: [MaybeUninit<Digit>; N]) -> Self {
-        let digits = unsafe {*(&arr as *const _ as *const [Digit; N])};
-        Self::from_digits(digits)
-    }
-
-    pub fn swap_bytes_test(self) -> Self {
-        let mut digits = Self::uninit();
-        //let mut uint = Self::ZERO;
-        let mut i = 0;
-        while i < N {
-            digits[i] = MaybeUninit::new(self.digits[Self::N_MINUS_1 - i].swap_bytes());
-            i += 1;
-        }
-        Self::init(digits)
-    }
-
-    /// Reverses the order of bits in the integer. The least significant bit becomes the most significant bit, second least-significant bit becomes second most-significant bit, etc.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bint::BUint;
-    /// 
-    /// let n = BUint::<2>::from(0x12345678901234567890123456789012u128);
-    /// let m = BUint::<2>::from(0x48091e6a2c48091e6a2c48091e6a2c48u128);
-    ///
-    /// assert_eq!(n.reverse_bits(), m);
-    /// assert_eq!(BUint::<6>::ZERO, BUint::<6>::ZERO.reverse_bits());
-    /// ```
+    #[doc=doc::reverse_bits!(BUint::<6>, "u")]
     pub const fn reverse_bits(self) -> Self {
         let mut uint = Self::ZERO;
         let mut i = 0;
@@ -536,17 +371,7 @@ impl<const N: usize> BUint<N> {
         uint
     }
 
-    /// Raises `self` to the power of `exp`, using exponentiation by squaring.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bint::BUint;
-    /// 
-    /// let n = BUint::<2>::from(3u128);
-    /// let m = BUint::<2>::from(3u128.pow(5));
-    /// assert_eq!(n.pow(5), m);
-    /// ```
+    #[doc=doc::pow!(BUint::<4>)]
     #[cfg(debug_assertions)]
     pub const fn pow(self, exp: ExpType) -> Self {
         expect!(self.checked_pow(exp), "attempt to calculate power with overflow")
@@ -598,19 +423,15 @@ impl<const N: usize> BUint<N> {
         self.wrapping_rem_euclid(rhs)
     }
 
-    /// Returns `true` if and only if `self == 2^k` for some integer `k`.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bint::BUint;
-    /// 
-    /// let n = BUint::<3>::from(u128::MAX);
-    /// assert!((n + BUint::ONE).is_power_of_two());
-    /// 
-    /// let m = BUint::<3>::from(100u128);
-    /// assert!(!m.is_power_of_two());
-    /// ```
+    #[doc=doc::doc_comment! {
+        BUint::<2>,
+        "Returns `true` if and only if `self == 2^k` for some integer `k`.",
+        
+        "let n = " doc::int_str!(BUint::<2>) "::from(1u16 << 14);\n"
+        "assert!(n.is_power_of_two());\n"
+        "let m = " doc::int_str!(BUint::<2>) "::from(100u8);\n"
+        "assert!(!m.is_power_of_two());"
+    }]
     pub const fn is_power_of_two(&self) -> bool {
         let mut i = 0;
         let mut ones = 0;
@@ -624,21 +445,7 @@ impl<const N: usize> BUint<N> {
         ones == 1
     }
 
-    /// Returns the smallest power of two greater than or equal to `self`.
-    /// 
-    /// When return value overflows (i.e. `self > (1 << (64N-1)`), it panics in debug mode and the return value is wrapped to 0 in release mode (the only situation in which method can return 0).
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bint::BUint;
-    /// 
-    /// let n = BUint::<5>::from(2u128);
-    /// assert_eq!(n.next_power_of_two(), n);
-    /// 
-    /// let m = BUint::<5>::from(3u128);
-    /// assert_eq!(m.next_power_of_two(), BUint::from(4u128));
-    /// ```
+    #[doc=doc::next_power_of_two!(BUint::<2>, "0", "ZERO")]
     #[cfg(debug_assertions)]
     pub const fn next_power_of_two(self) -> Self {
         expect!(self.checked_next_power_of_two(), "attempt to calculate next power of two with overflow")
@@ -648,21 +455,7 @@ impl<const N: usize> BUint<N> {
         self.wrapping_next_power_of_two()
     }
 
-    /// Returns the smallest power of two greater than or equal to `self`. If the next power of two is greater than `Self::MAX`, `None` is returned, otherwise the power of two is wrapped in `Some`.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bint::BUint;
-    /// 
-    /// let n = BUint::<5>::from(2u128);
-    /// assert_eq!(n.checked_next_power_of_two(), Some(n));
-    /// 
-    /// let m = BUint::<5>::from(3u128);
-    /// assert_eq!(m.checked_next_power_of_two(), Some(BUint::from(4u128)));
-    /// 
-    /// assert_eq!(BUint::<5>::MAX.checked_next_power_of_two(), None);
-    /// ```
+    #[doc=doc::checked_next_power_of_two!(BUint::<2>)]
     pub const fn checked_next_power_of_two(self) -> Option<Self> {
         if self.is_power_of_two() {
             return Some(self);
@@ -685,18 +478,7 @@ impl<const N: usize> BUint<N> {
         }
     }
 
-    /// Returns the smallest power of two greater than or equal to `self`. If the next power of two is greater than `Self::MAX`, the return value is wrapped to 0.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bint::BUint;
-    /// 
-    /// let n = BUint::<4>::from(39457897u128);
-    /// assert_eq!(n.wrapping_next_power_of_two(), n.next_power_of_two());
-    /// 
-    /// assert_eq!(BUint::<4>::MAX.wrapping_next_power_of_two(), BUint::ZERO);
-    /// ```
+    #[doc=doc::wrapping_next_power_of_two!(BUint::<2>, "0")]
     pub const fn wrapping_next_power_of_two(self) -> Self {
         match self.checked_next_power_of_two() {
             Some(int) => int,
@@ -782,37 +564,12 @@ impl<const N: usize> BUint<N> {
         out
     }
 
-    /// Returns the fewest bits necessary to represent `self`.
-    /// 
-    /// This is equal to the size of the type in bits minus the leading zeros of `self`.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bint::BUint;
-    /// 
-    /// let n = BUint::<2>::from(0b01110001u128);
-    /// assert_eq!(n.bits(), 7);
-    /// 
-    /// let m = BUint::<2>::from(99384759374394579457u128);
-    /// assert_eq!(m.bits(), BUint::<2>::BITS - m.leading_zeros() as usize);
-    /// ```
+    #[doc=doc::bits!(BUint::<2>)]
     pub const fn bits(&self) -> ExpType {
         Self::BITS as ExpType - self.leading_zeros()
     }
 
-    /// Returns a boolean of the bit in the given position (`true` if the bit is set).
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bint::BUint;
-    /// 
-    /// let n = BUint::<2>::from(0b001010100101010101u128);
-    /// assert!(n.bit(0));
-    /// assert!(!n.bit(1));
-    /// assert!(!n.bit(BUint::<2>::BITS - 1));
-    /// ```
+    #[doc=doc::bit!(BUint::<4>)]
     pub const fn bit(&self, index: usize) -> bool {
         let digit = self.digits[index >> digit::BIT_SHIFT];
         digit & (1 << (index & digit::BITS_MINUS_1)) != 0
@@ -860,7 +617,7 @@ impl<const N: usize> BUint<N> {
         out
     }
 
-    /// Returns whether `self` is zero.
+    #[doc=doc::is_zero!(BUint::<2>)]
     pub const fn is_zero(&self) -> bool {
         let mut i = 0;
         while i < N {
@@ -872,7 +629,7 @@ impl<const N: usize> BUint<N> {
         true
     }
 
-    /// Returns whether `self` is one.
+    #[doc=doc::is_one!(BUint::<2>)]
     pub const fn is_one(&self) -> bool {
         if N == 0 || self.digits[0] != 1 {
             return false;
@@ -942,25 +699,12 @@ impl<const N: usize> BUint<N> {
         }
         index
     }
-    /*fn pollard_rho(&self) -> Vec<Self> {
-
-    }
-    pub fn factors(&self) -> Vec<Self> {
-        use num_traits::ToPrimitive;
-        if let Some(n) = self.to_u16() {
-            crate::factors::FACTORS[n as usize].iter().map(|n| {
-                Self::from(*n)
-            }).collect()
-        } else {
-            todo!()
-        }
-    }*/
 }
 
 use core::default::Default;
 
 impl<const N: usize> Default for BUint<N> {
-    /// Returns the default value of `Self::ZERO`.
+    #[doc=doc::default!()]
     fn default() -> Self {
         Self::ZERO
     }

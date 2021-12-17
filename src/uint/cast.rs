@@ -36,98 +36,18 @@ impl<const N: usize> BUint<N> {
     as_int!(as_u64, u64, "a `u64`.", "assert_eq!(u.as_u64(), n as u64);");
     as_int!(as_u128, u128, "a `u128`.", "assert_eq!(u.as_u128(), n as u128);");
     as_int!(as_usize, usize, "a `usize`.", "assert_eq!(u.as_usize(), n as usize);");
-/*
-    /// Converts the first 64 bits of `self` to a `u64`.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bint::BUint;
-    /// 
-    /// let n = 1097937598374598734507959845u128;
-    /// let u = BUint::<2>::from(n);
-    /// assert_eq!(u.as_u64(), n as u64);
-    /// ```
-    pub const fn as_u64(&self) -> u64 {
-        (&self.digits)[0]
-    }
 
-    /// Converts the first 64 bits of `self` to a `u128`.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bint::BUint;
-    /// 
-    /// let n = 1097937598374598734507959845u128;
-    /// let u = BUint::<2>::from(n);
-    /// assert_eq!(u.as_u128(), n as u128);
-    /// ```
-    pub const fn as_u128(&self) -> u128 {
-        digit::to_double_digit((&self.digits)[1], (&self.digits)[0])
-    }
-
-    /// Converts the first 64 bits of `self` to a `usize`.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bint::BUint;
-    /// 
-    /// let n = 1097937598374598734507959845u128;
-    /// let u = BUint::<2>::from(n);
-    /// assert_eq!(u.as_usize(), n as usize);
-    /// ```
-    pub const fn as_usize(&self) -> usize {
-        self.as_u128() as usize
-    }
-*/
     as_int!(as_i8, i8, "an `i8`.", "assert_eq!(u.as_i8(), n as i8);");
     as_int!(as_i16, i16, "an `i16`.", "assert_eq!(u.as_i16(), n as i16);");
     as_int!(as_i32, i32, "an `i32`.", "assert_eq!(u.as_i32(), n as i32);");
     as_int!(as_i64, i64, "an `i64`.", "assert_eq!(u.as_i64(), n as i64);");
     as_int!(as_i128, i128, "an `i128`.", "assert_eq!(u.as_i128(), n as i128);");
     as_int!(as_isize, isize, "an `isize`.", "assert_eq!(u.as_isize(), n as isize);");
-/*
-    /// Converts the first 64 bits of `self` to an `i128`.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bint::BUint;
-    /// 
-    /// let n = 1097937598374598734507959845u128;
-    /// let u = BUint::<2>::from(n);
-    /// assert_eq!(u.as_i128(), n as i128);
-    /// ```
-    pub const fn as_i128(&self) -> i128 {
-        self.as_u128() as i128
-    }
 
-    /// Converts the first 64 bits of `self` to an `isize`.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bint::BUint;
-    /// 
-    /// let n = 1097937598374598734507959845u128;
-    /// let u = BUint::<2>::from(n);
-    /// assert_eq!(u.as_isize(), n as isize);
-    /// ```
-    pub const fn as_isize(&self) -> isize {
-        self.as_usize() as isize
-    }
-*/
     /// Converts `self` to an `f32` floating point number. 
     /// 
-    /// If `self` is larger than the largest number that can be represented by an `f32`, `f32::INFINITY` is returned.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bint::BUint;
-    /// 
+    /// If `self` is larger than the largest integer that can be represented by an `f32`, `f32::INFINITY` is returned.
+    #[doc=crate::doc::example_header!(BUint)]
     /// let n = 1097937598374598734507959845u128;
     /// let u = BUint::<2>::from(n);
     /// assert_eq!(u.as_f32(), n as f32);
@@ -153,12 +73,7 @@ impl<const N: usize> BUint<N> {
     /// Converts `self` to an `f64` floating point number. 
     /// 
     /// If `self` is larger than the largest number that can be represented by an `f64`, `f64::INFINITY` is returned.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bint::BUint;
-    /// 
+    #[doc=crate::doc::example_header!(BUint)]
     /// let n = 1097937598374598734507959845u128;
     /// let u = BUint::<2>::from(n);
     /// assert_eq!(u.as_f64(), n as f64);
@@ -183,7 +98,7 @@ impl<const N: usize> BUint<N> {
     }
 
     #[cfg(feature = "nightly")]
-    pub const fn as_buint<const M: usize>(&self) -> BUint<M> where [Digit; M - N]: Sized {
+    pub const fn as_buint<const M: usize>(&self) -> BUint<M> where [Digit; M.saturating_sub(N)]: Sized {
         if M > N {
             cast_up::<N, M>(&self, 0)
         } else {
@@ -192,36 +107,23 @@ impl<const N: usize> BUint<N> {
     }
 
     #[cfg(feature = "nightly")]
-    pub const fn as_biint<const M: usize>(&self) -> BIint<M> where [Digit; M - N]: Sized {
+    pub const fn as_biint<const M: usize>(&self) -> BIint<M> where [Digit; M.saturating_sub(N)]: Sized {
         BIint::from_bits(self.as_buint())
     }
 }
 
-#[cfg(feature = "u8_digit")]
-impl BUint<1> {
-    pub const fn as_char(&self) -> char {
-        self.digits[0] as char
-    }
-}
-
-impl BUint<0> {
-    pub const fn as_char(&self) -> char {
-        0u8 as char
-    }
-}
-
 #[cfg(feature = "nightly")]
-pub const fn cast_up<const N: usize, const M: usize>(u: &BUint<N>, digit: Digit) -> BUint<M> where [Digit; M - N]: Sized {
+pub const fn cast_up<const N: usize, const M: usize>(u: &BUint<N>, digit: Digit) -> BUint<M> where [Digit; M.saturating_sub(N)]: Sized {
     debug_assert!(M > N);
     let mut digits = MaybeUninit::<[Digit; M]>::uninit();
     let digits_ptr = digits.as_mut_ptr() as *mut Digit;
     let self_ptr = u.digits.as_ptr();
-    let padding = [digit; M - N];
+    let padding = [digit; M.saturating_sub(N)];
     let padding_ptr = padding.as_ptr();
 
     unsafe {
         self_ptr.copy_to_nonoverlapping(digits_ptr, N);
-        padding_ptr.copy_to_nonoverlapping(digits_ptr.offset(N as isize), M - N);
+        padding_ptr.copy_to_nonoverlapping(digits_ptr.offset(N as isize), M.saturating_sub(N));
         BUint {
             digits: digits.assume_init(),
         }

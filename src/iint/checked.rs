@@ -1,7 +1,9 @@
 use super::BIint;
 use crate::macros::checked_pow;
 use crate::ExpType;
+use crate::doc;
 
+#[inline]
 const fn tuple_to_option<const N: usize>((int, overflow): (BIint<N>, bool)) -> Option<BIint<N>> {
     if overflow {
         None
@@ -23,6 +25,8 @@ macro_rules! checked_log {
 }
 
 impl<const N: usize> BIint<N> {
+    #[inline]
+    #[doc=doc::checked_add!(BIint::<2>)]
     pub const fn checked_add(self, rhs: Self) -> Option<Self> {
         tuple_to_option(self.overflowing_add(rhs))
     }

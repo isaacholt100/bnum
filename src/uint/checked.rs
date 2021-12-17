@@ -2,7 +2,9 @@ use super::BUint;
 use crate::digit::Digit;
 use crate::macros::{div_zero, checked_pow};
 use crate::ExpType;
+use crate::doc;
 
+#[inline]
 const fn tuple_to_option<const N: usize>((int, overflow): (BUint<N>, bool)) -> Option<BUint<N>> {
     if overflow {
         None
@@ -203,9 +205,14 @@ pub const fn div_float<const N: usize>(u: BUint<N>, v: BUint<N>) -> (BUint<N>, b
 use crate::digit::{self, DoubleDigit};
 
 impl<const N: usize> BUint<N> {
+    #[inline]
+    #[doc=doc::checked_add!(BUint::<2>)]
     pub const fn checked_add(self, rhs: Self) -> Option<Self> {
         tuple_to_option(self.overflowing_add(rhs))
     }
+
+    #[inline]
+    
     pub const fn checked_sub(self, rhs: Self) -> Option<Self> {
         tuple_to_option(self.overflowing_sub(rhs))
     }

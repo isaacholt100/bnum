@@ -1,8 +1,6 @@
 #![allow(incomplete_features)]
 #![cfg_attr(feature = "nightly", feature(
-    const_generics,
-    const_evaluatable_checked,
-    const_panic,
+    generic_const_exprs,
     const_maybe_uninit_assume_init,
     const_intrinsic_copy,
     const_mut_refs,
@@ -10,6 +8,10 @@
     const_ptr_offset,
     test,
     unchecked_math,
+    maybe_uninit_uninit_array,
+    maybe_uninit_array_assume_init,
+    inline_const,
+    //bigint_helper_methods,
 ))]
 //#![no_std]
 
@@ -77,11 +79,19 @@ mod macros;
 mod fraction;
 mod radix_bases;
 mod factors;
+#[macro_use]
+mod doc;
+mod vector;
+mod matrix;
 
 #[cfg(feature = "nightly")]
 mod benchmarks;
 
 type ExpType = usize;
+
+pub use vector::Vector;
+
+pub use matrix::Matrix;
 
 pub use float_old::Float;
 

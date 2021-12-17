@@ -15,3 +15,4 @@ num-integer = "0.1.44"
 num-traits = "0.2.14"
 serde = { version = "1.0.126", features = ["derive"], optional = true }
 serde-big-array = { version = "0.3.2", features = ["const-generics"], optional = true }
+int-parser = { path = "int-parser" }

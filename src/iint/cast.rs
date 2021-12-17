@@ -12,7 +12,7 @@ macro_rules! as_int {
         /// ```
         /// use bint::BIint;
         /// 
-        /// let n = 1097937598374598734507959845u128;
+        /// let n = 1097937598374598734507959845i128;
         /// let u = BIint::<2>::from(n);
         #[doc=$assertion]
         /// ```
@@ -50,6 +50,14 @@ impl<const N: usize> BIint<N> {
     as_int!(as_i128, i128, "an `i128`.", "assert_eq!(u.as_i128(), n as i128);");
     as_int!(as_isize, isize, "an `isize`.", "assert_eq!(u.as_isize(), n as isize);");
 
+    /// Converts `self` to an `f32` floating point number. 
+    /// 
+    /// If `self` is larger than the largest integer that can be represented by an `f32`, `f32::INFINITY` is returned. If `self` is smaller than the smallest integer that can be represented by an `f32`, `f32::NEG_INFINITY` is returned.
+    #[doc=crate::doc::example_header!(BUint)]
+    /// let n = -109793759837u32;
+    /// let u = BUint::<4>::from(n);
+    /// assert_eq!(u.as_f32(), n as f32);
+    /// ```
     pub fn as_f32(&self) -> f32 {
         let f = self.unsigned_abs().as_f32();
         if self.is_negative() {
@@ -59,6 +67,14 @@ impl<const N: usize> BIint<N> {
         }
     }
 
+    /// Converts `self` to an `f64` floating point number. 
+    /// 
+    /// If `self` is larger than the largest number that can be represented by an `f64`, `f64::INFINITY` is returned. If `self` is smaller than the smallest integer that can be represented by an `f64`, `f64::NEG_INFINITY` is returned.
+    #[doc=crate::doc::example_header!(BUint)]
+    /// let n = 8172394878u32;
+    /// let u = BUint::<4>::from(n);
+    /// assert_eq!(u.as_f64(), n as f64);
+    /// ```
     pub fn as_f64(&self) -> f64 {
         let f = self.unsigned_abs().as_f64();
         if self.is_negative() {
@@ -69,7 +85,7 @@ impl<const N: usize> BIint<N> {
     }
 
     #[cfg(feature = "nightly")]
-    pub const fn as_buint<const M: usize>(&self) -> BUint<M> where [Digit; M - N]: Sized {
+    pub const fn as_buint<const M: usize>(&self) -> BUint<M> where [Digit; M.saturating_sub(N)]: Sized {
         if M > N {
             let padding_digit = if self.is_negative() {
                 Digit::MAX
@@ -82,10 +98,8 @@ impl<const N: usize> BIint<N> {
         }
     }
     #[cfg(feature = "nightly")]
-    pub const fn as_biint<const M: usize>(&self) -> BIint<M> where [Digit; M - N]: Sized {
-        BIint {
-            uint: self.as_buint()
-        }
+    pub const fn as_biint<const M: usize>(&self) -> BIint<M> where [Digit; M.saturating_sub(N)]: Sized {
+        BIint::from_bits(self.as_buint())
     }
 }
 

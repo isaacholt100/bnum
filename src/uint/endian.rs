@@ -1,177 +1,44 @@
 use super::BUint;
 use crate::digit::{Digit, self};
 use core::mem::MaybeUninit;
+use crate::doc;
 
 impl<const N: usize> BUint<N> {
-    /// Converts an integer from big endian to the target’s endianness.
-    /// 
-    /// On big endian this is a no-op. On little endian the bytes are swapped.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bint::BUint;
-    /// 
-    /// let n = BUint::<2>::from(0x1Au128);
-    /// if cfg!(target_endian = "big") {
-    ///     assert_eq!(BUint::from_be(n), n);
-    /// } else {
-    ///     assert_eq!(BUint::from_be(n), n.swap_bytes());
-    /// }
-    /// ```
+    #[doc=doc::from_be!(BUint::<2>)]
     #[cfg(target_endian = "big")]
     pub const fn from_be(x: Self) -> Self {
         x
     }
 
-    /// Converts an integer from big endian to the target’s endianness.
-    /// 
-    /// On big endian this is a no-op. On little endian the bytes are swapped.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bint::BUint;
-    /// 
-    /// let n = BUint::<2>::from(0x1Au128);
-    /// if cfg!(target_endian = "big") {
-    ///     assert_eq!(BUint::from_be(n), n);
-    /// } else {
-    ///     assert_eq!(BUint::from_be(n), n.swap_bytes());
-    /// }
-    /// ```
+    #[doc=doc::from_be!(BUint::<2>)]
     #[cfg(not(target_endian = "big"))]
     pub const fn from_be(x: Self) -> Self {
         x.swap_bytes()
     }
 
-    /// Converts an integer from little endian to the target’s endianness.
-    /// 
-    /// On little endian this is a no-op. On big endian the bytes are swapped.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bint::BUint;
-    /// 
-    /// let n = BUint::<2>::from(0x1Au128);
-    /// if cfg!(target_endian = "little") {
-    ///     assert_eq!(BUint::from_le(n), n);
-    /// } else {
-    ///     assert_eq!(BUint::from_le(n), n.swap_bytes());
-    /// }
-    /// ```
+    #[doc=doc::from_le!(BUint::<2>)]
     #[cfg(target_endian = "little")]
     pub const fn from_le(x: Self) -> Self {
         x
     }
 
-    /// Converts an integer from little endian to the target’s endianness.
-    /// 
-    /// On little endian this is a no-op. On big endian the bytes are swapped.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bint::BUint;
-    /// 
-    /// let n = BUint::<2>::from(0x1Au128);
-    /// if cfg!(target_endian = "little") {
-    ///     assert_eq!(BUint::from_le(n), n);
-    /// } else {
-    ///     assert_eq!(BUint::from_le(n), n.swap_bytes());
-    /// }
-    /// ```
+    #[doc=doc::from_le!(BUint::<2>)]
     #[cfg(not(target_endian = "little"))]
     pub const fn from_le(x: Self) -> Self {
         x.swap_bytes()
     }
 
-    /// Converts `self` from big endian to the target’s endianness.
-    /// 
-    /// On big endian this is a no-op. On little endian the bytes are swapped.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bint::BUint;
-    /// 
-    /// let n = BUint::<2>::from(0x1Au128);
-    /// if cfg!(target_endian = "big") {
-    ///     assert_eq!(n.to_be(), n);
-    /// } else {
-    ///     assert_eq!(n.to_be(), n.swap_bytes());
-    /// }
-    /// ```
-    #[cfg(target_endian = "big")]
+    #[doc=doc::to_be!(BUint::<2>)]
     pub const fn to_be(self) -> Self {
-        self
+        Self::from_be(self)
     }
 
-    /// Converts `self` from big endian to the target’s endianness.
-    /// 
-    /// On big endian this is a no-op. On little endian the bytes are swapped.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bint::BUint;
-    /// 
-    /// let n = BUint::<2>::from(0x1Au128);
-    /// if cfg!(target_endian = "big") {
-    ///     assert_eq!(n.to_be(), n);
-    /// } else {
-    ///     assert_eq!(n.to_be(), n.swap_bytes());
-    /// }
-    /// ```
-    #[cfg(not(target_endian = "big"))]
-    pub const fn to_be(self) -> Self {
-        self.swap_bytes()
-    }
-
-    /// Converts `self` from little endian to the target’s endianness.
-    /// 
-    /// On little endian this is a no-op. On big endian the bytes are swapped.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bint::BUint;
-    /// 
-    /// let n = BUint::<2>::from(0x1Au128);
-    /// if cfg!(target_endian = "little") {
-    ///     assert_eq!(n.to_le(), n);
-    /// } else {
-    ///     assert_eq!(n.to_le(), n.swap_bytes());
-    /// }
-    /// ```
-    #[cfg(target_endian = "little")]
+    #[doc=doc::to_be!(BUint::<2>)]
     pub const fn to_le(self) -> Self {
-        self
+        Self::from_le(self)
     }
 
-    /// Converts `self` from little endian to the target’s endianness.
-    /// 
-    /// On little endian this is a no-op. On big endian the bytes are swapped.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bint::BUint;
-    /// 
-    /// let n = BUint::<2>::from(0x1Au128);
-    /// if cfg!(target_endian = "little") {
-    ///     assert_eq!(n.to_le(), n);
-    /// } else {
-    ///     assert_eq!(n.to_le(), n.swap_bytes());
-    /// }
-    /// ```
-    #[cfg(not(target_endian = "little"))]
-    pub const fn to_le(self) -> Self {
-        self.swap_bytes()
-    }
-
-    /// Create a native endian integer value from a slice of bytes in big endian. The value is wrapped in an `Option` as the bytes may be too large to be represented by the type.
+    /// Create a native endian integer value from a slice of bytes in big endian. The value is wrapped in an `Option` as the integer represented by the slice of bytes may be too large to be represented by the type.
     /// 
     /// If the length of the slice is shorter than `Self::BYTES`, the slice is padded with zeros at the start so that it's length equals `Self::BYTES`.
     /// 
@@ -298,16 +165,7 @@ impl<const N: usize> BUint<N> {
 
 #[cfg(feature = "nightly")]
 impl<const N: usize> BUint<N> {
-    /// Returns the memory representation of this integer as a byte array in big-endian byte order.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bint::BUint;
-    /// 
-    /// let bytes = BUint::<2>::from(0x12345678901234567890123456789012u128).to_be_bytes();
-    /// assert_eq!(bytes, [0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12]);
-    /// ```
+    #[doc=doc::to_be_bytes!(BUint::<2>, "u")]
     pub const fn to_be_bytes(self) -> [u8; N * digit::BYTES] {
         let mut bytes = [0; N * digit::BYTES];
         let mut i = N;
@@ -323,16 +181,7 @@ impl<const N: usize> BUint<N> {
         bytes
     }
 
-    /// Returns the memory representation of this integer as a byte array in little-endian byte order.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bint::BUint;
-    /// 
-    /// let bytes = BUint::<2>::from(0x12345678901234567890123456789012u128).to_le_bytes();
-    /// assert_eq!(bytes, [0x12, 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0x34, 0x12]);
-    /// ```
+    #[doc=doc::to_le_bytes!(BUint::<2>, "u")]
     pub const fn to_le_bytes(self) -> [u8; N * digit::BYTES] {
         let mut bytes = [0; N * digit::BYTES];
         let mut i = 0;
@@ -348,23 +197,7 @@ impl<const N: usize> BUint<N> {
         bytes
     }
 
-    /// Return the memory representation of this integer as a byte array in native byte order.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bint::BUint;
-    /// 
-    /// let bytes = BUint::<2>::from(0x12345678901234567890123456789012u128).to_ne_bytes();
-    /// assert_eq!(
-    ///     bytes,
-    ///     if cfg!(target_endian = "big") {
-    ///         [0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12]
-    ///     } else {
-    ///         [0x12, 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0x34, 0x12]
-    ///     }
-    /// );
-    /// ```
+    #[doc=doc::to_ne_bytes!(BIint::<2>, "u")]
     pub const fn to_ne_bytes(self) -> [u8; N * digit::BYTES] {
         #[cfg(target_endian = "big")]
         return self.to_be_bytes();
@@ -372,16 +205,7 @@ impl<const N: usize> BUint<N> {
         return self.to_le_bytes();
     }
 
-    /// Create a native endian integer value from its representation as a byte array in big endian.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bint::BUint;
-    /// let value = BUint::<2>::from_be_bytes([0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12]);
-    /// 
-    /// assert_eq!(value, BUint::from(0x12345678901234567890123456789012u128));
-    /// ```
+    #[doc=doc::from_be_bytes!(BUint::<2>, "u")]
     pub const fn from_be_bytes(bytes: [u8; N * digit::BYTES]) -> Self {
         let mut out = Self::ZERO;
         let arr_ptr = bytes.as_ptr();
@@ -399,16 +223,7 @@ impl<const N: usize> BUint<N> {
         out
     }
 
-    /// Create a native endian integer value from its representation as a byte array in little endian.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bint::BUint;
-    /// let value = BUint::<2>::from_le_bytes([0x12, 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0x34, 0x12]);
-    /// 
-    /// assert_eq!(value, BUint::from(0x12345678901234567890123456789012u128));
-    /// ```
+    #[doc=doc::from_le_bytes!(BUint::<2>, "u")]
     pub const fn from_le_bytes(bytes: [u8; N * digit::BYTES]) -> Self {
         let mut out = Self::ZERO;
         let arr_ptr = bytes.as_ptr();
@@ -426,42 +241,13 @@ impl<const N: usize> BUint<N> {
         out
     }
 
-    /// Create a native endian integer value from its representation as a byte array in native endianness.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bint::BUint;
-    /// let value = BUint<2>::from_ne_bytes(if cfg!(target_endian = "big") {
-    ///     [0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12]
-    /// } else {
-    ///     [0x12, 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0x34, 0x12]
-    /// });
-    /// 
-    /// assert_eq!(value, BUint::from(0x12345678901234567890123456789012u128));
-    /// ```
-    #[cfg(target_endian = "big")]
+    #[doc=doc::from_ne_bytes!(BUint::<2>, "u")]
     pub const fn from_ne_bytes(bytes: [u8; N * digit::BYTES]) -> Self {
-        Self::from_be_bytes(bytes)
-    }
+        #[cfg(target_endian = "big")]
+        return Self::from_be_bytes(bytes);
 
-    /// Create a native endian integer value from its representation as a byte array in native endianness.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bint::BUint;
-    /// let value = BUint::<2>::from_ne_bytes(if cfg!(target_endian = "big") {
-    ///     [0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12]
-    /// } else {
-    ///     [0x12, 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0x34, 0x12]
-    /// });
-    /// 
-    /// assert_eq!(value, BUint::from(0x12345678901234567890123456789012u128));
-    /// ```
-    #[cfg(not(target_endian = "big"))]
-    pub const fn from_ne_bytes(bytes: [u8; N * digit::BYTES]) -> Self {
-        Self::from_le_bytes(bytes)
+        #[cfg(not(target_endian = "big"))]
+        return Self::from_le_bytes(bytes);
     }
 }
 

@@ -4,6 +4,7 @@ use crate::uint::BUint;
 use crate::I128;
 use crate::macros::expect;
 use crate::ExpType;
+use crate::doc;
 
 #[allow(unused)]
 macro_rules! test_signed {
@@ -82,8 +83,26 @@ pub struct BIint<const N: usize> {
     uint: BUint<N>,
 }
 
-/// impl containing constants
+macro_rules! pos_const {
+    ($($name: ident $num: literal), *) => {
+        $(
+            #[doc=concat!("The value of ", $num, " represented by this type.")]
+            pub const $name: Self = Self::from_bits(BUint::$name);
+        )*
+    }
+}
+
+macro_rules! neg_const {
+    ($($name: ident $pos: ident $num: literal), *) => {
+        $(
+            #[doc=concat!("The value of -", $num, " represented by this type.")]
+            pub const $name: Self = Self::$pos.wrapping_neg();
+        )*
+    }
+}
+
 impl<const N: usize> BIint<N> {
+    #[doc=doc::min_const!(BIint::<2>)]
     pub const MIN: Self = {
         let mut digits = [0; N];
         digits[N - 1] = 1 << (digit::BITS - 1);
@@ -91,6 +110,8 @@ impl<const N: usize> BIint<N> {
             uint: BUint::from_digits(digits),
         }
     };
+
+    #[doc=doc::max_const!(BIint::<2>)]
     pub const MAX: Self = {
         let mut digits = [Digit::MAX; N];
         digits[N - 1] >>= 1;
@@ -98,23 +119,31 @@ impl<const N: usize> BIint<N> {
             uint: BUint::from_digits(digits),
         }
     };
+
+    #[doc=doc::zero_const!(BIint::<2>)]
     pub const ZERO: Self = {
         Self {
             uint: BUint::ZERO,
         }
     };
+
+    #[doc=doc::one_const!(BIint::<2>)]
     pub const ONE: Self = {
         Self {
             uint: BUint::ONE,
         }
     };
-    pub const NEG_ONE: Self = {
-        Self {
-            uint: BUint::MAX,
-        }
-    };
-    pub const BYTES: usize = BUint::<N>::BYTES;
+
+    pos_const!(TWO 2, THREE 3, FOUR 4, FIVE 5, SIX 6, SEVEN 7, EIGHT 8, NINE 9, TEN 10);
+
+    neg_const!(NEG_ONE ONE 1, NEG_TWO TWO 2, NEG_THREE THREE 3, NEG_FOUR FOUR 4, NEG_FIVE FIVE 5, NEG_SIX SIX 6, NEG_SEVEN SEVEN 7, NEG_EIGHT EIGHT 8, NEG_NINE NINE 9, NEG_TEN TEN 10);
+
+    #[doc=doc::bits_const!(BIint::<2>, 64)]
     pub const BITS: usize = BUint::<N>::BITS;
+
+    #[doc=doc::bytes_const!(BIint::<2>, 8)]
+    pub const BYTES: usize = BUint::<N>::BYTES;
+
     const N_MINUS_1: usize = N - 1;
 }
 
@@ -134,35 +163,62 @@ macro_rules! log {
 }
 
 impl<const N: usize> BIint<N> {
-    uint_method! {
-        fn count_ones(self) -> ExpType,
-        fn count_zeros(self) -> ExpType,
-        fn leading_zeros(self) -> ExpType,
-        fn trailing_zeros(self) -> ExpType,
-        fn leading_ones(self) -> ExpType,
-        fn trailing_ones(self) -> ExpType
+    #[doc=doc::count_ones!(BIint::<4>)]
+    pub const fn count_ones(self) -> ExpType {
+        self.uint.count_ones()
     }
 
+    #[doc=doc::count_zeros!(BIint::<5>)]
+    pub const fn count_zeros(self) -> ExpType {
+        self.uint.count_zeros()
+    }
+
+    #[doc=doc::leading_zeros!(BIint::<3>)]
+    pub const fn leading_zeros(self) -> ExpType {
+        self.uint.leading_zeros()
+    }
+
+    #[doc=doc::trailing_zeros!(BIint::<3>)]
+    pub const fn trailing_zeros(self) -> ExpType {
+        self.uint.trailing_zeros()
+    }
+
+    #[doc=doc::leading_ones!(BIint::<4>, NEG_ONE)]
+    pub const fn leading_ones(self) -> ExpType {
+        self.uint.leading_ones()
+    }
+
+    #[doc=doc::trailing_ones!(BIint::<6>)]
+    pub const fn trailing_ones(self) -> ExpType {
+        self.uint.trailing_ones()
+    }
+
+    #[doc=doc::rotate_left!(BIint::<2>, "i")]
     pub const fn rotate_left(self, n: ExpType) -> Self {
-        Self {
-            uint: self.uint.rotate_left(n),
-        }
+        Self::from_bits(self.uint.rotate_left(n))
     }
+
+    #[doc=doc::rotate_right!(BIint::<2>, "i")]
     pub const fn rotate_right(self, n: ExpType) -> Self {
-        Self {
-            uint: self.uint.rotate_right(n),
-        }
+        Self::from_bits(self.uint.rotate_right(n))
     }
+
+    #[doc=doc::swap_bytes!(BIint::<2>, "i")]
     pub const fn swap_bytes(self) -> Self {
-        Self {
-            uint: self.uint.swap_bytes(),
-        }
+        Self::from_bits(self.uint.swap_bytes())
     }
+
+    #[doc=doc::reverse_bits!(BIint::<6>, "i")]
     pub const fn reverse_bits(self) -> Self {
-        Self {
-            uint: self.uint.reverse_bits(),
-        }
+        Self::from_bits(self.uint.reverse_bits())
     }
+
+    /// Computes the absolute value of `self` without any wrapping or panicking.
+    #[doc=doc::example_header!(BIint)]
+    /// assert_eq!(BIint::<3>::from(100).unsigned_abs(), BIint::from(100));
+    /// assert_eq!(BIint::<3>::from(-100).unsigned_abs(), BIint::from(100));
+    /// assert_eq!(BIint::<3>::MAX.unsigned_abs(), BIint::MAX.to_bits());
+    /// ```
     pub const fn unsigned_abs(self) -> BUint<N> {
         if self.is_negative() {
             self.wrapping_neg().uint
@@ -171,6 +227,7 @@ impl<const N: usize> BIint<N> {
         }
     }
 
+    #[doc=doc::pow!(BIint::<4>)]
     #[cfg(debug_assertions)]
     pub const fn pow(self, exp: ExpType) -> Self {
         expect!(self.checked_pow(exp), "attempt to calculate power with overflow")
@@ -218,6 +275,17 @@ impl<const N: usize> BIint<N> {
     pub const fn is_negative(self) -> bool {
         self.signed_digit().is_negative()
     }
+    
+    #[doc=doc::doc_comment! {
+        BIint::<2>,
+        "Returns `true` if and only if `self == 2^k` for some integer `k`.",
+        
+        "let n = " doc::int_str!(BIint::<2>) "::from(1i16 << 12);\n"
+        "assert!(n.is_power_of_two());\n"
+        "let m = " doc::int_str!(BIint::<2>) "::from(90i8);\n"
+        "assert!(!m.is_power_of_two());"
+        "assert!(!((-n).is_power_of_two()));"
+    }]
     pub const fn is_power_of_two(self) -> bool {
         if self.is_negative() {
             false
@@ -226,6 +294,7 @@ impl<const N: usize> BIint<N> {
         }
     }
 
+    #[doc=doc::next_power_of_two!(BIint::<2>, "`Self::MIN`", "NEG_ONE")]
     #[cfg(debug_assertions)]
     pub const fn next_power_of_two(self) -> Self {
         expect!(self.checked_next_power_of_two(), "attempt to calculate next power of two with overflow")
@@ -235,6 +304,7 @@ impl<const N: usize> BIint<N> {
         self.wrapping_next_power_of_two()
     }
 
+    #[doc=doc::checked_next_power_of_two!(BIint::<2>)]
     pub const fn checked_next_power_of_two(self) -> Option<Self> {
         if self.is_negative() {
             Some(Self::ONE)
@@ -254,6 +324,8 @@ impl<const N: usize> BIint<N> {
             }
         }
     }
+
+    #[doc=doc::wrapping_next_power_of_two!(BIint::<2>, "`Self::MIN`")]
     pub const fn wrapping_next_power_of_two(self) -> Self {
         match self.checked_next_power_of_two() {
             Some(int) => int,
@@ -266,16 +338,30 @@ impl<const N: usize> BIint<N> {
 }
 
 impl<const N: usize> BIint<N> {
-    uint_method! {
-        fn bit(&self, index: usize) -> bool,
-        fn bits(&self) -> usize
+    #[doc=doc::bits!(BIint::<2>)]
+    pub const fn bits(&self) -> usize {
+        self.uint.bits()
     }
+
+    #[doc=doc::bit!(BIint::<4>)]
+    pub const fn bit(&self, index: usize) -> bool {
+        self.uint.bit(index)
+    }
+
     const fn signed_digit(&self) -> SignedDigit {
         self.uint.digits()[N - 1] as SignedDigit
     }
+
+    #[doc=doc::is_zero!(BIint::<2>)]
     pub const fn is_zero(self) -> bool {
         self.uint.is_zero()
     }
+
+    #[doc=doc::is_one!(BIint::<2>)]
+    pub const fn is_one(self) -> bool {
+        self.uint.is_one()
+    }
+
     #[inline(always)]
     pub const fn digits(&self) -> &[Digit; N] {
         &self.uint.digits()
@@ -301,6 +387,7 @@ impl<const N: usize> BIint<N> {
 use core::default::Default;
 
 impl<const N: usize> Default for BIint<N> {
+    #[doc=doc::default!()]
     fn default() -> Self {
         Self::ZERO
     }

@@ -2,6 +2,7 @@ use super::BIint;
 use crate::uint::BUint;
 use crate::digit::{self, Digit, SignedDigit};
 use core::mem::MaybeUninit;
+use crate::doc;
 
 macro_rules! set_digit {
     ($out_digits: ident, $i: expr, $digit: expr, $is_negative: expr, $sign_bits: expr) => {
@@ -20,38 +21,27 @@ macro_rules! set_digit {
 }
 
 impl<const N: usize> BIint<N> {
-    #[cfg(target_endian = "big")]
+    #[doc=doc::from_be!(BIint::<2>)]
     pub const fn from_be(x: Self) -> Self {
-        x
+        Self::from_bits(BUint::from_be(x.uint))
     }
-    #[cfg(not(target_endian = "big"))]
-    pub const fn from_be(x: Self) -> Self {
-        x.swap_bytes()
-    }
-    #[cfg(target_endian = "little")]
+
+    #[doc=doc::from_le!(BIint::<2>)]
     pub const fn from_le(x: Self) -> Self {
-        x
+        Self::from_bits(BUint::from_le(x.uint))
     }
-    #[cfg(not(target_endian = "little"))]
-    pub const fn from_le(x: Self) -> Self {
-        x.swap_bytes()
-    }
-    #[cfg(target_endian = "big")]
+
+    #[doc=doc::to_be!(BIint::<2>)]
     pub const fn to_be(self) -> Self {
-        self
+        Self::from_be(self)
     }
-    #[cfg(not(target_endian = "big"))]
-    pub const fn to_be(self) -> Self {
-        self.swap_bytes()
-    }
+
+    #[doc=doc::to_le!(BIint::<2>)]
     #[cfg(target_endian = "little")]
     pub const fn to_le(self) -> Self {
-        self
+        Self::from_le(self)
     }
-    #[cfg(not(target_endian = "little"))]
-    pub const fn to_le(self) -> Self {
-        self.swap_bytes()
-    }
+
     pub const fn from_be_slice(slice: &[u8]) -> Option<Self> {
         let len = slice.len();
         if len == 0 {
@@ -155,21 +145,36 @@ impl<const N: usize> BIint<N> {
 
 #[cfg(feature = "nightly")]
 impl<const N: usize> BIint<N> {
-    uint_method! {
-        fn to_be_bytes(self) -> [u8; N * digit::BYTES],
-        fn to_le_bytes(self) -> [u8; N * digit::BYTES],
-        fn to_ne_bytes(self) -> [u8; N * digit::BYTES]
+    #[doc=doc::to_be_bytes!(BIint::<2>, "i")]
+    pub const fn to_be_bytes(self) -> [u8; N * digit::BYTES] {
+        self.uint.to_be_bytes()
     }
+
+    #[doc=doc::to_le_bytes!(BIint::<2>, "i")]
+    pub const fn to_le_bytes(self) -> [u8; N * digit::BYTES] {
+        self.uint.to_le_bytes()
+    }
+
+    #[doc=doc::to_ne_bytes!(BIint::<2>, "i")]
+    pub const fn to_ne_bytes(self) -> [u8; N * digit::BYTES] {
+        self.uint.to_ne_bytes()
+    }
+
+    #[doc=doc::from_be_bytes!(BIint::<2>, "i")]
     pub const fn from_be_bytes(bytes: [u8; N * digit::BYTES]) -> Self {
         Self {
             uint: BUint::from_be_bytes(bytes),
         }
     }
+
+    #[doc=doc::from_le_bytes!(BIint::<2>, "i")]
     pub const fn from_le_bytes(bytes: [u8; N * digit::BYTES]) -> Self {
         Self {
             uint: BUint::from_le_bytes(bytes),
         }
     }
+
+    #[doc=doc::from_ne_bytes!(BIint::<2>, "i")]
     pub const fn from_ne_bytes(bytes: [u8; N * digit::BYTES]) -> Self {
         Self {
             uint: BUint::from_ne_bytes(bytes),

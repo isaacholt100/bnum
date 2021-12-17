@@ -113,14 +113,14 @@ impl<const N: usize> AsPrimitive<BIint<N>> for f64 {
 use crate::BUint;
 
 #[cfg(feature = "nightly")]
-impl<const N: usize, const M: usize> AsPrimitive<BUint<M>> for BIint<N> where [(); M - N]: Sized {
+impl<const N: usize, const M: usize> AsPrimitive<BUint<M>> for BIint<N> where [(); M.saturating_sub(N)]: Sized {
     fn as_(self) -> BUint<M> {
         self.as_buint::<M>()
     }
 }
 
 #[cfg(feature = "nightly")]
-impl<const N: usize, const M: usize> AsPrimitive<BIint<M>> for BIint<N> where [(); M - N]: Sized {
+impl<const N: usize, const M: usize> AsPrimitive<BIint<M>> for BIint<N> where [(); M.saturating_sub(N)]: Sized {
     fn as_(self) -> BIint<M> {
         self.as_biint::<M>()
     }

@@ -8,6 +8,7 @@ use crate::digit::Digit;
 //const KARATSUBA_THRESHOLD: usize = 256;
 
 impl<const N: usize> BUint<N> {
+    #[inline]
     pub const fn overflowing_add(self, rhs: Self) -> (Self, bool) {
         let mut out = Self::ZERO;
         let mut carry = 0u8;
@@ -20,6 +21,8 @@ impl<const N: usize> BUint<N> {
         }
         (out, carry != 0)
     }
+
+    #[inline]
     pub const fn overflowing_sub(self, rhs: Self) -> (Self, bool) {
         let mut out = Self::ZERO;
         let mut borrow = 0u8;
@@ -32,6 +35,8 @@ impl<const N: usize> BUint<N> {
         }
         (out, borrow != 0)
     }
+
+    #[inline]
     const fn long_mul(self, rhs: Self) -> (Self, bool) {
         let mut overflow = false;
         let mut out = Self::ZERO;
@@ -56,6 +61,8 @@ impl<const N: usize> BUint<N> {
         }
         (out, overflow)
     }
+
+    #[inline]
     pub const fn overflowing_mul(self, rhs: Self) -> (Self, bool) {
         self.long_mul(rhs)
     }
@@ -71,25 +78,33 @@ impl<const N: usize> BUint<N> {
         }
         (out, carry)
     }*/
+    #[inline]
     pub const fn overflowing_div(self, rhs: Self) -> (Self, bool) {
         (self.wrapping_div(rhs), false)
     }
+
+    #[inline]
     pub const fn overflowing_div_euclid(self, rhs: Self) -> (Self, bool) {
         self.overflowing_div(rhs)
     }
+
+    #[inline]
     pub const fn overflowing_rem(self, rhs: Self) -> (Self, bool) {
         (self.wrapping_rem(rhs), false)
     }
+
+    #[inline]
     pub const fn overflowing_rem_euclid(self, rhs: Self) -> (Self, bool) {
         self.overflowing_rem(rhs)
     }
+
+    #[inline]
     pub const fn overflowing_neg(self) -> (Self, bool) {
-        if self.is_zero() {
-            (Self::ZERO, false)
-        } else {
-            (self.not().add(Self::ONE), true)
-        }
+        let (a, b) = self.not().overflowing_add(Self::ONE);
+        (a, !b)
     }
+
+    #[inline]
     pub const fn overflowing_shl(self, rhs: ExpType) -> (Self, bool) {
         if rhs >= Self::BITS {
             (super::unchecked_shl(self, rhs & Self::BITS_MINUS_1), true)
