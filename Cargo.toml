@@ -5,14 +5,19 @@ authors = ["isaac-holt <isaac_holt@icloud.com>"]
 edition = "2018"
 
 [features]
-default = ["u8_digit", "nightly"]
+default = ["u8_digit", "nightly", "numtraits"] # needs to change so numtraits is optional for uint and int folders
 u8_digit = []
 nightly = []
 serde_all = ["serde", "serde-big-array"]
+numtraits = ["num-integer", "num-traits"]
 
 [dependencies]
-num-integer = "0.1.44"
-num-traits = "0.2.14"
+num-integer = { version = "0.1.44", optional = true }
+num-traits = { version = "0.2.14", optional = true }
 serde = { version = "1.0.126", features = ["derive"], optional = true }
 serde-big-array = { version = "0.3.2", features = ["const-generics"], optional = true }
 int-parser = { path = "int-parser" }
+
+[dev-dependencies]
+quickcheck = "1.0.3"
+paste = "1.0.6"

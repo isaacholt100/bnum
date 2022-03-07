@@ -1,6 +1,6 @@
 extern crate test;
 
-use test::Bencher;
+
 use crate::BUint;
 
 #[inline]
@@ -62,89 +62,3 @@ fn bench_mul(b: &mut Bencher) {
     });
 }
 
-macro_rules! tagun {
-    {
-        $(
-            enum $name: ident {
-                $($vis: vis $variant: ident: $ty: ty), +
-            }
-        )+
-    } => {
-        $(
-            mod my_mod {
-                use std::mem::ManuallyDrop;
-                const _SLICE: &[&str] = &[$(stringify!($variant)), +];
-                const NUM_VARIANTS: usize = _SLICE.len();
-                pub union Variant {
-                    $($vis $variant: ManuallyDrop<$ty>), +
-                }
-                #[derive(Clone, Copy)]
-                pub enum Tag {
-                    $($variant), +
-                }
-                pub struct $name {
-                    tag: Tag,
-                    variant: Variant,
-                }
-                impl $name {
-                    pub const fn discriminant(&self) -> u8 {
-                        self.tag as u8
-                    }
-                    #[inline]
-                    pub const fn num_variants() -> usize {
-                        NUM_VARIANTS
-                    }
-                    #[inline]
-                    pub const fn as_u8(&self) -> u8 {
-                        self.tag as u8
-                    }
-                    #[inline]
-                    pub const fn as_u16(&self) -> u16 {
-                        self.tag as u16
-                    }
-                    $(
-                        #[inline]
-                        pub const fn $variant(value: $ty) -> Self {
-                            Self {
-                                tag: Tag::$variant,
-                                variant: Variant {
-                                    $variant: ManuallyDrop::new(value),
-                                },
-                            }
-                        }
-                    )+
-                }
-                impl std::ops::Deref for $name {
-                    type Target = Variant;
-
-                    #[inline]
-                    fn deref(&self) -> &Self::Target {
-                        &self.variant
-                    }
-                }
-                impl Drop for $name {
-                    #[inline]
-                    fn drop(&mut self) {
-                        unsafe {
-                            match self.tag {
-                                $(
-                                    Tag::$variant => {
-                                        ManuallyDrop::drop(&mut self.variant.$variant);
-                                    }
-                                ), +
-                            }
-                        }
-                    }
-                }
-                macro_rules! match_union {
-                    (match $u: expr, {
-
-                    }) => {
-                        
-                    };
-                }
-            }
-            pub use my_mod::$name;
-        )*
-    }
-}

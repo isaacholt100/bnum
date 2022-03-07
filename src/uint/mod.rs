@@ -8,37 +8,44 @@ use crate::doc;
 #[allow(unused)]
 macro_rules! test_unsigned {
     {
-        name: $name: ident,
+        function: $name: ident ($($param: ident : $ty: ty), *),
         method: {
             $($method: ident ($($arg: expr), *) ;) *
-        }
+        }$(,
+        quickcheck_skip: $skip: expr)?
     } => {
-        test! {
-            big: U128,
+        crate::test::test_big_num! {
+            big: crate::U128,
             primitive: u128,
-            name: $name,
-            method: {
-                $($method ($($arg), *) ;) *
-            }
-        }
-    };
-    {
-        name: $name: ident,
-        method: {
-            $($method: ident ($($arg: expr), *) ;) *
-        },
-        converter: $converter: expr
-    } => {
-        test! {
-            big: U128,
-            primitive: u128,
-            name: $name,
+            function: $name,
             method: {
                 $($method ($($arg), *) ;) *
             },
+            quickcheck: $name ($($param : $ty), *),
+            $(quickcheck_skip: $skip,)?
+            converter: Into::into
+        }
+    };
+    {
+        function: $name: ident ($($param: ident : $ty: ty), *),
+        method: {
+            $($method: ident ($($arg: expr), *) ;) *
+        }$(,
+        quickcheck_skip: $skip: expr)?,
+        converter: $converter: expr
+    } => {
+        crate::test::test_big_num! {
+            big: crate::U128,
+            primitive: u128,
+            function: $name,
+            method: {
+                $($method ($($arg), *) ;) *
+            },
+            quickcheck: $name ($($param : $ty), *),
+            $(quickcheck_skip: $skip,)?
             converter: $converter
         }
-    }
+    };
 }
 
 #[cfg(feature = "nightly")]
@@ -47,6 +54,7 @@ pub use cast::{cast_up, cast_down};
 //pub use checked::div_float;
 
 pub const fn unchecked_shl<const N: usize>(u: BUint<N>, rhs: ExpType) -> BUint<N> {
+    return unchecked_shr(u.reverse_bits(), rhs).reverse_bits();
     // This is to make sure that the number of bits in `u` doesn't overflow a usize, which would cause unexpected behaviour for shifting
     assert!(BUint::<N>::BITS <= usize::MAX);
     if rhs == 0 {
@@ -54,6 +62,10 @@ pub const fn unchecked_shl<const N: usize>(u: BUint<N>, rhs: ExpType) -> BUint<N
     } else {
         let digit_shift = (rhs >> digit::BIT_SHIFT) as usize;
         let shift = (rhs & digit::BITS_MINUS_1) as u8;
+        if rhs == 13 {
+            assert!(digit_shift == 1 && shift == 5);
+        }
+        //println!("{}", digit_shift);
         
         let mut out = BUint::ZERO;
         let digits_ptr = u.digits.as_ptr();
@@ -62,6 +74,14 @@ pub const fn unchecked_shl<const N: usize>(u: BUint<N>, rhs: ExpType) -> BUint<N
             digits_ptr.copy_to_nonoverlapping(out_ptr.add(digit_shift), N - digit_shift);
             core::mem::forget(u);
         }
+        if rhs == 13 {
+        let mut i = 0;
+        while i < N - 1 {
+            assert!(out.digits[i] == 0);
+            i += 1;
+        }
+        //assert!(out.digits[N - 1] == 0b10010000);
+    }
 
         if shift > 0 {
             let mut carry = 0;
@@ -167,24 +187,16 @@ macro_rules! pos_const {
 /// Associated constants for this type.
 impl<const N: usize> BUint<N> {
     #[doc=doc::min_const!(BUint::<2>)]
-    pub const MIN: Self = {
-        Self {
-            digits: [Digit::MIN; N],
-        }
-    };
+    pub const MIN: Self = Self::from_digits([Digit::MIN; N]);
 
     #[doc=doc::max_const!(BUint::<2>)]
-    pub const MAX: Self = {
-        Self {
-            digits: [Digit::MAX; N],
-        }
-    };
+    pub const MAX: Self = Self::from_digits([Digit::MAX; N]);
 
     #[doc=doc::bits_const!(BUint::<2>, 64)]
-    pub const BITS: usize = digit::BITS * N;
+    pub const BITS: ExpType = digit::BITS * N as ExpType;
 
     #[doc=doc::bytes_const!(BUint::<2>, 8)]
-    pub const BYTES: usize = Self::BITS / 8;
+    pub const BYTES: ExpType = Self::BITS / 8;
 
     #[doc=doc::zero_const!(BUint::<2>)]
     pub const ZERO: Self = Self::MIN;
@@ -195,9 +207,11 @@ impl<const N: usize> BUint<N> {
     pos_const!(TWO 2, THREE 3, FOUR 4, FIVE 5, SIX 6, SEVEN 7, EIGHT 8, NINE 9, TEN 10);
 }
 
+mod bigint_helpers;
 mod cmp;
 mod convert;
 mod ops;
+#[cfg(feature = "numtraits")]
 mod numtraits;
 mod overflow;
 mod checked;
@@ -207,6 +221,7 @@ mod fmt;
 mod endian;
 mod radix;
 mod cast;
+mod unchecked;
 
 impl<const N: usize> BUint<N> {
     #[doc=doc::count_ones!(BUint::<4>)]
@@ -521,6 +536,48 @@ impl<const N: usize> BUint<N> {
             None => 0,
         }
     }
+
+    pub const fn abs_diff(self, other: Self) -> Self {
+        if self < other {
+            other.wrapping_sub(self)
+        } else {
+            self.wrapping_sub(other)
+        }
+    }
+
+    pub const fn checked_next_multiple_of(self, rhs: Self) -> Option<Self> {
+        let rem = match self.checked_rem(rhs) {
+            Some(rem) => rem,
+            None => return None,
+        };
+        if rem.is_zero() {
+            Some(self)
+        } else {
+            self.checked_add(rhs - rem)
+        }
+    }
+
+    pub const fn next_multiple_of(self, rhs: Self) -> Self {
+        let rem = self % rhs;
+        if rem.is_zero() {
+            self
+        } else {
+            self + (rhs - rem)
+        }
+    }
+
+    pub const fn div_floor(self, rhs: Self) -> Self {
+        self / rhs
+    }
+
+    pub const fn div_ceil(self, rhs: Self) -> Self {
+        let (div, rem) = self.div_rem(rhs);
+        if rem.is_zero() {
+            div
+        } else {
+            div + BUint::ONE
+        }
+    }
 }
 
 impl<const N: usize> BUint<N> {
@@ -699,11 +756,28 @@ impl<const N: usize> BUint<N> {
         }
         index
     }
+
+    pub const fn to_exp_type(self) -> Option<ExpType> {
+        let last_index = self.last_digit_index();
+        if self.digits[last_index] == 0 {
+            return Some(0);
+        }
+        if last_index >= ExpType::BITS as usize >> digit::BIT_SHIFT {
+            return None;
+        }
+        let mut out = 0;
+        let mut i = 0;
+        while i <= last_index {
+            out |= (self.digits[i] as ExpType) << (i << digit::BIT_SHIFT);
+            i += 1;
+        }
+        Some(out)
+    }
 }
 
 use core::default::Default;
 
-impl<const N: usize> Default for BUint<N> {
+impl<const N: usize> const Default for BUint<N> {
     #[doc=doc::default!()]
     fn default() -> Self {
         Self::ZERO
@@ -738,104 +812,109 @@ impl<'a, const N: usize> Sum<&'a Self> for BUint<N> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{U128};
+    use crate::U128;
+    use crate::test;
 
     test_unsigned! {
-        name: count_ones,
+        function: count_ones(a: u128),
         method: {
             count_ones(203583443659837459073490583937485738404u128);
             count_ones(3947594755489u128);
         },
-        converter: crate::u32_to_exp
+        converter: test::u32_to_exp
     }
     test_unsigned! {
-        name: count_zeros,
+        function: count_zeros(a: u128),
         method: {
             count_zeros(7435098345734853045348057390485934908u128);
             count_zeros(3985789475546u128);
         },
-        converter: crate::u32_to_exp
+        converter: test::u32_to_exp
     }
     test_unsigned! {
-        name: leading_ones,
+        function: leading_ones(a: u128),
         method: {
             leading_ones(3948590439409853946593894579834793459u128);
             leading_ones(u128::MAX - 0b111);
         },
-        converter: crate::u32_to_exp
+        converter: test::u32_to_exp
     }
     test_unsigned! {
-        name: leading_zeros,
+        function: leading_zeros(a: u128),
         method: {
             leading_zeros(49859830845963457783945789734895834754u128);
             leading_zeros(40545768945769u128);
         },
-        converter: crate::u32_to_exp
+        converter: test::u32_to_exp
     }
     test_unsigned! {
-        name: trailing_ones,
+        function: trailing_ones(a: u128),
         method: {
             trailing_ones(45678345973495637458973488509345903458u128);
             trailing_ones(u128::MAX);
         },
-        converter: crate::u32_to_exp
+        converter: test::u32_to_exp
     }
     test_unsigned! {
-        name: trailing_zeros,
+        function: trailing_zeros(a: u128),
         method: {
             trailing_zeros(23488903477439859084534857349857034599u128);
             trailing_zeros(343453454565u128);
         },
-        converter: crate::u32_to_exp
+        converter: test::u32_to_exp
     }
     test_unsigned! {
-        name: rotate_left,
+        function: rotate_left(a: u128, b: u16),
         method: {
             rotate_left(394857348975983475983745983798579483u128, 5555 as u16);
             rotate_left(4056890546059u128, 12 as u16);
         }
     }
     test_unsigned! {
-        name: rotate_right,
+        function: rotate_right(a: u128, b: u16),
         method: {
             rotate_right(90845674987957297107197973489575938457u128, 10934 as u16);
             rotate_right(1345978945679u128, 33 as u16);
         }
     }
     test_unsigned! {
-        name: swap_bytes,
+        function: swap_bytes(a: u128),
         method: {
             swap_bytes(3749589304858934758390485937458349058u128);
             swap_bytes(3405567798345u128);
         }
     }
     test_unsigned! {
-        name: reverse_bits,
+        function: reverse_bits(a: u128),
         method: {
             reverse_bits(3345565093489578938485934957893745984u128);
             reverse_bits(608670986790835u128);
         }
     }
     test_unsigned! {
-        name: pow,
+        function: pow(a: u128, b: u16),
         method: {
             pow(59345u128, 4 as u16);
             pow(54u128, 9 as u16);
-        }
+        },
+        quickcheck_skip: a.checked_pow(b as u32).is_none()
     }
     test_unsigned! {
-        name: div_euclid,
+        function: div_euclid(a: u128, b: u128),
         method: {
             div_euclid(345987945738945789347u128, 345987945738945789347u128);
             div_euclid(139475893475987093754099u128, 3459837453479u128);
-        }
+            div_euclid(84949881323520u128, 9393082u128);
+        },
+        quickcheck_skip: b == 0
     }
     test_unsigned! {
-        name: rem_euclid,
+        function: rem_euclid(a: u128, b: u128),
         method: {
             rem_euclid(8094589656797897987u128, 8094589656797897987u128);
             rem_euclid(3734597349574397598374594598u128, 3495634895793845783745897u128);
-        }
+        },
+        quickcheck_skip: b == 0
     }
     #[test]
     fn is_power_of_two() {
@@ -845,27 +924,23 @@ mod tests {
         assert!(!non_power.is_power_of_two());
     }
     test_unsigned! {
-        name: checked_next_power_of_two,
+        function: checked_next_power_of_two(a: u128),
         method: {
             checked_next_power_of_two(1340539475937597893475987u128);
             checked_next_power_of_two(u128::MAX);
         },
-        converter: |option: Option<u128>| -> Option<U128> {
-            match option {
-                None => None,
-                Some(u) => Some(u.into()),
-            }
-        }
+        converter: |option: Option<u128>| option.map(|u| U128::from(u))
     }
     test_unsigned! {
-        name: next_power_of_two,
+        function: next_power_of_two(a: u128),
         method: {
             next_power_of_two(394857834758937458973489573894759879u128);
             next_power_of_two(800345894358459u128);
-        }
+        },
+        quickcheck_skip: a.checked_next_power_of_two().is_none()
     }
     /*test_unsigned! {
-        name: wrapping_next_power_of_two,
+        function: wrapping_next_power_of_two,
         method: {
             wrapping_next_power_of_two(97495768945869084687890u128);
             wrapping_next_power_of_two(u128::MAX);
@@ -893,5 +968,13 @@ mod tests {
 
         let u = U128::power_of_two(78);
         assert_eq!(u.bits(), 79);
+    }
+
+    #[test]
+    fn checked_next_multiple_of() {
+        assert_eq!(U128::from(16u8).checked_next_multiple_of(8u8.into()), Some(16u8.into()));
+        assert_eq!(U128::from(23u8).checked_next_multiple_of(8u8.into()), Some(24u8.into()));
+        assert_eq!(U128::ONE.checked_next_multiple_of(0u8.into()), None);
+        assert_eq!(U128::from(u128::MAX).checked_next_multiple_of(2u8.into()), None);
     }
 }

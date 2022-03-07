@@ -1,9 +1,9 @@
-use super::BIint;
-use core::ops::{Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Div, DivAssign, Mul, MulAssign, Neg, Not, Rem, RemAssign, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign};
+use super::Bint;
+use core::ops::{Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, DivAssign, Mul, MulAssign, Neg, Not, RemAssign, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign};
 use crate::macros::{expect, op_ref_impl, assign_ref_impl, all_shift_impls};
 use crate::ExpType;
 
-impl<const N: usize> BIint<N> {
+impl<const N: usize> Bint<N> {
     #[cfg(debug_assertions)]
     pub const fn add(self, rhs: Self) -> Self {
         expect!(self.checked_add(rhs), "attempt to add with overflow")
@@ -30,7 +30,7 @@ impl<const N: usize> BIint<N> {
     }
 }
 
-impl<const N: usize> Add<Self> for BIint<N> {
+impl<const N: usize> const Add<Self> for Bint<N> {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self {
@@ -38,17 +38,17 @@ impl<const N: usize> Add<Self> for BIint<N> {
     }
 }
 
-op_ref_impl!(Add<BIint<N>> for BIint, add);
+op_ref_impl!(Add<Bint<N>> for Bint, add);
 
-impl<const N: usize> AddAssign for BIint<N> {
+impl<const N: usize> const AddAssign for Bint<N> {
     fn add_assign(&mut self, rhs: Self) {
         *self = *self + rhs;
     }
 }
 
-assign_ref_impl!(AddAssign<BIint<N>> for BIint, add_assign);
+assign_ref_impl!(AddAssign<Bint<N>> for Bint, add_assign);
 
-impl<const N: usize> BitAnd for BIint<N> {
+impl<const N: usize> const BitAnd for Bint<N> {
     type Output = Self;
 
     fn bitand(self, rhs: Self) -> Self {
@@ -58,17 +58,17 @@ impl<const N: usize> BitAnd for BIint<N> {
     }
 }
 
-op_ref_impl!(BitAnd<BIint<N>> for BIint, bitand);
+op_ref_impl!(BitAnd<Bint<N>> for Bint, bitand);
 
-impl<const N: usize> BitAndAssign for BIint<N> {
+impl<const N: usize> const BitAndAssign for Bint<N> {
     fn bitand_assign(&mut self, rhs: Self) {
         *self = self.bitand(rhs);
     }
 }
 
-assign_ref_impl!(BitAndAssign<BIint<N>> for BIint, bitand_assign);
+assign_ref_impl!(BitAndAssign<Bint<N>> for Bint, bitand_assign);
 
-impl<const N: usize> BitOr for BIint<N> {
+impl<const N: usize> const BitOr for Bint<N> {
     type Output = Self;
 
     fn bitor(self, rhs: Self) -> Self {
@@ -78,17 +78,17 @@ impl<const N: usize> BitOr for BIint<N> {
     }
 }
 
-op_ref_impl!(BitOr<BIint<N>> for BIint, bitor);
+op_ref_impl!(BitOr<Bint<N>> for Bint, bitor);
 
-impl<const N: usize> BitOrAssign for BIint<N> {
+impl<const N: usize> const BitOrAssign for Bint<N> {
     fn bitor_assign(&mut self, rhs: Self) {
         *self = self.bitor(rhs);
     }
 }
 
-assign_ref_impl!(BitOrAssign<BIint<N>> for BIint, bitor_assign);
+assign_ref_impl!(BitOrAssign<Bint<N>> for Bint, bitor_assign);
 
-impl<const N: usize> BitXor for BIint<N> {
+impl<const N: usize> const BitXor for Bint<N> {
     type Output = Self;
 
     fn bitxor(self, rhs: Self) -> Self {
@@ -98,25 +98,25 @@ impl<const N: usize> BitXor for BIint<N> {
     }
 }
 
-op_ref_impl!(BitXor<BIint<N>> for BIint, bitxor);
+op_ref_impl!(BitXor<Bint<N>> for Bint, bitxor);
 
-impl<const N: usize> BitXorAssign for BIint<N> {
+impl<const N: usize> const BitXorAssign for Bint<N> {
     fn bitxor_assign(&mut self, rhs: Self) {
         *self = self.bitxor(rhs);
     }
 }
 
-assign_ref_impl!(BitXorAssign<BIint<N>> for BIint, bitxor_assign);
+assign_ref_impl!(BitXorAssign<Bint<N>> for Bint, bitxor_assign);
 
-impl<const N: usize> DivAssign for BIint<N> {
+impl<const N: usize> const DivAssign for Bint<N> {
     fn div_assign(&mut self, rhs: Self) {
-        *self = self.div(rhs);
+        *self = *self / rhs;
     }
 }
 
-assign_ref_impl!(DivAssign<BIint<N>> for BIint, div_assign);
+assign_ref_impl!(DivAssign<Bint<N>> for Bint, div_assign);
 
-impl<const N: usize> Mul for BIint<N> {
+impl<const N: usize> const Mul for Bint<N> {
     type Output = Self;
 
     #[cfg(debug_assertions)]
@@ -129,41 +129,35 @@ impl<const N: usize> Mul for BIint<N> {
     }
 }
 
-op_ref_impl!(Mul<BIint<N>> for BIint, mul);
+op_ref_impl!(Mul<Bint<N>> for Bint, mul);
 
-impl<const N: usize> MulAssign for BIint<N> {
+impl<const N: usize> const MulAssign for Bint<N> {
     fn mul_assign(&mut self, rhs: Self) {
         *self = self.mul(rhs);
     }
 }
 
-assign_ref_impl!(MulAssign<BIint<N>> for BIint, mul_assign);
+assign_ref_impl!(MulAssign<Bint<N>> for Bint, mul_assign);
 
-impl<const N: usize> BIint<N> {
-    pub const fn not(self) -> Self {
+impl<const N: usize> const Not for Bint<N> {
+    type Output = Self;
+
+    fn not(self) -> Self {
         Self {
             uint: self.uint.not(),
         }
     }
 }
 
-impl<const N: usize> Not for BIint<N> {
-    type Output = Self;
+impl<const N: usize> const Not for &Bint<N> {
+    type Output = Bint<N>;
 
-    fn not(self) -> Self {
-        Self::not(self)
-    }
-}
-
-impl<const N: usize> Not for &BIint<N> {
-    type Output = BIint<N>;
-
-    fn not(self) -> BIint<N> {
+    fn not(self) -> Bint<N> {
         (*self).not()
     }
 }
 
-impl<const N: usize> Neg for BIint<N> {
+impl<const N: usize> const Neg for Bint<N> {
     type Output = Self;
 
     #[cfg(debug_assertions)]
@@ -176,23 +170,23 @@ impl<const N: usize> Neg for BIint<N> {
     }
 }
 
-impl<const N: usize> Neg for &BIint<N> {
-    type Output = BIint<N>;
+impl<const N: usize> const Neg for &Bint<N> {
+    type Output = Bint<N>;
 
-    fn neg(self) -> BIint<N> {
+    fn neg(self) -> Bint<N> {
         (*self).neg()
     }
 }
 
-impl<const N: usize> RemAssign for BIint<N> {
+impl<const N: usize> const RemAssign for Bint<N> {
     fn rem_assign(&mut self, rhs: Self) {
-        *self = self.rem(rhs);
+        *self = *self % rhs;
     }
 }
 
-assign_ref_impl!(RemAssign<BIint<N>> for BIint, rem_assign);
+assign_ref_impl!(RemAssign<Bint<N>> for Bint, rem_assign);
 
-impl<const N: usize> Shl<ExpType> for BIint<N> {
+impl<const N: usize> const Shl<ExpType> for Bint<N> {
     type Output = Self;
 
     #[cfg(debug_assertions)]
@@ -205,17 +199,17 @@ impl<const N: usize> Shl<ExpType> for BIint<N> {
     }
 }
 
-op_ref_impl!(Shl<ExpType> for BIint, shl);
+op_ref_impl!(Shl<ExpType> for Bint, shl);
 
-impl<const N: usize> ShlAssign<ExpType> for BIint<N> {
+impl<const N: usize> const ShlAssign<ExpType> for Bint<N> {
     fn shl_assign(&mut self, rhs: ExpType) {
         *self = self.shl(rhs);
     }
 }
 
-assign_ref_impl!(ShlAssign<ExpType> for BIint, shl_assign);
+assign_ref_impl!(ShlAssign<ExpType> for Bint, shl_assign);
 
-impl<const N: usize> Shr<ExpType> for BIint<N> {
+impl<const N: usize> const Shr<ExpType> for Bint<N> {
     type Output = Self;
 
     #[cfg(debug_assertions)]
@@ -228,21 +222,21 @@ impl<const N: usize> Shr<ExpType> for BIint<N> {
     }
 }
 
-op_ref_impl!(Shr<ExpType> for BIint, shr);
+op_ref_impl!(Shr<ExpType> for Bint, shr);
 
-impl<const N: usize> ShrAssign<ExpType> for BIint<N> {
+impl<const N: usize> const ShrAssign<ExpType> for Bint<N> {
     fn shr_assign(&mut self, rhs: ExpType) {
         *self = self.shr(rhs);
     }
 }
 
-assign_ref_impl!(ShrAssign<ExpType> for BIint, shr_assign);
+assign_ref_impl!(ShrAssign<ExpType> for Bint, shr_assign);
 
 use crate::uint::BUint;
 
-all_shift_impls!(BIint);
+all_shift_impls!(Bint);
 
-impl<const N: usize> Sub for BIint<N> {
+impl<const N: usize> const Sub for Bint<N> {
     type Output = Self;
 
     fn sub(self, rhs: Self) -> Self {
@@ -250,12 +244,12 @@ impl<const N: usize> Sub for BIint<N> {
     }
 }
 
-op_ref_impl!(Sub<BIint<N>> for BIint, sub);
+op_ref_impl!(Sub<Bint<N>> for Bint, sub);
 
-impl<const N: usize> SubAssign for BIint<N> {
+impl<const N: usize> const SubAssign for Bint<N> {
     fn sub_assign(&mut self, rhs: Self) {
         *self = *self - rhs;
     }
 }
 
-assign_ref_impl!(SubAssign<BIint<N>> for BIint, sub_assign);
+assign_ref_impl!(SubAssign<Bint<N>> for Bint, sub_assign);

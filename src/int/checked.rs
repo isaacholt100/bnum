@@ -1,10 +1,10 @@
-use super::BIint;
+use super::Bint;
 use crate::macros::checked_pow;
-use crate::ExpType;
+use crate::{ExpType, BUint};
 use crate::doc;
 
 #[inline]
-const fn tuple_to_option<const N: usize>((int, overflow): (BIint<N>, bool)) -> Option<BIint<N>> {
+const fn tuple_to_option<const N: usize>((int, overflow): (Bint<N>, bool)) -> Option<Bint<N>> {
     if overflow {
         None
     } else {
@@ -24,14 +24,20 @@ macro_rules! checked_log {
     }
 }
 
-impl<const N: usize> BIint<N> {
+impl<const N: usize> Bint<N> {
     #[inline]
-    #[doc=doc::checked_add!(BIint::<2>)]
+    #[doc=doc::checked_add!(Bint::<2>)]
     pub const fn checked_add(self, rhs: Self) -> Option<Self> {
         tuple_to_option(self.overflowing_add(rhs))
     }
+    pub const fn checked_add_unsigned(self, rhs: BUint<N>) -> Option<Self> {
+        tuple_to_option(self.overflowing_add_unsigned(rhs))
+    }
     pub const fn checked_sub(self, rhs: Self) -> Option<Self> {
         tuple_to_option(self.overflowing_sub(rhs))
+    }
+    pub const fn checked_sub_unsigned(self, rhs: BUint<N>) -> Option<Self> {
+        tuple_to_option(self.overflowing_sub_unsigned(rhs))
     }
     pub const fn checked_mul(self, rhs: Self) -> Option<Self> {
         tuple_to_option(self.overflowing_mul(rhs))
@@ -93,7 +99,7 @@ mod tests {
     }
 
     test_signed! {
-        name: checked_add,
+        function: checked_add(a: i128, b: i128),
         method: {
             checked_add(-23967907456549865i128, 20459867945345546i128);
             checked_add(i128::MAX, 1i128);
@@ -101,7 +107,7 @@ mod tests {
         converter: converter
     }
     test_signed! {
-        name: checked_sub,
+        function: checked_sub(a: i128, b: i128),
         method: {
             checked_sub(20974950679475645345i128, -92347569026164856487654i128);
             checked_sub(-23947604957694857656i128, -202092349587049567495675i128);
@@ -109,7 +115,7 @@ mod tests {
         converter: converter
     }
     test_signed! {
-        name: checked_mul,
+        function: checked_mul(a: i128, b: i128),
         method: {
             checked_mul(-209746039567459i128, 457684957i128);
             checked_mul(-20396745i128, -239486457676i128);
@@ -122,7 +128,7 @@ mod tests {
         converter: converter
     }
     test_signed! {
-        name: checked_div,
+        function: checked_div(a: i128, b: i128),
         method: {
             checked_div(2249495769845768947598254i128, -497495769i128);
             checked_div(-20907564975789647596748956456i128, -4096579405794756974586i128);
@@ -132,7 +138,7 @@ mod tests {
         converter: converter
     }
     test_signed! {
-        name: checked_div_euclid,
+        function: checked_div_euclid(a: i128, b: i128),
         method: {
             checked_div_euclid(203967405967394576984756897i128, 20495876945762097956546i128);
             checked_div_euclid(-203597649576948756456453345i128, 820459674957689i128);
@@ -140,7 +146,7 @@ mod tests {
         converter: converter
     }
     test_signed! {
-        name: checked_rem,
+        function: checked_rem(a: i128, b: i128),
         method: {
             checked_rem(20459671029456874957698457698i128, 819475697456465656i128);
             checked_rem(-2045967240596724598645645i128, -3479475689457i128);
@@ -150,7 +156,7 @@ mod tests {
         converter: converter
     }
     test_signed! {
-        name: checked_rem_euclid,
+        function: checked_rem_euclid(a: i128, b: i128),
         method: {
             checked_rem_euclid(10349724596745674589647567456i128, 4697230968746597i128);
             checked_rem_euclid(-10349724596745674589647567456i128, -4697230968746597i128);
@@ -160,7 +166,7 @@ mod tests {
         converter: converter
     }
     test_signed! {
-        name: checked_neg,
+        function: checked_neg(a: i128),
         method: {
             checked_neg(-239794576947569847566236i128);
             checked_neg(-872340961370495749576895i128);
@@ -170,7 +176,7 @@ mod tests {
         converter: converter
     }
     test_signed! {
-        name: checked_shl,
+        function: checked_shl(a: i128, b: u16),
         method: {
             checked_shl(1907304597249567965987i128, 21 as u16);
             checked_shl(-2023973209458764967589i128, 15 as u16);
@@ -179,7 +185,7 @@ mod tests {
         converter: converter
     }
     test_signed! {
-        name: checked_shr,
+        function: checked_shr(a: i128, b: u16),
         method: {
             checked_shr(61354072459679717429576097i128, 120 as u16);
             checked_shr(-23045692977456978956795i128, 18 as u16);
@@ -188,7 +194,7 @@ mod tests {
         converter: converter
     }
     test_signed! {
-        name: checked_pow,
+        function: checked_pow(a: i128, b: u16),
         method: {
             checked_pow(-2397456i128, 100 as u16);
             checked_pow(-13i128, 22 as u16);

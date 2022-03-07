@@ -1,7 +1,7 @@
-use super::BIint;
-use crate::ExpType;
+use super::Bint;
+use crate::{ExpType, BUint};
 
-impl<const N: usize> BIint<N> {
+impl<const N: usize> Bint<N> {
     pub const fn saturating_add(self, rhs: Self) -> Self {
         match self.checked_add(rhs) {
             Some(add) => add,
@@ -14,6 +14,12 @@ impl<const N: usize> BIint<N> {
             }
         }
     }
+    pub const fn saturating_add_unsigned(self, rhs: BUint<N>) -> Self {
+        match self.checked_add_unsigned(rhs) {
+            Some(i) => i,
+            None => Self::MAX,
+        }
+    }
     pub const fn saturating_sub(self, rhs: Self) -> Self {
         match self.checked_sub(rhs) {
             Some(add) => add,
@@ -24,6 +30,12 @@ impl<const N: usize> BIint<N> {
                     Self::MAX
                 }
             }
+        }
+    }
+    pub const fn saturating_sub_unsigned(self, rhs: BUint<N>) -> Self {
+        match self.checked_sub_unsigned(rhs) {
+            Some(i) => i,
+            None => Self::MIN,
         }
     }
     pub const fn saturating_neg(self) -> Self {
@@ -66,10 +78,8 @@ impl<const N: usize> BIint<N> {
 
 #[cfg(test)]
 mod tests {
-    use crate::I128;
-
     test_signed! {
-        name: saturating_add,
+        function: saturating_add(a: i128, b: i128),
         method: {
             saturating_add(i128::MAX, 2);
             saturating_add(i128::MIN, -1);
@@ -77,7 +87,7 @@ mod tests {
         }
     }
     test_signed! {
-        name: saturating_sub,
+        function: saturating_sub(a: i128, b: i128),
         method: {
             saturating_sub(i128::MAX, -5);
             saturating_sub(i128::MIN, i128::MAX);
@@ -85,7 +95,7 @@ mod tests {
         }
     }
     test_signed! {
-        name: saturating_neg,
+        function: saturating_neg(a: i128),
         method: {
             saturating_neg(i128::MAX);
             saturating_neg(i128::MIN);
@@ -94,7 +104,7 @@ mod tests {
         }
     }
     test_signed! {
-        name: saturating_abs,
+        function: saturating_abs(a: i128),
         method: {
             saturating_abs(i128::MAX);
             saturating_abs(i128::MIN);
@@ -103,7 +113,7 @@ mod tests {
         }
     }
     test_signed! {
-        name: saturating_mul,
+        function: saturating_mul(a: i128, b: i128),
         method: {
             saturating_mul(i128::MAX, -5);
             saturating_mul(i128::MAX, -1);
@@ -112,7 +122,7 @@ mod tests {
         }
     }
     test_signed! {
-        name: saturating_pow,
+        function: saturating_pow(a: i128, b: u16),
         method: {
             saturating_pow(55i128, 12 as u16);
             saturating_pow(3678i128, 123 as u16);

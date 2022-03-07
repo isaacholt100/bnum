@@ -1,4 +1,4 @@
-use super::BIint;
+use super::Bint;
 use crate::uint::BUint;
 use crate::uint;
 use crate::digit::{Digit, self};
@@ -10,10 +10,10 @@ macro_rules! as_int {
         /// # Examples
         /// 
         /// ```
-        /// use bint::BIint;
+        /// use bint::Bint;
         /// 
         /// let n = 1097937598374598734507959845i128;
-        /// let u = BIint::<2>::from(n);
+        /// let u = Bint::<2>::from(n);
         #[doc=$assertion]
         /// ```
         pub const fn $method(&self) -> $int {
@@ -35,7 +35,7 @@ macro_rules! as_int {
     };
 }
 
-impl<const N: usize> BIint<N> {
+impl<const N: usize> Bint<N> {
     as_int!(as_u8, u8, "a `u8`.", "assert_eq!(u.as_u8(), n as u8);");
     as_int!(as_u16, u16, "a `u16`.", "assert_eq!(u.as_u16(), n as u16);");
     as_int!(as_u32, u32, "a `u32`.", "assert_eq!(u.as_u32(), n as u32);");
@@ -98,14 +98,14 @@ impl<const N: usize> BIint<N> {
         }
     }
     #[cfg(feature = "nightly")]
-    pub const fn as_biint<const M: usize>(&self) -> BIint<M> where [Digit; M.saturating_sub(N)]: Sized {
-        BIint::from_bits(self.as_buint())
+    pub const fn as_biint<const M: usize>(&self) -> Bint<M> where [Digit; M.saturating_sub(N)]: Sized {
+        Bint::from_bits(self.as_buint())
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{I128, U128, BIint, digit};
+    use crate::{I128, U128, Bint, digit};
     macro_rules! test_cast {
         ($name: ident, $ty: ty, $($int: expr), *) => {
             #[test]
@@ -133,10 +133,10 @@ mod tests {
     #[test]
     fn sign_fill_cast() {
         let i = -4004509459345i64;
-        let int = BIint::<{64 / digit::BITS}>::from(i);
+        let int = Bint::<{64 / digit::BITS}>::from(i);
         assert_eq!(int.as_i128(), i as i128);
         let i = -20495870948567i64;
-        let int = BIint::<{64 / digit::BITS}>::from(i);
+        let int = Bint::<{64 / digit::BITS}>::from(i);
         assert_eq!(int.as_u128(), i as u128);
     }
 
@@ -148,10 +148,10 @@ mod tests {
     #[test]
     fn as_buint() {
         let i = 39845968768945885i64;
-        let int = BIint::<{64 / digit::BITS}>::from(i);
+        let int = Bint::<{64 / digit::BITS}>::from(i);
         assert_eq!(U128::from(i as u128), int.as_buint::<{128 / digit::BITS}>());
         let i = -4059684564856590i64;
-        let int = BIint::<{64 / digit::BITS}>::from(i);
+        let int = Bint::<{64 / digit::BITS}>::from(i);
         assert_eq!(U128::from(i as u128), int.as_buint::<{128 / digit::BITS}>());
     }
 
@@ -159,10 +159,10 @@ mod tests {
     #[test]
     fn as_biint() {
         let i = 230987495678497456i64;
-        let int = BIint::<{64 / digit::BITS}>::from(i);
+        let int = Bint::<{64 / digit::BITS}>::from(i);
         assert_eq!(I128::from(i), int.as_biint::<{128 / digit::BITS}>());
         let i = -2398679420567947564i64;
-        let int = BIint::<{64 / digit::BITS}>::from(i);
+        let int = Bint::<{64 / digit::BITS}>::from(i);
         assert_eq!(I128::from(i), int.as_biint::<{128 / digit::BITS}>());
     }
 }

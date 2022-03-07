@@ -1,7 +1,7 @@
 use super::BUint;
 use crate::digit::Digit;
 use crate::macros::{div_zero, checked_pow};
-use crate::ExpType;
+use crate::{ExpType, Bint};
 use crate::doc;
 
 #[inline]
@@ -211,8 +211,11 @@ impl<const N: usize> BUint<N> {
         tuple_to_option(self.overflowing_add(rhs))
     }
 
+    pub const fn checked_add_signed(self, rhs: Bint<N>) -> Option<Self> {
+        tuple_to_option(self.overflowing_add_signed(rhs))
+    }
+
     #[inline]
-    
     pub const fn checked_sub(self, rhs: Self) -> Option<Self> {
         tuple_to_option(self.overflowing_sub(rhs))
     }
@@ -327,7 +330,7 @@ impl<const N: usize> BUint<N> {
                 let mut i = 0;
                 while i < end {
                     let (sum, overflow1) = rhs[i].overflowing_add(carry as Digit);
-                    let (sum, overflow2) = self.index(i + start).overflowing_sub(sum);
+                    let (sum, overflow2) = self.index(i + start).overflowing_add(sum);
                     self.set_digit(i + start, sum);
                     carry = overflow1 || overflow2;
                     i += 1;
@@ -336,6 +339,7 @@ impl<const N: usize> BUint<N> {
             }
         }
 
+        #[derive(Clone, Copy)]
         struct Mul<const M: usize> {
             last: Digit,
             rest: [Digit; M],
@@ -382,13 +386,14 @@ impl<const N: usize> BUint<N> {
                     Self::div_half(u_jn, u.index(j + n - 1), v_n_1)
                 };
                 loop {
+                    //let (hi, lo) = digit::from_double_digit(q_hat as DoubleDigit * v_n_2 as DoubleDigit);
                     let a = ((r_hat as DoubleDigit) << digit::BITS) | u.index(j + n - 2) as DoubleDigit;
                     let b = q_hat as DoubleDigit * v_n_2 as DoubleDigit;
                     if b <= a {
                         break;
                     }
-                    /*let (hi, lo) = digit::from_double_digit(q_hat as DoubleDigit * v_n_2 as DoubleDigit);
-                    if hi < r_hat {
+                    /*let (hi, lo) = digit::from_double_digit(q_hat as DoubleDigit * v_n_2 as DoubleDigit);*/
+                    /*if hi < r_hat {
                         break;
                     } else if hi == r_hat && lo <= u.index(j + n - 2) {
                         break;
@@ -404,7 +409,6 @@ impl<const N: usize> BUint<N> {
             } else {
                 Digit::MAX
             };
-
             let q_hat_v = Mul::new(v, q_hat);
             let carry = u.sub(j, q_hat_v, n + 1);
             if carry {
@@ -523,17 +527,14 @@ impl<const N: usize> BUint<N> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{U128};
+    use crate::U128;
 
     fn converter(prim_result: Option<u128>) -> Option<U128> {
-        match prim_result {
-            Some(u) => Some(U128::from(u)),
-            None => None,
-        }
+        prim_result.map(U128::from)
     }
 
     test_unsigned! {
-        name: checked_add,
+        function: checked_add(a: u128, b: u128),
         method: {
             checked_add(238732748937u128, 23583048508u128);
             checked_add(u128::MAX, 1u128);
@@ -541,7 +542,7 @@ mod tests {
         converter: converter
     }
     test_unsigned! {
-        name: checked_sub,
+        function: checked_sub(a: u128, b: u128),
         method: {
             checked_sub(334534859834905830u128, 93745873457u128);
             checked_sub(23423423u128, 209834908234898u128);
@@ -549,7 +550,7 @@ mod tests {
         converter: converter
     }
     test_unsigned! {
-        name: checked_mul,
+        function: checked_mul(a: u128, b: u128),
         method: {
             checked_mul(309458690987839544353455765u128, 344597u128);
             checked_mul(958734920934875289309456874985769879u128, 33219654565456456453434545697u128);
@@ -557,7 +558,7 @@ mod tests {
         converter: converter
     }
     test_unsigned! {
-        name: checked_div,
+        function: checked_div(a: u128, b: u128),
         method: {
             checked_div(234233453453454563453453423u128, 34534597u128);
             checked_div(95873492093487528930479456874985769879u128, 33219654565456456453434545697u128);
@@ -567,7 +568,7 @@ mod tests {
         converter: converter
     }
     test_unsigned! {
-        name: checked_div_euclid,
+        function: checked_div_euclid(a: u128, b: u128),
         method: {
             checked_div_euclid(3058689475456456908345374598734535u128, 973457035343453453454338408u128);
             checked_div_euclid(1734857456846783458346458640586098u128, 98474869054698745u128);
@@ -575,7 +576,7 @@ mod tests {
         converter: converter
     }
     test_unsigned! {
-        name: checked_rem,
+        function: checked_rem(a: u128, b: u128),
         method: {
             checked_rem(9845764759879745698u128, 948745860945769845645986745986u128);
             checked_rem(3450457689456094859604589684905698u128, 34985734895793u128);
@@ -585,7 +586,7 @@ mod tests {
         converter: converter
     }
     test_unsigned! {
-        name: checked_rem_euclid,
+        function: checked_rem_euclid(a: u128, b: u128),
         method: {
             checked_rem_euclid(45645609485069840574594565646456u128, 984756897456799u128);
             checked_rem_euclid(9827986748560745645867456456456456u128, 98474869054698456456456456456745u128);
@@ -593,7 +594,7 @@ mod tests {
         converter: converter
     }
     test_unsigned! {
-        name: checked_neg,
+        function: checked_neg(a: u128),
         method: {
             checked_neg(456456454698756u128);
             checked_neg(0u128);
@@ -601,7 +602,7 @@ mod tests {
         converter: converter
     }
     test_unsigned! {
-        name: checked_shl,
+        function: checked_shl(a: u128, b: u16),
         method: {
             checked_shl(45645643454354563634554698756u128, 22 as u16);
             checked_shl(4598745697987927893475u128, 5873 as u16);
@@ -609,7 +610,7 @@ mod tests {
         converter: converter
     }
     test_unsigned! {
-        name: checked_shr,
+        function: checked_shr(a: u128, b: u16),
         method: {
             checked_shr(8098459098745896789454976498u128, 100 as u16);
             checked_shr(9719834759874986456456465u128, 128 as u16);
@@ -617,7 +618,7 @@ mod tests {
         converter: converter
     }
     test_unsigned! {
-        name: checked_pow,
+        function: checked_pow(a: u128, b: u16),
         method: {
             checked_pow(4565u128, 100 as u16);
             checked_pow(43u128, 15 as u16);

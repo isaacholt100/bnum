@@ -1,5 +1,5 @@
 use super::{BUint, ExpType};
-use num_traits::{Bounded, CheckedAdd, CheckedDiv, CheckedMul, CheckedNeg, CheckedRem, CheckedShl, CheckedShr, CheckedSub, FromPrimitive, MulAdd, MulAddAssign, Num, One, SaturatingAdd, SaturatingMul, SaturatingSub, WrappingAdd, WrappingMul, WrappingNeg, WrappingShl, WrappingShr, WrappingSub, ToPrimitive, Unsigned, Zero, Pow, PrimInt, Saturating, NumCast, AsPrimitive};
+use num_traits::{Bounded, CheckedAdd, CheckedDiv, CheckedMul, CheckedNeg, CheckedRem, CheckedShl, CheckedShr, CheckedSub, FromPrimitive, MulAdd, MulAddAssign, Num, One, SaturatingAdd, SaturatingMul, SaturatingSub, WrappingAdd, WrappingMul, WrappingNeg, WrappingShl, WrappingShr, WrappingSub, ToPrimitive, Unsigned, Zero, Pow, Saturating, AsPrimitive};
 use num_integer::{Integer, Roots};
 use crate::digit::{self, Digit};
 
@@ -200,11 +200,11 @@ impl<const N: usize, const M: usize> AsPrimitive<BUint<M>> for BUint<N> where [(
 
 //use crate::bound::{Assert, IsTrue};
 
-use crate::BIint;
+use crate::Bint;
 
 #[cfg(feature = "nightly")]
-impl<const N: usize, const M: usize> AsPrimitive<BIint<M>> for BUint<N> where [(); M.saturating_sub(N)]: Sized {
-    fn as_(self) -> BIint<M> {
+impl<const N: usize, const M: usize> AsPrimitive<Bint<M>> for BUint<N> where [(); M.saturating_sub(N)]: Sized {
+    fn as_(self) -> Bint<M> {
         self.as_biint::<M>()
     }
 }

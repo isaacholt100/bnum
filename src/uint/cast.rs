@@ -1,6 +1,6 @@
 use super::BUint;
 use crate::digit::{self, Digit};
-use crate::{BIint, ExpType};
+use crate::{Bint, ExpType};
 use core::mem::MaybeUninit;
 
 macro_rules! as_int {
@@ -107,8 +107,8 @@ impl<const N: usize> BUint<N> {
     }
 
     #[cfg(feature = "nightly")]
-    pub const fn as_biint<const M: usize>(&self) -> BIint<M> where [Digit; M.saturating_sub(N)]: Sized {
-        BIint::from_bits(self.as_buint())
+    pub const fn as_biint<const M: usize>(&self) -> Bint<M> where [Digit; M.saturating_sub(N)]: Sized {
+        Bint::from_bits(self.as_buint())
     }
 }
 

@@ -1,3 +1,5 @@
 {
-    "rust-client.channel": "nightly"
+    "rust-client.channel": "nightly",
+    "rust-analyzer.updates.channel": "nightly",
+    "rust-analyzer.cargo.allFeatures": true
 }

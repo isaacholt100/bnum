@@ -15,7 +15,7 @@ impl<const N: usize> FromStr for BUint<N> {
     }
 }
 
-impl<const N: usize> From<bool> for BUint<N> {
+impl<const N: usize> const From<bool> for BUint<N> {
     fn from(small: bool) -> Self {
         if small {
             Self::ONE
@@ -32,12 +32,12 @@ impl<const N: usize> From<char> for BUint<N> {
     }
 }
 
-use crate::bound::{Assert, IsTrue};
+//use crate::bound::{Assert, IsTrue};
 
 macro_rules! from_uint {
     ($($uint: tt),*) => {
         $(
-            impl<const N: usize> From<$uint> for BUint<N> {
+            impl<const N: usize> const From<$uint> for BUint<N> {
                 fn from(int: $uint) -> Self {
                     const UINT_BITS: usize = $uint::BITS as usize;
                     let mut out = Self::ZERO;
@@ -59,69 +59,93 @@ macro_rules! from_uint {
 
 from_uint!(u8, u16, u32, usize, u64, u128);
 
-impl<const N: usize> TryFrom<f64> for BUint<N> {
-    type Error = TryFromIntError;
+fn decode_f32(f: f32) -> (u64, i16, i8) {
+    let bits = f.to_bits();
+    let sign = if bits >> 31 == 0 { 1 } else { -1 };
+    let mut exponent = ((bits >> 23) & 0xff) as i16;
+    let mantissa = if exponent == 0 {
+        (bits & 0x7fffff) << 1
+    } else {
+        (bits & 0x7fffff) | 0x800000
+    };
+    exponent -= 127 + 23;
+    (mantissa as u64, exponent, sign)
+}
 
-    fn try_from(f: f64) -> Result<Self, Self::Error> {
-        if !f.is_finite() {
-            return Err(TryFromIntError {
-                from: "f64",
-                to: "BUint",
-                reason: NotFinite,
-            });
-        }
-        let f = f.trunc();
-        if f == 0.0 {
-            return Ok(Self::ZERO);
-        }
-        use num_traits::float::FloatCore;
-        use core::cmp::Ordering;
-        let (mantissa, exponent, sign) = FloatCore::integer_decode(f);
-        if sign == -1 {
-            return Err(TryFromIntError {
-                from: "f64",
-                to: "BUint",
-                reason: Negative,
-            });
-        }
-        let out = Self::from(mantissa);
-        match exponent.cmp(&0) {
-            Ordering::Greater => {
-                if out.bits() + exponent as usize >= Self::BITS {
-                    Err(TryFromIntError {
+fn decode_f64(f: f64) -> (u64, i16, i8) {
+    let bits = f.to_bits();
+    let sign = if bits >> 63 == 0 { 1 } else { -1 };
+    let mut exponent = ((bits >> 52) & 0x7ff) as i16;
+    let mantissa = if exponent == 0 {
+        (bits & 0xfffffffffffff) << 1
+    } else {
+        (bits & 0xfffffffffffff) | 0x10000000000000
+    };
+    exponent -= 1023 + 52;
+    (mantissa, exponent, sign)
+}
+
+macro_rules! try_from_float {
+    ($float: ty, $decoder: ident) => {
+        impl<const N: usize> TryFrom<$float> for BUint<N> {
+            type Error = TryFromIntError;
+        
+            fn try_from(f: $float) -> Result<Self, Self::Error> {
+                if !f.is_finite() {
+                    return Err(TryFromIntError {
                         from: "f64",
                         to: "BUint",
-                        reason: TooLarge,
-                    })
-                } else {
-                    Ok(out << exponent)
+                        reason: NotFinite,
+                    });
                 }
-            },
-            Ordering::Equal => Ok(out),
-            Ordering::Less => Ok(out >> (-exponent)),
+                let f = f.trunc();
+                if f == 0.0 {
+                    return Ok(Self::ZERO);
+                }
+                use core::cmp::Ordering;
+                let (mantissa, exponent, sign) = $decoder(f);
+                if sign == -1 {
+                    return Err(TryFromIntError {
+                        from: stringify!($float),
+                        to: "BUint",
+                        reason: Negative,
+                    });
+                }
+                let out = Self::from(mantissa);
+                match exponent.cmp(&0) {
+                    Ordering::Greater => {
+                        if out.bits() + exponent as usize >= Self::BITS {
+                            Err(TryFromIntError {
+                                from: stringify!($float),
+                                to: "BUint",
+                                reason: TooLarge,
+                            })
+                        } else {
+                            Ok(out << exponent)
+                        }
+                    },
+                    Ordering::Equal => Ok(out),
+                    Ordering::Less => Ok(out >> (-exponent)),
+                }
+            }
         }
     }
 }
 
-impl<const N: usize> TryFrom<f32> for BUint<N> {
-    type Error = TryFromIntError;
-
-    fn try_from(f: f32) -> Result<Self, Self::Error> {
-        Self::try_from(f as f64)
-    }
-}
+try_from_float!(f32, decode_f32);
+try_from_float!(f64, decode_f64);
 
 macro_rules! try_from_iint {
-    ($($iint: tt -> $uint: tt),*) => {
-        $(impl<const N: usize> TryFrom<$iint> for BUint<N> {
+    ($($int: tt -> $uint: tt),*) => {
+        $(impl<const N: usize> TryFrom<$int> for BUint<N> {
             type Error = TryFromIntError;
 
-            fn try_from(int: $iint) -> Result<Self, Self::Error> {
+            fn try_from(int: $int) -> Result<Self, Self::Error> {
                 let uint: $uint = int
                     .try_into()
                     .ok()
                     .ok_or(TryFromIntError {
-                        from: stringify!($iint),
+                        from: stringify!($int),
                         to: "BUint",
                         reason: Negative,
                     })?;
@@ -151,13 +175,13 @@ impl<const N: usize> TryFrom<BUint<N>> for f64 {
     }
 }
 
-impl<const N: usize> From<[Digit; N]> for BUint<N> {
+impl<const N: usize> const From<[Digit; N]> for BUint<N> {
     fn from(digits: [Digit; N]) -> Self {
         Self::from_digits(digits)
     }
 }
 
-impl<const N: usize> From<BUint<N>> for [Digit; N] {
+impl<const N: usize> const From<BUint<N>> for [Digit; N] {
     fn from(uint: BUint<N>) -> Self {
         uint.digits
     }
@@ -167,20 +191,12 @@ impl<const N: usize> From<BUint<N>> for [Digit; N] {
 mod tests {
     use super::*;
     use crate::U128;
+    use crate::test;
 
-    #[test]
-    fn from_bool() {
-        assert_eq!(U128::from(true), u128::from(true).into());
-        assert_eq!(U128::from(false), u128::from(false).into());
-    }
-
-    #[test]
-    fn from_char() {
-        assert_eq!(U128::from('c'), u128::from('c').into());
-    }
-
-    test_unsigned! {
-        name: from_str,
+    test::test_big_num! {
+        big: U128,
+        primitive: u128,
+        function: from_str,
         method: {
             from_str("398475394875230495745");
         },
@@ -192,123 +208,41 @@ mod tests {
         }
     }
 
-    #[test]
-    fn it_converts_u8() {
-        let u = 33u8;
-        let a = U128::from(u);
-        let into: u8 = a.try_into().unwrap();
-        assert_eq!(into, u);
+    test::test_from! {
+        big: U128,
+        primitive: u128,
+        function: <From>::from,
+        from_types: (u8, u16, u32, u64, u128, bool, char),
+        converter: U128::from
     }
 
-    #[test]
-    fn it_converts_u16() {
-        let u = 48975u16;
-        let a = U128::from(u);
-        let into: u16 = a.try_into().unwrap();
-        assert_eq!(into, u);
+    fn result_ok_map<T: Into<U128>, E>(result: Result<T, E>) -> Option<U128> {
+        result.ok().map(|u| u.into()) 
     }
 
-    #[test]
-    fn it_converts_u32() {
-        let u = 903487869u32;
-        let a = U128::from(u);
-        let into: u32 = a.try_into().unwrap();
-        assert_eq!(into, u);
+    test::test_from! {
+        big: U128,
+        primitive: u128,
+        function: <TryFrom>::try_from,
+        from_types: (i8, i16, i32, i64, i128, usize, isize),
+        converter: result_ok_map
     }
 
-    #[test]
-    fn it_converts_usize() {
-        let u = 437948958usize;
-        let a = U128::from(u);
-        let into: usize = a.try_into().unwrap();
-        assert_eq!(into, u);
-    }
+    test::test_into! {
+        big: U128,
+        primitive: u128,
+        function: <TryInto>::try_into,
+        from_types: (u8, u16, u32, u64, usize, i8, i16, i32, i64, i128, isize),
+        converter: Result::ok
+    }/* 
 
-    #[test]
-    fn it_converts_u64() {
-        let u = 9374563574234910234u64;
-        let a = U128::from(u);
-        let into: u64 = a.try_into().unwrap();
-        assert_eq!(into, u);
-    }
-
-    #[test]
-    fn it_converts_u128() {
-        let u = 236543085093475734905834958390485903384u128;
-        let a = U128::from(u);
-        let into: u128 = a.try_into().unwrap();
-        assert_eq!(into, u);
-    }
-
-    #[test]
-    fn it_converts_i8() {
-        let u = 85i8;
-        let a = U128::try_from(u).unwrap();
-        let into: i8 = a.try_into().unwrap();
-        assert_eq!(into, u);
-        assert!(U128::try_from(-u).is_err());
-    }
-
-    #[test]
-    fn it_converts_i16() {
-        let u = 23422i16;
-        let a = U128::try_from(u).unwrap();
-        let into: i16 = a.try_into().unwrap();
-        assert_eq!(into, u);
-        assert!(U128::try_from(-u).is_err());
-    }
-
-    #[test]
-    fn it_converts_i32() {
-        let u = 5678943i32;
-        let a = U128::try_from(u).unwrap();
-        let into: i32 = a.try_into().unwrap();
-        assert_eq!(into, u);
-        assert!(U128::try_from(-u).is_err());
-    }
-
-    #[test]
-    fn it_converts_isize() {
-        let u = 3284739isize;
-        let a = U128::try_from(u).unwrap();
-        let into: isize = a.try_into().unwrap();
-        assert_eq!(into, u);
-        assert!(U128::try_from(-u).is_err());
-    }
-
-    #[test]
-    fn it_converts_i64() {
-        let u = 37458903849053498i64;
-        let a = U128::try_from(u).unwrap();
-        let into: i64 = a.try_into().unwrap();
-        assert_eq!(into, u);
-        assert!(U128::try_from(-u).is_err());
-    }
-
-    #[test]
-    fn it_converts_i128() {
-        let u = 34759384858348039485094853849345352454i128;
-        let a = U128::try_from(u).unwrap();
-        let into: i128 = a.try_into().unwrap();
-        assert_eq!(into, u);
-        assert!(U128::try_from(-u).is_err());
-    }
-
-    #[test]
-    fn it_converts_f32() {
-        let f = 394346435456455456658798.9585998f32;
-        let a = U128::try_from(f).unwrap();
-        let u = f as u128;
-        assert_eq!(a, u.into());
-        assert_eq!(a.to_f32().unwrap(), u as f32);
-    }
-
-    #[test]
-    fn it_converts_f64() {
-        let f = 456475983445645655463447569.4585f64;
-        let a = U128::try_from(f).unwrap();
-        let u = f as u128;
-        assert_eq!(a, u.into());
-        assert_eq!(a.to_f64().unwrap(), u as f64);
-    }
+    test::test_float_conv! {
+        big: U128,
+        primitive: u128,
+        test_name: to_f32,
+        function: <TryInto<f32>>::try_into,
+        from: u128,
+        converter: result_ok_map
+    }*/
+    // TODO: test float conversions
 }

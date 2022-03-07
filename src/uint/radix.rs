@@ -535,11 +535,14 @@ impl<const N: usize> BUint<N> {
 
 #[cfg(test)]
 mod tests {
-    use crate::U128;
-    use crate::BUint;
+    #[allow(unused)]
+    use crate::{BUint, U128};
+    use crate::test;
 
-    test_unsigned! {
-        name: from_str_radix,
+    test::test_big_num! {
+        big: U128,
+        primitive: u128,
+        function: from_str_radix,
         method: {
             from_str_radix("af7345asdofiuweor", 35u32);
             from_str_radix("945hhdgi73945hjdfj", 32u32);

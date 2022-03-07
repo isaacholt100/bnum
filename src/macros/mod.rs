@@ -19,7 +19,7 @@ macro_rules! try_int_impl {
         
             fn try_from(uint: $Struct<N>) -> Result<Self, Self::Error> {
                 uint.$method().ok_or(crate::TryFromIntError {
-                    from: "BUint",
+                    from: stringify!($Struct),
                     to: stringify!($int),
                     reason: crate::error::TryFromErrorReason::TooLarge,
                 })
@@ -313,9 +313,9 @@ macro_rules! all_shift_impls {
 
         crate::macros::shift_self_impl!($Struct, Shr<BUint>, shr, ShrAssign, shr_assign, "attempt to shift right with overflow");
 
-        crate::macros::shift_self_impl!($Struct, Shl<BIint>, shl, ShlAssign, shl_assign, "attempt to shift left with overflow");
+        crate::macros::shift_self_impl!($Struct, Shl<Bint>, shl, ShlAssign, shl_assign, "attempt to shift left with overflow");
 
-        crate::macros::shift_self_impl!($Struct, Shr<BIint>, shr, ShrAssign, shr_assign, "attempt to shift right with overflow");
+        crate::macros::shift_self_impl!($Struct, Shr<Bint>, shr, ShrAssign, shr_assign, "attempt to shift right with overflow");
     }
 }
 pub(crate) use all_shift_impls;

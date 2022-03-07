@@ -1,4 +1,4 @@
-use super::BIint;
+use super::Bint;
 use core::fmt::{Binary, Display, Formatter, LowerExp, LowerHex, Octal, UpperExp, UpperHex, self};
 
 macro_rules! fmt {
@@ -9,45 +9,45 @@ macro_rules! fmt {
     }
 }
 
-impl<const N: usize> Binary for BIint<N> {
+impl<const N: usize> Binary for Bint<N> {
     fmt!("{:b}{:0pad$b}", Self::BITS, "0b", Binary);
 }
 
-impl<const N: usize> Display for BIint<N> {
+impl<const N: usize> Display for Bint<N> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         f.pad_integral(!self.is_negative(), "", &format!("{}", self.unsigned_abs()))
     }
 }
 
-/*impl<const N: usize> fmt::Debug for BIint<N> {
+impl<const N: usize> fmt::Debug for Bint<N> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        Binary::fmt(self, f)
+        Display::fmt(self, f)
     }
-}*/
+}
 
-impl<const N: usize> LowerExp for BIint<N> {
+impl<const N: usize> LowerExp for Bint<N> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         let uint = self.unsigned_abs();
         f.pad_integral(!self.is_negative(), "", &format!("{:e}", uint))
     }
 }
 
-impl<const N: usize> LowerHex for BIint<N> {
+impl<const N: usize> LowerHex for Bint<N> {
     fmt!("{:x}{:0pad$x}", Self::BITS / 4, "0x", LowerHex);
 }
 
-impl<const N: usize> Octal for BIint<N> {
+impl<const N: usize> Octal for Bint<N> {
     fmt!("{:o}{:0pad$o}", Self::BITS / 4, "0o", Octal);
 }
 
-impl<const N: usize> UpperExp for BIint<N> {
+impl<const N: usize> UpperExp for Bint<N> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         let uint = self.unsigned_abs();
         f.pad_integral(!self.is_negative(), "", &format!("{:E}", uint))
     }
 }
 
-impl<const N: usize> UpperHex for BIint<N> {
+impl<const N: usize> UpperHex for Bint<N> {
     fmt!("{:X}{:0pad$X}", Self::BITS / 4, "0x", UpperHex);
 }
 

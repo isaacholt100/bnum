@@ -1,11 +1,11 @@
-use super::BIint;
+use super::Bint;
 use crate::arithmetic;
 use crate::digit::{SignedDigit, Digit};
 use crate::macros::{overflowing_pow, div_zero, rem_zero, op_ref_impl};
-use crate::ExpType;
+use crate::{ExpType, BUint};
 use crate::digit;
 
-impl<const N: usize> BIint<N> {
+impl<const N: usize> Bint<N> {
     #[inline]
     pub const fn overflowing_add(self, rhs: Self) -> (Self, bool) {
         let mut digits = [0; N];
@@ -30,6 +30,14 @@ impl<const N: usize> BIint<N> {
 
         (Self::from_digits(digits), carry)
     }
+
+    #[inline]
+    pub const fn overflowing_add_unsigned(self, rhs: BUint<N>) -> (Self, bool) {
+        let rhs = Self::from_bits(rhs);
+        let (out, overflow) = self.overflowing_add(rhs);
+        (out, overflow ^ rhs.is_negative())
+    }
+
     #[inline]
     pub const fn overflowing_sub(self, rhs: Self) -> (Self, bool) {
         let mut digits = [0; N];
@@ -54,6 +62,14 @@ impl<const N: usize> BIint<N> {
 
         (Self::from_digits(digits), borrow)
     }
+
+    #[inline]
+    pub const fn overflowing_sub_unsigned(self, rhs: BUint<N>) -> (Self, bool) {
+        let rhs = Self::from_bits(rhs);
+        let (out, overflow) = self.overflowing_sub(rhs);
+        (out, overflow ^ rhs.is_negative())
+    }
+    
     #[inline]
     pub const fn overflowing_mul(self, rhs: Self) -> (Self, bool) {
         let (uint, overflow) = self.unsigned_abs().overflowing_mul(rhs.unsigned_abs());
@@ -114,10 +130,10 @@ impl<const N: usize> BIint<N> {
                 if rem.is_zero() {
                     (div, false)
                 } else {
-                    let div = if div.is_negative() {
-                        div.sub(Self::ONE)
-                    } else {
+                    let div = if rhs.is_negative() {
                         div.add(Self::ONE)
+                    } else {
+                        div.sub(Self::ONE)
                     };
                     (div, false)
                 }
@@ -147,7 +163,8 @@ impl<const N: usize> BIint<N> {
             }
             let rem = self.div_rem_unchecked(rhs).1;
             if rem.is_negative() {
-                (rem.add(rhs.abs()), false)
+                let r = rem.add(rhs.abs());
+                (r, false)
             } else {
                 (rem, false)
             }
@@ -155,7 +172,7 @@ impl<const N: usize> BIint<N> {
     }
     #[inline]
     pub const fn overflowing_neg(self) -> (Self, bool) {
-        self.not().overflowing_add(Self::ONE)
+        (!self).overflowing_add(Self::ONE)
     }
     #[inline]
     pub const fn overflowing_shl(self, rhs: ExpType) -> (Self, bool) {
@@ -224,7 +241,7 @@ impl<const N: usize> BIint<N> {
 
 use core::ops::{Div, Rem};
 
-impl<const N: usize> Div for BIint<N> {
+impl<const N: usize> const Div for Bint<N> {
     type Output = Self;
 
     fn div(self, rhs: Self) -> Self {
@@ -239,9 +256,9 @@ impl<const N: usize> Div for BIint<N> {
     }
 }
 
-op_ref_impl!(Div<BIint<N>> for BIint, div);
+op_ref_impl!(Div<Bint<N>> for Bint, div);
 
-impl<const N: usize> Rem for BIint<N> {
+impl<const N: usize> const Rem for Bint<N> {
     type Output = Self;
 
     fn rem(self, rhs: Self) -> Self {
@@ -256,7 +273,7 @@ impl<const N: usize> Rem for BIint<N> {
     }
 }
 
-op_ref_impl!(Rem<BIint<N>> for BIint, rem);
+op_ref_impl!(Rem<Bint<N>> for Bint, rem);
 
 #[cfg(test)]
 mod tests {
@@ -267,7 +284,7 @@ mod tests {
     }
 
     test_signed! {
-        name: overflowing_add,
+        function: overflowing_add(a: i128, b: i128),
         method: {
             overflowing_add(-934875934758937458934734533455i128, 347539475983475893475893475973458i128);
             overflowing_add(-i128::MAX, i128::MIN);
@@ -279,7 +296,7 @@ mod tests {
         converter: converter
     }
     test_signed! {
-        name: overflowing_sub,
+        function: overflowing_sub(a: i128, b: i128),
         method: {
             overflowing_sub(i128::MIN, 13i128);
             overflowing_sub(i128::MAX, -1i128);
@@ -292,7 +309,7 @@ mod tests {
         converter: converter
     }
     test_signed! {
-        name: overflowing_mul,
+        function: overflowing_mul(a: i128, b: i128),
         method: {
             overflowing_mul(2074906579478979567567i128, -2072974564564565467567i128);
             overflowing_mul(-92945876945658479894i128, -20i128);
@@ -304,32 +321,34 @@ mod tests {
         converter: converter
     }
     test_signed! {
-        name: overflowing_div,
+        function: overflowing_div(a: i128, b: i128),
         method: {
             overflowing_div(10947569029764980694786947597i128, -47236447694567498576i128);
             overflowing_div(-973929823948769876783454435i128, -497546i128);
             overflowing_div(97291090487678456456456i128, -947596745i128);
             overflowing_div(827906724975290456897456456i128, 729i128);
             overflowing_div(-3454435i128, 445497546i128);
-            overflowing_div(i128::MIN, -1i128);
+            overflowing_div(-1i128, 2i128);
             overflowing_div(i128::MIN, -1i128);
         },
+        quickcheck_skip: b == 0,
         converter: converter
     }
     test_signed! {
-        name: overflowing_div_euclid,
+        function: overflowing_div_euclid(a: i128, b: i128),
         method: {
             overflowing_div_euclid(8472957694746986729474654i128, 4897694756i128);
             overflowing_div_euclid(0i128, 794796456i128);
             overflowing_div_euclid(-297947569743957645646i128, 74986748965i128);
             overflowing_div_euclid(-1792097293475798465456456i128, -3496745i128);
-            overflowing_div_euclid(1097245097927945645456546456i128, -97297697495796874956i128);
+            overflowing_div_euclid(-1i128, 2i128);
             overflowing_div_euclid(i128::MIN, -1i128);
         },
+        quickcheck_skip: b == 0,
         converter: converter
     }
     test_signed! {
-        name: overflowing_rem,
+        function: overflowing_rem(a: i128, b: i128),
         method: {
             overflowing_rem(2098475620974568975896i128, 99237i128);
             overflowing_rem(-927019762475698748956i128, 8975343453i128);
@@ -339,10 +358,11 @@ mod tests {
             overflowing_rem(-577i128 * 80456498576, 577i128);
             overflowing_rem(i128::MIN, -1i128);
         },
+        quickcheck_skip: b == 0,
         converter: converter
     }
     test_signed! {
-        name: overflowing_rem_euclid,
+        function: overflowing_rem_euclid(a: i128, b: i128),
         method: {
             overflowing_rem_euclid(7290789407684798674987568947879i128, 79724945645667457698479856i128);
             overflowing_rem_euclid(-9729837784956456456456456456i128, 98720375689074895645i128);
@@ -350,11 +370,13 @@ mod tests {
             overflowing_rem_euclid(7897263472466179456456456456i128, -209476984756987456i128);
             overflowing_rem_euclid(0i128, -79872976456456i128);
             overflowing_rem_euclid(i128::MIN, -1i128);
+            overflowing_rem_euclid(-1i128, 2i128);
         },
+        quickcheck_skip: b == 0,
         converter: converter
     }
     test_signed! {
-        name: overflowing_neg,
+        function: overflowing_neg(a: i128),
         method: {
             overflowing_neg(0i128);
             overflowing_neg(i128::MIN);
@@ -364,7 +386,7 @@ mod tests {
         converter: converter
     }
     test_signed! {
-        name: overflowing_shl,
+        function: overflowing_shl(a: i128, b: u16),
         method: {
             overflowing_shl(i128::MAX - 3453475, 8 as u16);
             overflowing_shl(77948798i128, 58743 as u16);
@@ -374,7 +396,7 @@ mod tests {
         converter: converter
     }
     test_signed! {
-        name: overflowing_shr,
+        function: overflowing_shr(a: i128, b: u16),
         method: {
             overflowing_shr(i128::MIN, 11 as u16);
             overflowing_shr(94876927098575645698456i128, 43546 as u16);
@@ -385,7 +407,7 @@ mod tests {
         converter: converter
     }
     test_signed! {
-        name: overflowing_pow,
+        function: overflowing_pow(a: i128, b: u16),
         method: {
             overflowing_pow(97465984i128, 2555 as u16);
             overflowing_pow(-19i128, 11 as u16);

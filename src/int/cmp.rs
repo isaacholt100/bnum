@@ -1,17 +1,11 @@
-use super::BUint;
+use super::Bint;
+use crate::uint::BUint;
 use core::cmp::{PartialEq, Eq, PartialOrd, Ord, Ordering};
 
-impl<const N: usize> const PartialEq for BUint<N> {
+impl<const N: usize> const PartialEq for Bint<N> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
-        let mut i = 0;
-        while i < N {
-            if self.digits[i] != other.digits[i] {
-                return false;
-            }
-            i += 1;
-        }
-        true
+        BUint::eq(&self.uint, &other.uint)
     }
     #[inline]
     fn ne(&self, other: &Self) -> bool {
@@ -19,10 +13,9 @@ impl<const N: usize> const PartialEq for BUint<N> {
     }
 }
 
-impl<const N: usize> Eq for BUint<N> {}
+impl<const N: usize> Eq for Bint<N> {}
 
-impl<const N: usize> const PartialOrd for BUint<N> {
-    #[inline]
+impl<const N: usize> const PartialOrd for Bint<N> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
@@ -56,21 +49,19 @@ impl<const N: usize> const PartialOrd for BUint<N> {
     }
 }
 
-impl<const N: usize> const Ord for BUint<N> {
-    #[inline]
+impl<const N: usize> const Ord for Bint<N> {
     fn cmp(&self, other: &Self) -> Ordering {
-        let mut i = N;
-        while i > 0 {
-            i -= 1;
-            let a = self.digits[i];
-            let b = other.digits[i];
-            if a > b {
-                return Ordering::Greater;
-            } else if a < b {
-                return Ordering::Less;
+        let s1 = self.signed_digit();
+        let s2 = other.signed_digit();
+        if s1 == s2 {
+            BUint::cmp(&self.uint, &other.uint)
+        } else {
+            if s1 > s2 {
+                Ordering::Greater
+            } else {
+                Ordering::Less
             }
         }
-        Ordering::Equal
     }
     #[inline]
     fn max(self, other: Self) -> Self {
@@ -100,22 +91,34 @@ impl<const N: usize> const Ord for BUint<N> {
 
 #[cfg(test)]
 mod tests {
-    use crate::U128;
+    use crate::I128;
 
     #[test]
-    fn it_compares_unequal_uints() {
-        let a = U128::from(3459303849058334845904u128);
-        let b = U128::from(98349593794583490573480980u128);
-        assert!(a < b);
-        assert!(a <= b);
+    fn inequality() {
+        let a = I128::from(-2348273479989898i128);
+        let b = I128::from(-9049873947589473745i128);
+        assert!(a > b);
+        assert_ne!(a, b);
+
+        let a = I128::from(34578394758934759478789354i128);
+        let b = I128::from(3459374957834758394759782i128);
+        assert!(a > b);
+        assert_ne!(a, b);
+
+        let a = I128::from(-34578394758934759478789354i128);
+        let b = I128::from(3459374957834758394759782i128);
+        assert!(b > a);
+        assert_ne!(a, b);
     }
 
     #[test]
-    fn it_compares_equal_uints() {
-        let a = U128::from(3459303849058334845904u128);
-        let b = U128::from(3459303849058334845904u128);
-        assert!(a == b);
-        assert!(a >= b);
-        assert!(a <= b);
+    fn equality() {
+        let a = I128::from(-9049873947589473745i128);
+        let b = I128::from(-9049873947589473745i128);
+        assert_eq!(a, b);
+        
+        let a = I128::from(34578394758934759478789354i128);
+        let b = I128::from(34578394758934759478789354i128);
+        assert_eq!(a, b);
     }
 }
