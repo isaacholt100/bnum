@@ -80,54 +80,50 @@ impl<const N: usize> Bint<N> {
 mod tests {
     test_signed! {
         function: saturating_add(a: i128, b: i128),
-        method: {
-            saturating_add(i128::MAX, 2);
-            saturating_add(i128::MIN, -1);
-            saturating_add(275869749506754546i128, 4275689745096754896785i128);
-        }
+        cases: [
+            (i128::MAX, 2),
+            (i128::MIN, -1),
+            (275869749506754546i128, 4275689745096754896785i128)
+        ]
     }
     test_signed! {
         function: saturating_sub(a: i128, b: i128),
-        method: {
-            saturating_sub(i128::MAX, -5);
-            saturating_sub(i128::MIN, i128::MAX);
-            saturating_sub(27456873894567457667567i128, 784569026784526789475698i128);
-        }
+        cases: [
+            (i128::MAX, -5),
+            (i128::MIN, i128::MAX),
+            (27456873894567457667567i128, 784569026784526789475698i128)
+        ]
     }
     test_signed! {
         function: saturating_neg(a: i128),
-        method: {
-            saturating_neg(i128::MAX);
-            saturating_neg(i128::MIN);
-            saturating_neg(-2568974589675445698456i128);
-            saturating_neg(8245069278956798745967i128);
-        }
+        cases: [
+            (i128::MAX),
+            (i128::MIN),
+            (-2568974589675445698456i128)
+        ]
     }
     test_signed! {
         function: saturating_abs(a: i128),
-        method: {
-            saturating_abs(i128::MAX);
-            saturating_abs(i128::MIN);
-            saturating_abs(-7635479863709875678056409486i128);
-            saturating_abs(17295692798567459867458967i128);
-        }
+        cases: [
+            (i128::MAX),
+            (i128::MIN),
+            (-7635479863709875678056409486i128)
+        ]
     }
     test_signed! {
         function: saturating_mul(a: i128, b: i128),
-        method: {
-            saturating_mul(i128::MAX, -5);
-            saturating_mul(i128::MAX, -1);
-            saturating_mul(i128::MIN, -1);
-            saturating_mul(-456979846894564i128, -4594957698i128);
-        }
+        cases: [
+            (i128::MAX, -5),
+            (i128::MAX, -1),
+            (i128::MIN, -1)
+        ]
     }
     test_signed! {
         function: saturating_pow(a: i128, b: u16),
-        method: {
-            saturating_pow(55i128, 12 as u16);
-            saturating_pow(3678i128, 123 as u16);
-            saturating_pow(i128::MIN, 5 as u16);
-            saturating_pow(-49654697456i128, 5674 as u16);
-        }
+        cases: [
+            (55i128, 12 as u16),
+            (3678i128, 123 as u16),
+            (i128::MIN, 5 as u16)
+        ]
     }
 }

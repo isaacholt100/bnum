@@ -37,8 +37,10 @@ impl<const N: usize> BUint<N> {
                 } else {
                     high.digits[index - N] = new_digit;
                 }
+                // TODO: change it so that index does not need to be compared
                 j += 1;
             }
+            high.digits[i] = carry;
             i += 1;
         }
 
@@ -53,5 +55,56 @@ impl<const N: usize> BUint<N> {
         } else {
             (low, high)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::test;
+    use crate::U64;
+
+    fn converter<T, U, V: Into<T>, W: Into<U>>((a, b): (V, W)) -> (T, U) {
+        (a.into(), b.into())
+    }
+
+    test_unsigned! {
+        function: carrying_add(a: u128, rhs: u128, carry: bool),
+        cases: [
+            (u128::MAX, 1u128, true),
+            (u128::MAX, 1u128, false)
+        ],
+        converter: converter
+    }
+
+    test_unsigned! {
+        function: borrowing_sub(a: u128, rhs: u128, carry: bool),
+        cases: [
+            (0u128, 1u128, false),
+            (0u128, 1u128, true)
+        ],
+        converter: converter
+    }
+
+    test::test_big_num! {
+        big: U64,
+        primitive: u64,
+        function: widening_mul,
+        cases: [
+            (u64::MAX, u64::MAX)
+        ],
+        quickcheck: (a: u64, rhs: u64),
+        converter: converter
+    }
+
+    test::test_big_num! {
+        big: U64,
+        primitive: u64,
+        function: carrying_mul,
+        cases: [
+            (u64::MAX, u64::MAX, u64::MAX),
+            (u64::MAX, u64::MAX, 1u64)
+        ],
+        quickcheck: (a: u64, rhs: u64, carry: u64),
+        converter: converter
     }
 }

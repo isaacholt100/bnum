@@ -8,40 +8,40 @@ use crate::doc;
 #[allow(unused)]
 macro_rules! test_unsigned {
     {
-        function: $name: ident ($($param: ident : $ty: ty), *),
-        method: {
-            $($method: ident ($($arg: expr), *) ;) *
-        }$(,
-        quickcheck_skip: $skip: expr)?
+        function: $name: ident ($($param: ident : $ty: ty), *)
+        $(,cases: [
+            $(($($arg: expr), *)), *
+        ])?
+        $(,quickcheck_skip: $skip: expr)?
     } => {
         crate::test::test_big_num! {
             big: crate::U128,
             primitive: u128,
             function: $name,
-            method: {
-                $($method ($($arg), *) ;) *
-            },
-            quickcheck: $name ($($param : $ty), *),
+            $(cases: [
+                $(($($arg), *) ), *
+            ],)?
+            quickcheck: ($($param : $ty), *),
             $(quickcheck_skip: $skip,)?
             converter: Into::into
         }
     };
     {
-        function: $name: ident ($($param: ident : $ty: ty), *),
-        method: {
-            $($method: ident ($($arg: expr), *) ;) *
-        }$(,
-        quickcheck_skip: $skip: expr)?,
+        function: $name: ident ($($param: ident : $ty: ty), *)
+        $(,cases: [
+            $(($($arg: expr), *)), *
+        ])?
+        $(,quickcheck_skip: $skip: expr)?,
         converter: $converter: expr
     } => {
         crate::test::test_big_num! {
             big: crate::U128,
             primitive: u128,
             function: $name,
-            method: {
-                $($method ($($arg), *) ;) *
-            },
-            quickcheck: $name ($($param : $ty), *),
+            $(cases: [
+                $(($($arg), *)), *
+            ],)?
+            quickcheck: ($($param : $ty), *),
             $(quickcheck_skip: $skip,)?
             converter: $converter
         }
@@ -63,7 +63,7 @@ pub const fn unchecked_shl<const N: usize>(u: BUint<N>, rhs: ExpType) -> BUint<N
         let digit_shift = (rhs >> digit::BIT_SHIFT) as usize;
         let shift = (rhs & digit::BITS_MINUS_1) as u8;
         if rhs == 13 {
-            assert!(digit_shift == 1 && shift == 5);
+            //assert!(digit_shift == 1 && shift == 5);
         }
         //println!("{}", digit_shift);
         
@@ -77,7 +77,7 @@ pub const fn unchecked_shl<const N: usize>(u: BUint<N>, rhs: ExpType) -> BUint<N
         if rhs == 13 {
         let mut i = 0;
         while i < N - 1 {
-            assert!(out.digits[i] == 0);
+            //assert!(out.digits[i] == 0);
             i += 1;
         }
         //assert!(out.digits[N - 1] == 0b10010000);
@@ -817,103 +817,103 @@ mod tests {
 
     test_unsigned! {
         function: count_ones(a: u128),
-        method: {
-            count_ones(203583443659837459073490583937485738404u128);
-            count_ones(3947594755489u128);
-        },
+        cases: [
+            (203583443659837459073490583937485738404u128),
+            (3947594755489u128)
+        ],
         converter: test::u32_to_exp
     }
     test_unsigned! {
         function: count_zeros(a: u128),
-        method: {
-            count_zeros(7435098345734853045348057390485934908u128);
-            count_zeros(3985789475546u128);
-        },
+        cases: [
+            (7435098345734853045348057390485934908u128),
+            (3985789475546u128)
+        ],
         converter: test::u32_to_exp
     }
     test_unsigned! {
         function: leading_ones(a: u128),
-        method: {
-            leading_ones(3948590439409853946593894579834793459u128);
-            leading_ones(u128::MAX - 0b111);
-        },
+        cases: [
+            (3948590439409853946593894579834793459u128),
+            (u128::MAX - 0b111)
+        ],
         converter: test::u32_to_exp
     }
     test_unsigned! {
         function: leading_zeros(a: u128),
-        method: {
-            leading_zeros(49859830845963457783945789734895834754u128);
-            leading_zeros(40545768945769u128);
-        },
+        cases: [
+            (49859830845963457783945789734895834754u128),
+            (40545768945769u128)
+        ],
         converter: test::u32_to_exp
     }
     test_unsigned! {
         function: trailing_ones(a: u128),
-        method: {
-            trailing_ones(45678345973495637458973488509345903458u128);
-            trailing_ones(u128::MAX);
-        },
+        cases: [
+            (45678345973495637458973488509345903458u128),
+            (u128::MAX)
+        ],
         converter: test::u32_to_exp
     }
     test_unsigned! {
         function: trailing_zeros(a: u128),
-        method: {
-            trailing_zeros(23488903477439859084534857349857034599u128);
-            trailing_zeros(343453454565u128);
-        },
+        cases: [
+            (23488903477439859084534857349857034599u128),
+            (343453454565u128)
+        ],
         converter: test::u32_to_exp
     }
     test_unsigned! {
         function: rotate_left(a: u128, b: u16),
-        method: {
-            rotate_left(394857348975983475983745983798579483u128, 5555 as u16);
-            rotate_left(4056890546059u128, 12 as u16);
-        }
+        cases: [
+            (394857348975983475983745983798579483u128, 5555 as u16),
+            (4056890546059u128, 12 as u16)
+        ]
     }
     test_unsigned! {
         function: rotate_right(a: u128, b: u16),
-        method: {
-            rotate_right(90845674987957297107197973489575938457u128, 10934 as u16);
-            rotate_right(1345978945679u128, 33 as u16);
-        }
+        cases: [
+            (90845674987957297107197973489575938457u128, 10934 as u16),
+            (1345978945679u128, 33 as u16)
+        ]
     }
     test_unsigned! {
         function: swap_bytes(a: u128),
-        method: {
-            swap_bytes(3749589304858934758390485937458349058u128);
-            swap_bytes(3405567798345u128);
-        }
+        cases: [
+            (3749589304858934758390485937458349058u128),
+            (3405567798345u128)
+        ]
     }
     test_unsigned! {
         function: reverse_bits(a: u128),
-        method: {
-            reverse_bits(3345565093489578938485934957893745984u128);
-            reverse_bits(608670986790835u128);
-        }
+        cases: [
+            (3345565093489578938485934957893745984u128),
+            (608670986790835u128)
+        ]
     }
     test_unsigned! {
         function: pow(a: u128, b: u16),
-        method: {
-            pow(59345u128, 4 as u16);
-            pow(54u128, 9 as u16);
-        },
+        cases: [
+            (59345u128, 4 as u16),
+            (54u128, 9 as u16)
+        ],
         quickcheck_skip: a.checked_pow(b as u32).is_none()
     }
     test_unsigned! {
         function: div_euclid(a: u128, b: u128),
-        method: {
-            div_euclid(345987945738945789347u128, 345987945738945789347u128);
-            div_euclid(139475893475987093754099u128, 3459837453479u128);
-            div_euclid(84949881323520u128, 9393082u128);
-        },
+        cases: [
+            (345987945738945789347u128, 345987945738945789347u128),
+            (139475893475987093754099u128, 3459837453479u128),
+            (84949881323520u128, 9393082u128)
+        ],
         quickcheck_skip: b == 0
     }
     test_unsigned! {
         function: rem_euclid(a: u128, b: u128),
-        method: {
-            rem_euclid(8094589656797897987u128, 8094589656797897987u128);
-            rem_euclid(3734597349574397598374594598u128, 3495634895793845783745897u128);
-        },
+        cases: [
+            (8094589656797897987u128, 8094589656797897987u128),
+            (3734597349574397598374594598u128, 3495634895793845783745897u128)
+        ],
         quickcheck_skip: b == 0
     }
     #[test]
@@ -925,26 +925,26 @@ mod tests {
     }
     test_unsigned! {
         function: checked_next_power_of_two(a: u128),
-        method: {
-            checked_next_power_of_two(1340539475937597893475987u128);
-            checked_next_power_of_two(u128::MAX);
-        },
+        cases: [
+            (1340539475937597893475987u128),
+            (u128::MAX)
+        ],
         converter: |option: Option<u128>| option.map(|u| U128::from(u))
     }
     test_unsigned! {
         function: next_power_of_two(a: u128),
-        method: {
-            next_power_of_two(394857834758937458973489573894759879u128);
-            next_power_of_two(800345894358459u128);
-        },
+        cases: [
+            (394857834758937458973489573894759879u128),
+            (800345894358459u128)
+        ],
         quickcheck_skip: a.checked_next_power_of_two().is_none()
     }
     /*test_unsigned! {
         function: wrapping_next_power_of_two,
-        method: {
-            wrapping_next_power_of_two(97495768945869084687890u128);
-            wrapping_next_power_of_two(u128::MAX);
-        }
+        cases: [
+            (97495768945869084687890u128),
+            (u128::MAX)
+        ]
     }*/
     #[test]
     fn bit() {

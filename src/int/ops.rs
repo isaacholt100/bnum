@@ -38,7 +38,7 @@ impl<const N: usize> const Add<Self> for Bint<N> {
     }
 }
 
-op_ref_impl!(Add<Bint<N>> for Bint, add);
+op_ref_impl!(Add<Bint<N>> for Bint<N>, add);
 
 impl<const N: usize> const AddAssign for Bint<N> {
     fn add_assign(&mut self, rhs: Self) {
@@ -58,7 +58,7 @@ impl<const N: usize> const BitAnd for Bint<N> {
     }
 }
 
-op_ref_impl!(BitAnd<Bint<N>> for Bint, bitand);
+op_ref_impl!(BitAnd<Bint<N>> for Bint<N>, bitand);
 
 impl<const N: usize> const BitAndAssign for Bint<N> {
     fn bitand_assign(&mut self, rhs: Self) {
@@ -78,7 +78,7 @@ impl<const N: usize> const BitOr for Bint<N> {
     }
 }
 
-op_ref_impl!(BitOr<Bint<N>> for Bint, bitor);
+op_ref_impl!(BitOr<Bint<N>> for Bint<N>, bitor);
 
 impl<const N: usize> const BitOrAssign for Bint<N> {
     fn bitor_assign(&mut self, rhs: Self) {
@@ -98,7 +98,7 @@ impl<const N: usize> const BitXor for Bint<N> {
     }
 }
 
-op_ref_impl!(BitXor<Bint<N>> for Bint, bitxor);
+op_ref_impl!(BitXor<Bint<N>> for Bint<N>, bitxor);
 
 impl<const N: usize> const BitXorAssign for Bint<N> {
     fn bitxor_assign(&mut self, rhs: Self) {
@@ -129,7 +129,7 @@ impl<const N: usize> const Mul for Bint<N> {
     }
 }
 
-op_ref_impl!(Mul<Bint<N>> for Bint, mul);
+op_ref_impl!(Mul<Bint<N>> for Bint<N>, mul);
 
 impl<const N: usize> const MulAssign for Bint<N> {
     fn mul_assign(&mut self, rhs: Self) {
@@ -199,7 +199,7 @@ impl<const N: usize> const Shl<ExpType> for Bint<N> {
     }
 }
 
-op_ref_impl!(Shl<ExpType> for Bint, shl);
+op_ref_impl!(Shl<ExpType> for Bint<N>, shl);
 
 impl<const N: usize> const ShlAssign<ExpType> for Bint<N> {
     fn shl_assign(&mut self, rhs: ExpType) {
@@ -222,7 +222,7 @@ impl<const N: usize> const Shr<ExpType> for Bint<N> {
     }
 }
 
-op_ref_impl!(Shr<ExpType> for Bint, shr);
+op_ref_impl!(Shr<ExpType> for Bint<N>, shr);
 
 impl<const N: usize> const ShrAssign<ExpType> for Bint<N> {
     fn shr_assign(&mut self, rhs: ExpType) {
@@ -244,7 +244,7 @@ impl<const N: usize> const Sub for Bint<N> {
     }
 }
 
-op_ref_impl!(Sub<Bint<N>> for Bint, sub);
+op_ref_impl!(Sub<Bint<N>> for Bint<N>, sub);
 
 impl<const N: usize> const SubAssign for Bint<N> {
     fn sub_assign(&mut self, rhs: Self) {

@@ -174,25 +174,25 @@ macro_rules! expect {
 pub(crate) use expect;
 
 macro_rules! op_ref_impl {
-    ($tr: tt <$rhs: ty> for $Struct: tt, $method: ident) => {
-        impl<const N: usize> $tr<&$rhs> for $Struct<N> {
-            type Output = $Struct<N>;
+    ($tr: ident <$rhs: ty> for $Struct: ident <$($C: ident),+>, $method: ident) => {
+        impl<$(const $C: usize),+> $tr<&$rhs> for $Struct <$($C),+> {
+            type Output = $Struct <$($C),+>;
         
             fn $method(self, rhs: &$rhs) -> Self::Output {
                 self.$method(*rhs)
             }
         }
         
-        impl<const N: usize> $tr<&$rhs> for &$Struct<N> {
-            type Output = $Struct<N>;
+        impl<$(const $C: usize),+> $tr<&$rhs> for &$Struct <$($C),+> {
+            type Output = $Struct <$($C),+>;
         
             fn $method(self, rhs: &$rhs) -> Self::Output {
                 (*self).$method(*rhs)
             }
         }
         
-        impl<const N: usize> $tr<$rhs> for &$Struct<N> {
-            type Output = $Struct<N>;
+        impl<$(const $C: usize),+> $tr<$rhs> for &$Struct <$($C),+> {
+            type Output = $Struct <$($C),+>;
         
             fn $method(self, rhs: $rhs) -> Self::Output {
                 (*self).$method(rhs)
@@ -225,7 +225,7 @@ macro_rules! shift_impl {
                 }
             }
 
-            op_ref_impl!($tr<$rhs> for $Struct, $method);
+            op_ref_impl!($tr<$rhs> for $Struct<N>, $method);
         )*
     }
 }
@@ -247,7 +247,7 @@ macro_rules! try_shift_impl {
                 }
             }
 
-            op_ref_impl!($tr<$rhs> for $Struct, $method);
+            op_ref_impl!($tr<$rhs> for $Struct<N>, $method);
         )*
     }
 }

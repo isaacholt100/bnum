@@ -83,13 +83,13 @@ mod tests {
         big: I128,
         primitive: i128,
         function: from_str_radix,
-        method: {
-            from_str_radix("-14359abcasdhfkdgdfgsde", 34u32);
-            from_str_radix("23797984569ahgkhhjdskjdfiu", 32u32);
-            from_str_radix("-253613132341435345", 7u32);
-            from_str_radix("23467abcad47790809ef37", 16u32);
-            from_str_radix("-712930769245766867875986646", 10u32);
-        },
+        cases: [
+            ("-14359abcasdhfkdgdfgsde", 34u32),
+            ("23797984569ahgkhhjdskjdfiu", 32u32),
+            ("-253613132341435345", 7u32),
+            ("23467abcad47790809ef37", 16u32),
+            ("-712930769245766867875986646", 10u32)
+        ],
         converter: |result: Result<i128, core::num::ParseIntError>| -> Result<I128, crate::ParseIntError> {
             Ok(result.unwrap().into())
         }

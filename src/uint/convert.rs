@@ -197,9 +197,9 @@ mod tests {
         big: U128,
         primitive: u128,
         function: from_str,
-        method: {
-            from_str("398475394875230495745");
-        },
+        cases: [
+            ("398475394875230495745")
+        ],
         converter: |result| {
             match result {
                 Ok(u) => Ok(U128::from(u)),

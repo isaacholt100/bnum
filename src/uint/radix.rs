@@ -2,7 +2,6 @@ use super::BUint;
 use crate::ParseIntError;
 use crate::digit::{self, Digit, DoubleDigit};
 use core::iter::Iterator;
-use num_integer::Integer;
 use alloc::string::String;
 use alloc::vec::Vec;
 use crate::error::ParseIntErrorReason::*;
@@ -462,7 +461,7 @@ impl<const N: usize> BUint<N> {
         let digits_per_big_digit = BITS_U8 / bits;
         let digits = self
             .bits()
-            .div_ceil(&usize::from(bits));
+            .div_ceil(usize::from(bits));
         let mut out = Vec::with_capacity(digits);
 
         for mut r in self.digits[..last_digit_index].iter().cloned() {
@@ -482,7 +481,7 @@ impl<const N: usize> BUint<N> {
         let mask: Digit = (1 << bits) - 1;
         let digits = self
             .bits()
-            .div_ceil(&(bits as usize));
+            .div_ceil(bits as usize);
         let mut out = Vec::with_capacity(digits);
         let mut r = 0;
         let mut rbits = 0;
@@ -511,8 +510,7 @@ impl<const N: usize> BUint<N> {
     fn to_radix_digits_le(&self, radix: u32) -> Vec<u8> {
         let radix_log2 = f64::from(radix).log2();
         let radix_digits = ((self.bits() as f64) / radix_log2).ceil();
-        use num_traits::ToPrimitive;
-        let mut out = Vec::with_capacity(radix_digits.to_usize().unwrap_or(0));
+        let mut out = Vec::with_capacity(radix_digits as usize);
         let (base, power) = radix_bases::get_radix_base(radix, BITS_U8 / 2);
         let radix = radix as Digit;
         let mut copy = *self;
@@ -543,12 +541,12 @@ mod tests {
         big: U128,
         primitive: u128,
         function: from_str_radix,
-        method: {
-            from_str_radix("af7345asdofiuweor", 35u32);
-            from_str_radix("945hhdgi73945hjdfj", 32u32);
-            from_str_radix("3436847561345343455", 9u32);
-            from_str_radix("affe758457bc345540ac399", 16u32);
-        },
+        cases: [
+            ("af7345asdofiuweor", 35u32),
+            ("945hhdgi73945hjdfj", 32u32),
+            ("3436847561345343455", 9u32),
+            ("affe758457bc345540ac399", 16u32)
+        ],
         converter: |result: Result<u128, core::num::ParseIntError>| -> Result<U128, crate::ParseIntError> {
             Ok(result.unwrap().into())
         }

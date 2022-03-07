@@ -43,30 +43,30 @@ impl<const N: usize> BUint<N> {
 mod tests {
     test_unsigned! {
         function: saturating_add(a: u128, b: u128),
-        method: {
-            saturating_add(3945873849578934759897458u128, 304578347593745734845646957398u128);
-            saturating_add(u128::MAX, 345345u128);
-        }
+        cases: [
+            (3945873849578934759897458u128, 304578347593745734845646957398u128),
+            (u128::MAX, 345345u128)
+        ]
     }
     test_unsigned! {
         function: saturating_sub(a: u128, b: u128),
-        method: {
-            saturating_sub(43054734875u128, 304578347593745348455647398u128);
-            saturating_sub(394587384957893459664565697458u128, 304578347593745348455647398u128);
-        }
+        cases: [
+            (43054734875u128, 304578347593745348455647398u128),
+            (394587384957893459664565697458u128, 304578347593745348455647398u128)
+        ]
     }
     test_unsigned! {
         function: saturating_mul(a: u128, b: u128),
-        method: {
-            saturating_mul(u128::MAX, 1u128);
-            saturating_mul(u128::MAX, 345u128);
-        }
+        cases: [
+            (u128::MAX, 1u128),
+            (u128::MAX, 345u128)
+        ]
     }
     test_unsigned! {
         function: saturating_pow(a: u128, b: u16),
-        method: {
-            saturating_pow(3593745u128, 3451 as u16);
-            saturating_pow(11u128, 34 as u16);
-        }
+        cases: [
+            (3593745u128, 3451 as u16),
+            (11u128, 34 as u16)
+        ]
     }
 }

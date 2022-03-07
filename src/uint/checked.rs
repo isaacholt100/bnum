@@ -535,95 +535,93 @@ mod tests {
 
     test_unsigned! {
         function: checked_add(a: u128, b: u128),
-        method: {
-            checked_add(238732748937u128, 23583048508u128);
-            checked_add(u128::MAX, 1u128);
-        },
+        cases: [
+            (238732748937u128, 23583048508u128),
+            (u128::MAX, 1u128)
+        ],
         converter: converter
     }
     test_unsigned! {
         function: checked_sub(a: u128, b: u128),
-        method: {
-            checked_sub(334534859834905830u128, 93745873457u128);
-            checked_sub(23423423u128, 209834908234898u128);
-        },
+        cases: [
+            (334534859834905830u128, 93745873457u128),
+            (23423423u128, 209834908234898u128)
+        ],
         converter: converter
     }
     test_unsigned! {
         function: checked_mul(a: u128, b: u128),
-        method: {
-            checked_mul(309458690987839544353455765u128, 344597u128);
-            checked_mul(958734920934875289309456874985769879u128, 33219654565456456453434545697u128);
-        },
+        cases: [
+            (309458690987839544353455765u128, 344597u128),
+            (958734920934875289309456874985769879u128, 33219654565456456453434545697u128)
+        ],
         converter: converter
     }
     test_unsigned! {
         function: checked_div(a: u128, b: u128),
-        method: {
-            checked_div(234233453453454563453453423u128, 34534597u128);
-            checked_div(95873492093487528930479456874985769879u128, 33219654565456456453434545697u128);
-            checked_div(34564564564u128, 33219654565456456453434545697u128);
-            checked_div(475749674596u128, 0u128);
-        },
+        cases: [
+            (234233453453454563453453423u128, 34534597u128),
+            (95873492093487528930479456874985769879u128, 33219654565456456453434545697u128),
+            (34564564564u128, 33219654565456456453434545697u128)
+        ],
         converter: converter
     }
     test_unsigned! {
         function: checked_div_euclid(a: u128, b: u128),
-        method: {
-            checked_div_euclid(3058689475456456908345374598734535u128, 973457035343453453454338408u128);
-            checked_div_euclid(1734857456846783458346458640586098u128, 98474869054698745u128);
-        },
+        cases: [
+            (3058689475456456908345374598734535u128, 973457035343453453454338408u128),
+            (1734857456846783458346458640586098u128, 98474869054698745u128)
+        ],
         converter: converter
     }
     test_unsigned! {
         function: checked_rem(a: u128, b: u128),
-        method: {
-            checked_rem(9845764759879745698u128, 948745860945769845645986745986u128);
-            checked_rem(3450457689456094859604589684905698u128, 34985734895793u128);
-            checked_rem(4987569457756984789756745677957698476u128, 49857498576947593595548u128);
-            checked_rem(475749674596u128, 0u128);
-        },
+        cases: [
+            (9845764759879745698u128, 948745860945769845645986745986u128),
+            (3450457689456094859604589684905698u128, 34985734895793u128),
+            (4987569457756984789756745677957698476u128, 49857498576947593595548u128)
+        ],
         converter: converter
     }
     test_unsigned! {
         function: checked_rem_euclid(a: u128, b: u128),
-        method: {
-            checked_rem_euclid(45645609485069840574594565646456u128, 984756897456799u128);
-            checked_rem_euclid(9827986748560745645867456456456456u128, 98474869054698456456456456456745u128);
-        },
+        cases: [
+            (45645609485069840574594565646456u128, 984756897456799u128),
+            (9827986748560745645867456456456456u128, 98474869054698456456456456456745u128)
+        ],
         converter: converter
     }
     test_unsigned! {
         function: checked_neg(a: u128),
-        method: {
-            checked_neg(456456454698756u128);
-            checked_neg(0u128);
-        },
+        cases: [
+            (456456454698756u128),
+            (0u128)
+        ],
         converter: converter
     }
     test_unsigned! {
         function: checked_shl(a: u128, b: u16),
-        method: {
-            checked_shl(45645643454354563634554698756u128, 22 as u16);
-            checked_shl(4598745697987927893475u128, 5873 as u16);
-        },
+        cases: [
+            (45645643454354563634554698756u128, 22 as u16),
+            (4598745697987927893475u128, 5873 as u16)
+        ],
         converter: converter
     }
     test_unsigned! {
         function: checked_shr(a: u128, b: u16),
-        method: {
-            checked_shr(8098459098745896789454976498u128, 100 as u16);
-            checked_shr(9719834759874986456456465u128, 128 as u16);
-        },
+        cases: [
+            (8098459098745896789454976498u128, 100 as u16),
+            (9719834759874986456456465u128, 128 as u16)
+        ],
         converter: converter
     }
     test_unsigned! {
         function: checked_pow(a: u128, b: u16),
-        method: {
-            checked_pow(4565u128, 100 as u16);
-            checked_pow(43u128, 15 as u16);
-            checked_pow(5u128, 34 as u16);
-        },
+        cases: [
+            (4565u128, 100 as u16),
+            (43u128, 15 as u16),
+            (5u128, 34 as u16)
+        ],
         converter: converter
     }
 }

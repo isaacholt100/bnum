@@ -1,6 +1,7 @@
 extern crate test;
 
-
+#[allow(unused)]
+use test::Bencher;
 use crate::BUint;
 
 #[inline]

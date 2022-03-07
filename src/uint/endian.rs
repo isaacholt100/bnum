@@ -253,35 +253,36 @@ impl<const N: usize> BUint<N> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{U128};
+    use crate::U128;
+    use crate::test::ArrayWrapper;
 
     test_unsigned! {
         function: from_be(a: u128),
-        method: {
-            from_be(234889034774398590845348573498570345u128);
-            from_be(349857348957u128);
-        }
+        cases: [
+            (234889034774398590845348573498570345u128),
+            (349857348957u128)
+        ]
     }
     test_unsigned! {
         function: from_le(a: u128),
-        method: {
-            from_le(374598340857345349875907438579348534u128);
-            from_le(9875474394587u128);
-        }
+        cases: [
+            (374598340857345349875907438579348534u128),
+            (9875474394587u128)
+        ]
     }
     test_unsigned! {
         function: to_be(a: u128),
-        method: {
-            to_be(938495078934875384738495787358743854u128);
-            to_be(394567834657835489u128);
-        }
+        cases: [
+            (938495078934875384738495787358743854u128),
+            (394567834657835489u128)
+        ]
     }
     test_unsigned! {
         function: to_le(a: u128),
-        method: {
-            to_le(634985790475394859374957339475897443u128);
-            to_le(12379045679853u128);
-        }
+        cases: [
+            (634985790475394859374957339475897443u128),
+            (12379045679853u128)
+        ]
     }
 
     #[cfg(feature = "nightly")]
@@ -292,54 +293,54 @@ mod tests {
     #[cfg(feature = "nightly")]
     test_unsigned! {
         function: to_be_bytes(a: u128),
-        method: {
-            to_be_bytes(883497884590834905834758374950859884u128);
-            to_be_bytes(456747598769u128);
-        },
+        cases: [
+            (883497884590834905834758374950859884u128),
+            (456747598769u128)
+        ],
         converter: converter
     }
     #[cfg(feature = "nightly")]
     test_unsigned! {
         function: to_le_bytes(a: u128),
-        method: {
-            to_le_bytes(349587309485908349057389485093457397u128);
-            to_le_bytes(4985679837455u128);
-        },
+        cases: [
+            (349587309485908349057389485093457397u128),
+            (4985679837455u128)
+        ],
         converter: converter
     }
     #[cfg(feature = "nightly")]
     test_unsigned! {
         function: to_ne_bytes(a: u128),
-        method: {
-            to_ne_bytes(123423345734905803845939847534085908u128);
-            to_ne_bytes(685947586789335u128);
-        },
+        cases: [
+            (123423345734905803845939847534085908u128),
+            (685947586789335u128)
+        ],
         converter: converter
     }
 
     #[cfg(feature = "nightly")]
     test_unsigned! {
-        function: from_be_bytes(a: crate::ArrayWrapper),
-        method: {
-            from_be_bytes([3, 5, 44, 253, 55, 110, 64, 53, 54, 78, 0, 8, 91, 16, 25, 42]);
-            from_be_bytes([0, 0, 0, 0, 30, 0, 64, 53, 54, 78, 0, 8, 91, 16, 25, 42]);
-        }
+        function: from_be_bytes(a: ArrayWrapper),
+        cases: [
+            ([3, 5, 44, 253, 55, 110, 64, 53, 54, 78, 0, 8, 91, 16, 25, 42]),
+            ([0, 0, 0, 0, 30, 0, 64, 53, 54, 78, 0, 8, 91, 16, 25, 42])
+        ]
     }
     #[cfg(feature = "nightly")]
     test_unsigned! {
-        function: from_le_bytes(a: crate::ArrayWrapper),
-        method: {
-            from_le_bytes([15, 65, 44, 30, 115, 200, 244, 167, 44, 6, 9, 11, 90, 56, 77, 150]);
-            from_le_bytes([0, 0, 0, 0, 0, 200, 244, 167, 44, 6, 9, 11, 90, 56, 77, 150]);
-        }
+        function: from_le_bytes(a: ArrayWrapper),
+        cases: [
+            ([15, 65, 44, 30, 115, 200, 244, 167, 44, 6, 9, 11, 90, 56, 77, 150]),
+            ([0, 0, 0, 0, 0, 200, 244, 167, 44, 6, 9, 11, 90, 56, 77, 150])
+        ]
     }
     #[cfg(feature = "nightly")]
     test_unsigned! {
-        function: from_ne_bytes(a: crate::ArrayWrapper),
-        method: {
-            from_ne_bytes([73, 80, 2, 24, 160, 188, 204, 45, 33, 88, 4, 68, 230, 180, 145, 32]);
-            from_ne_bytes([0, 0, 0, 0, 0, 188, 204, 45, 33, 88, 4, 68, 230, 180, 0, 0]);
-        }
+        function: from_ne_bytes(a: ArrayWrapper),
+        cases: [
+            ([73, 80, 2, 24, 160, 188, 204, 45, 33, 88, 4, 68, 230, 180, 145, 32]),
+            ([0, 0, 0, 0, 0, 188, 204, 45, 33, 88, 4, 68, 230, 180, 0, 0])
+        ]
     }
 
     #[test]

@@ -31,10 +31,10 @@ impl<const W: usize, const MANTISSA_BITS: usize> Float<W, MANTISSA_BITS> {
             uint: BUint::ONE.wrapping_shl(MANTISSA_BITS as ExpType),
         }
     };
-    pub const MAX_NEGATIVE: Self = Self::MIN_POSITIVE.neg();
+    pub const MAX_NEGATIVE: Self = -Self::MIN_POSITIVE;
     pub const MAX: Self = Self::MIN.abs();
 
-    pub const MIN_EXP: Bint<W> = Self::EXP_BIAS.neg().wrapping_add(Bint::ONE.wrapping_shl(1));
+    pub const MIN_EXP: Bint<W> = (-Self::EXP_BIAS).wrapping_add(Bint::ONE.wrapping_shl(1));
     pub const MAX_EXP: Bint<W> = Self::EXP_BIAS.wrapping_add(Bint::ONE);
     pub const MAX_UNBIASED_EXP: BUint<W> = Self::EXP_BIAS.to_bits() * BUint::TWO;
     pub const MIN_10_EXP: Self = todo!();
@@ -43,11 +43,11 @@ impl<const W: usize, const MANTISSA_BITS: usize> Float<W, MANTISSA_BITS> {
     pub const MAX_SUBNORMAL: Self = Self {
         uint: BUint::MAX.wrapping_shr(Self::EXPONENT_BITS as ExpType + 1),
     };
-    pub const MIN_SUBNORMAL: Self = Self::MAX_SUBNORMAL.neg();
+    pub const MIN_SUBNORMAL: Self = -Self::MAX_SUBNORMAL;
     pub const MIN_POSITIVE_SUBNORMAL: Self = Self {
         uint: BUint::ONE,
     };
-    pub const MAX_NEGATIVE_SUBNORMAL: Self = Self::MIN_POSITIVE_SUBNORMAL.neg();
+    pub const MAX_NEGATIVE_SUBNORMAL: Self = -Self::MIN_POSITIVE_SUBNORMAL;
 
     pub const NAN: Self = {
         let mut u = BUint::MAX;
@@ -59,7 +59,7 @@ impl<const W: usize, const MANTISSA_BITS: usize> Float<W, MANTISSA_BITS> {
         }
     };
 
-    pub const NEG_NAN: Self = Self::NAN.neg();
+    pub const NEG_NAN: Self = -Self::NAN;
 
     pub const INFINITY: Self = {
         let mut u = BUint::MAX;

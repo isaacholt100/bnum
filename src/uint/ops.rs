@@ -37,7 +37,7 @@ impl<const N: usize> const Add<Self> for BUint<N> {
     }
 }
 
-op_ref_impl!(Add<BUint<N>> for BUint, add);
+op_ref_impl!(Add<BUint<N>> for BUint<N>, add);
 
 impl<T, const N: usize> const AddAssign<T> for BUint<N> where Self: ~const Add<T, Output = Self> {
     fn add_assign(&mut self, rhs: T) {
@@ -59,7 +59,7 @@ impl<const N: usize> const BitAnd for BUint<N> {
     }
 }
 
-op_ref_impl!(BitAnd<BUint<N>> for BUint, bitand);
+op_ref_impl!(BitAnd<BUint<N>> for BUint<N>, bitand);
 
 impl<T, const N: usize> const BitAndAssign<T> for BUint<N> where Self: ~const BitAnd<T, Output = Self> {
     fn bitand_assign(&mut self, rhs: T) {
@@ -81,7 +81,7 @@ impl<const N: usize> const BitOr for BUint<N> {
     }
 }
 
-op_ref_impl!(BitOr<BUint<N>> for BUint, bitor);
+op_ref_impl!(BitOr<BUint<N>> for BUint<N>, bitor);
 
 impl<T, const N: usize> const BitOrAssign<T> for BUint<N> where Self: ~const BitOr<T, Output = Self> {
     fn bitor_assign(&mut self, rhs: T) {
@@ -103,7 +103,7 @@ impl<const N: usize> const BitXor for BUint<N> {
     }
 }
 
-op_ref_impl!(BitXor<BUint<N>> for BUint, bitxor);
+op_ref_impl!(BitXor<BUint<N>> for BUint<N>, bitxor);
 
 impl<T, const N: usize> const BitXorAssign<T> for BUint<N> where Self: ~const BitXor<T, Output = Self> {
     fn bitxor_assign(&mut self, rhs: T) {
@@ -127,7 +127,7 @@ impl<const N: usize> const Div<Digit> for BUint<N> {
     }
 }
 
-op_ref_impl!(Div<BUint<N>> for BUint, div);
+op_ref_impl!(Div<BUint<N>> for BUint<N>, div);
 
 impl<T, const N: usize> const DivAssign<T> for BUint<N> where Self: ~const Div<T, Output = Self> {
     fn div_assign(&mut self, rhs: T) {
@@ -148,7 +148,7 @@ impl<const N: usize> const Mul for BUint<N> {
     }
 }
 
-op_ref_impl!(Mul<BUint<N>> for BUint, mul);
+op_ref_impl!(Mul<BUint<N>> for BUint<N>, mul);
 
 impl<T, const N: usize> const MulAssign<T> for BUint<N> where Self: ~const Mul<T, Output = Self> {
     fn mul_assign(&mut self, rhs: T) {
@@ -186,7 +186,7 @@ impl<const N: usize> const Rem for BUint<N> {
     }
 }
 
-op_ref_impl!(Rem<BUint<N>> for BUint, rem);
+op_ref_impl!(Rem<BUint<N>> for BUint<N>, rem);
 
 impl<T, const N: usize> const RemAssign<T> for BUint<N> where Self: ~const Rem<T, Output = Self> {
     fn rem_assign(&mut self, rhs: T) {
@@ -207,7 +207,7 @@ impl<const N: usize> const Shl<ExpType> for BUint<N> {
     }
 }
 
-op_ref_impl!(Shl<ExpType> for BUint, shl);
+op_ref_impl!(Shl<ExpType> for BUint<N>, shl);
 
 impl<T, const N: usize> const ShlAssign<T> for BUint<N> where Self: ~const Shl<T, Output = Self> {
     fn shl_assign(&mut self, rhs: T) {
@@ -228,7 +228,7 @@ impl<const N: usize> const Shr<ExpType> for BUint<N> {
     }
 }
 
-op_ref_impl!(Shr<ExpType> for BUint, shr);
+op_ref_impl!(Shr<ExpType> for BUint<N>, shr);
 
 impl<T, const N: usize> const ShrAssign<T> for BUint<N> where Self: ~const Shr<T, Output = Self> {
     fn shr_assign(&mut self, rhs: T) {
@@ -253,7 +253,7 @@ impl<const N: usize> const Sub for BUint<N> {
     }
 }
 
-op_ref_impl!(Sub<BUint<N>> for BUint, sub);
+op_ref_impl!(Sub<BUint<N>> for BUint<N>, sub);
 
 impl<T, const N: usize> const SubAssign<T> for BUint<N> where Self: ~const Sub<T, Output = Self> {
     fn sub_assign(&mut self, rhs: T) {

@@ -4,9 +4,9 @@ macro_rules! test_big_num {
         big: $big_type: ty,
         primitive: $primitive: ty,
         function: $name: ident,
-        method: {
+        cases: [
             $($method: ident ($($arg: expr), *) ;) *
-        },
+        ],
         quickcheck: $method2: ident ($($param: ident : $ty: ty), *)
     } => {
         test_big_num! {
@@ -24,26 +24,26 @@ macro_rules! test_big_num {
         big: $big_type: ty,
         primitive: $primitive: ty,
         function: $name: ident,
-        method: {
-            $($method: ident ($($arg: expr), *) ;) *
-        },
-        $(quickcheck: $method2: ident ($($param: ident : $ty: ty), *),
+        $(cases: [
+            $(($($arg: expr), *)), *
+        ],)?
+        $(quickcheck: ($($param: ident : $ty: ty), *),
         $(
         quickcheck_skip: $skip: expr,)?)?
         converter: $converter: expr
     } => {
-        #[test]
+        $(#[test]
         fn $name() {
             $(
-                let big_result = <$big_type>::$method(
+                let big_result = <$big_type>::$name(
                     $($arg.into()), *
                 );
-                let prim_result = <$primitive>::$method(
+                let prim_result = <$primitive>::$name(
                     $($arg.into()), *
                 );
                 assert_eq!(big_result, $converter(prim_result));
             )*
-        }
+        })?
         $(paste::paste! {
             quickcheck::quickcheck! {
                 fn [<quickcheck_ $name>]($($param : $ty), *) -> quickcheck::TestResult {
@@ -69,9 +69,8 @@ macro_rules! test_trait {
         primitive: $primitive: ty,
         test_name: $test_name: ident,
         function: <$Trait: ty>::$name: ident,
-        $(quickcheck: $method2: ident ($($param: ident : $ty: ty), *),
-        $(
-        quickcheck_skip: $skip: expr,)?)?
+        $(quickcheck: ($($param: ident : $ty: ty), *),
+        $(quickcheck_skip: $skip: expr,)?)?
         converter: $converter: expr
     } => {
         $(paste::paste! {
@@ -107,7 +106,7 @@ macro_rules! test_from {
                 primitive: $primitive,
                 test_name: [<$name _ $from_type>],
                 function: <$Trait<$from_type>>::$name,
-                quickcheck: $name(a: $from_type),
+                quickcheck: (a: $from_type),
                 converter: $converter
             }
         })*
@@ -131,7 +130,7 @@ macro_rules! test_into {
                 primitive: $primitive,
                 test_name: [<$name _ $from_type>],
                 function: <$Trait<$from_type>>::$name,
-                quickcheck: $name(a: $primitive),
+                quickcheck: (a: $primitive),
                 converter: $converter
             }
         })*
@@ -139,6 +138,33 @@ macro_rules! test_into {
 }
 
 pub(crate) use test_into;
+
+macro_rules! test_op {
+    {
+        big: $big_type: ty,
+        primitive: $primitive: ty,
+        function: <$Trait: ty> :: $name: ident ($($param: ident : $ty: ty), *)
+        $(,quickcheck_skip: $skip: expr)?
+    } => {
+        paste::paste! {
+            fn [<$name _converter>]<T: Into<$big_type>>(f: T) -> $big_type {
+                f.into()
+            }
+            crate::test::test_trait! {
+                big: $big_type,
+                primitive: $primitive,
+                test_name: $name,
+                function: <$Trait>::$name,
+                quickcheck: ($($param : $ty), *)
+                $(,quickcheck_skip: $skip)?
+                ,converter: [<$name _converter>]
+            }
+        }
+    }
+}
+
+pub(crate) use test_op;
+
 /*
 pub trait As<T> {
     fn as_(a: T) -> Self;
@@ -201,4 +227,29 @@ pub(crate) use test_float_conv;*/
 
 pub fn u32_to_exp(u: u32) -> crate::ExpType {
     u as crate::ExpType
+}
+
+#[derive(Clone, Copy)]
+pub struct ArrayWrapper([u8; 16]);
+
+impl From<ArrayWrapper> for [u8; 16] {
+    fn from(a: ArrayWrapper) -> Self {
+        a.0
+    }
+}
+
+use quickcheck::{Arbitrary, Gen};
+
+impl Arbitrary for ArrayWrapper {
+    fn arbitrary(g: &mut Gen) -> Self {
+        Self(u128::arbitrary(g).to_be_bytes())
+    }
+}
+
+use core::fmt::{Formatter, self, Debug};
+
+impl Debug for ArrayWrapper {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        self.0.fmt(f)
+    }
 }

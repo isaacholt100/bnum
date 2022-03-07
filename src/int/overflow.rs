@@ -256,7 +256,7 @@ impl<const N: usize> const Div for Bint<N> {
     }
 }
 
-op_ref_impl!(Div<Bint<N>> for Bint, div);
+op_ref_impl!(Div<Bint<N>> for Bint<N>, div);
 
 impl<const N: usize> const Rem for Bint<N> {
     type Output = Self;
@@ -273,7 +273,7 @@ impl<const N: usize> const Rem for Bint<N> {
     }
 }
 
-op_ref_impl!(Rem<Bint<N>> for Bint, rem);
+op_ref_impl!(Rem<Bint<N>> for Bint<N>, rem);
 
 #[cfg(test)]
 mod tests {
@@ -285,135 +285,99 @@ mod tests {
 
     test_signed! {
         function: overflowing_add(a: i128, b: i128),
-        method: {
-            overflowing_add(-934875934758937458934734533455i128, 347539475983475893475893475973458i128);
-            overflowing_add(-i128::MAX, i128::MIN);
-            overflowing_add(i128::MAX, i128::MAX);
-            overflowing_add(934875934758937458934734533455i128, -3475395983475893475893475973458i128);
-            overflowing_add(-1i128, 1i128);
-            overflowing_add(2045968475684509874586979i128, 94568725098475698745698i128);
-        },
+        cases: [
+            (-i128::MAX, i128::MIN),
+            (i128::MAX, i128::MAX)
+        ],
         converter: converter
     }
     test_signed! {
         function: overflowing_sub(a: i128, b: i128),
-        method: {
-            overflowing_sub(i128::MIN, 13i128);
-            overflowing_sub(i128::MAX, -1i128);
-            overflowing_sub(i128::MAX, i128::MIN);
-            overflowing_sub(230245967103496797694856i128, 94652913868299723689754i128);
-            overflowing_sub(-67123904629745976456354i128, -20497945760945679496574769i128);
-            overflowing_sub(9927456979077656767i128, -792097495764756947568979i128);
-            overflowing_sub(-23970459790749276945i128, 7872057947569745967495645i128);
-        },
+        cases: [
+            (i128::MIN, 13i128),
+            (i128::MAX, -1i128),
+            (i128::MAX, i128::MIN)
+        ],
         converter: converter
     }
     test_signed! {
         function: overflowing_mul(a: i128, b: i128),
-        method: {
-            overflowing_mul(2074906579478979567567i128, -2072974564564565467567i128);
-            overflowing_mul(-92945876945658479894i128, -20i128);
-            overflowing_mul(8372092705967489i128, 9792439i128);
-            overflowing_mul(-2364565i128, 792094794798655i128);
-            overflowing_mul(1i128 << 64, 1i128 << 63);
-            overflowing_mul(-(1i128 << 100), 1i128 << 27);
-        },
+        cases: [
+            (1i128 << 64, 1i128 << 63),
+            (-(1i128 << 100), 1i128 << 27)
+        ],
         converter: converter
     }
     test_signed! {
         function: overflowing_div(a: i128, b: i128),
-        method: {
-            overflowing_div(10947569029764980694786947597i128, -47236447694567498576i128);
-            overflowing_div(-973929823948769876783454435i128, -497546i128);
-            overflowing_div(97291090487678456456456i128, -947596745i128);
-            overflowing_div(827906724975290456897456456i128, 729i128);
-            overflowing_div(-3454435i128, 445497546i128);
-            overflowing_div(-1i128, 2i128);
-            overflowing_div(i128::MIN, -1i128);
-        },
+        cases: [
+            (-1i128, 2i128),
+            (i128::MIN, -1i128)
+        ],
         quickcheck_skip: b == 0,
         converter: converter
     }
     test_signed! {
         function: overflowing_div_euclid(a: i128, b: i128),
-        method: {
-            overflowing_div_euclid(8472957694746986729474654i128, 4897694756i128);
-            overflowing_div_euclid(0i128, 794796456i128);
-            overflowing_div_euclid(-297947569743957645646i128, 74986748965i128);
-            overflowing_div_euclid(-1792097293475798465456456i128, -3496745i128);
-            overflowing_div_euclid(-1i128, 2i128);
-            overflowing_div_euclid(i128::MIN, -1i128);
-        },
+        cases: [
+            (-1i128, 2i128),
+            (i128::MIN, -1i128)
+        ],
         quickcheck_skip: b == 0,
         converter: converter
     }
     test_signed! {
         function: overflowing_rem(a: i128, b: i128),
-        method: {
-            overflowing_rem(2098475620974568975896i128, 99237i128);
-            overflowing_rem(-927019762475698748956i128, 8975343453i128);
-            overflowing_rem(-457567567567i128, -9729347698475698i128);
-            overflowing_rem(-972495656752356734534545679i128, -457894759867i128);
-            overflowing_rem(89087290769874598645645i128, -802987698i128);
-            overflowing_rem(-577i128 * 80456498576, 577i128);
-            overflowing_rem(i128::MIN, -1i128);
-        },
+        cases: [
+            (-577i128 * 80456498576, 577i128),
+            (i128::MIN, -1i128)
+        ],
         quickcheck_skip: b == 0,
         converter: converter
     }
     test_signed! {
         function: overflowing_rem_euclid(a: i128, b: i128),
-        method: {
-            overflowing_rem_euclid(7290789407684798674987568947879i128, 79724945645667457698479856i128);
-            overflowing_rem_euclid(-9729837784956456456456456456i128, 98720375689074895645i128);
-            overflowing_rem_euclid(-2936401972940576894758964564i128, -82937982476578945769456i128);
-            overflowing_rem_euclid(7897263472466179456456456456i128, -209476984756987456i128);
-            overflowing_rem_euclid(0i128, -79872976456456i128);
-            overflowing_rem_euclid(i128::MIN, -1i128);
-            overflowing_rem_euclid(-1i128, 2i128);
-        },
+        cases: [
+            (0i128, -79872976456456i128),
+            (i128::MIN, -1i128),
+            (-1i128, 2i128)
+        ],
         quickcheck_skip: b == 0,
         converter: converter
     }
     test_signed! {
         function: overflowing_neg(a: i128),
-        method: {
-            overflowing_neg(0i128);
-            overflowing_neg(i128::MIN);
-            overflowing_neg(997340597745960395879i128);
-            overflowing_neg(-76249618692464867585i128);
-        },
+        cases: [
+            (0i128),
+            (i128::MIN),
+            (997340597745960395879i128)
+        ],
         converter: converter
     }
     test_signed! {
         function: overflowing_shl(a: i128, b: u16),
-        method: {
-            overflowing_shl(i128::MAX - 3453475, 8 as u16);
-            overflowing_shl(77948798i128, 58743 as u16);
-            overflowing_shl(-9797456456456i128, 27 as u16);
-            overflowing_shl(-1i128, 65 as u16);
-        },
+        cases: [
+            (i128::MAX - 3453475, 8 as u16),
+            (77948798i128, 58743 as u16),
+            (-9797456456456i128, 27 as u16)
+        ],
         converter: converter
     }
     test_signed! {
         function: overflowing_shr(a: i128, b: u16),
-        method: {
-            overflowing_shr(i128::MIN, 11 as u16);
-            overflowing_shr(94876927098575645698456i128, 43546 as u16);
-            overflowing_shr(-2937694856456456546456456i128, 3 as u16);
-            overflowing_shr(-7135096792937597985769867i128, 97 as u16);
-            overflowing_shr(-1i128, 85 as u16);
-        },
+        cases: [
+            (i128::MIN, 11 as u16),
+            (-1i128, 85 as u16)
+        ],
         converter: converter
     }
     test_signed! {
         function: overflowing_pow(a: i128, b: u16),
-        method: {
-            overflowing_pow(97465984i128, 2555 as u16);
-            overflowing_pow(-19i128, 11 as u16);
-            overflowing_pow(-277i128, 14 as u16);
-            overflowing_pow(66i128, 9 as u16);
-        },
+        cases: [
+            (97465984i128, 2555 as u16),
+            (-19i128, 11 as u16),
+            (-277i128, 14 as u16)
+        ],
         converter: converter
     }
 }
