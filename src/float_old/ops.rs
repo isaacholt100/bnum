@@ -126,7 +126,9 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     
         let (a_exp, mut a_mant) = self.exp_mant();
         let (b_exp, mut b_mant) = rhs.exp_mant();
-    
+        println!("{:064b}", self.to_bits());
+        println!("{:064b}", rhs.to_bits());
+        println!("{}, {}", a_exp, b_exp);
         let exp_diff = a_exp - b_exp;
     
         let mut a_exp = Bint::from_bits(a_exp);

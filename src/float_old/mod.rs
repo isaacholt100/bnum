@@ -12,6 +12,7 @@ macro_rules! test_float {
             $(($($arg: expr), *)), *
         ])?
         $(,quickcheck_skip: $skip: expr)?
+        $(,big_converter: $big_converter: expr)?
     } => {
         crate::test::test_big_num! {
             big: crate::F64,
@@ -22,15 +23,17 @@ macro_rules! test_float {
             ],)?
             quickcheck: ($($param : $ty), *),
             $(quickcheck_skip: $skip,)?
+            $(big_converter: $big_converter,)?
             converter: Into::into
         }
     };
     {
-        function: $name: ident ($($param: ident : $ty: ty), *)
-        $(,cases: [
+        function: $name: ident ($($param: ident : $ty: ty), *),
+        $(cases: [
             $(($($arg: expr), *)), *
-        ])?
-        $(,quickcheck_skip: $skip: expr)?,
+        ],)?
+        $(quickcheck_skip: $skip: expr,)?
+        $(big_converter: $big_converter: expr,)?
         converter: $converter: expr
     } => {
         crate::test::test_big_num! {
@@ -42,6 +45,7 @@ macro_rules! test_float {
             ],)?
             quickcheck: ($($param : $ty), *),
             $(quickcheck_skip: $skip,)?
+            $(big_converter: $big_converter,)?
             converter: $converter
         }
     };

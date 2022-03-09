@@ -27,9 +27,11 @@ macro_rules! test_big_num {
         $(cases: [
             $(($($arg: expr), *)), *
         ],)?
-        $(quickcheck: ($($param: ident : $ty: ty), *),
         $(
-        quickcheck_skip: $skip: expr,)?)?
+            quickcheck: ($($param: ident : $ty: ty), *),
+            $(quickcheck_skip: $skip: expr,)?
+            $(big_converter: $big_converter: expr,)?
+        )?
         converter: $converter: expr
     } => {
         $(#[test]
@@ -53,7 +55,7 @@ macro_rules! test_big_num {
                     let big_result = <$big_type>::$name($($param.into()), *);
                     let prim_result = <$primitive>::$name($($param.into()), *);
 
-                    quickcheck::TestResult::from_bool(big_result == $converter(prim_result))
+                    quickcheck::TestResult::from_bool($($big_converter)?(big_result) == $converter(prim_result))
                 }
             }
         })?

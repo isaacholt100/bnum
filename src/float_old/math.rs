@@ -4,9 +4,11 @@ use crate::digit;
 
 impl<const W: usize, const MB: usize> Float<W, MB> {
     pub const fn abs(self) -> Self {
-        let mut words = *self.words();
-        words[W - 1] |= 1 << (digit::BITS - 1);
-        Self::from_words(words)
+        if self.is_sign_negative() {
+            -self
+        } else {
+            self
+        }
     }
     pub fn sqrt(self) -> Self {
         handle_nan!(self; self);
@@ -102,12 +104,17 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
 #[cfg(test)]
 mod tests {
+    use crate::F64;
+
     #[test]
     fn test_sqrt() {
-        println!("{:064}")
+        println!("{:064b}", (-2.0f64).sqrt().to_bits());
+        println!("{:064b}", crate::F64::from(-2.0f64).sqrt().to_bits());
         panic!("{}", crate::F64::EXP_BIAS);
     }
     test_float! {
-        function: sqrt(f: f64)
+        function: sqrt(f: f64),
+        big_converter: |f: F64| f.to_bits().as_u64(),
+        converter: |f: f64| f.to_bits()
     }
 }
