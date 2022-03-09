@@ -5,7 +5,7 @@ use crate::{BUint, Bint, ExpType, digit};
 use num_traits::ToPrimitive;
 use core::iter::{Product, Sum, Iterator};
 
-impl<const W: usize, const MANTISSA_BITS: usize> Float<W, MANTISSA_BITS> {
+impl<const W: usize, const MB: usize> Float<W, MB> {
     #[inline]    
     fn add_internal(mut self, mut rhs: Self, negative: bool) -> Self {
         //debug_assert_eq!(self.is_sign_negative(), rhs.is_sign_negative());
@@ -38,11 +38,11 @@ impl<const W: usize, const MANTISSA_BITS: usize> Float<W, MANTISSA_BITS> {
     
         let mut mant = a_mant + b_mant;
     
-        let overflow = !(mant >> (MANTISSA_BITS + 3)).is_zero();
+        let overflow = !(mant >> (MB + 3)).is_zero();
         if !overflow {
             if mant & BUint::from_digit(0b11) == BUint::from_digit(0b11) || mant & BUint::from_digit(0b110) == BUint::from_digit(0b110) {
                 mant += 0b100;
-                if !(mant >> (MANTISSA_BITS + 3)).is_zero() {
+                if !(mant >> (MB + 3)).is_zero() {
                     mant >>= 1u32;
                     a_exp += 1;
                 }
@@ -69,16 +69,16 @@ impl<const W: usize, const MANTISSA_BITS: usize> Float<W, MANTISSA_BITS> {
     
         mant >>= 2u32;
     
-        if (mant >> MANTISSA_BITS).is_zero() {
+        if (mant >> MB).is_zero() {
             a_exp = BUint::ZERO;
         } else {
-            mant ^= BUint::ONE << MANTISSA_BITS;
+            mant ^= BUint::ONE << MB;
         }
         Self::from_exp_mant(negative, a_exp, mant)
     }
 }
 
-impl<const W: usize, const MANTISSA_BITS: usize> Add for Float<W, MANTISSA_BITS> {
+impl<const W: usize, const MB: usize> Add for Float<W, MB> {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self {
@@ -100,21 +100,21 @@ impl<const W: usize, const MANTISSA_BITS: usize> Add for Float<W, MANTISSA_BITS>
     }
 }
 
-crate::macros::op_ref_impl!(Add<Float<N, MANTISSA_BITS>> for Float<N, MANTISSA_BITS>, add);
+crate::macros::op_ref_impl!(Add<Float<N, MB>> for Float<N, MB>, add);
 
-impl<const W: usize, const MANTISSA_BITS: usize> Sum for Float<W, MANTISSA_BITS> {
+impl<const W: usize, const MB: usize> Sum for Float<W, MB> {
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.fold(Self::ZERO, |a, b| a + b)
     }
 }
 
-impl<'a, const W: usize, const MANTISSA_BITS: usize> Sum<&'a Self> for Float<W, MANTISSA_BITS> {
+impl<'a, const W: usize, const MB: usize> Sum<&'a Self> for Float<W, MB> {
     fn sum<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
         iter.fold(Self::ONE, |a, b| a + *b)
     }
 }
 
-impl<const W: usize, const MANTISSA_BITS: usize> Float<W, MANTISSA_BITS> {
+impl<const W: usize, const MB: usize> Float<W, MB> {
     #[inline]
     fn sub_internal(mut self, mut rhs: Self, negative: bool) -> Self {
         let mut negative = negative;
@@ -155,7 +155,7 @@ impl<const W: usize, const MANTISSA_BITS: usize> Float<W, MANTISSA_BITS> {
     
         let mut mant = a_mant - shifted_b_mant;
     
-        if mant.bits() == MANTISSA_BITS as ExpType + 2 {
+        if mant.bits() == MB as ExpType + 2 {
             if mant & BUint::from(0b10u8) == BUint::from(0b10u8) && !sticky_bit {
                 mant += 0b1;
             }
@@ -182,7 +182,7 @@ impl<const W: usize, const MANTISSA_BITS: usize> Float<W, MANTISSA_BITS> {
     
             mant = a_mant - shifted_b_mant;
 
-            if mant.bits() == MANTISSA_BITS as ExpType + 2 {
+            if mant.bits() == MB as ExpType + 2 {
                 if mant & BUint::from(0b10u8) == BUint::from(0b10u8) && !sticky_bit {
                     mant += 0b1;
                 }
@@ -197,8 +197,8 @@ impl<const W: usize, const MANTISSA_BITS: usize> Float<W, MANTISSA_BITS> {
                     mant -= BUint::ONE;
                 }
                 let bits = mant.bits();
-                mant <<= MANTISSA_BITS as ExpType + 1 - bits;
-                a_exp -= Bint::from(MANTISSA_BITS as i64 + 2 - bits as i64);
+                mant <<= MB as ExpType + 1 - bits;
+                a_exp -= Bint::from(MB as i64 + 2 - bits as i64);
                 if !a_exp.is_positive() {
                     a_exp = Bint::ONE;
                     mant >>= Bint::ONE - a_exp;
@@ -206,17 +206,17 @@ impl<const W: usize, const MANTISSA_BITS: usize> Float<W, MANTISSA_BITS> {
             }
         }
     
-        if (mant >> MANTISSA_BITS).is_zero() {
+        if (mant >> MB).is_zero() {
             a_exp = Bint::ZERO;
         } else {
-            mant ^= BUint::ONE << MANTISSA_BITS;
+            mant ^= BUint::ONE << MB;
         }
         
         Self::from_exp_mant(negative, a_exp.to_bits(), mant)
     }
 }
 
-impl<const W: usize, const MANTISSA_BITS: usize> Sub for Float<W, MANTISSA_BITS> {
+impl<const W: usize, const MB: usize> Sub for Float<W, MB> {
     type Output = Self;
 
     fn sub(self, rhs: Self) -> Self {
@@ -239,9 +239,9 @@ impl<const W: usize, const MANTISSA_BITS: usize> Sub for Float<W, MANTISSA_BITS>
     }
 }
 
-crate::macros::op_ref_impl!(Sub<Float<N, MANTISSA_BITS>> for Float<N, MANTISSA_BITS>, sub);
+crate::macros::op_ref_impl!(Sub<Float<N, MB>> for Float<N, MB>, sub);
 
-impl<const W: usize, const MANTISSA_BITS: usize> Float<W, MANTISSA_BITS> {
+impl<const W: usize, const MB: usize> Float<W, MB> {
     #[inline]
     fn mul_internal(self, rhs: Self, negative: bool) -> Self where [(); {(W * 2).saturating_sub(W)
     }]: Sized, [(); W.saturating_sub(W * 2)]: Sized {
@@ -261,13 +261,13 @@ impl<const W: usize, const MANTISSA_BITS: usize> Float<W, MANTISSA_BITS> {
             };
         }
 
-        let extra_bits = if prod_bits > (MANTISSA_BITS + 1) {
-            prod_bits - (MANTISSA_BITS + 1)
+        let extra_bits = if prod_bits > (MB + 1) {
+            prod_bits - (MB + 1)
         } else {
             0
         };
 
-        let mut exp = Bint::from_bits(exp_a) + Bint::from_bits(exp_b) + Bint::from(extra_bits) - Self::EXP_BIAS - Bint::from(MANTISSA_BITS);
+        let mut exp = Bint::from_bits(exp_a) + Bint::from_bits(exp_b) + Bint::from(extra_bits) - Self::EXP_BIAS - Bint::from(MB);
 
         if exp > Self::MAX_EXP + Self::EXP_BIAS - Bint::ONE {
             //println!("rhs: {}", rhs.to_bits());
@@ -298,17 +298,17 @@ impl<const W: usize, const MANTISSA_BITS: usize> Float<W, MANTISSA_BITS> {
         }
         mant >>= 1u8;
 
-        if exp == Bint::ONE && mant.bits() < MANTISSA_BITS as ExpType + 1 {
+        if exp == Bint::ONE && mant.bits() < MB as ExpType + 1 {
             return Self::from_exp_mant(negative, BUint::ZERO, mant.as_buint::<W>());
         }
-        if mant >> MANTISSA_BITS != BUint::ZERO {
-            mant ^= BUint::ONE << MANTISSA_BITS as u32;
+        if mant >> MB != BUint::ZERO {
+            mant ^= BUint::ONE << MB as u32;
         }
         Self::from_exp_mant(negative, exp.to_bits(), mant.as_buint::<W>())
     }
 }
 
-impl<const W: usize, const MANTISSA_BITS: usize> Mul for Float<W, MANTISSA_BITS> where [(); (W * 2).saturating_sub(W)]: Sized, [(); W.saturating_sub(W * 2)]: Sized {
+impl<const W: usize, const MB: usize> Mul for Float<W, MB> where [(); (W * 2).saturating_sub(W)]: Sized, [(); W.saturating_sub(W * 2)]: Sized {
     type Output = Self;
     
     fn mul(self, rhs: Self) -> Self {
@@ -336,19 +336,19 @@ impl<const W: usize, const MANTISSA_BITS: usize> Mul for Float<W, MANTISSA_BITS>
     }
 }
 
-impl<const W: usize, const MANTISSA_BITS: usize> Product for Float<W, MANTISSA_BITS> where [(); (W * 2).saturating_sub(W)]: Sized, [(); W.saturating_sub(W * 2)]: Sized {
+impl<const W: usize, const MB: usize> Product for Float<W, MB> where [(); (W * 2).saturating_sub(W)]: Sized, [(); W.saturating_sub(W * 2)]: Sized {
     fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.fold(Self::ONE, |a, b| a * b)
     }
 }
 
-impl<'a, const W: usize, const MANTISSA_BITS: usize> Product<&'a Self> for Float<W, MANTISSA_BITS> where [(); (W * 2).saturating_sub(W)]: Sized, [(); W.saturating_sub(W * 2)]: Sized {
+impl<'a, const W: usize, const MB: usize> Product<&'a Self> for Float<W, MB> where [(); (W * 2).saturating_sub(W)]: Sized, [(); W.saturating_sub(W * 2)]: Sized {
     fn product<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
         iter.fold(Self::ONE, |a, b| a * *b)
     }
 }
 
-impl<const W: usize, const MANTISSA_BITS: usize> Float<W, MANTISSA_BITS> {
+impl<const W: usize, const MB: usize> Float<W, MB> {
     #[inline]
     fn div_internal(self, rhs: Self, negative: bool) -> Self where [(); {(W * 2).saturating_sub(W)
     }]: Sized, [(); W.saturating_sub(W * 2)]: Sized {
@@ -367,7 +367,7 @@ impl<const W: usize, const MANTISSA_BITS: usize> Float<W, MANTISSA_BITS> {
             e = Bint::ONE;
         }
     
-        let total_shift = Bint::from(MANTISSA_BITS as i32 + 1 + b2 as i32 - b1 as i32) - Bint::from_bits(extra_shift);
+        let total_shift = Bint::from(MB as i32 + 1 + b2 as i32 - b1 as i32) - Bint::from_bits(extra_shift);
     
         let large = if !total_shift.is_negative() {
             (s1.as_buint::<{W * 2}>()) << total_shift
@@ -376,7 +376,7 @@ impl<const W: usize, const MANTISSA_BITS: usize> Float<W, MANTISSA_BITS> {
         };
         let mut division = (large / (s2.as_buint::<{W * 2}>())).as_buint::<W>();
     
-        let rem = if division.bits() != MANTISSA_BITS as ExpType + 2 {
+        let rem = if division.bits() != MB as ExpType + 2 {
             let rem = (large % (s2.as_buint::<{W * 2}>())).as_buint::<W>();
             rem
         } else {
@@ -394,7 +394,7 @@ impl<const W: usize, const MANTISSA_BITS: usize> Float<W, MANTISSA_BITS> {
                 division += BUint::ONE;
             }
         }
-        if division.bits() == MANTISSA_BITS as ExpType + 2 {
+        if division.bits() == MB as ExpType + 2 {
             e += Bint::ONE;
             division >>= 1u8;
         }
@@ -405,18 +405,18 @@ impl<const W: usize, const MANTISSA_BITS: usize> Float<W, MANTISSA_BITS> {
 
         //println!("{:032b}", division);
     
-        if e == Bint::ONE && division.bits() < MANTISSA_BITS as ExpType + 1 {
+        if e == Bint::ONE && division.bits() < MB as ExpType + 1 {
             return Self::from_exp_mant(negative, BUint::ZERO, division);
         }
     
-        if division >> MANTISSA_BITS != BUint::ZERO {
-            division ^= BUint::ONE << MANTISSA_BITS;
+        if division >> MB != BUint::ZERO {
+            division ^= BUint::ONE << MB;
         }
         Self::from_exp_mant(negative, e.to_bits(), division)
     }
 }
 
-impl<const W: usize, const MANTISSA_BITS: usize> Div for Float<W, MANTISSA_BITS> where [(); (W * 2).saturating_sub(W)]: Sized, [(); W.saturating_sub(W * 2)]: Sized {
+impl<const W: usize, const MB: usize> Div for Float<W, MB> where [(); (W * 2).saturating_sub(W)]: Sized, [(); W.saturating_sub(W * 2)]: Sized {
     type Output = Self;
     
     fn div(self, rhs: Self) -> Self {
@@ -448,7 +448,7 @@ impl<const W: usize, const MANTISSA_BITS: usize> Div for Float<W, MANTISSA_BITS>
     }
 }
 
-impl<const W: usize, const MANTISSA_BITS: usize> const Neg for Float<W, MANTISSA_BITS> {
+impl<const W: usize, const MB: usize> const Neg for Float<W, MB> {
     type Output = Self;
 
     fn neg(self) -> Self {
@@ -458,10 +458,10 @@ impl<const W: usize, const MANTISSA_BITS: usize> const Neg for Float<W, MANTISSA
     }
 }
 
-impl<const W: usize, const MANTISSA_BITS: usize> const Neg for &Float<W, MANTISSA_BITS> {
-    type Output = Float<W, MANTISSA_BITS>;
+impl<const W: usize, const MB: usize> const Neg for &Float<W, MB> {
+    type Output = Float<W, MB>;
 
-    fn neg(self) -> Float<W, MANTISSA_BITS> {
+    fn neg(self) -> Float<W, MB> {
         (*self).neg()
     }
 }
@@ -470,6 +470,7 @@ impl<const W: usize, const MANTISSA_BITS: usize> const Neg for &Float<W, MANTISS
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::F64;
     
     crate::test::test_op! {
         big: F64,

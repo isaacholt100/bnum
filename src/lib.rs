@@ -42,6 +42,8 @@ mod matrix;
 #[cfg(test)]
 mod test;
 
+mod expr;
+
 #[cfg(all(feature = "nightly", test))]
 mod benchmarks;
 

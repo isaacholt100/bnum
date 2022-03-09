@@ -230,25 +230,38 @@ pub fn u32_to_exp(u: u32) -> crate::ExpType {
 }
 
 #[derive(Clone, Copy)]
-pub struct ArrayWrapper([u8; 16]);
+pub struct U8ArrayWrapper<const N: usize>([u8; N]);
 
-impl From<ArrayWrapper> for [u8; 16] {
-    fn from(a: ArrayWrapper) -> Self {
+#[cfg(feature = "nightly")]
+impl<const N: usize> U8ArrayWrapper<N> {
+    pub fn converter(bytes: [u8; N]) -> [u8; N] {
+        bytes
+    }
+}
+
+impl<const N: usize> From<U8ArrayWrapper<N>> for [u8; N] {
+    fn from(a: U8ArrayWrapper<N>) -> Self {
         a.0
     }
 }
 
 use quickcheck::{Arbitrary, Gen};
 
-impl Arbitrary for ArrayWrapper {
+impl Arbitrary for U8ArrayWrapper<16> {
     fn arbitrary(g: &mut Gen) -> Self {
         Self(u128::arbitrary(g).to_be_bytes())
     }
 }
 
+impl Arbitrary for U8ArrayWrapper<8> {
+    fn arbitrary(g: &mut Gen) -> Self {
+        Self(u64::arbitrary(g).to_be_bytes())
+    }
+}
+
 use core::fmt::{Formatter, self, Debug};
 
-impl Debug for ArrayWrapper {
+impl<const N: usize> Debug for U8ArrayWrapper<N> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         self.0.fmt(f)
     }

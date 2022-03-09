@@ -3,22 +3,21 @@ use super::Float;
 use crate::uint::BUint;
 use crate::int::Bint;
 
-impl<const W: usize, const MANTISSA_BITS: usize> Float<W, MANTISSA_BITS> {
-
+impl<const W: usize, const MB: usize> Float<W, MB> {
     pub const RADIX: u32 = 2;
 
-    pub const MANTISSA_DIGITS: u32 = MANTISSA_BITS as u32 + 1;
+    pub const MANTISSA_DIGITS: u32 = MB as u32 + 1;
 
-    pub const DIGITS: u32 = BUint::<W>::ONE.wrapping_shl(MANTISSA_BITS as ExpType).log10() as u32;
+    pub const DIGITS: u32 = BUint::<W>::ONE.wrapping_shl(MB as ExpType).log10() as u32;
 
     pub const EPSILON: Self = todo!();
 
-    pub const EXP_BIAS: Bint<W> = Bint::MAX.wrapping_shr(MANTISSA_BITS + 1);
+    pub const EXP_BIAS: Bint<W> = Bint::MAX.wrapping_shr(MB + 1);
 
     pub const MIN: Self = {
         let mut e = BUint::MAX;
-        e = e.wrapping_shr(MANTISSA_BITS as ExpType + 1);
-        e = e.wrapping_shl(MANTISSA_BITS as ExpType + 1);
+        e = e.wrapping_shr(MB as ExpType + 1);
+        e = e.wrapping_shl(MB as ExpType + 1);
         let mut m = BUint::MAX;
         m = m.wrapping_shr(Self::EXPONENT_BITS as ExpType + 1);
         Self {
@@ -28,7 +27,7 @@ impl<const W: usize, const MANTISSA_BITS: usize> Float<W, MANTISSA_BITS> {
 
     pub const MIN_POSITIVE: Self = {
         Self {
-            uint: BUint::ONE.wrapping_shl(MANTISSA_BITS as ExpType),
+            uint: BUint::ONE.wrapping_shl(MB as ExpType),
         }
     };
     pub const MAX_NEGATIVE: Self = -Self::MIN_POSITIVE;
@@ -52,8 +51,8 @@ impl<const W: usize, const MANTISSA_BITS: usize> Float<W, MANTISSA_BITS> {
     pub const NAN: Self = {
         let mut u = BUint::MAX;
         u = u.wrapping_shl(1);
-        u = u.wrapping_shr(MANTISSA_BITS as ExpType);
-        u = u.wrapping_shl(MANTISSA_BITS as ExpType - 1);
+        u = u.wrapping_shr(MB as ExpType);
+        u = u.wrapping_shl(MB as ExpType - 1);
         Self {
             uint: u,
         }
@@ -64,8 +63,8 @@ impl<const W: usize, const MANTISSA_BITS: usize> Float<W, MANTISSA_BITS> {
     pub const INFINITY: Self = {
         let mut u = BUint::MAX;
         u = u.wrapping_shl(1);
-        u = u.wrapping_shr(1 + MANTISSA_BITS as ExpType);
-        u = u.wrapping_shl(MANTISSA_BITS as ExpType);
+        u = u.wrapping_shr(1 + MB as ExpType);
+        u = u.wrapping_shl(MB as ExpType);
         Self {
             uint: u,
         }
@@ -73,8 +72,8 @@ impl<const W: usize, const MANTISSA_BITS: usize> Float<W, MANTISSA_BITS> {
 
     pub const NEG_INFINITY: Self = {
         let mut u = BUint::MAX;
-        u = u.wrapping_shr(MANTISSA_BITS as ExpType);
-        u = u.wrapping_shl(MANTISSA_BITS as ExpType);
+        u = u.wrapping_shr(MB as ExpType);
+        u = u.wrapping_shl(MB as ExpType);
         Self {
             uint: u,
         }
@@ -87,10 +86,48 @@ impl<const W: usize, const MANTISSA_BITS: usize> Float<W, MANTISSA_BITS> {
     pub const ONE: Self = {
         let mut u = BUint::MAX;
         u = u.wrapping_shl(2);
-        u = u.wrapping_shr(2 + MANTISSA_BITS as ExpType);
-        u = u.wrapping_shl(MANTISSA_BITS as ExpType);
+        u = u.wrapping_shr(2 + MB as ExpType);
+        u = u.wrapping_shl(MB as ExpType);
         Self::from_bits(u)
     };
     
     pub const NEG_ONE: Self = Self::from_bits(Self::ONE.uint | Self::NEG_ZERO.uint);
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::F64;
+    type F32 = crate::Float::<4, 23>;
+
+    macro_rules! test_constant {
+        ($($constant: ident), *) => {
+            $(
+                assert_eq!(F64::$constant.to_bits(), f64::$constant.to_bits().into(), "constant `{}` not equal to the primitive equivalent", stringify!($constant));
+            )*
+        }
+    }
+
+    #[test]
+    fn test_constants() {
+        test_constant!(NAN, INFINITY, NEG_INFINITY, MAX, MIN, MIN_POSITIVE);
+
+        assert_eq!(F64::ZERO.to_bits(), 0.0f64.to_bits().into());
+        assert_eq!(F64::NEG_ZERO.to_bits(), (-0.0f64).to_bits().into());
+        assert_eq!(F64::ONE.to_bits(), 1.0f64.to_bits().into());
+        assert_eq!(F64::NEG_ONE.to_bits(), (-1.0f64).to_bits().into());
+
+        assert_eq!(F64::MAX_NEGATIVE.to_bits(), (-f64::MIN_POSITIVE).to_bits().into());
+
+        assert_eq!(F64::MIN_EXP, f64::MIN_EXP.into());
+        assert_eq!(F64::MAX_EXP, f64::MAX_EXP.into());
+
+        assert_eq!(F64::RADIX, f64::RADIX);
+        assert_eq!(F64::MANTISSA_DIGITS, f64::MANTISSA_DIGITS);
+        assert_eq!(F64::DIGITS, f64::DIGITS);
+
+        assert_eq!(F64::BITS, 64);
+        assert_eq!(F64::EXPONENT_BITS, 11);
+        assert_eq!(F64::EXP_BIAS, 1023i32.into());
+        assert_eq!(F32::MAX_UNBIASED_EXP, 254u32.into());
+    }
 }

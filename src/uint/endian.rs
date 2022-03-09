@@ -254,7 +254,7 @@ impl<const N: usize> BUint<N> {
 #[cfg(test)]
 mod tests {
     use crate::U128;
-    use crate::test::ArrayWrapper;
+    use crate::test::U8ArrayWrapper;
 
     test_unsigned! {
         function: from_be(a: u128),
@@ -286,18 +286,13 @@ mod tests {
     }
 
     #[cfg(feature = "nightly")]
-    fn converter(bytes: [u8; 16]) -> [u8; 16] {
-        bytes
-    }
-
-    #[cfg(feature = "nightly")]
     test_unsigned! {
         function: to_be_bytes(a: u128),
         cases: [
             (883497884590834905834758374950859884u128),
             (456747598769u128)
         ],
-        converter: converter
+        converter: U8ArrayWrapper::converter
     }
     #[cfg(feature = "nightly")]
     test_unsigned! {
@@ -306,7 +301,7 @@ mod tests {
             (349587309485908349057389485093457397u128),
             (4985679837455u128)
         ],
-        converter: converter
+        converter: U8ArrayWrapper::converter
     }
     #[cfg(feature = "nightly")]
     test_unsigned! {
@@ -315,12 +310,12 @@ mod tests {
             (123423345734905803845939847534085908u128),
             (685947586789335u128)
         ],
-        converter: converter
+        converter: U8ArrayWrapper::converter
     }
 
     #[cfg(feature = "nightly")]
     test_unsigned! {
-        function: from_be_bytes(a: ArrayWrapper),
+        function: from_be_bytes(a: U8ArrayWrapper<16>),
         cases: [
             ([3, 5, 44, 253, 55, 110, 64, 53, 54, 78, 0, 8, 91, 16, 25, 42]),
             ([0, 0, 0, 0, 30, 0, 64, 53, 54, 78, 0, 8, 91, 16, 25, 42])
@@ -328,7 +323,7 @@ mod tests {
     }
     #[cfg(feature = "nightly")]
     test_unsigned! {
-        function: from_le_bytes(a: ArrayWrapper),
+        function: from_le_bytes(a: U8ArrayWrapper<16>),
         cases: [
             ([15, 65, 44, 30, 115, 200, 244, 167, 44, 6, 9, 11, 90, 56, 77, 150]),
             ([0, 0, 0, 0, 0, 200, 244, 167, 44, 6, 9, 11, 90, 56, 77, 150])
@@ -336,7 +331,7 @@ mod tests {
     }
     #[cfg(feature = "nightly")]
     test_unsigned! {
-        function: from_ne_bytes(a: ArrayWrapper),
+        function: from_ne_bytes(a: U8ArrayWrapper<16>),
         cases: [
             ([73, 80, 2, 24, 160, 188, 204, 45, 33, 88, 4, 68, 230, 180, 145, 32]),
             ([0, 0, 0, 0, 0, 188, 204, 45, 33, 88, 4, 68, 230, 180, 0, 0])
