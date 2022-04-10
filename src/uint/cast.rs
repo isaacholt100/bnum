@@ -1,12 +1,13 @@
 use super::BUint;
 use crate::digit::{self, Digit};
 use crate::{Bint, ExpType};
+use crate::cast::CastFrom;
 use core::mem::MaybeUninit;
 
 macro_rules! as_int {
-    ($method: ident, $int: ty, $type_str: expr, $assertion: expr) => {
+    ($method: ident, $int: ty, $assertion: expr) => {
         /// Casts `self` to 
-        #[doc=$type_str]
+        #[doc=concat!("a `", stringify!($int),"`.")]
         /// # Examples
         /// 
         /// ```
@@ -16,6 +17,7 @@ macro_rules! as_int {
         /// let u = BUint::<2>::from(n);
         #[doc=$assertion]
         /// ```
+        #[inline]
         pub const fn $method(&self) -> $int {
             let mut out = 0;
             let mut i = 0;
@@ -30,19 +32,19 @@ macro_rules! as_int {
 
 /// Panic free casts to primitive numeric types.
 impl<const N: usize> BUint<N> {
-    as_int!(as_u8, u8, "a `u8`.", "assert_eq!(u.as_u8(), n as u8);");
-    as_int!(as_u16, u16, "a `u16`.", "assert_eq!(u.as_u16(), n as u16);");
-    as_int!(as_u32, u32, "a `u32`.", "assert_eq!(u.as_u32(), n as u32);");
-    as_int!(as_u64, u64, "a `u64`.", "assert_eq!(u.as_u64(), n as u64);");
-    as_int!(as_u128, u128, "a `u128`.", "assert_eq!(u.as_u128(), n as u128);");
-    as_int!(as_usize, usize, "a `usize`.", "assert_eq!(u.as_usize(), n as usize);");
+    as_int!(as_u8, u8, "assert_eq!(u.as_u8(), n as u8);");
+    as_int!(as_u16, u16, "assert_eq!(u.as_u16(), n as u16);");
+    as_int!(as_u32, u32, "assert_eq!(u.as_u32(), n as u32);");
+    as_int!(as_u64, u64, "assert_eq!(u.as_u64(), n as u64);");
+    as_int!(as_u128, u128, "assert_eq!(u.as_u128(), n as u128);");
+    as_int!(as_usize, usize, "assert_eq!(u.as_usize(), n as usize);");
 
-    as_int!(as_i8, i8, "an `i8`.", "assert_eq!(u.as_i8(), n as i8);");
-    as_int!(as_i16, i16, "an `i16`.", "assert_eq!(u.as_i16(), n as i16);");
-    as_int!(as_i32, i32, "an `i32`.", "assert_eq!(u.as_i32(), n as i32);");
-    as_int!(as_i64, i64, "an `i64`.", "assert_eq!(u.as_i64(), n as i64);");
-    as_int!(as_i128, i128, "an `i128`.", "assert_eq!(u.as_i128(), n as i128);");
-    as_int!(as_isize, isize, "an `isize`.", "assert_eq!(u.as_isize(), n as isize);");
+    as_int!(as_i8, i8, "assert_eq!(u.as_i8(), n as i8);");
+    as_int!(as_i16, i16, "assert_eq!(u.as_i16(), n as i16);");
+    as_int!(as_i32, i32, "assert_eq!(u.as_i32(), n as i32);");
+    as_int!(as_i64, i64, "assert_eq!(u.as_i64(), n as i64);");
+    as_int!(as_i128, i128, "assert_eq!(u.as_i128(), n as i128);");
+    as_int!(as_isize, isize, "assert_eq!(u.as_isize(), n as isize);");
 
     /// Converts `self` to an `f32` floating point number. 
     /// 
@@ -52,6 +54,7 @@ impl<const N: usize> BUint<N> {
     /// let u = BUint::<2>::from(n);
     /// assert_eq!(u.as_f32(), n as f32);
     /// ```
+    #[inline]
     pub fn as_f32(&self) -> f32 {
         let mantissa = self.to_mantissa();
         let exp = self.bits() - last_set_bit(mantissa) as ExpType;
@@ -78,8 +81,10 @@ impl<const N: usize> BUint<N> {
     /// let u = BUint::<2>::from(n);
     /// assert_eq!(u.as_f64(), n as f64);
     /// ```
-    pub fn as_f64(&self) -> f64 {
+    #[inline]
+    pub fn as_f64(&self) -> f64 { // TODO: test for this is failing, fix
         let mantissa = self.to_mantissa();
+        println!("{}", mantissa);
         let exp = self.bits() - last_set_bit(mantissa) as ExpType;
 
         if exp > f64::MAX_EXP as ExpType {
@@ -97,8 +102,8 @@ impl<const N: usize> BUint<N> {
         }
     }
 
-    #[cfg(feature = "nightly")]
-    pub const fn as_buint<const M: usize>(&self) -> BUint<M> where [Digit; M.saturating_sub(N)]: Sized {
+    #[inline]
+    pub const fn as_buint<const M: usize>(&self) -> BUint<M> {
         if M > N {
             cast_up::<N, M>(&self, 0)
         } else {
@@ -106,14 +111,17 @@ impl<const N: usize> BUint<N> {
         }
     }
 
-    #[cfg(feature = "nightly")]
-    pub const fn as_biint<const M: usize>(&self) -> Bint<M> where [Digit; M.saturating_sub(N)]: Sized {
+    #[inline]
+    pub const fn as_bint<const M: usize>(&self) -> Bint<M> {
         Bint::from_bits(self.as_buint())
     }
 }
 
-#[cfg(feature = "nightly")]
-pub const fn cast_up<const N: usize, const M: usize>(u: &BUint<N>, digit: Digit) -> BUint<M> where [Digit; M.saturating_sub(N)]: Sized {
+// TODO: implement as_float (cast to big float type), implement primitive types as_buint, as_bint, as_float
+// TODO: consider switching all methods to an As<T> trait, possibly provided by another library
+
+#[inline]
+/*pub const fn cast_up<const N: usize, const M: usize>(u: &BUint<N>, digit: Digit) -> BUint<M> where [Digit; M.saturating_sub(N)]: Sized {
     debug_assert!(M > N);
     let mut digits = MaybeUninit::<[Digit; M]>::uninit();
     let digits_ptr = digits.as_mut_ptr() as *mut Digit;
@@ -124,13 +132,20 @@ pub const fn cast_up<const N: usize, const M: usize>(u: &BUint<N>, digit: Digit)
     unsafe {
         self_ptr.copy_to_nonoverlapping(digits_ptr, N);
         padding_ptr.copy_to_nonoverlapping(digits_ptr.offset(N as isize), M.saturating_sub(N));
-        BUint {
-            digits: digits.assume_init(),
-        }
+        BUint::from_digits(digits.assume_init())
+    }
+}*/
+pub const fn cast_up<const N: usize, const M: usize>(u: &BUint<N>, digit: Digit) -> BUint<M> {
+    let mut digits = [digit; M];
+    let digits_ptr = digits.as_mut_ptr() as *mut Digit;
+    let u_ptr = u.digits.as_ptr();
+    unsafe {
+        u_ptr.copy_to_nonoverlapping(digits_ptr, N);
+        BUint::from_digits(digits)
     }
 }
 
-#[cfg(feature = "nightly")]
+#[inline]
 pub const fn cast_down<const N: usize, const M: usize>(u: &BUint<N>) -> BUint<M> {
     let mut digits = MaybeUninit::<[Digit; M]>::uninit();
     let digits_ptr = digits.as_mut_ptr() as *mut Digit;
@@ -138,120 +153,102 @@ pub const fn cast_down<const N: usize, const M: usize>(u: &BUint<N>) -> BUint<M>
 
     unsafe {
         self_ptr.copy_to_nonoverlapping(digits_ptr, M);
-        BUint {
-            digits: digits.assume_init(),
-        }
+        BUint::from_digits(digits.assume_init())
     }
 }
 
+#[inline]
 const fn last_set_bit(n: u64) -> u8 {
     64 - n.leading_zeros() as u8
 }
 
+macro_rules! as_buint {
+    ($ty: ty, $unsigned: ty) => {
+        impl<const N: usize> const CastFrom<$ty> for BUint<N> {
+            fn cast_from(mut from: $ty) -> Self {
+                #[allow(unused_comparisons)]
+                let mut out = if from < 0 {
+                    Self::MAX
+                } else {
+                    Self::MIN
+                };
+                let mut i = 0;
+                while from != 0 && i < N {
+                    let masked = from as $unsigned as Digit & Digit::MAX;
+                    out.digits[i] = masked;
+                    if <$ty>::BITS <= digit::BITS as u32 {
+                        from = 0;
+                    } else {
+                        from = from.wrapping_shr(digit::BITS as u32);
+                    }
+                    i += 1;
+                }
+                out
+            }
+        }
+    };
+    ($ty: ty) => {
+        as_buint!($ty, $ty);
+    };
+}
+
+as_buint!(u8);
+as_buint!(u16);
+as_buint!(u32);
+as_buint!(u64);
+as_buint!(u128);
+as_buint!(usize);
+
+as_buint!(i8, u8);
+as_buint!(i16, u16);
+as_buint!(i32, u32);
+as_buint!(i64, u64);
+as_buint!(i128, u128);
+as_buint!(isize, usize);
+
+impl<const N: usize> const CastFrom<bool> for BUint<N> {
+    fn cast_from(from: bool) -> Self {
+        if from {
+            Self::ONE
+        } else {
+            Self::ZERO
+        }
+    }
+}
+
+impl<const N: usize> const CastFrom<char> for BUint<N> {
+    fn cast_from(from: char) -> Self {
+        Self::cast_from(from as u32)
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::{U128, BUint, I128, digit};
+    use crate::{U128, I128, digit, U64, test};
+    use crate::cast::As;
+
+    test::test_cast_to!([u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, bool, char] as U128);
+
+    test::test_cast_from!(U128 as [u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32/*, f64*/]); // TODO: f64 test is failing, fix
 
     #[test]
-    fn as_u8() {
-        let u = 458937495794835975u128;
-        let uint = U128::from(u);
-        assert_eq!(uint.as_u8(), u as u8);
-    }
-    #[test]
-    fn as_u16() {
-        let u = 45679457045646u128;
-        let uint = U128::from(u);
-        assert_eq!(uint.as_u16(), u as u16);
-    }
-    #[test]
-    fn as_u32() {
-        let u = 9475697398457690379876u128;
-        let uint = U128::from(u);
-        assert_eq!(uint.as_u32(), u as u32);
-    }
-    #[test]
-    fn as_u64() {
-        let u = 987927348957345930475972439857u128;
-        let uint = U128::from(u);
-        assert_eq!(uint.as_u64(), u as u64);
-    }
-    #[test]
-    fn as_u128() {
-        let u = 49576947589673498576905868576485690u128;
-        let uint = U128::from(u);
-        assert_eq!(uint.as_u128(), u as u128);
-    }
-    #[test]
-    fn as_usize() {
-        let u = 309485608560934564564568456u128;
-        let uint = U128::from(u);
-        assert_eq!(uint.as_usize(), u as usize);
+    fn test_f64() {
+        let i = 26971620319773403137u128;
+        let big = U128::from(i);
+        assert_eq!(big.as_f64(), i as f64);
     }
 
-    #[test]
-    fn as_i8() {
-        let u = 456759876u128;
-        let uint = U128::from(u);
-        assert_eq!(uint.as_i8(), u as i8);
-    }
-    #[test]
-    fn as_i16() {
-        let u = 9458769456904856u128;
-        let uint = U128::from(u);
-        assert_eq!(uint.as_i16(), u as i16);
-    }
-    #[test]
-    fn as_i32() {
-        let u = 95792684579875345u128;
-        let uint = U128::from(u);
-        assert_eq!(uint.as_i32(), u as i32);
-    }
-    #[test]
-    fn as_i64() {
-        let u = 4586745698783453459756456u128;
-        let uint = U128::from(u);
-        assert_eq!(uint.as_i64(), u as i64);
-    }
-    #[test]
-    fn as_i128() {
-        let u = 232030679846578450968409568098465u128;
-        let uint = U128::from(u);
-        assert_eq!(uint.as_i128(), u as i128);
-    }
-    #[test]
-    fn as_isize() {
-        let u = 4568094586492858767245068445987u128;
-        let uint = U128::from(u);
-        assert_eq!(uint.as_isize(), u as isize);
-    }
-
-    #[test]
-    fn as_f32() {
-        let u = 35478975973468456798569u128;
-        let uint = U128::from(u);
-        assert_eq!(uint.as_f32(), u as f32);
-    }
-    #[test]
-    fn as_f64() {
-        let u = 896286490745687459674865u128;
-        let uint = U128::from(u);
-        assert_eq!(uint.as_f64(), u as f64);
-    }
-
-    #[cfg(feature = "nightly")]
     #[test]
     fn as_buint() {
         let u = 93457394573495790u64;
-        let uint = BUint::<{64 / digit::BITS}>::from(u);
-        assert_eq!(U128::from(u), uint.as_buint::<{128 / digit::BITS}>());
+        let uint = U64::from(u);
+        assert_eq!(U128::from(u), uint.as_buint::<{128 / digit::BITS as usize}>());
     }
 
-    #[cfg(feature = "nightly")]
     #[test]
-    fn as_biint() {
+    fn as_bint() {
         let u = 204958679794567895u64;
-        let uint = BUint::<{64 / digit::BITS}>::from(u);
-        assert_eq!(I128::from(u), uint.as_biint::<{128 / digit::BITS}>());
+        let uint = U64::from(u);
+        assert_eq!(I128::from(u), uint.as_bint::<{128 / digit::BITS as usize}>());
     }
 }

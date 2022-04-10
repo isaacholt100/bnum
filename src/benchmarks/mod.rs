@@ -2,7 +2,6 @@ extern crate test;
 
 #[allow(unused)]
 use test::Bencher;
-use crate::BUint;
 
 #[inline]
 pub const fn add_carry_unsigned(carry: u8, a: u64, b: u64) -> (u64, u8) {

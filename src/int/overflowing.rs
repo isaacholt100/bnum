@@ -1,30 +1,39 @@
 use super::Bint;
-use crate::arithmetic;
-use crate::digit::{SignedDigit, Digit};
+use crate::digit::{SignedDigit, Digit, SignedDoubleDigit};
 use crate::macros::{overflowing_pow, div_zero, rem_zero, op_ref_impl};
 use crate::{ExpType, BUint};
 use crate::digit;
+
+const fn carrying_add_signed(a: SignedDigit, b: SignedDigit, carry: bool) -> (SignedDigit, bool) {
+    let sum = a as SignedDoubleDigit + b as SignedDoubleDigit + carry as SignedDoubleDigit;
+    (sum as SignedDigit, sum > SignedDigit::MAX as SignedDoubleDigit || sum < SignedDigit::MIN as SignedDoubleDigit)
+}
+
+const fn borrowing_sub_signed(a: SignedDigit, b: SignedDigit, borrow: bool) -> (SignedDigit, bool) {
+    let diff = a as SignedDoubleDigit - b as SignedDoubleDigit - borrow as SignedDoubleDigit;
+    (diff as SignedDigit, diff > SignedDigit::MAX as SignedDoubleDigit || diff < SignedDigit::MIN as SignedDoubleDigit)
+}
 
 impl<const N: usize> Bint<N> {
     #[inline]
     pub const fn overflowing_add(self, rhs: Self) -> (Self, bool) {
         let mut digits = [0; N];
-        let mut carry = 0u8;
+        let mut carry = false;
 
         let self_digits = self.digits();
         let rhs_digits = rhs.digits();
 
         let mut i = 0;
         while i < Self::N_MINUS_1 {
-            let (sum, c) = arithmetic::add_carry_unsigned(carry, self_digits[i], rhs_digits[i]);
+            let (sum, c) = self_digits[i].carrying_add(rhs_digits[i], carry);
             digits[i] = sum;
             carry = c;
             i += 1;
         }
-        let (sum, carry) = arithmetic::add_carry_signed(
-            carry,
+        let (sum, carry) = carrying_add_signed(
             self_digits[Self::N_MINUS_1] as SignedDigit,
-            rhs_digits[Self::N_MINUS_1] as SignedDigit
+            rhs_digits[Self::N_MINUS_1] as SignedDigit,
+            carry
         );
         digits[Self::N_MINUS_1] = sum as Digit;
 
@@ -41,22 +50,22 @@ impl<const N: usize> Bint<N> {
     #[inline]
     pub const fn overflowing_sub(self, rhs: Self) -> (Self, bool) {
         let mut digits = [0; N];
-        let mut borrow = 0u8;
+        let mut borrow = false;
 
         let self_digits = self.digits();
         let rhs_digits = rhs.digits();
 
         let mut i = 0;
         while i < Self::N_MINUS_1 {
-            let (sub, b) = arithmetic::sub_borrow_unsigned(borrow, self_digits[i], rhs_digits[i]);
+            let (sub, b) = self_digits[i].borrowing_sub(rhs_digits[i], borrow);
             digits[i] = sub;
             borrow = b;
             i += 1;
         }
-        let (sub, borrow) = arithmetic::sub_borrow_signed(
-            borrow,
+        let (sub, borrow) = borrowing_sub_signed(
             self_digits[Self::N_MINUS_1] as SignedDigit,
-            rhs_digits[Self::N_MINUS_1] as SignedDigit
+            rhs_digits[Self::N_MINUS_1] as SignedDigit,
+            borrow
         );
         digits[Self::N_MINUS_1] = sub as Digit;
 
@@ -73,9 +82,7 @@ impl<const N: usize> Bint<N> {
     #[inline]
     pub const fn overflowing_mul(self, rhs: Self) -> (Self, bool) {
         let (uint, overflow) = self.unsigned_abs().overflowing_mul(rhs.unsigned_abs());
-        let out = Self {
-            uint,
-        };
+        let out = Self::from_bits(uint);
         if self.is_negative() == rhs.is_negative() {
             (out, overflow || out.is_negative())
         } else {
@@ -85,30 +92,28 @@ impl<const N: usize> Bint<N> {
             }
         }
     }
+
     #[inline]
     const fn div_rem_unchecked(self, rhs: Self) -> (Self, Self) {
         let (div, rem) = self.unsigned_abs().div_rem_unchecked(rhs.unsigned_abs());
-        let div = Self {
-            uint: div,
-        };
-        let rem = Self {
-            uint: rem,
-        };
+        let div = Self::from_bits(div);
+        let rem = Self::from_bits(rem);
         if self.is_negative() {
             if rhs.is_negative() {
-                (div, rem.neg())
+                (div, -rem)
             } else {
-                (div.neg(), rem.neg())
+                (-div, -rem)
             }
         } else if rhs.is_negative() {
-            (div.neg(), rem)
+            (-div, rem)
         } else {
             (div, rem)
         }
     }
+
     #[inline]
     pub const fn overflowing_div(self, rhs: Self) -> (Self, bool) {
-        if self.eq(&Self::MIN) && rhs.eq(&Self::NEG_ONE) {
+        if self == Self::MIN && rhs == Self::NEG_ONE {
             (self, true)
         } else {
             if rhs.is_zero() {
@@ -117,9 +122,10 @@ impl<const N: usize> Bint<N> {
             (self.div_rem_unchecked(rhs).0, false)
         }
     }
+
     #[inline]
     pub const fn overflowing_div_euclid(self, rhs: Self) -> (Self, bool) {
-        if self.eq(&Self::MIN) && rhs.eq(&Self::NEG_ONE) {
+        if self == Self::MIN && rhs == Self::NEG_ONE {
             (self, true)
         } else {
             if rhs.is_zero() {
@@ -131,9 +137,9 @@ impl<const N: usize> Bint<N> {
                     (div, false)
                 } else {
                     let div = if rhs.is_negative() {
-                        div.add(Self::ONE)
+                        div + Self::ONE
                     } else {
-                        div.sub(Self::ONE)
+                        div - Self::ONE
                     };
                     (div, false)
                 }
@@ -142,9 +148,10 @@ impl<const N: usize> Bint<N> {
             }
         }
     }
+
     #[inline]
     pub const fn overflowing_rem(self, rhs: Self) -> (Self, bool) {
-        if self.eq(&Self::MIN) && rhs.eq(&Self::NEG_ONE) {
+        if self == Self::MIN && rhs == Self::NEG_ONE {
             (Self::ZERO, true)
         } else {
             if rhs.is_zero() {
@@ -153,9 +160,10 @@ impl<const N: usize> Bint<N> {
             (self.div_rem_unchecked(rhs).1, false)
         }
     }
+
     #[inline]
     pub const fn overflowing_rem_euclid(self, rhs: Self) -> (Self, bool) {
-        if self.eq(&Self::MIN) && rhs.eq(&Self::NEG_ONE) {
+        if self == Self::MIN && rhs == Self::NEG_ONE {
             (Self::ZERO, true)
         } else {
             if rhs.is_zero() {
@@ -163,22 +171,28 @@ impl<const N: usize> Bint<N> {
             }
             let rem = self.div_rem_unchecked(rhs).1;
             if rem.is_negative() {
-                let r = rem.add(rhs.abs());
-                (r, false)
+                if rhs.is_negative() {
+                    (rem - rhs, false)
+                } else {
+                    (rem + rhs, false)
+                }
             } else {
                 (rem, false)
             }
         }
     }
+
     #[inline]
     pub const fn overflowing_neg(self) -> (Self, bool) {
         (!self).overflowing_add(Self::ONE)
     }
+
     #[inline]
     pub const fn overflowing_shl(self, rhs: ExpType) -> (Self, bool) {
-        let (uint, overflow) = self.uint.overflowing_shl(rhs);
-        (Self { uint }, overflow)
+        let (uint, overflow) = self.bits.overflowing_shl(rhs);
+        (Self::from_bits(uint), overflow)
     }
+
     #[inline]
     const fn shr_internal(self, rhs: ExpType) -> Self {
         if rhs == 0 {
@@ -215,6 +229,7 @@ impl<const N: usize> Bint<N> {
         }
     }
     const BITS_MINUS_1: ExpType = (Self::BITS - 1) as ExpType;
+
     #[inline]
     pub const fn overflowing_shr(self, rhs: ExpType) -> (Self, bool) {
         if self.is_negative() {
@@ -224,10 +239,11 @@ impl<const N: usize> Bint<N> {
                 (self.shr_internal(rhs), false)
             }
         } else {
-            let (uint, overflow) = self.uint.overflowing_shr(rhs);
-            (Self { uint }, overflow)
+            let (uint, overflow) = self.bits.overflowing_shr(rhs);
+            (Self::from_bits(uint), overflow)
         }
     }
+
     #[inline]
     pub const fn overflowing_abs(self) -> (Self, bool) {
         if self.is_negative() {
@@ -277,11 +293,7 @@ op_ref_impl!(Rem<Bint<N>> for Bint<N>, rem);
 
 #[cfg(test)]
 mod tests {
-    use crate::{I128};
-
-    fn converter((i, b): (i128, bool)) -> (I128, bool) {
-        (i.into(), b)
-    }
+    use crate::test::converters;
 
     test_signed! {
         function: overflowing_add(a: i128, b: i128),
@@ -289,7 +301,7 @@ mod tests {
             (-i128::MAX, i128::MIN),
             (i128::MAX, i128::MAX)
         ],
-        converter: converter
+        converter: converters::tuple_converter
     }
     test_signed! {
         function: overflowing_sub(a: i128, b: i128),
@@ -298,7 +310,7 @@ mod tests {
             (i128::MAX, -1i128),
             (i128::MAX, i128::MIN)
         ],
-        converter: converter
+        converter: converters::tuple_converter
     }
     test_signed! {
         function: overflowing_mul(a: i128, b: i128),
@@ -306,7 +318,7 @@ mod tests {
             (1i128 << 64, 1i128 << 63),
             (-(1i128 << 100), 1i128 << 27)
         ],
-        converter: converter
+        converter: converters::tuple_converter
     }
     test_signed! {
         function: overflowing_div(a: i128, b: i128),
@@ -315,7 +327,7 @@ mod tests {
             (i128::MIN, -1i128)
         ],
         quickcheck_skip: b == 0,
-        converter: converter
+        converter: converters::tuple_converter
     }
     test_signed! {
         function: overflowing_div_euclid(a: i128, b: i128),
@@ -324,7 +336,7 @@ mod tests {
             (i128::MIN, -1i128)
         ],
         quickcheck_skip: b == 0,
-        converter: converter
+        converter: converters::tuple_converter
     }
     test_signed! {
         function: overflowing_rem(a: i128, b: i128),
@@ -333,7 +345,7 @@ mod tests {
             (i128::MIN, -1i128)
         ],
         quickcheck_skip: b == 0,
-        converter: converter
+        converter: converters::tuple_converter
     }
     test_signed! {
         function: overflowing_rem_euclid(a: i128, b: i128),
@@ -343,7 +355,7 @@ mod tests {
             (-1i128, 2i128)
         ],
         quickcheck_skip: b == 0,
-        converter: converter
+        converter: converters::tuple_converter
     }
     test_signed! {
         function: overflowing_neg(a: i128),
@@ -352,7 +364,7 @@ mod tests {
             (i128::MIN),
             (997340597745960395879i128)
         ],
-        converter: converter
+        converter: converters::tuple_converter
     }
     test_signed! {
         function: overflowing_shl(a: i128, b: u16),
@@ -361,7 +373,7 @@ mod tests {
             (77948798i128, 58743 as u16),
             (-9797456456456i128, 27 as u16)
         ],
-        converter: converter
+        converter: converters::tuple_converter
     }
     test_signed! {
         function: overflowing_shr(a: i128, b: u16),
@@ -369,7 +381,15 @@ mod tests {
             (i128::MIN, 11 as u16),
             (-1i128, 85 as u16)
         ],
-        converter: converter
+        converter: converters::tuple_converter
+    }
+    test_signed! {
+        function: overflowing_abs(a: i128),
+        cases: [
+            (0i128),
+            (i128::MIN)
+        ],
+        converter: converters::tuple_converter
     }
     test_signed! {
         function: overflowing_pow(a: i128, b: u16),
@@ -378,6 +398,6 @@ mod tests {
             (-19i128, 11 as u16),
             (-277i128, 14 as u16)
         ],
-        converter: converter
+        converter: converters::tuple_converter
     }
 }

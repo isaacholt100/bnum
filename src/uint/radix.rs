@@ -1,5 +1,5 @@
 use super::BUint;
-use crate::ParseIntError;
+use crate::{ParseIntError, ExpType};
 use crate::digit::{self, Digit, DoubleDigit};
 use core::iter::Iterator;
 use alloc::string::String;
@@ -76,7 +76,7 @@ impl<const N: usize> BUint<N> {
         }
         Some(out)
     }
-    fn mac_with_carry(a: Digit, b: Digit, acc: &mut DoubleDigit) -> Digit {
+    const fn mac_with_carry(a: Digit, b: Digit, acc: &mut DoubleDigit) -> Digit {
         *acc += a as DoubleDigit * b as DoubleDigit;
         let lo = *acc as Digit;
         *acc >>= BITS_U8;
@@ -461,8 +461,8 @@ impl<const N: usize> BUint<N> {
         let digits_per_big_digit = BITS_U8 / bits;
         let digits = self
             .bits()
-            .div_ceil(usize::from(bits));
-        let mut out = Vec::with_capacity(digits);
+            .div_ceil(bits as ExpType);
+        let mut out = Vec::with_capacity(digits as usize);
 
         for mut r in self.digits[..last_digit_index].iter().cloned() {
             for _ in 0..digits_per_big_digit {
@@ -481,8 +481,8 @@ impl<const N: usize> BUint<N> {
         let mask: Digit = (1 << bits) - 1;
         let digits = self
             .bits()
-            .div_ceil(bits as usize);
-        let mut out = Vec::with_capacity(digits);
+            .div_ceil(bits as ExpType);
+        let mut out = Vec::with_capacity(digits as usize);
         let mut r = 0;
         let mut rbits = 0;
         for c in &self.digits[..] {
@@ -551,6 +551,11 @@ mod tests {
             Ok(result.unwrap().into())
         }
     }
+
+    test::quickcheck_from_to_radix!(U128, u128, radix_be, 255);
+    test::quickcheck_from_to_radix!(U128, u128, radix_le, 255);
+    test::quickcheck_from_to_radix!(U128, u128, str_radix, 36);
+
     #[test]
     fn from_to_radix_le() {
         let buf = &[23, 100, 45, 58, 44, 56, 55, 100, 76, 54, 10, 100, 100, 100, 100, 100, 200, 200, 200, 200, 255, 255, 255, 255, 255, 100, 100, 44, 60, 56, 48, 69, 160, 59, 50, 50, 200, 250, 250, 250, 250, 250, 240, 120];

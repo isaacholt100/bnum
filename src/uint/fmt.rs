@@ -26,12 +26,12 @@ macro_rules! fmt {
 }
 
 impl<const N: usize> Binary for BUint<N> {
-    fmt!("{:b}", "{:01$b}", digit::BITS, "0b");
+    fmt!("{:b}", "{:01$b}", digit::BITS as usize, "0b");
 }
 
 impl<const N: usize> core::fmt::Debug for BUint<N> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "{:0width$b}", &self, width = Self::BITS)
+        write!(f, "{:0width$b}", &self, width = Self::BITS as usize)
     }
 }
 
@@ -63,7 +63,7 @@ impl<const N: usize> LowerExp for BUint<N> {
     exp_fmt!("e");
 }
 
-const HEX_PADDING: usize = digit::BITS / 4;
+const HEX_PADDING: usize = digit::BITS as usize / 4;
 
 impl<const N: usize> LowerHex for BUint<N> {
     fmt!("{:x}", "{:01$x}", HEX_PADDING, "0x");
@@ -86,8 +86,26 @@ impl<const N: usize> UpperHex for BUint<N> {
 
 #[cfg(test)]
 mod tests {
-    use crate::U128;
+    use crate::{U128, BUint};
     use crate::macros::test_fmt;
+
+    trait ToBinaryString {
+        fn to_binary_string(self) -> String;
+    }
+    impl<const N: usize> ToBinaryString for BUint<N> {
+        fn to_binary_string(self) -> String {
+            format!("{:b}", self)
+        }
+    }
+    impl ToBinaryString for u128 {
+        fn to_binary_string(self) -> String {
+            format!("{:b}", self)
+        }
+    }
+
+    /*test_unsigned! {
+        function: to_binary_string(u: u128)
+    }*/
 
     test_fmt! {
         int: U128,

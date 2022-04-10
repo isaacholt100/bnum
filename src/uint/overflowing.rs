@@ -1,5 +1,4 @@
 use super::BUint;
-use crate::arithmetic;
 use crate::macros::overflowing_pow;
 use crate::ExpType;
 use crate::digit::Digit;
@@ -8,19 +7,20 @@ use crate::Bint;
 //const LONG_MUL_THRESHOLD: usize = 32;
 //const KARATSUBA_THRESHOLD: usize = 256;
 
+/// Tuple of (product, carry)
 impl<const N: usize> BUint<N> {
     #[inline]
     pub const fn overflowing_add(self, rhs: Self) -> (Self, bool) {
         let mut out = Self::ZERO;
-        let mut carry = 0u8;
+        let mut carry = false;
         let mut i = 0;
         while i < N {
-            let result = arithmetic::add_carry_unsigned(carry, self.digits[i], rhs.digits[i]);
+            let result = self.digits[i].carrying_add(rhs.digits[i], carry);
             out.digits[i] = result.0;
             carry = result.1;
             i += 1;
         }
-        (out, carry != 0)
+        (out, carry)
     }
 
     #[inline]
@@ -32,15 +32,15 @@ impl<const N: usize> BUint<N> {
     #[inline]
     pub const fn overflowing_sub(self, rhs: Self) -> (Self, bool) {
         let mut out = Self::ZERO;
-        let mut borrow = 0u8;
+        let mut borrow = false;
         let mut i = 0;
         while i < N {
-            let result = arithmetic::sub_borrow_unsigned(borrow, self.digits[i], rhs.digits[i]);
+            let result = self.digits[i].borrowing_sub(rhs.digits[i], borrow);
             out.digits[i] = result.0;
             borrow = result.1;
             i += 1;
         }
-        (out, borrow != 0)
+        (out, borrow)
     }
 
     #[inline]
@@ -55,7 +55,7 @@ impl<const N: usize> BUint<N> {
             while j < N {
                 let index = i + j;
                 if index < N {
-                    let (prod, c) = arithmetic::mul_carry_unsigned(carry, out.digits[index], self.digits[i], rhs.digits[j]);
+                    let (prod, c) = super::carrying_mul(self.digits[i], rhs.digits[j], carry, out.digits[index]);
                     out.digits[index] = prod;
                     carry = c;
                 } else if (self.digits[i] != 0 && rhs.digits[j] != 0) || carry != 0 {
@@ -119,6 +119,8 @@ impl<const N: usize> BUint<N> {
             (super::unchecked_shl(self, rhs), false)
         }
     }
+
+    #[inline]
     pub const fn overflowing_shr(self, rhs: ExpType) -> (Self, bool) {
         if rhs >= Self::BITS {
             //assert_eq!(rhs & Self::BITS_MINUS_1, 13);
@@ -127,16 +129,13 @@ impl<const N: usize> BUint<N> {
             (super::unchecked_shr(self, rhs), false)
         }
     }
+    
     overflowing_pow!();
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{U128};
-
-    fn converter(tuple: (u128, bool)) -> (U128, bool) {
-        (tuple.0.into(), tuple.1)
-    }
+    use crate::test::converters;
 
     test_unsigned! {
         function: overflowing_add(a: u128, b: u128),
@@ -144,7 +143,7 @@ mod tests {
             (u128::MAX - 35348957, 34059304859034578959083490834850937458u128),
             (34987358947598374835u128, 340593453454564568u128)
         ],
-        converter: converter
+        converter: converters::tuple_converter
     }
     test_unsigned! {
         function: overflowing_sub(a: u128, b: u128),
@@ -152,7 +151,7 @@ mod tests {
             (34053457987u128, 34059304859034578959083490834850937458u128),
             (34987358947598374835345345345454645645u128, 9856946974958764564564508456849058u128)
         ],
-        converter: converter
+        converter: converters::tuple_converter
     }
     test_unsigned! {
         function: overflowing_mul(a: u128, b: u128),
@@ -160,7 +159,7 @@ mod tests {
             (93875893745946675675675675745687345u128, 394857456456456456434534355645384975u128),
             (103453534455674958789u128, 509u128)
         ],
-        converter: converter
+        converter: converters::tuple_converter
     }
     test_unsigned! {
         function: overflowing_div(a: u128, b: u128),
@@ -169,7 +168,7 @@ mod tests {
             (193679457916593485358497389457u128, 684u128)
         ],
         quickcheck_skip: b == 0,
-        converter: converter
+        converter: converters::tuple_converter
     }
     test_unsigned! {
         function: overflowing_div_euclid(a: u128, b: u128),
@@ -178,7 +177,7 @@ mod tests {
             (0u128, 3459745734895734957984579u128)
         ],
         quickcheck_skip: b == 0,
-        converter: converter
+        converter: converters::tuple_converter
     }
     test_unsigned! {
         function: overflowing_rem(a: u128, b: u128),
@@ -187,7 +186,7 @@ mod tests {
             (1u128 << 64, 2u128)
         ],
         quickcheck_skip: b == 0,
-        converter: converter
+        converter: converters::tuple_converter
     }
     test_unsigned! {
         function: overflowing_rem_euclid(a: u128, b: u128),
@@ -196,7 +195,7 @@ mod tests {
             (0u128, 93745934953894u128)
         ],
         quickcheck_skip: b == 0,
-        converter: converter
+        converter: converters::tuple_converter
     }
     test_unsigned! {
         function: overflowing_neg(a: u128),
@@ -204,7 +203,7 @@ mod tests {
             (0u128),
             (93498734534534273984577u128)
         ],
-        converter: converter
+        converter: converters::tuple_converter
     }
     test_unsigned! {
         function: overflowing_shl(a: u128, b: u16),
@@ -212,7 +211,7 @@ mod tests {
             (u128::MAX - 3453475, 5 as u16),
             (934987774987u128, 55645 as u16)
         ],
-        converter: converter
+        converter: converters::tuple_converter
     }
     test_unsigned! {
         function: overflowing_shr(a: u128, b: u16),
@@ -220,7 +219,7 @@ mod tests {
             (349573947593475973453348759u128, 10 as u16),
             (972456948567894576895749857u128, 58969 as u16)
         ],
-        converter: converter
+        converter: converters::tuple_converter
     }
     test_unsigned! {
         function: overflowing_pow(a: u128, b: u16),
@@ -228,6 +227,6 @@ mod tests {
             (3444334u128, 34345 as u16),
             (23u128, 31 as u16)
         ],
-        converter: converter
+        converter: converters::tuple_converter
     }
 }

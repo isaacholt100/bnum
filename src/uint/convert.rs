@@ -6,6 +6,7 @@ use crate::{TryFromIntError, ParseIntError};
 use crate::error::TryFromErrorReason::*;
 use crate::digit::{self, Digit};
 use crate::macros::all_try_int_impls;
+use crate::ExpType;
 
 impl<const N: usize> FromStr for BUint<N> {
     type Err = ParseIntError;
@@ -16,6 +17,7 @@ impl<const N: usize> FromStr for BUint<N> {
 }
 
 impl<const N: usize> const From<bool> for BUint<N> {
+    #[inline]
     fn from(small: bool) -> Self {
         if small {
             Self::ONE
@@ -26,8 +28,9 @@ impl<const N: usize> const From<bool> for BUint<N> {
 }
 
 impl<const N: usize> From<char> for BUint<N> {
+    #[inline]
     fn from(c: char) -> Self {
-        let u: u32 = c.into();
+        let u: u32 = c as u32;
         u.into()
     }
 }
@@ -38,6 +41,7 @@ macro_rules! from_uint {
     ($($uint: tt),*) => {
         $(
             impl<const N: usize> const From<$uint> for BUint<N> {
+                #[inline]
                 fn from(int: $uint) -> Self {
                     const UINT_BITS: usize = $uint::BITS as usize;
                     let mut out = Self::ZERO;
@@ -59,6 +63,7 @@ macro_rules! from_uint {
 
 from_uint!(u8, u16, u32, usize, u64, u128);
 
+#[inline]
 fn decode_f32(f: f32) -> (u64, i16, i8) {
     let bits = f.to_bits();
     let sign = if bits >> 31 == 0 { 1 } else { -1 };
@@ -72,6 +77,7 @@ fn decode_f32(f: f32) -> (u64, i16, i8) {
     (mantissa as u64, exponent, sign)
 }
 
+#[inline]
 fn decode_f64(f: f64) -> (u64, i16, i8) {
     let bits = f.to_bits();
     let sign = if bits >> 63 == 0 { 1 } else { -1 };
@@ -114,7 +120,7 @@ macro_rules! try_from_float {
                 let out = Self::from(mantissa);
                 match exponent.cmp(&0) {
                     Ordering::Greater => {
-                        if out.bits() + exponent as usize >= Self::BITS {
+                        if out.bits() + exponent as ExpType >= Self::BITS {
                             Err(TryFromIntError {
                                 from: stringify!($float),
                                 to: "BUint",
@@ -140,8 +146,9 @@ macro_rules! try_from_iint {
         $(impl<const N: usize> TryFrom<$int> for BUint<N> {
             type Error = TryFromIntError;
 
+            #[inline]
             fn try_from(int: $int) -> Result<Self, Self::Error> {
-                let uint: $uint = int
+                let bits: $uint = int
                     .try_into()
                     .ok()
                     .ok_or(TryFromIntError {
@@ -149,7 +156,7 @@ macro_rules! try_from_iint {
                         to: "BUint",
                         reason: Negative,
                     })?;
-                Ok(Self::from(uint))
+                Ok(Self::from(bits))
             }
         })*
     }
@@ -162,6 +169,7 @@ all_try_int_impls!(BUint);
 impl<const N: usize> TryFrom<BUint<N>> for f32 {
     type Error = TryFromIntError;
 
+    #[inline]
     fn try_from(uint: BUint<N>) -> Result<Self, Self::Error> {
         Ok(uint.as_f32())
     }
@@ -170,18 +178,21 @@ impl<const N: usize> TryFrom<BUint<N>> for f32 {
 impl<const N: usize> TryFrom<BUint<N>> for f64 {
     type Error = TryFromIntError;
 
+    #[inline]
     fn try_from(uint: BUint<N>) -> Result<Self, Self::Error> {
         Ok(uint.as_f64())
     }
 }
 
 impl<const N: usize> const From<[Digit; N]> for BUint<N> {
+    #[inline]
     fn from(digits: [Digit; N]) -> Self {
         Self::from_digits(digits)
     }
 }
 
 impl<const N: usize> const From<BUint<N>> for [Digit; N] {
+    #[inline]
     fn from(uint: BUint<N>) -> Self {
         uint.digits
     }

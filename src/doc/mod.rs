@@ -583,17 +583,3 @@ macro_rules! checked_add {
 }
 
 pub(crate) use checked_add;
-
-macro_rules! checked_sub {
-    ($ty: ident ::< $n: literal >) => {
-        doc::doc_comment! {
-            $ty::<$n>,
-            "Checked integer subtraction. Computes `self - rhs`, returning `None` if overflow occurred.",
-
-            "assert_eq!((" doc::int_str!($ty::<$n>) "::ONE).checked_sub(" stringify!($ty) "::ONE), Some(" stringify!($ty) "::ZERO));\n"
-            "assert_eq!((" doc::int_str!($ty::<$n>) "::MAX - " stringify!($ty) "::TWO).checked_add(" stringify!($ty) "::THREE), None);"
-        }
-    }
-}
-
-pub(crate) use checked_sub;

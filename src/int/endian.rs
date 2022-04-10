@@ -22,22 +22,25 @@ macro_rules! set_digit {
 
 impl<const N: usize> Bint<N> {
     #[doc=doc::from_be!(Bint::<2>)]
+    #[inline]
     pub const fn from_be(x: Self) -> Self {
-        Self::from_bits(BUint::from_be(x.uint))
+        Self::from_bits(BUint::from_be(x.bits))
     }
 
     #[doc=doc::from_le!(Bint::<2>)]
+    #[inline]
     pub const fn from_le(x: Self) -> Self {
-        Self::from_bits(BUint::from_le(x.uint))
+        Self::from_bits(BUint::from_le(x.bits))
     }
 
     #[doc=doc::to_be!(Bint::<2>)]
+    #[inline]
     pub const fn to_be(self) -> Self {
         Self::from_be(self)
     }
 
     #[doc=doc::to_le!(Bint::<2>)]
-    #[cfg(target_endian = "little")]
+    #[inline]
     pub const fn to_le(self) -> Self {
         Self::from_le(self)
     }
@@ -62,24 +65,24 @@ impl<const N: usize> Bint<N> {
         let mut i = 0;
         let exact = len >> digit::BYTE_SHIFT;
         while i < exact {
-            let mut uninit = MaybeUninit::<[u8; digit::BYTES]>::uninit();
+            let mut uninit = MaybeUninit::<[u8; digit::BYTES as usize]>::uninit();
             let ptr = uninit.as_mut_ptr() as *mut u8;
             let digit_bytes = unsafe {
-                slice_ptr.add(len - digit::BYTES - (i << digit::BYTE_SHIFT)).copy_to_nonoverlapping(ptr, digit::BYTES);
+                slice_ptr.add(len - digit::BYTES as usize - (i << digit::BYTE_SHIFT)).copy_to_nonoverlapping(ptr, digit::BYTES as usize);
                 uninit.assume_init()
             };
             let digit = Digit::from_be_bytes(digit_bytes);
             set_digit!(out_digits, i, digit, is_negative, sign_bits);
             i += 1;
         }
-        let rem = len & (digit::BYTES - 1);
+        let rem = len & (digit::BYTES as usize - 1);
         if rem == 0 {
             Some(Self::from_digits(out_digits))
         } else {
-            let mut last_digit_bytes = [0; digit::BYTES];
+            let mut last_digit_bytes = [0; digit::BYTES as usize];
             let mut j = 0;
             while j < rem {
-                last_digit_bytes[digit::BYTES - rem + j] = slice[j];
+                last_digit_bytes[digit::BYTES as usize - rem + j] = slice[j];
                 j += 1;
             }
             let digit = Digit::from_be_bytes(last_digit_bytes);
@@ -87,6 +90,7 @@ impl<const N: usize> Bint<N> {
             Some(Self::from_digits(out_digits))
         }
     }
+    
     pub const fn from_le_slice(slice: &[u8]) -> Option<Self> {
         let len = slice.len();
         if len == 0 {
@@ -107,20 +111,20 @@ impl<const N: usize> Bint<N> {
         let mut i = 0;
         let exact = len >> digit::BYTE_SHIFT;
         while i < exact {
-            let mut uninit = MaybeUninit::<[u8; digit::BYTES]>::uninit();
+            let mut uninit = MaybeUninit::<[u8; digit::BYTES as usize]>::uninit();
             let ptr = uninit.as_mut_ptr() as *mut u8;
             let digit_bytes = unsafe {
-                slice_ptr.add(i << digit::BYTE_SHIFT).copy_to_nonoverlapping(ptr, digit::BYTES);
+                slice_ptr.add(i << digit::BYTE_SHIFT).copy_to_nonoverlapping(ptr, digit::BYTES as usize);
                 uninit.assume_init()
             };
             let digit = Digit::from_le_bytes(digit_bytes);
             set_digit!(out_digits, i, digit, is_negative, sign_bits);
             i += 1;
         }
-        if len & (digit::BYTES - 1) == 0 {
+        if len & (digit::BYTES as usize - 1) == 0 {
             Some(Self::from_digits(out_digits))
         } else {
-            let mut last_digit_bytes = [0; digit::BYTES];
+            let mut last_digit_bytes = [0; digit::BYTES as usize];
             let addition = exact << digit::BYTE_SHIFT;
             let mut j = 0;
             while j + addition < len {
@@ -146,39 +150,39 @@ impl<const N: usize> Bint<N> {
 #[cfg(feature = "nightly")]
 impl<const N: usize> Bint<N> {
     #[doc=doc::to_be_bytes!(Bint::<2>, "i")]
-    pub const fn to_be_bytes(self) -> [u8; N * digit::BYTES] {
-        self.uint.to_be_bytes()
+    #[inline]
+    pub const fn to_be_bytes(self) -> [u8; N * digit::BYTES as usize] {
+        self.bits.to_be_bytes()
     }
 
     #[doc=doc::to_le_bytes!(Bint::<2>, "i")]
-    pub const fn to_le_bytes(self) -> [u8; N * digit::BYTES] {
-        self.uint.to_le_bytes()
+    #[inline]
+    pub const fn to_le_bytes(self) -> [u8; N * digit::BYTES as usize] {
+        self.bits.to_le_bytes()
     }
 
     #[doc=doc::to_ne_bytes!(Bint::<2>, "i")]
-    pub const fn to_ne_bytes(self) -> [u8; N * digit::BYTES] {
-        self.uint.to_ne_bytes()
+    #[inline]
+    pub const fn to_ne_bytes(self) -> [u8; N * digit::BYTES as usize] {
+        self.bits.to_ne_bytes()
     }
 
     #[doc=doc::from_be_bytes!(Bint::<2>, "i")]
-    pub const fn from_be_bytes(bytes: [u8; N * digit::BYTES]) -> Self {
-        Self {
-            uint: BUint::from_be_bytes(bytes),
-        }
+    #[inline]
+    pub const fn from_be_bytes(bytes: [u8; N * digit::BYTES as usize]) -> Self {
+        Self::from_bits(BUint::from_be_bytes(bytes))
     }
 
     #[doc=doc::from_le_bytes!(Bint::<2>, "i")]
-    pub const fn from_le_bytes(bytes: [u8; N * digit::BYTES]) -> Self {
-        Self {
-            uint: BUint::from_le_bytes(bytes),
-        }
+    #[inline]
+    pub const fn from_le_bytes(bytes: [u8; N * digit::BYTES as usize]) -> Self {
+        Self::from_bits(BUint::from_le_bytes(bytes))
     }
 
     #[doc=doc::from_ne_bytes!(Bint::<2>, "i")]
-    pub const fn from_ne_bytes(bytes: [u8; N * digit::BYTES]) -> Self {
-        Self {
-            uint: BUint::from_ne_bytes(bytes),
-        }
+    #[inline]
+    pub const fn from_ne_bytes(bytes: [u8; N * digit::BYTES as usize]) -> Self {
+        Self::from_bits(BUint::from_ne_bytes(bytes))
     }
 }
 

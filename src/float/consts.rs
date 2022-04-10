@@ -10,9 +10,12 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
     pub const DIGITS: u32 = BUint::<W>::ONE.wrapping_shl(MB as ExpType).log10() as u32;
 
-    pub const EPSILON: Self = todo!();
+    pub const EPSILON: Self = {
+        let u = Self::EXP_BIAS.to_bits() - BUint::from(MB); // TODO: make this MB.as_buint() instead
+        Self::from_bits(u << MB)
+    };
 
-    pub const EXP_BIAS: Bint<W> = Bint::MAX.wrapping_shr(MB + 1);
+    pub const EXP_BIAS: Bint<W> = Bint::MAX.wrapping_shr(MB as ExpType + 1);
 
     pub const MIN: Self = {
         let mut e = BUint::MAX;
@@ -20,15 +23,11 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         e = e.wrapping_shl(MB as ExpType + 1);
         let mut m = BUint::MAX;
         m = m.wrapping_shr(Self::EXPONENT_BITS as ExpType + 1);
-        Self {
-            uint: e | m,
-        }
+        Self::from_bits(e | m)
     };
 
     pub const MIN_POSITIVE: Self = {
-        Self {
-            uint: BUint::ONE.wrapping_shl(MB as ExpType),
-        }
+        Self::from_bits(BUint::ONE.wrapping_shl(MB as ExpType))
     };
     pub const MAX_NEGATIVE: Self = -Self::MIN_POSITIVE;
     pub const MAX: Self = Self::MIN.abs();
@@ -39,13 +38,9 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     pub const MIN_10_EXP: Self = todo!();
     pub const MAX_10_EXP: Self = todo!();
 
-    pub const MAX_SUBNORMAL: Self = Self {
-        uint: BUint::MAX.wrapping_shr(Self::EXPONENT_BITS as ExpType + 1),
-    };
+    pub const MAX_SUBNORMAL: Self = Self::from_bits(BUint::MAX.wrapping_shr(Self::EXPONENT_BITS as ExpType + 1));
     pub const MIN_SUBNORMAL: Self = -Self::MAX_SUBNORMAL;
-    pub const MIN_POSITIVE_SUBNORMAL: Self = Self {
-        uint: BUint::ONE,
-    };
+    pub const MIN_POSITIVE_SUBNORMAL: Self = Self::from_bits(BUint::ONE);
     pub const MAX_NEGATIVE_SUBNORMAL: Self = -Self::MIN_POSITIVE_SUBNORMAL;
 
     pub const NAN: Self = {
@@ -53,30 +48,31 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         u = u.wrapping_shl(1);
         u = u.wrapping_shr(MB as ExpType);
         u = u.wrapping_shl(MB as ExpType - 1);
-        Self {
-            uint: u,
-        }
+        Self::from_bits(u)
+    };
+
+    pub const QNAN: Self = {
+        let bits = Self::NAN.to_bits();
+        Self::from_bits(bits | (BUint::ONE << (MB - 1)))
     };
 
     pub const NEG_NAN: Self = -Self::NAN;
+
+    pub const NEG_QNAN: Self = -Self::QNAN;
 
     pub const INFINITY: Self = {
         let mut u = BUint::MAX;
         u = u.wrapping_shl(1);
         u = u.wrapping_shr(1 + MB as ExpType);
         u = u.wrapping_shl(MB as ExpType);
-        Self {
-            uint: u,
-        }
+        Self::from_bits(u)
     };
 
     pub const NEG_INFINITY: Self = {
         let mut u = BUint::MAX;
         u = u.wrapping_shr(MB as ExpType);
         u = u.wrapping_shl(MB as ExpType);
-        Self {
-            uint: u,
-        }
+        Self::from_bits(u)
     };
 
     pub const ZERO: Self = Self::from_bits(BUint::ZERO);
@@ -90,8 +86,23 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         u = u.wrapping_shl(MB as ExpType);
         Self::from_bits(u)
     };
+
+    pub const TWO: Self = {
+        let (exp, _) = Self::ONE.exp_mant();
+        Self::from_exp_mant(false, exp + BUint::ONE, BUint::ZERO)
+    };
+
+    pub const HALF: Self = {
+        let (exp, _) = Self::ONE.exp_mant();
+        Self::from_exp_mant(false, exp - BUint::ONE, BUint::ZERO)
+    };
+
+    pub const QUARTER: Self = {
+        let (exp, _) = Self::ONE.exp_mant();
+        Self::from_exp_mant(false, exp - BUint::TWO, BUint::ZERO)
+    };
     
-    pub const NEG_ONE: Self = Self::from_bits(Self::ONE.uint | Self::NEG_ZERO.uint);
+    pub const NEG_ONE: Self = Self::from_bits(Self::ONE.bits | Self::NEG_ZERO.bits);
 }
 
 #[cfg(test)]
@@ -109,11 +120,14 @@ mod tests {
 
     #[test]
     fn test_constants() {
-        test_constant!(NAN, INFINITY, NEG_INFINITY, MAX, MIN, MIN_POSITIVE);
+        test_constant!(NAN, INFINITY, NEG_INFINITY, MAX, MIN, MIN_POSITIVE, EPSILON);
 
         assert_eq!(F64::ZERO.to_bits(), 0.0f64.to_bits().into());
         assert_eq!(F64::NEG_ZERO.to_bits(), (-0.0f64).to_bits().into());
         assert_eq!(F64::ONE.to_bits(), 1.0f64.to_bits().into());
+        assert_eq!(F64::QUARTER.to_bits(), 0.25f64.to_bits().into());
+
+        assert_eq!(F64::HALF.to_bits(), 0.5f64.to_bits().into());
         assert_eq!(F64::NEG_ONE.to_bits(), (-1.0f64).to_bits().into());
 
         assert_eq!(F64::MAX_NEGATIVE.to_bits(), (-f64::MIN_POSITIVE).to_bits().into());

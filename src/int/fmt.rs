@@ -4,7 +4,7 @@ use core::fmt::{Binary, Display, Formatter, LowerExp, LowerHex, Octal, UpperExp,
 macro_rules! fmt {
     ($format: expr, $pad: expr, $prefix: expr, $trait: tt) => {
         fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-            $trait::fmt(&self.uint, f)
+            $trait::fmt(&self.bits, f)
         }
     }
 }

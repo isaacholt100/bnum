@@ -1,6 +1,7 @@
 use super::{BUint, ExpType};
 use crate::Bint;
 
+#[inline]
 const fn saturate_up<const N: usize>((int, overflow): (BUint<N>, bool)) -> BUint<N> {
     if overflow {
         BUint::<N>::MAX
@@ -9,6 +10,7 @@ const fn saturate_up<const N: usize>((int, overflow): (BUint<N>, bool)) -> BUint
     }
 }
 
+#[inline]
 const fn saturate_down<const N: usize>((int, overflow): (BUint<N>, bool)) -> BUint<N> {
     if overflow {
         BUint::<N>::MIN
@@ -18,9 +20,12 @@ const fn saturate_down<const N: usize>((int, overflow): (BUint<N>, bool)) -> BUi
 }
 
 impl<const N: usize> BUint<N> {
+    #[inline]
     pub const fn saturating_add(self, rhs: Self) -> Self {
         saturate_up(self.overflowing_add(rhs))
     }
+
+    #[inline]
     pub const fn saturating_add_signed(self, rhs: Bint<N>) -> Self {
         if rhs.is_negative() {
             saturate_down(self.overflowing_add_signed(rhs))
@@ -28,12 +33,18 @@ impl<const N: usize> BUint<N> {
             saturate_up(self.overflowing_add_signed(rhs))
         }
     }
+
+    #[inline]
     pub const fn saturating_sub(self, rhs: Self) -> Self {
         saturate_down(self.overflowing_sub(rhs))
     }
+
+    #[inline]
     pub const fn saturating_mul(self, rhs: Self) -> Self {
         saturate_up(self.overflowing_mul(rhs))
     }
+
+    #[inline]
     pub const fn saturating_pow(self, exp: ExpType) -> Self {
         saturate_up(self.overflowing_pow(exp))
     }

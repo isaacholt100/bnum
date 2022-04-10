@@ -216,7 +216,7 @@ pub(crate) use assign_ref_impl;
 macro_rules! shift_impl {
     ($Struct: tt, $tr: tt, $method: ident, $assign_tr: tt, $assign_method: ident, $($rhs: ty), *) => {
         $(
-            impl<const N: usize> $tr<$rhs> for $Struct<N> {
+            impl<const N: usize> const $tr<$rhs> for $Struct<N> {
                 type Output = Self;
 
                 fn $method(self, rhs: $rhs) -> Self {
@@ -301,12 +301,28 @@ macro_rules! all_shift_impls {
 
         crate::macros::try_shift_impl!($Struct, Shr, shr, ShrAssign, shr_assign, "attempt to shift right with overflow", i8, i16, i32, isize, i64, i128);
 
+        #[cfg(feature="usize_exptype")]
         crate::macros::try_shift_impl!($Struct, Shl, shl, ShlAssign, shl_assign, "attempt to shift left with overflow", u32, u64, u128);
 
+        #[cfg(feature="usize_exptype")]
         crate::macros::try_shift_impl!($Struct, Shr, shr, ShrAssign, shr_assign, "attempt to shift right with overflow", u32, u64, u128);
-
+        
+        #[cfg(feature="usize_exptype")]
         crate::macros::shift_impl!($Struct, Shl, shl, ShlAssign, shl_assign, u8, u16);
 
+        #[cfg(feature="usize_exptype")]
+        crate::macros::shift_impl!($Struct, Shr, shr, ShrAssign, shr_assign, u8, u16);
+
+        #[cfg(not(feature="usize_exptype"))]
+        crate::macros::try_shift_impl!($Struct, Shl, shl, ShlAssign, shl_assign, "attempt to shift left with overflow", usize, u64, u128);
+
+        #[cfg(not(feature="usize_exptype"))]
+        crate::macros::try_shift_impl!($Struct, Shr, shr, ShrAssign, shr_assign, "attempt to shift right with overflow", usize, u64, u128);
+        
+        #[cfg(not(feature="usize_exptype"))]
+        crate::macros::shift_impl!($Struct, Shl, shl, ShlAssign, shl_assign, u8, u16);
+
+        #[cfg(not(feature="usize_exptype"))]
         crate::macros::shift_impl!($Struct, Shr, shr, ShrAssign, shr_assign, u8, u16);
 
         crate::macros::shift_self_impl!($Struct, Shl<BUint>, shl, ShlAssign, shl_assign, "attempt to shift left with overflow");

@@ -18,19 +18,19 @@ impl<const N: usize> Bint<N> {
     pub fn from_radix_be(buf: &[u8], radix: u32) -> Option<Self> {
         match BUint::from_radix_be(buf, radix) {
             None => None,
-            Some(uint) => Some(Self { uint }),
+            Some(uint) => Some(Self::from_bits(uint)),
         }
     }
     pub fn from_radix_le(buf: &[u8], radix: u32) -> Option<Self> {
         assert_range!(radix, 256);
         match BUint::from_radix_le(buf, radix) {
             None => None,
-            Some(uint) => Some(Self { uint }),
+            Some(uint) => Some(Self::from_bits(uint)),
         }
     }
-    pub fn from_str_radix(src: &str, radix: u32) -> Result<Self, ParseIntError> {
+    pub fn from_str_radix(mut src: &str, radix: u32) -> Result<Self, ParseIntError> {
         assert_range!(radix, 36);
-        let mut src = src;
+        //let mut src = src;
         let mut negative = false;
         if src.starts_with('-') {
             src = &src[1..];
@@ -40,22 +40,26 @@ impl<const N: usize> Bint<N> {
                     reason: InvalidDigit,
                 });
             }
+        } else if src.starts_with('+') {
+            src = &src[1..];
         }
         let uint = BUint::from_str_radix(src, radix)?;
-        if uint.bit(Self::BITS - 1) {
-            Err(ParseIntError {
-                reason: TooLarge,
-            })
-        } else {
-            if negative {
-                let abs_value = Self {
-                    uint,
-                };
-                Ok(abs_value.neg())
-            } else {
-                Ok(Self {
-                    uint,
+        if negative {
+            if uint > Self::MIN.to_bits() {
+                Err(ParseIntError {
+                    reason: TooLarge,
                 })
+            } else {
+                Ok(Self::from_bits(uint).wrapping_neg())
+            }
+        } else {
+            let out = Self::from_bits(uint);
+            if out.is_negative() {
+                Err(ParseIntError {
+                    reason: TooLarge,
+                })
+            } else {
+                Ok(out)
             }
         }
     }
@@ -63,14 +67,14 @@ impl<const N: usize> Bint<N> {
         if self.is_negative() {
             format!("-{}", self.unsigned_abs().to_str_radix(radix))
         } else {
-            self.uint.to_str_radix(radix)
+            self.bits.to_str_radix(radix)
         }
     }
     pub fn to_radix_be(&self, radix: u32) -> Vec<u8> {
-        self.uint.to_radix_be(radix)
+        self.bits.to_radix_be(radix)
     }
     pub fn to_radix_le(&self, radix: u32) -> Vec<u8> {
-        self.uint.to_radix_le(radix)
+        self.bits.to_radix_le(radix)
     }
 }
 
@@ -94,6 +98,11 @@ mod tests {
             Ok(result.unwrap().into())
         }
     }
+
+    test::quickcheck_from_to_radix!(I128, i128, radix_be, 255);
+    test::quickcheck_from_to_radix!(I128, i128, radix_le, 255);
+    test::quickcheck_from_to_radix!(I128, i128, str_radix, 36);
+
     #[test]
     fn from_to_radix_le() {
         let buf = &[61, 45, 48, 20, 37, 59, 53, 28, 28, 52, 54, 13, 44, 3, 46, 42, 20, 46, 37, 32, 13, 27, 47, 30, 33, 25, 3, 32, 4, 54, 53, 6, 44, 25, 10, 22, 33, 48, 7, 17];

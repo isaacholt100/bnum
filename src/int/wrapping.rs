@@ -2,49 +2,69 @@ use super::Bint;
 use crate::{ExpType, BUint};
 
 impl<const N: usize> Bint<N> {
+    #[inline]
     pub const fn wrapping_add(self, rhs: Self) -> Self {
-        Self {
-            uint: self.uint.wrapping_add(rhs.uint),
-        }
+        Self::from_bits(self.bits.wrapping_add(rhs.bits))
     }
+
+    #[inline]
     pub const fn wrapping_add_unsigned(self, rhs: BUint<N>) -> Self {
         self.overflowing_add_unsigned(rhs).0
     }
+
+    #[inline]
     pub const fn wrapping_sub(self, rhs: Self) -> Self {
-        Self {
-            uint: self.uint.wrapping_sub(rhs.uint),
-        }
+        Self::from_bits(self.bits.wrapping_sub(rhs.bits))
     }
+
+    #[inline]
     pub const fn wrapping_sub_unsigned(self, rhs: BUint<N>) -> Self {
         self.overflowing_sub_unsigned(rhs).0
     }
+
+    #[inline]
     pub const fn wrapping_mul(self, rhs: Self) -> Self {
-        Self {
-            uint: self.uint.wrapping_mul(rhs.uint),
-        }
+        Self::from_bits(self.bits.wrapping_mul(rhs.bits))
     }
+
+    #[inline]
     pub const fn wrapping_div(self, rhs: Self) -> Self {
         self.overflowing_div(rhs).0
     }
+
+    #[inline]
     pub const fn wrapping_div_euclid(self, rhs: Self) -> Self {
         self.overflowing_div_euclid(rhs).0
     }
+
+    #[inline]
     pub const fn wrapping_rem(self, rhs: Self) -> Self {
         self.overflowing_rem(rhs).0
     }
+
+    #[inline]
     pub const fn wrapping_rem_euclid(self, rhs: Self) -> Self {
         self.overflowing_rem_euclid(rhs).0
     }
+
+    #[inline]
     pub const fn wrapping_neg(self) -> Self {
         self.overflowing_neg().0
     }
+
+    #[inline]
     pub const fn wrapping_shl(self, rhs: ExpType) -> Self {
         self.overflowing_shl(rhs).0
     }
+
+    #[inline]
     pub const fn wrapping_shr(self, rhs: ExpType) -> Self {
         self.overflowing_shr(rhs).0
     }
+
     crate::macros::wrapping_pow!();
+
+    #[inline]
     pub const fn wrapping_abs(self) -> Self {
         self.overflowing_abs().0
     }

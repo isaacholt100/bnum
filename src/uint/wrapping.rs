@@ -3,39 +3,61 @@ use crate::Bint;
 use crate::macros::{expect, wrapping_pow};
 
 impl<const N: usize> BUint<N> {
+    #[inline]
     pub const fn wrapping_add(self, rhs: Self) -> Self {
         self.overflowing_add(rhs).0
     }
+
+    #[inline]
     pub const fn wrapping_add_signed(self, rhs: Bint<N>) -> Self {
         self.overflowing_add_signed(rhs).0
     }
+
+    #[inline]
     pub const fn wrapping_sub(self, rhs: Self) -> Self {
         self.overflowing_sub(rhs).0
     }
+
+    #[inline]
     pub const fn wrapping_mul(self, rhs: Self) -> Self {
         self.overflowing_mul(rhs).0
     }
+
+    #[inline]
     pub const fn wrapping_div(self, rhs: Self) -> Self {
         expect!(self.checked_div(rhs), "attempt to divide by zero")
     }
+
+    #[inline]
     pub const fn wrapping_div_euclid(self, rhs: Self) -> Self {
         self.wrapping_div(rhs)
     }
+
+    #[inline]
     pub const fn wrapping_rem(self, rhs: Self) -> Self {
         expect!(self.checked_rem(rhs), "attempt to calculate the remainder with a divisor of zero")
     }
+
+    #[inline]
     pub const fn wrapping_rem_euclid(self, rhs: Self) -> Self {
         self.wrapping_rem(rhs)
     }
+
+    #[inline]
     pub const fn wrapping_neg(self) -> Self {
         self.overflowing_neg().0
     }
+
+    #[inline]
     pub const fn wrapping_shl(self, rhs: ExpType) -> Self {
         self.overflowing_shl(rhs).0
     }
+
+    #[inline]
     pub const fn wrapping_shr(self, rhs: ExpType) -> Self {
         self.overflowing_shr(rhs).0
     }
+    
     wrapping_pow!();
 }
 

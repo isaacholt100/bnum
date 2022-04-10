@@ -50,33 +50,27 @@ macro_rules! test_signed {
 }
 
 mod cast;
+mod checked;
 mod cmp;
 mod convert;
-mod ops;
+mod endian;
+mod fmt;
 #[cfg(feature = "numtraits")]
 mod numtraits;
-mod overflow;
-mod checked;
-mod saturating;
-mod wrapping;
-mod fmt;
-mod endian;
+mod ops;
+mod overflowing;
 mod radix;
+mod saturating;
 mod unchecked;
+mod wrapping;
 
 #[cfg(feature = "serde_all")]
 use serde::{Serialize, Deserialize};
 
-#[cfg(feature = "serde_all")]
-#[derive(Clone, Copy, Hash, /*Debug, */Serialize, Deserialize)]
+#[derive(Clone, Copy, Hash, /*Debug, */)]
+#[cfg_attr(feature = "serde_all", derive(Serialize, Deserialize))]
 pub struct Bint<const N: usize> {
-    uint: BUint<N>,
-}
-
-#[cfg(not(feature = "serde_all"))]
-#[derive(Clone, Copy, Hash/*, Debug*/)]
-pub struct Bint<const N: usize> {
-    uint: BUint<N>,
+    bits: BUint<N>,
 }
 
 macro_rules! pos_const {
@@ -102,32 +96,24 @@ impl<const N: usize> Bint<N> {
     pub const MIN: Self = {
         let mut digits = [0; N];
         digits[N - 1] = 1 << (digit::BITS - 1);
-        Self {
-            uint: BUint::from_digits(digits),
-        }
+        Self::from_bits(BUint::from_digits(digits))
     };
 
     #[doc=doc::max_const!(Bint::<2>)]
     pub const MAX: Self = {
         let mut digits = [Digit::MAX; N];
         digits[N - 1] >>= 1;
-        Self {
-            uint: BUint::from_digits(digits),
-        }
+        Self::from_bits(BUint::from_digits(digits))
     };
 
     #[doc=doc::zero_const!(Bint::<2>)]
     pub const ZERO: Self = {
-        Self {
-            uint: BUint::ZERO,
-        }
+        Self::from_bits(BUint::ZERO)
     };
 
     #[doc=doc::one_const!(Bint::<2>)]
     pub const ONE: Self = {
-        Self {
-            uint: BUint::ONE,
-        }
+        Self::from_bits(BUint::ONE)
     };
 
     pos_const!(TWO 2, THREE 3, FOUR 4, FIVE 5, SIX 6, SEVEN 7, EIGHT 8, NINE 9, TEN 10);
@@ -135,16 +121,17 @@ impl<const N: usize> Bint<N> {
     neg_const!(NEG_ONE ONE 1, NEG_TWO TWO 2, NEG_THREE THREE 3, NEG_FOUR FOUR 4, NEG_FIVE FIVE 5, NEG_SIX SIX 6, NEG_SEVEN SEVEN 7, NEG_EIGHT EIGHT 8, NEG_NINE NINE 9, NEG_TEN TEN 10);
 
     #[doc=doc::bits_const!(Bint::<2>, 64)]
-    pub const BITS: usize = BUint::<N>::BITS;
+    pub const BITS: ExpType = BUint::<N>::BITS;
 
     #[doc=doc::bytes_const!(Bint::<2>, 8)]
-    pub const BYTES: usize = BUint::<N>::BYTES;
+    pub const BYTES: ExpType = BUint::<N>::BYTES;
 
     const N_MINUS_1: usize = N - 1;
 }
 
 macro_rules! log {
     ($method: ident $(, $base: ident : $ty: ty)?) => {
+        #[inline]
         pub const fn $method(self, $($base : $ty),*) -> ExpType {
             if self.is_negative() {
                 #[cfg(debug_assertions)]
@@ -152,7 +139,7 @@ macro_rules! log {
                 #[cfg(not(debug_assertions))]
                 0
             } else {
-                self.uint.$method($($base.uint)?)
+                self.bits.$method($($base.bits)?)
             }
         }
     }
@@ -160,53 +147,63 @@ macro_rules! log {
 
 impl<const N: usize> Bint<N> {
     #[doc=doc::count_ones!(Bint::<4>)]
+    #[inline]
     pub const fn count_ones(self) -> ExpType {
-        self.uint.count_ones()
+        self.bits.count_ones()
     }
 
     #[doc=doc::count_zeros!(Bint::<5>)]
+    #[inline]
     pub const fn count_zeros(self) -> ExpType {
-        self.uint.count_zeros()
+        self.bits.count_zeros()
     }
 
     #[doc=doc::leading_zeros!(Bint::<3>)]
+    #[inline]
     pub const fn leading_zeros(self) -> ExpType {
-        self.uint.leading_zeros()
+        self.bits.leading_zeros()
     }
 
     #[doc=doc::trailing_zeros!(Bint::<3>)]
+    #[inline]
     pub const fn trailing_zeros(self) -> ExpType {
-        self.uint.trailing_zeros()
+        self.bits.trailing_zeros()
     }
 
     #[doc=doc::leading_ones!(Bint::<4>, NEG_ONE)]
+    #[inline]
     pub const fn leading_ones(self) -> ExpType {
-        self.uint.leading_ones()
+        self.bits.leading_ones()
     }
 
     #[doc=doc::trailing_ones!(Bint::<6>)]
+    #[inline]
     pub const fn trailing_ones(self) -> ExpType {
-        self.uint.trailing_ones()
+        self.bits.trailing_ones()
     }
 
     #[doc=doc::rotate_left!(Bint::<2>, "i")]
+    #[inline]
     pub const fn rotate_left(self, n: ExpType) -> Self {
-        Self::from_bits(self.uint.rotate_left(n))
+        Self::from_bits(self.bits.rotate_left(n))
     }
 
     #[doc=doc::rotate_right!(Bint::<2>, "i")]
+    #[inline]
     pub const fn rotate_right(self, n: ExpType) -> Self {
-        Self::from_bits(self.uint.rotate_right(n))
+        Self::from_bits(self.bits.rotate_right(n))
     }
 
     #[doc=doc::swap_bytes!(Bint::<2>, "i")]
+    #[inline]
     pub const fn swap_bytes(self) -> Self {
-        Self::from_bits(self.uint.swap_bytes())
+        Self::from_bits(self.bits.swap_bytes())
     }
 
     #[doc=doc::reverse_bits!(Bint::<6>, "i")]
+    #[inline]
     pub const fn reverse_bits(self) -> Self {
-        Self::from_bits(self.uint.reverse_bits())
+        Self::from_bits(self.bits.reverse_bits())
     }
 
     /// Computes the absolute value of `self` without any wrapping or panicking.
@@ -215,45 +212,50 @@ impl<const N: usize> Bint<N> {
     /// assert_eq!(Bint::<3>::from(-100).unsigned_abs(), Bint::from(100));
     /// assert_eq!(Bint::<3>::MAX.unsigned_abs(), Bint::MAX.to_bits());
     /// ```
+    #[inline]
     pub const fn unsigned_abs(self) -> BUint<N> {
         if self.is_negative() {
-            self.wrapping_neg().uint
+            self.wrapping_neg().bits
         } else {
-            self.uint
+            self.bits
         }
     }
 
     #[doc=doc::pow!(Bint::<4>)]
-    #[cfg(debug_assertions)]
+    #[inline]
     pub const fn pow(self, exp: ExpType) -> Self {
-        expect!(self.checked_pow(exp), "attempt to calculate power with overflow")
-    }
-    #[cfg(not(debug_assertions))]
-    pub const fn pow(self, exp: ExpType) -> Self {
+        #[cfg(debug_assertions)]
+        return expect!(self.checked_pow(exp), "attempt to calculate power with overflow");
+
+        #[cfg(not(debug_assertions))]
         self.wrapping_pow(exp)
     }
 
+    #[inline]
     pub const fn div_euclid(self, rhs: Self) -> Self {
-        assert!(!self.eq(&Self::MIN) && !rhs.eq(&Self::NEG_ONE), "attempt to divide with overflow");
+        assert!(self != Self::MIN || rhs != Self::NEG_ONE, "attempt to divide with overflow");
         self.wrapping_div_euclid(rhs)
     }
+
+    #[inline]
     pub const fn rem_euclid(self, rhs: Self) -> Self {
-        assert!(!self.eq(&Self::MIN) && !rhs.eq(&Self::NEG_ONE), "attempt to calculate remainder with overflow");
+        assert!(self != Self::MIN || rhs != Self::NEG_ONE, "attempt to calculate remainder with overflow");
         self.wrapping_rem_euclid(rhs)
     }
 
-    #[cfg(debug_assertions)]
+    #[inline]
     pub const fn abs(self) -> Self {
-        expect!(self.checked_abs(), "attempt to negate with overflow")
-    }
-    #[cfg(not(debug_assertions))]
-    pub const fn abs(self) -> Self {
+        #[cfg(debug_assertions)]
+        return expect!(self.checked_abs(), "attempt to negate with; overflow");
+
+        #[cfg(not(debug_assertions))]
         match self.checked_abs() {
             Some(int) => int,
             None => Self::MIN,
         }
     }
 
+    #[inline]
     pub const fn signum(self) -> Self {
         if self.is_negative() {
             Self::NEG_ONE
@@ -263,11 +265,15 @@ impl<const N: usize> Bint<N> {
             Self::ONE
         }
     }
+
+    #[inline]
     pub const fn is_positive(self) -> bool {
         let signed_digit = self.signed_digit();
         signed_digit.is_positive() ||
-        (signed_digit == 0 && !self.uint.is_zero())
+        (signed_digit == 0 && !self.bits.is_zero())
     }
+    
+    #[inline]
     pub const fn is_negative(self) -> bool {
         self.signed_digit().is_negative()
     }
@@ -282,34 +288,34 @@ impl<const N: usize> Bint<N> {
         "assert!(!m.is_power_of_two());"
         "assert!(!((-n).is_power_of_two()));"
     }]
+    #[inline]
     pub const fn is_power_of_two(self) -> bool {
         if self.is_negative() {
             false
         } else {
-            self.uint.is_power_of_two()
+            self.bits.is_power_of_two()
         }
     }
 
     #[doc=doc::next_power_of_two!(Bint::<2>, "`Self::MIN`", "NEG_ONE")]
-    #[cfg(debug_assertions)]
+    #[inline]
     pub const fn next_power_of_two(self) -> Self {
-        expect!(self.checked_next_power_of_two(), "attempt to calculate next power of two with overflow")
-    }
-    #[cfg(not(debug_assertions))]
-    pub const fn next_power_of_two(self) -> Self {
+        #[cfg(debug_assertions)]
+        return expect!(self.checked_next_power_of_two(), "attempt to calculate next power of two with overflow");
+
+        #[cfg(not(debug_assertions))]
         self.wrapping_next_power_of_two()
     }
 
     #[doc=doc::checked_next_power_of_two!(Bint::<2>)]
+    #[inline]
     pub const fn checked_next_power_of_two(self) -> Option<Self> {
         if self.is_negative() {
             Some(Self::ONE)
         } else {
-            match self.uint.checked_next_power_of_two() {
+            match self.bits.checked_next_power_of_two() {
                 Some(uint) => {
-                    let out = Self {
-                        uint,
-                    };
+                    let out = Self::from_bits(uint);
                     if out.is_negative() {
                         None
                     } else {
@@ -322,16 +328,19 @@ impl<const N: usize> Bint<N> {
     }
 
     #[doc=doc::wrapping_next_power_of_two!(Bint::<2>, "`Self::MIN`")]
+    #[inline]
     pub const fn wrapping_next_power_of_two(self) -> Self {
         match self.checked_next_power_of_two() {
             Some(int) => int,
             None => Self::MIN,
         }
     }
+
     log!(log, base: Self);
     log!(log2);
     log!(log10);
 
+    #[inline]
     pub const fn abs_diff(self, other: Self) -> BUint<N> {
         if self < other {
             other.wrapping_sub(self).to_bits()
@@ -340,6 +349,7 @@ impl<const N: usize> Bint<N> {
         }
     }
 
+    #[inline]
     pub const fn checked_next_multiple_of(self, rhs: Self) -> Option<Self> {
         if rhs == Self::NEG_ONE {
             return Some(self);
@@ -368,6 +378,7 @@ impl<const N: usize> Bint<N> {
         }
     }
 
+    #[inline]
     pub const fn next_multiple_of(self, rhs: Self) -> Self {
         if rhs == Self::NEG_ONE {
             return self;
@@ -386,6 +397,7 @@ impl<const N: usize> Bint<N> {
         }
     }
 
+    #[inline]
     pub const fn div_floor(self, rhs: Self) -> Self {
         let d = self / rhs;
         let r = self % rhs;
@@ -396,6 +408,7 @@ impl<const N: usize> Bint<N> {
         }
     }
 
+    #[inline]
     pub const fn div_ceil(self, rhs: Self) -> Self {
         let d = self / rhs;
         let r = self % rhs;
@@ -409,55 +422,59 @@ impl<const N: usize> Bint<N> {
 
 impl<const N: usize> Bint<N> {
     #[doc=doc::bits!(Bint::<2>)]
-    pub const fn bits(&self) -> usize {
-        self.uint.bits()
+    #[inline]
+    pub const fn bits(&self) -> ExpType {
+        self.bits.bits()
     }
 
     #[doc=doc::bit!(Bint::<4>)]
+    #[inline]
     pub const fn bit(&self, index: usize) -> bool {
-        self.uint.bit(index)
+        self.bits.bit(index)
     }
 
+    #[inline(always)]
     const fn signed_digit(&self) -> SignedDigit {
-        self.uint.digits()[N - 1] as SignedDigit
+        self.bits.digits()[N - 1] as SignedDigit
     }
 
     #[doc=doc::is_zero!(Bint::<2>)]
+    #[inline]
     pub const fn is_zero(self) -> bool {
-        self.uint.is_zero()
+        self.bits.is_zero()
     }
 
     #[doc=doc::is_one!(Bint::<2>)]
+    #[inline]
     pub const fn is_one(self) -> bool {
-        self.uint.is_one()
+        self.bits.is_one()
     }
 
     #[inline(always)]
     pub const fn digits(&self) -> &[Digit; N] {
-        &self.uint.digits()
+        &self.bits.digits()
     }
     #[inline(always)]
     pub const fn from_digits(digits: [Digit; N]) -> Self {
-        Self {
-            uint: BUint::from_digits(digits),
-        }
+        Self::from_bits(BUint::from_digits(digits))
     }
     #[inline(always)]
-    pub const fn from_bits(uint: BUint<N>) -> Self {
+    pub const fn from_bits(bits: BUint<N>) -> Self {
         Self {
-            uint,
+            bits,
         }
     }
     #[inline(always)]
     pub const fn to_bits(self) -> BUint<N> {
-        self.uint
+        self.bits
     }
 
+    #[inline]
     pub const fn to_exp_type(self) -> Option<ExpType> {
         if self.is_negative() {
             None
         } else {
-            self.uint.to_exp_type()
+            self.bits.to_exp_type()
         }
     }
 }
@@ -606,7 +623,7 @@ mod tests {
             (4294567897594568765i128, 249798748956i128),
             (27456979757i128, 45i128)
         ],
-        quickcheck_skip: b == 0
+        quickcheck_skip: b == 0 || (a == i128::MIN && b == -1)
     }
     test_signed! {
         function: rem_euclid(a: i128, b: i128),
@@ -615,7 +632,7 @@ mod tests {
             (-46945656i128, 896794576985645i128),
             (-45679i128, -8i128)
         ],
-        quickcheck_skip: b == 0
+        quickcheck_skip: b == 0 || (a == i128::MIN && b == -1)
     }
     test_signed! {
         function: abs(a: i128),

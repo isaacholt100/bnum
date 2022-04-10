@@ -13,6 +13,7 @@ impl<const N: usize> const PartialEq for BUint<N> {
         }
         true
     }
+
     #[inline]
     fn ne(&self, other: &Self) -> bool {
         !(self.eq(other))
@@ -26,6 +27,7 @@ impl<const N: usize> const PartialOrd for BUint<N> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
+
     #[inline]
     fn lt(&self, other: &Self) -> bool {
         match self.cmp(other) {
@@ -33,6 +35,7 @@ impl<const N: usize> const PartialOrd for BUint<N> {
             _ => false,
         }
     }
+
     #[inline]
     fn gt(&self, other: &Self) -> bool {
         match self.cmp(other) {
@@ -40,6 +43,7 @@ impl<const N: usize> const PartialOrd for BUint<N> {
             _ => false,
         }
     }
+
     #[inline]
     fn le(&self, other: &Self) -> bool {
         match self.cmp(other) {
@@ -47,6 +51,7 @@ impl<const N: usize> const PartialOrd for BUint<N> {
             _ => false,
         }
     }
+
     #[inline]
     fn ge(&self, other: &Self) -> bool {
         match self.cmp(other) {
@@ -72,6 +77,7 @@ impl<const N: usize> const Ord for BUint<N> {
         }
         Ordering::Equal
     }
+
     #[inline]
     fn max(self, other: Self) -> Self {
         match self.cmp(&other) {
@@ -79,6 +85,7 @@ impl<const N: usize> const Ord for BUint<N> {
             _ => self,
         }
     }
+
     #[inline]
     fn min(self, other: Self) -> Self {
         match self.cmp(&other) {
@@ -86,6 +93,7 @@ impl<const N: usize> const Ord for BUint<N> {
             _ => other,
         }
     }
+    
     #[inline]
     fn clamp(self, min: Self, max: Self) -> Self {
         if let Ordering::Less = self.cmp(&min) {

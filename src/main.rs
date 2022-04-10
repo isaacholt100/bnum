@@ -1,6 +1,6 @@
-use bint::{Matrix, Vector};
+//use bint::{Matrix, Vector};
 
-fn main() {
+/*fn main() {
     /*println!("{}", bint::Float::<8, 52>::DIGITS);
     println!("{:b}", f32::EPSILON.to_bits());*/
     let a = f32::from_bits(i32::MAX as u32 - 11);
@@ -37,4 +37,108 @@ fn main() {
 
     let m4: Matrix<i32, 4, 3> = [Vector::from([0, 1, 0, 0]), Vector::from([0, 4, 0, 0]), Vector::from([0, 0, 1, 0])].into();
     assert!(!m4.is_rref());
+}*/
+
+trait Component<P, S> {
+    fn state(&self) -> &Rc<RefCell<S>>;
+    fn set_state<F: FnMut(&mut S)>(&mut self, mut f: F) {
+        f(&mut self.state().borrow_mut());
+        self.update();
+    }
+    fn update(&self);
+}
+
+struct MyComp {
+    state: Rc<RefCell<(u8, String)>>,
+    html: Vec<String>,
+}
+
+impl Component<(), (u8, String)> for MyComp {
+    fn update(&self) {
+        println!("{:?}", self.html);
+    }
+    fn state(&self) -> &Rc<RefCell<(u8, String)>> {
+        &self.state
+    }
+}
+
+pub struct SharedValue<T> {
+    value: Rc<RefCell<T>>,
+}
+
+impl<T> SharedValue<T> {
+    pub fn set_val<F: FnMut(&mut T)>(&mut self, mut f: F) {
+        f(&mut self.value.borrow_mut());
+    }
+    pub fn new(value: T) -> Self {
+        Self {
+            value: Rc::new(RefCell::new(value)),
+        }
+    }
+    pub fn create_dep(&self) -> Dep<T> {
+        Dep::new(self.value.clone())
+    }
+}
+
+#[derive(Debug)]
+pub struct Dep<T> {
+    data: Rc<RefCell<T>>,
+}
+
+impl<T> Dep<T> {
+    pub fn new(data: Rc<RefCell<T>>) -> Self {
+        Self { data }
+    }
+}
+
+impl<T> Clone for Dep<T> {
+    fn clone(&self) -> Self {
+        Self::new(self.data.clone())
+    }
+}
+
+use std::rc::Rc;
+use std::cell::RefCell;
+
+use bint::I128;
+
+fn main() {
+    let mut value = SharedValue::new(String::from("hello"));
+
+    let a = value.create_dep();
+    let b = value.create_dep();
+    let c = b.clone();
+
+    println!("a after = {:?}", a);
+    println!("b after = {:?}", b);
+    println!("c after = {:?}", c);
+
+
+    value.set_val(|s| s.push_str(" world"));
+
+    println!("a after = {:?}", a);
+    println!("b after = {:?}", b);
+    println!("c after = {:?}", c);
+
+
+    let value = Rc::new(RefCell::new(5));
+
+    let a = Rc::clone(&value);
+    let b = Rc::clone(&value);
+    let c = Rc::clone(&value);
+
+    println!("a after = {:?}", a);
+    println!("b after = {:?}", b);
+    println!("c after = {:?}", c);
+
+
+    *value.borrow_mut() += 10;
+
+    println!("a after = {:?}", a);
+    println!("b after = {:?}", b);
+    println!("c after = {:?}", c);
+
+    println!("{}", I128::from(-136910483565846334909092127208875491329i128).digits()[15] as i8);
+    println!("{}", I128::from(-31901471898837980949691369446728269825i128).digits()[15] as i8);
+    //int_parser::n!(0x54394587n4466i128);
 }

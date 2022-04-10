@@ -6,7 +6,7 @@ use crate::{TryFromIntError, ParseIntError};
 use crate::digit::{Digit, self};
 use crate::uint::BUint;
 use crate::error::TryFromErrorReason::*;
-use crate::{macros, ExpType};
+use crate::{macros};
 
 impl<const N: usize> FromStr for Bint<N> {
     type Err = ParseIntError;
@@ -19,8 +19,8 @@ impl<const N: usize> FromStr for Bint<N> {
 macro_rules! from_int {
     ($($int: tt),*) => {
         $(impl<const N: usize> const From<$int> for Bint<N> {
+            #[inline]
             fn from(int: $int) -> Self {
-                const UINT_BITS: ExpType = $int::BITS as ExpType;
                 let initial_digit = if int.is_negative() {
                     Digit::MAX
                 } else {
@@ -28,7 +28,7 @@ macro_rules! from_int {
                 };
                 let mut digits = [initial_digit; N];
                 let mut i = 0;
-                while i << digit::BIT_SHIFT < UINT_BITS {
+                while i << digit::BIT_SHIFT < $int::BITS as usize {
                     let d = (int >> (i << digit::BIT_SHIFT)) as Digit;
                     if d != initial_digit {
                         digits[i] = d;
@@ -46,10 +46,9 @@ from_int!(i8, i16, i32, isize, i64, i128);
 macro_rules! from_uint {
     ($($from: tt), *) => {
         $(impl<const N: usize> From<$from> for Bint<N> {
+            #[inline]
             fn from(int: $from) -> Self {
-                let out = Self {
-                    uint: int.into(),
-                };
+                let out = Self::from_bits(int.into());
                 if out.is_negative() {
                     panic!("too big")// TODO: make clearer
                 }
@@ -62,6 +61,7 @@ macro_rules! from_uint {
 from_uint!(u8, u16, u32, usize, u64, u128);
 
 impl<const N: usize> const From<bool> for Bint<N> {
+    #[inline]
     fn from(small: bool) -> Self {
         if small {
             Self::ONE
@@ -76,6 +76,7 @@ macros::all_try_int_impls!(Bint);
 impl<const N: usize> TryFrom<BUint<N>> for Bint<N> {
     type Error = TryFromIntError;
 
+    #[inline]
     fn try_from(u: BUint<N>) -> Result<Self, Self::Error> {
         if u.leading_ones() != 0 {
             Err(TryFromIntError {
@@ -84,9 +85,7 @@ impl<const N: usize> TryFrom<BUint<N>> for Bint<N> {
                 reason: TooLarge,   
             })
         } else {
-            Ok(Self {
-                uint: u,
-            })
+            Ok(Self::from_bits(u))
         }
     }
 }
@@ -94,6 +93,7 @@ impl<const N: usize> TryFrom<BUint<N>> for Bint<N> {
 impl<const N: usize> TryFrom<f32> for Bint<N> {
     type Error = TryFromIntError;
 
+    #[inline]
     fn try_from(f: f32) -> Result<Self, Self::Error> {
         if f.is_sign_negative() {
             let x = BUint::try_from(-f)?;
@@ -107,6 +107,7 @@ impl<const N: usize> TryFrom<f32> for Bint<N> {
 impl<const N: usize> TryFrom<f64> for Bint<N> {
     type Error = TryFromIntError;
 
+    #[inline]
     fn try_from(f: f64) -> Result<Self, Self::Error> {
         if f < 0.0 {
             let x = BUint::try_from(-f)?;

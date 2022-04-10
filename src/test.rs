@@ -77,6 +77,7 @@ macro_rules! test_trait {
     } => {
         $(paste::paste! {
             quickcheck::quickcheck! {
+                #[inline]
                 fn [<quickcheck_ $test_name>]($($param : $ty), *) -> quickcheck::TestResult {
                     $(if $skip {
                         return quickcheck::TestResult::discard();
@@ -145,13 +146,11 @@ macro_rules! test_op {
     {
         big: $big_type: ty,
         primitive: $primitive: ty,
-        function: <$Trait: ty> :: $name: ident ($($param: ident : $ty: ty), *)
+        function: <$Trait: ty> :: $name: ident ($($param: ident : $ty: ty), *),
+        converter: $converter: expr
         $(,quickcheck_skip: $skip: expr)?
     } => {
         paste::paste! {
-            fn [<$name _converter>]<T: Into<$big_type>>(f: T) -> $big_type {
-                f.into()
-            }
             crate::test::test_trait! {
                 big: $big_type,
                 primitive: $primitive,
@@ -159,7 +158,7 @@ macro_rules! test_op {
                 function: <$Trait>::$name,
                 quickcheck: ($($param : $ty), *)
                 $(,quickcheck_skip: $skip)?
-                ,converter: [<$name _converter>]
+                ,converter: $converter
             }
         }
     }
@@ -268,3 +267,69 @@ impl<const N: usize> Debug for U8ArrayWrapper<N> {
         self.0.fmt(f)
     }
 }
+
+pub mod converters {
+    pub fn tuple_converter<T, U, V: Into<T>, W: Into<U>>((a, b): (V, W)) -> (T, U) {
+        (a.into(), b.into())
+    }
+
+    pub fn option_converter<T, U: Into<T>>(o: Option<U>) -> Option<T> {
+        o.map(Into::into)
+    }
+}
+
+macro_rules! quickcheck_from_to_radix {
+    ($big: ty, $primitive: ty, $name: ident, $max: expr) => {
+        paste::paste! {
+            quickcheck::quickcheck! {
+                fn [<quickcheck_from_to_ $name>](u: $primitive, radix: u8) -> quickcheck::TestResult {
+                    #[allow(unused_comparisons)]
+                    if radix < 2 || radix > $max {
+                        return quickcheck::TestResult::discard();
+                    }
+                    let u = $big::from(u);
+                    let v = u.[<to_ $name>](radix as u32);
+                    let u1 = $big::[<from_ $name>](&v, radix as u32).unwrap();
+                    quickcheck::TestResult::from_bool(u == u1)
+                }
+            }
+        }
+    }
+}
+
+pub(crate) use quickcheck_from_to_radix;
+
+macro_rules! test_cast_from {
+    ($big: ty as [$($ty: ty), *]) => {
+        paste::paste! {
+            quickcheck::quickcheck! {
+                $(
+                    fn [<quickcheck_as_ $ty>](i: [<$big:lower>]) -> bool {
+                        let big = $big::from(i);
+                        big.[<as_ $ty>]() == i as $ty
+                    }
+                )*
+            }
+        }
+    }
+}
+
+pub(crate) use test_cast_from;
+
+macro_rules! test_cast_to {
+    ([$($ty: ty), *] as $big: ty) => {
+        paste::paste! {
+            quickcheck::quickcheck! {
+                $(
+                    fn [<quickcheck_ $ty _as>](i: $ty) -> bool {
+                        let big: $big = i.as_();
+                        let primitive = i as [<$big:lower>];
+                        big == primitive.into()
+                    }
+                )*
+            }
+        }
+    }
+}
+
+pub(crate) use test_cast_to;

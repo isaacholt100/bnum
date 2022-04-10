@@ -3,19 +3,18 @@ use core::ops::{Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor
 use crate::macros::{expect, op_ref_impl, all_shift_impls};
 use crate::digit::Digit;
 
-use crate::arithmetic;
-
 impl<const N: usize> const Add<Digit> for BUint<N> {
     type Output = Self;
 
+    #[inline]
     fn add(self, rhs: Digit) -> Self {
         let mut out = Self::ZERO;
-        let result = arithmetic::add_carry_unsigned(0, self.digits[0], rhs);
+        let result = self.digits[0].carrying_add(rhs, false);
         out.digits[0] = result.0;
         let mut carry = result.1;
         let mut i = 1;
         while i < N {
-            let result = arithmetic::add_carry_unsigned(carry, self.digits[i], 0);
+            let result = self.digits[0].carrying_add(0, carry);
             out.digits[i] = result.0;
             carry = result.1;
             i += 1;
@@ -27,12 +26,12 @@ impl<const N: usize> const Add<Digit> for BUint<N> {
 impl<const N: usize> const Add<Self> for BUint<N> {
     type Output = Self;
 
-    #[cfg(debug_assertions)]
+    #[inline]
     fn add(self, rhs: Self) -> Self {
-        expect!(self.checked_add(rhs), "attempt to add with overflow")
-    }
-    #[cfg(not(debug_assertions))]
-    fn add(self, rhs: Self) -> Self {
+        #[cfg(debug_assertions)]
+        return expect!(self.checked_add(rhs), "attempt to add with overflow");
+
+        #[cfg(not(debug_assertions))]
         self.wrapping_add(rhs)
     }
 }
@@ -40,6 +39,7 @@ impl<const N: usize> const Add<Self> for BUint<N> {
 op_ref_impl!(Add<BUint<N>> for BUint<N>, add);
 
 impl<T, const N: usize> const AddAssign<T> for BUint<N> where Self: ~const Add<T, Output = Self> {
+    #[inline]
     fn add_assign(&mut self, rhs: T) {
         *self = *self + rhs;
     }
@@ -48,6 +48,7 @@ impl<T, const N: usize> const AddAssign<T> for BUint<N> where Self: ~const Add<T
 impl<const N: usize> const BitAnd for BUint<N> {
     type Output = Self;
 
+    #[inline]
     fn bitand(self, rhs: Self) -> Self {
         let mut out = Self::ZERO;
         let mut i = 0;
@@ -62,6 +63,7 @@ impl<const N: usize> const BitAnd for BUint<N> {
 op_ref_impl!(BitAnd<BUint<N>> for BUint<N>, bitand);
 
 impl<T, const N: usize> const BitAndAssign<T> for BUint<N> where Self: ~const BitAnd<T, Output = Self> {
+    #[inline]
     fn bitand_assign(&mut self, rhs: T) {
         *self = BitAnd::bitand(*self, rhs);
     }
@@ -70,6 +72,7 @@ impl<T, const N: usize> const BitAndAssign<T> for BUint<N> where Self: ~const Bi
 impl<const N: usize> const BitOr for BUint<N> {
     type Output = Self;
 
+    #[inline]
     fn bitor(self, rhs: Self) -> Self {
         let mut out = Self::ZERO;
         let mut i = 0;
@@ -84,6 +87,7 @@ impl<const N: usize> const BitOr for BUint<N> {
 op_ref_impl!(BitOr<BUint<N>> for BUint<N>, bitor);
 
 impl<T, const N: usize> const BitOrAssign<T> for BUint<N> where Self: ~const BitOr<T, Output = Self> {
+    #[inline]
     fn bitor_assign(&mut self, rhs: T) {
         *self = BitOr::bitor(*self, rhs);
     }
@@ -92,6 +96,7 @@ impl<T, const N: usize> const BitOrAssign<T> for BUint<N> where Self: ~const Bit
 impl<const N: usize> const BitXor for BUint<N> {
     type Output = Self;
 
+    #[inline]
     fn bitxor(self, rhs: Self) -> Self {
         let mut out = Self::ZERO;
         let mut i = 0;
@@ -106,6 +111,7 @@ impl<const N: usize> const BitXor for BUint<N> {
 op_ref_impl!(BitXor<BUint<N>> for BUint<N>, bitxor);
 
 impl<T, const N: usize> const BitXorAssign<T> for BUint<N> where Self: ~const BitXor<T, Output = Self> {
+    #[inline]
     fn bitxor_assign(&mut self, rhs: T) {
         *self = BitXor::bitxor(*self, rhs);
     }
@@ -114,6 +120,7 @@ impl<T, const N: usize> const BitXorAssign<T> for BUint<N> where Self: ~const Bi
 impl<const N: usize> const Div for BUint<N> {
     type Output = Self;
 
+    #[inline]
     fn div(self, rhs: Self) -> Self {
         self.wrapping_div(rhs)
     }
@@ -122,6 +129,7 @@ impl<const N: usize> const Div for BUint<N> {
 impl<const N: usize> const Div<Digit> for BUint<N> {
     type Output = Self;
 
+    #[inline]
     fn div(self, rhs: Digit) -> Self {
         self.div_rem_digit(rhs).0
     }
@@ -130,6 +138,7 @@ impl<const N: usize> const Div<Digit> for BUint<N> {
 op_ref_impl!(Div<BUint<N>> for BUint<N>, div);
 
 impl<T, const N: usize> const DivAssign<T> for BUint<N> where Self: ~const Div<T, Output = Self> {
+    #[inline]
     fn div_assign(&mut self, rhs: T) {
         *self = self.div(rhs);
     }
@@ -138,12 +147,12 @@ impl<T, const N: usize> const DivAssign<T> for BUint<N> where Self: ~const Div<T
 impl<const N: usize> const Mul for BUint<N> {
     type Output = Self;
 
-    #[cfg(debug_assertions)]
+    #[inline]
     fn mul(self, rhs: Self) -> Self {
-        expect!(self.checked_mul(rhs), "attempt to multiply with overflow")
-    }
-    #[cfg(not(debug_assertions))]
-    fn mul(self, rhs: Self) -> Self {
+        #[cfg(debug_assertions)]
+        return expect!(self.checked_mul(rhs), "attempt to multiply with overflow");
+
+        #[cfg(not(debug_assertions))]
         self.wrapping_mul(rhs)
     }
 }
@@ -151,6 +160,7 @@ impl<const N: usize> const Mul for BUint<N> {
 op_ref_impl!(Mul<BUint<N>> for BUint<N>, mul);
 
 impl<T, const N: usize> const MulAssign<T> for BUint<N> where Self: ~const Mul<T, Output = Self> {
+    #[inline]
     fn mul_assign(&mut self, rhs: T) {
         *self = self.mul(rhs);
     }
@@ -159,6 +169,7 @@ impl<T, const N: usize> const MulAssign<T> for BUint<N> where Self: ~const Mul<T
 impl<const N: usize> const Not for BUint<N> {
     type Output = Self;
 
+    #[inline]
     fn not(self) -> Self {
         let mut out = Self::ZERO;
         let mut i = 0;
@@ -173,6 +184,7 @@ impl<const N: usize> const Not for BUint<N> {
 impl<const N: usize> const Not for &BUint<N> {
     type Output = BUint<N>;
 
+    #[inline]
     fn not(self) -> BUint<N> {
         (*self).not()
     }
@@ -181,6 +193,7 @@ impl<const N: usize> const Not for &BUint<N> {
 impl<const N: usize> const Rem for BUint<N> {
     type Output = Self;
 
+    #[inline]
     fn rem(self, rhs: Self) -> Self {
         self.wrapping_rem(rhs)
     }
@@ -189,6 +202,7 @@ impl<const N: usize> const Rem for BUint<N> {
 op_ref_impl!(Rem<BUint<N>> for BUint<N>, rem);
 
 impl<T, const N: usize> const RemAssign<T> for BUint<N> where Self: ~const Rem<T, Output = Self> {
+    #[inline]
     fn rem_assign(&mut self, rhs: T) {
         *self = self.rem(rhs);
     }
@@ -197,12 +211,12 @@ impl<T, const N: usize> const RemAssign<T> for BUint<N> where Self: ~const Rem<T
 impl<const N: usize> const Shl<ExpType> for BUint<N> {
     type Output = Self;
 
-    #[cfg(debug_assertions)]
+    #[inline]
     fn shl(self, rhs: ExpType) -> Self {
-        expect!(self.checked_shl(rhs), "attempt to shift left with overflow")
-    }
-    #[cfg(not(debug_assertions))]
-    fn shl(self, rhs: ExpType) -> Self {
+        #[cfg(debug_assertions)]
+        return expect!(self.checked_shl(rhs), "attempt to shift left with overflow");
+
+        #[cfg(not(debug_assertions))]
         self.wrapping_shl(rhs)
     }
 }
@@ -210,6 +224,7 @@ impl<const N: usize> const Shl<ExpType> for BUint<N> {
 op_ref_impl!(Shl<ExpType> for BUint<N>, shl);
 
 impl<T, const N: usize> const ShlAssign<T> for BUint<N> where Self: ~const Shl<T, Output = Self> {
+    #[inline]
     fn shl_assign(&mut self, rhs: T) {
         *self = self.shl(rhs);
     }
@@ -218,12 +233,12 @@ impl<T, const N: usize> const ShlAssign<T> for BUint<N> where Self: ~const Shl<T
 impl<const N: usize> const Shr<ExpType> for BUint<N> {
     type Output = Self;
 
-    #[cfg(debug_assertions)]
+    #[inline]
     fn shr(self, rhs: ExpType) -> Self {
-        expect!(self.checked_shr(rhs), "attempt to shift right with overflow")
-    }
-    #[cfg(not(debug_assertions))]
-    fn shr(self, rhs: ExpType) -> Self {
+        #[cfg(debug_assertions)]
+        return expect!(self.checked_shr(rhs), "attempt to shift right with overflow");
+
+        #[cfg(not(debug_assertions))]
         self.wrapping_shr(rhs)
     }
 }
@@ -231,6 +246,7 @@ impl<const N: usize> const Shr<ExpType> for BUint<N> {
 op_ref_impl!(Shr<ExpType> for BUint<N>, shr);
 
 impl<T, const N: usize> const ShrAssign<T> for BUint<N> where Self: ~const Shr<T, Output = Self> {
+    #[inline]
     fn shr_assign(&mut self, rhs: T) {
         *self = self.shr(rhs);
     }
@@ -243,12 +259,12 @@ all_shift_impls!(BUint);
 impl<const N: usize> const Sub for BUint<N> {
     type Output = Self;
 
-    #[cfg(debug_assertions)]
+    #[inline]
     fn sub(self, rhs: Self) -> Self {
-        expect!(self.checked_sub(rhs), "attempt to subtract with overflow")
-    }
-    #[cfg(not(debug_assertions))]
-    fn sub(self, rhs: Self) -> Self {
+        #[cfg(debug_assertions)]
+        return expect!(self.checked_sub(rhs), "attempt to subtract with overflow");
+
+        #[cfg(not(debug_assertions))]
         self.wrapping_sub(rhs)
     }
 }
@@ -256,6 +272,7 @@ impl<const N: usize> const Sub for BUint<N> {
 op_ref_impl!(Sub<BUint<N>> for BUint<N>, sub);
 
 impl<T, const N: usize> const SubAssign<T> for BUint<N> where Self: ~const Sub<T, Output = Self> {
+    #[inline]
     fn sub_assign(&mut self, rhs: T) {
         *self = *self - rhs;
     }

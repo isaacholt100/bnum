@@ -5,8 +5,9 @@ use core::cmp::{PartialEq, Eq, PartialOrd, Ord, Ordering};
 impl<const N: usize> const PartialEq for Bint<N> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
-        BUint::eq(&self.uint, &other.uint)
+        BUint::eq(&self.bits, &other.bits)
     }
+
     #[inline]
     fn ne(&self, other: &Self) -> bool {
         !(self.eq(other))
@@ -16,9 +17,11 @@ impl<const N: usize> const PartialEq for Bint<N> {
 impl<const N: usize> Eq for Bint<N> {}
 
 impl<const N: usize> const PartialOrd for Bint<N> {
+    #[inline]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
+
     #[inline]
     fn lt(&self, other: &Self) -> bool {
         match self.cmp(other) {
@@ -26,6 +29,7 @@ impl<const N: usize> const PartialOrd for Bint<N> {
             _ => false,
         }
     }
+
     #[inline]
     fn gt(&self, other: &Self) -> bool {
         match self.cmp(other) {
@@ -33,6 +37,7 @@ impl<const N: usize> const PartialOrd for Bint<N> {
             _ => false,
         }
     }
+
     #[inline]
     fn le(&self, other: &Self) -> bool {
         match self.cmp(other) {
@@ -40,6 +45,7 @@ impl<const N: usize> const PartialOrd for Bint<N> {
             _ => false,
         }
     }
+
     #[inline]
     fn ge(&self, other: &Self) -> bool {
         match self.cmp(other) {
@@ -50,11 +56,12 @@ impl<const N: usize> const PartialOrd for Bint<N> {
 }
 
 impl<const N: usize> const Ord for Bint<N> {
+    #[inline]
     fn cmp(&self, other: &Self) -> Ordering {
         let s1 = self.signed_digit();
         let s2 = other.signed_digit();
         if s1 == s2 {
-            BUint::cmp(&self.uint, &other.uint)
+            BUint::cmp(&self.bits, &other.bits)
         } else {
             if s1 > s2 {
                 Ordering::Greater
@@ -63,6 +70,7 @@ impl<const N: usize> const Ord for Bint<N> {
             }
         }
     }
+
     #[inline]
     fn max(self, other: Self) -> Self {
         match self.cmp(&other) {
@@ -70,6 +78,7 @@ impl<const N: usize> const Ord for Bint<N> {
             _ => self,
         }
     }
+
     #[inline]
     fn min(self, other: Self) -> Self {
         match self.cmp(&other) {
@@ -77,6 +86,7 @@ impl<const N: usize> const Ord for Bint<N> {
             _ => other,
         }
     }
+    
     #[inline]
     fn clamp(self, min: Self, max: Self) -> Self {
         if let Ordering::Less = self.cmp(&min) {
