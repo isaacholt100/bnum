@@ -89,6 +89,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 }
 
 impl<const W: usize, const MB: usize> Float<W, MB> {
+    #[inline]
     pub const fn from_parts(negative: bool, exponent: BUint<W>, mantissa: BUint<W>) -> Self {
         let mut words = *(exponent | mantissa).digits();
         if negative {
@@ -96,10 +97,12 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         }
         Self::from_words(words)
     }
+
     #[inline(always)]
     const fn from_words(words: [Digit; W]) -> Self {
         Self::from_bits(BUint::from_digits(words))
     }
+
     #[inline(always)]
     const fn words(&self) -> &[Digit; W] {
         self.bits.digits()
@@ -132,6 +135,8 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     const fn to_int(self) -> Bint<W> {
         Bint::from_bits(self.to_bits())
     }
+
+    #[inline]
     pub const fn copysign(self, sign: Self) -> Self {
         let mut self_words = *self.words();
         if sign.is_sign_negative() {
@@ -141,6 +146,8 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         }
         Self::from_bits(BUint::from_digits(self_words))
     }
+
+    #[inline]
     pub const fn signum(self) -> Self {
         handle_nan!(Self::NAN; self);
         Self::ONE.copysign(self)
@@ -148,12 +155,14 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 }
 
 impl<const W: usize, const MB: usize> Default for Float<W, MB> {
+    #[inline]
     fn default() -> Self {
         Self::ZERO
     }
 }
 
 impl<const W: usize, const MB: usize> Float<W, MB> {
+    #[inline]
     const fn exp_mant(&self) -> (BUint<W>, BUint<W>) {
         let bits = self.bits;
         let exp = (bits << 1u8) >> (MB + 1);
@@ -165,6 +174,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             (exp, mant | (BUint::ONE << MB))
         }
     }
+
     #[inline]
     const fn from_exp_mant(negative: bool, exp: BUint<W>, mant: BUint<W>) -> Self {
         let mut bits = (exp << MB) | mant;
@@ -179,7 +189,9 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     }
 }
 
+#[cfg(test)]
 impl From<f64> for crate::F64 {
+    #[inline]
     fn from(f: f64) -> Self {
         Self::from_bits(f.to_bits().into())
     }
@@ -188,7 +200,8 @@ impl From<f64> for crate::F64 {
 #[cfg(test)]
 mod tests {
     fn to_u64_bits(f: crate::F64) -> u64 {
-        f.to_bits().as_u64()
+        use crate::As;
+        f.to_bits().as_()
     }
 
     test_float! {

@@ -4,19 +4,16 @@
     const_intrinsic_copy,
     const_mut_refs,
     const_maybe_uninit_as_mut_ptr,
-    const_ptr_offset,
-    unchecked_math,
-    maybe_uninit_uninit_array,
-    maybe_uninit_array_assume_init,
-    inline_const,
     const_trait_impl,
-    bigint_helper_methods,
-    int_roundings,
-    float_minimum_maximum,
-    int_log,
-    const_bigint_helper_methods,
+    bigint_helper_methods, // not necessary
+    int_roundings, // not necessary
+    const_bigint_helper_methods, // not necessary
 ))]
-#![cfg_attr(test, feature(test))]
+#![cfg_attr(test, feature(
+    test,
+    int_log,
+    float_minimum_maximum,
+))]
 #![doc = include_str!("../README.md")]
 //#![no_std]
 
@@ -34,6 +31,7 @@ mod doc;
 mod error;
 mod float;
 mod int;
+pub mod prelude;
 
 #[cfg(feature = "rand")]
 mod random;
@@ -44,6 +42,8 @@ mod radix_bases;
 
 #[cfg(test)]
 mod test;
+
+pub use cast::As;
 
 #[cfg(feature = "rand")]
 pub use random::RandomUniformInt;

@@ -1,25 +1,5 @@
 #[allow(unused)]
 macro_rules! test_big_num {
-    /*{
-        big: $big_type: ty,
-        primitive: $primitive: ty,
-        function: $name: ident,
-        cases: [
-            $($method: ident ($($arg: expr), *) ;) *
-        ],
-        quickcheck: $method2: ident ($($param: ident : $ty: ty), *)
-    } => {
-        test_big_num! {
-            big: $big_type,
-            primitive: $primitive,
-            function: $name,
-            method: {
-                $($method ($($arg), *) ;) *
-            },
-            quickcheck: $method2 ($($param : $ty), *),
-            converter: Into::into
-        }
-    };*/
     {
         big: $big_type: ty,
         primitive: $primitive: ty,
@@ -166,66 +146,6 @@ macro_rules! test_op {
 
 pub(crate) use test_op;
 
-/*
-pub trait As<T> {
-    fn as_(a: T) -> Self;
-}
-
-impl As<u128> for f64 {
-    fn as_(a: u128) -> Self {
-        a as Self
-    }
-}
-
-impl As<u128> for f32 {
-    fn as_(a: u128) -> Self {
-        a as Self
-    }
-}
-
-impl As<f64> for u128 {
-    fn as_(a: f64) -> Self {
-        a as Self
-    }
-}
-
-impl As<f32> for u128 {
-    fn as_(a: f32) -> Self {
-        a as Self
-    }
-}
-
-impl As<u128> for crate::U128 {
-    fn as_(a: u128) -> Self {
-        Self::from(a)
-    }
-}
-
-#[allow(unused)]
-macro_rules! test_float_conv {
-    {
-        big: $big_type: ty,
-        primitive: $primitive: ty,
-        test_name: $test_name: ident,
-        function: <$Trait: ty>::$name: ident,
-        from: $from: ty,
-        converter: $converter: expr
-    } => {
-        paste::paste! {
-            quickcheck::quickcheck! {
-                fn [<quickcheck_ $test_name>](a: $from) -> quickcheck::TestResult {
-                    let big_result = <$big_type as $Trait>::$name(crate::test::As::as_(a));
-                    let prim_result = <$primitive as $Trait>::$name(crate::test::As::as_(a));
-
-                    quickcheck::TestResult::from_bool($converter(big_result) == $converter(prim_result))
-                }
-            }
-        }
-    }
-}
-
-pub(crate) use test_float_conv;*/
-
 pub fn u32_to_exp(u: u32) -> crate::ExpType {
     u as crate::ExpType
 }
@@ -306,7 +226,8 @@ macro_rules! test_cast_from {
                 $(
                     fn [<quickcheck_as_ $ty>](i: [<$big:lower>]) -> bool {
                         let big = $big::from(i);
-                        big.[<as_ $ty>]() == i as $ty
+                        let a1: $ty = big.as_();
+                        a1 == i.as_()
                     }
                 )*
             }
@@ -323,7 +244,7 @@ macro_rules! test_cast_to {
                 $(
                     fn [<quickcheck_ $ty _as>](i: $ty) -> bool {
                         let big: $big = i.as_();
-                        let primitive = i as [<$big:lower>];
+                        let primitive: [<$big:lower>] = i.as_();
                         big == primitive.into()
                     }
                 )*

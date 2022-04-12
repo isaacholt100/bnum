@@ -1046,6 +1046,7 @@ mod bases {
 
 use crate::digit::Digit;
 
+#[inline]
 pub fn get_radix_base(radix: u32, bits: u8) -> (Digit, usize) {
     const BITS: u8 = Digit::BITS as u8;
     const HALF_BITS: u8 = BITS / 2;

@@ -34,6 +34,8 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         }
         self * Self::from_bits(((Self::EXP_BIAS + n).to_bits()) << MB)
     }
+
+    #[inline]
     pub const fn abs(self) -> Self {
         if self.is_sign_negative() {
             -self
@@ -41,6 +43,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             self
         }
     }
+
     pub fn sqrt(self) -> Self {
         handle_nan!(self; self);
         if self.is_zero() {
@@ -56,26 +59,8 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         }
 
         let tiny = Self::from_bits(BUint::from(0b11011u8) << MB); // TODO: may not work for exponents stored with very few bits
-
-        //let sign = Bint::<W>::from_bits(BUint::ONE << (Self::BITS - 1));
+        
         let mut ix = Bint::from_bits(bits);
-
-        /* take care of Inf and NaN 
-        if (ix.to_bits() & ((BUint::MAX << (MB + 1)) >> 1u8)) == ((BUint::MAX << (MB + 1)) >> 1) {
-            return self * self + self; /* sqrt(NaN)=NaN, sqrt(+inf)=+inf, sqrt(-inf)=sNaN */
-        }
-
-        /* take care of zero */
-        if !ix.is_positive() {
-            if (ix & !sign).is_zero() {
-                return x; /* sqrt(+-0) = +-0 */
-            }
-            if ix < 0 {
-                return (x - x) / (x - x); /* sqrt(-ve) = sNaN */
-            }
-        }*/
-
-        /* normalize x */
         let mut i: Bint<W>;
         let mut m = ix >> MB;
         if m.is_zero() {
@@ -132,11 +117,13 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         Self::from_bits(ix.to_bits())
     }
 
+    #[inline]
     pub fn round(self) -> Self where [(); W * 2]:, {
         let a = Self::HALF - Self::QUARTER * Self::EPSILON; // TODO: can precalculate quarter * eps so no need for where bound
         (self + a.copysign(self)).trunc()
     }
 
+    #[inline]
     pub fn ceil(self) -> Self {
         let mut u = self.to_bits();
         let e = self.exponent() - Self::EXP_BIAS;
@@ -163,6 +150,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         Self::from_bits(u)
     }
 
+    #[inline]
     pub fn floor(self) -> Self {
         let mut bits = self.to_bits();
         let e = self.exponent() - Self::EXP_BIAS;
@@ -189,6 +177,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         Self::from_bits(bits)
     }
 
+    #[inline]
     pub fn trunc(self) -> Self {
         //return self.fract_trunc().1;
         let mut i = self.to_bits();
@@ -209,6 +198,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         Self::from_bits(i)
     }
 
+    #[inline]
     pub fn fract(self) -> Self {
         self.fract_trunc().0
     }
@@ -248,10 +238,12 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         (self - trunc, trunc)
     }
 
+    #[inline]
     pub fn recip(self) -> Self where [(); W * 2]:, {
         Self::ONE / self
     }
 
+    #[inline]
     pub fn div_euclid(self, rhs: Self) -> Self where [(); W * 2]:, {
         let div = (self / rhs).trunc();
         if self % rhs < Self::ZERO {
@@ -264,6 +256,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         div
     }
 
+    #[inline]
     pub fn rem_euclid(self, rhs: Self) -> Self {
         let rem = self % rhs;
         if rem < Self::NEG_ZERO {
@@ -384,7 +377,8 @@ mod tests {
     use crate::F64;
     
     fn to_u64_bits(f: F64) -> u64 {
-        f.to_bits().as_u64()
+        use crate::As;
+        f.to_bits().as_()
     }
 
     test_float! {

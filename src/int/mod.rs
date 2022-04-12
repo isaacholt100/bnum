@@ -2,7 +2,7 @@ use crate::digit::{Digit, SignedDigit, self};
 use crate::uint::BUint;
 #[allow(unused_imports)]
 use crate::I128;
-use crate::macros::expect;
+use crate::macros::option_expect;
 use crate::ExpType;
 use crate::doc;
 
@@ -225,7 +225,7 @@ impl<const N: usize> Bint<N> {
     #[inline]
     pub const fn pow(self, exp: ExpType) -> Self {
         #[cfg(debug_assertions)]
-        return expect!(self.checked_pow(exp), "attempt to calculate power with overflow");
+        return option_expect!(self.checked_pow(exp), "attempt to calculate power with overflow");
 
         #[cfg(not(debug_assertions))]
         self.wrapping_pow(exp)
@@ -246,7 +246,7 @@ impl<const N: usize> Bint<N> {
     #[inline]
     pub const fn abs(self) -> Self {
         #[cfg(debug_assertions)]
-        return expect!(self.checked_abs(), "attempt to negate with; overflow");
+        return option_expect!(self.checked_abs(), "attempt to negate with; overflow");
 
         #[cfg(not(debug_assertions))]
         match self.checked_abs() {
@@ -301,7 +301,7 @@ impl<const N: usize> Bint<N> {
     #[inline]
     pub const fn next_power_of_two(self) -> Self {
         #[cfg(debug_assertions)]
-        return expect!(self.checked_next_power_of_two(), "attempt to calculate next power of two with overflow");
+        return option_expect!(self.checked_next_power_of_two(), "attempt to calculate next power of two with overflow");
 
         #[cfg(not(debug_assertions))]
         self.wrapping_next_power_of_two()
@@ -483,6 +483,7 @@ use core::default::Default;
 
 impl<const N: usize> Default for Bint<N> {
     #[doc=doc::default!()]
+    #[inline]
     fn default() -> Self {
         Self::ZERO
     }
@@ -491,24 +492,28 @@ impl<const N: usize> Default for Bint<N> {
 use core::iter::{Iterator, Product, Sum};
 
 impl<const N: usize> Product<Self> for Bint<N> {
+    #[inline]
     fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.fold(Self::ONE, |a, b| a * b)
     }
 }
 
 impl<'a, const N: usize> Product<&'a Self> for Bint<N> {
+    #[inline]
     fn product<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
         iter.fold(Self::ONE, |a, b| a * b)
     }
 }
 
 impl<const N: usize> Sum<Self> for Bint<N> {
+    #[inline]
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.fold(Self::ZERO, |a, b| a + b)
     }
 }
 
 impl<'a, const N: usize> Sum<&'a Self> for Bint<N> {
+    #[inline]
     fn sum<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
         iter.fold(Self::ZERO, |a, b| a + b)
     }

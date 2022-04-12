@@ -4,6 +4,7 @@ use core::ops::{Add, Sub, Mul, Div, Rem, Neg};
 use crate::{BUint, Bint, ExpType, digit};
 use num_traits::ToPrimitive;
 use core::iter::{Product, Sum, Iterator};
+use crate::cast::As;
 
 impl<const W: usize, const MB: usize> Float<W, MB> {
     #[inline]    
@@ -91,6 +92,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 impl<const W: usize, const MB: usize> Add for Float<W, MB> {
     type Output = Self;
 
+    #[inline]
     fn add(self, rhs: Self) -> Self {
         let self_negative = self.is_sign_negative();
         let rhs_negative = rhs.is_sign_negative();
@@ -120,12 +122,14 @@ impl<const W: usize, const MB: usize> Add for Float<W, MB> {
 crate::macros::op_ref_impl!(Add<Float<N, MB>> for Float<N, MB>, add);
 
 impl<const W: usize, const MB: usize> Sum for Float<W, MB> {
+    #[inline]
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.fold(Self::ZERO, |a, b| a + b)
     }
 }
 
 impl<'a, const W: usize, const MB: usize> Sum<&'a Self> for Float<W, MB> {
+    #[inline]
     fn sum<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
         iter.fold(Self::ONE, |a, b| a + *b)
     }
@@ -149,15 +153,15 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     
         let mut a_exp = Bint::from_bits(a_exp);
     
-        let sticky_bit2 = !exp_diff.is_zero() && exp_diff < BUint::<W>::BITS.into() && b_mant.bit(exp_diff.as_usize() - 1);
-        let all_zeros = !exp_diff.is_zero() && b_mant.trailing_zeros() + 1 == exp_diff.as_usize();
+        let sticky_bit2 = !exp_diff.is_zero() && exp_diff < BUint::<W>::BITS.into() && b_mant.bit(exp_diff.as_::<usize>() - 1);
+        let all_zeros = !exp_diff.is_zero() && b_mant.trailing_zeros() + 1 == exp_diff.as_();
     
     
         // Append extra bits to the mantissas to ensure correct rounding
         a_mant <<= 1u8;
         b_mant <<= 1u8;
     
-        let sticky_bit = b_mant.trailing_zeros() < exp_diff.as_usize();
+        let sticky_bit = b_mant.trailing_zeros() < exp_diff.as_();
     
         // If the shift causes an overflow, the b_mant is too small so is set to 0
         let shifted_b_mant = match exp_diff.to_usize() {
@@ -184,7 +188,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             a_mant <<= 1u8;
             b_mant <<= 1u8;
     
-            let sticky_bit = b_mant.trailing_zeros() < exp_diff.as_usize();
+            let sticky_bit = b_mant.trailing_zeros() < exp_diff.as_();
     
             // If the shift causes an overflow, the b_mant is too small so is set to 0
             let shifted_b_mant = match exp_diff.to_usize() {
@@ -237,6 +241,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 impl<const W: usize, const MB: usize> Sub for Float<W, MB> {
     type Output = Self;
 
+    #[inline]
     fn sub(self, rhs: Self) -> Self {
         match (self.classify(), rhs.classify()) {
             (FpCategory::Nan, _) => return self,
@@ -266,7 +271,8 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         let (exp_a, mant_a) = a.exp_mant();
         let (exp_b, mant_b) = b.exp_mant();
 
-        let mant_prod = mant_a.as_buint::<{W * 2}>() * mant_b.as_buint::<{W * 2}>();
+        // TODO: make so as_ can infer type so can switch trait definition if needed
+        let mant_prod = mant_a.as_::<BUint<{W * 2}>>() * mant_b.as_::<BUint<{W * 2}>>();
 
         let prod_bits = mant_prod.bits();
 
@@ -316,18 +322,19 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         mant >>= 1u8;
 
         if exp == Bint::ONE && mant.bits() < MB as ExpType + 1 {
-            return Self::from_exp_mant(negative, BUint::ZERO, mant.as_buint::<W>());
+            return Self::from_exp_mant(negative, BUint::ZERO, mant.as_());
         }
         if mant >> MB != BUint::ZERO {
             mant ^= BUint::ONE << MB as u32;
         }
-        Self::from_exp_mant(negative, exp.to_bits(), mant.as_buint::<W>())
+        Self::from_exp_mant(negative, exp.to_bits(), mant.as_())
     }
 }
 
 impl<const W: usize, const MB: usize> Mul for Float<W, MB> where [(); W * 2]:, {
     type Output = Self;
     
+    #[inline]
     fn mul(self, rhs: Self) -> Self {
         let negative = self.is_sign_negative() ^ rhs.is_sign_negative();
         match (self.classify(), rhs.classify()) {
@@ -346,12 +353,14 @@ impl<const W: usize, const MB: usize> Mul for Float<W, MB> where [(); W * 2]:, {
 }
 
 impl<const W: usize, const MB: usize> Product for Float<W, MB>  where [(); W * 2]:, {
+    #[inline]
     fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.fold(Self::ONE, |a, b| a * b)
     }
 }
 
 impl<'a, const W: usize, const MB: usize> Product<&'a Self> for Float<W, MB> where [(); W * 2]:, {
+    #[inline]
     fn product<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
         iter.fold(Self::ONE, |a, b| a * *b)
     }
@@ -378,20 +387,20 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         let total_shift = Bint::from(MB as i32 + 1 + b2 as i32 - b1 as i32) - Bint::from_bits(extra_shift);
     
         let large = if !total_shift.is_negative() {
-            (s1.as_buint::<{W * 2}>()) << total_shift
+            (s1.as_::<BUint<{W * 2}>>()) << total_shift
         } else {
-            (s1.as_buint::<{W * 2}>()) >> (-total_shift)
+            (s1.as_::<BUint<{W * 2}>>()) >> (-total_shift)
         };
-        let mut division = (large / (s2.as_buint::<{W * 2}>())).as_buint::<W>();
+        let mut division = (large / (s2.as_::<BUint<{W * 2}>>())).as_::<BUint<W>>();
     
         let rem = if division.bits() != MB as ExpType + 2 {
-            let rem = (large % (s2.as_buint::<{W * 2}>())).as_buint::<W>();
+            let rem = (large % (s2.as_::<BUint<{W * 2}>>())).as_::<BUint<W>>();
             rem
         } else {
             e += Bint::ONE;
-            division = ((large >> 1u8) / (s2.as_buint::<{W * 2}>())).as_buint::<W>();
+            division = ((large >> 1u8) / (s2.as_::<BUint<{W * 2}>>())).as_::<BUint<W>>();
             //println!("div {} {}", large >> 1u8, s2);
-            let rem = ((large >> 1u8) % (s2.as_buint::<{W * 2}>())).as_buint::<W>();
+            let rem = ((large >> 1u8) % (s2.as_::<BUint<{W * 2}>>())).as_::<BUint<W>>();
             rem
         };
         //println!("{}", rem);
@@ -427,6 +436,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 impl<const W: usize, const MB: usize> Div for Float<W, MB> where [(); W * 2]:, {
     type Output = Self;
     
+    #[inline]
     fn div(self, rhs: Self) -> Self {
         let negative = self.is_sign_negative() ^ rhs.is_sign_negative();
         match (self.classify(), rhs.classify()) {
@@ -454,6 +464,8 @@ impl<const W: usize, const MB: usize> Div for Float<W, MB> where [(); W * 2]:, {
 
 impl<const W: usize, const MB: usize> const Rem for Float<W, MB> {
     type Output = Self;
+
+    #[inline]
     fn rem(self, y: Self) -> Self {
         handle_nan!(self; self);
         handle_nan!(y; y);
@@ -571,6 +583,7 @@ impl<const W: usize, const MB: usize> const Rem for Float<W, MB> {
 impl<const W: usize, const MB: usize> const Neg for Float<W, MB> {
     type Output = Self;
 
+    #[inline]
     fn neg(self) -> Self {
         let mut words = *self.words();
         words[W - 1] ^= 1 << (digit::BITS - 1);
@@ -581,6 +594,7 @@ impl<const W: usize, const MB: usize> const Neg for Float<W, MB> {
 impl<const W: usize, const MB: usize> const Neg for &Float<W, MB> {
     type Output = Float<W, MB>;
 
+    #[inline]
     fn neg(self) -> Float<W, MB> {
         (*self).neg()
     }
@@ -597,7 +611,7 @@ mod tests {
     }
     impl ToBits for F64 {
         fn to_bits(self) -> u64 {
-            self.to_bits().as_u64()
+            self.to_bits().as_()
         }
     }
     impl ToBits for f64 {

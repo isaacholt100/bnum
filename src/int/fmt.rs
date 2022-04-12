@@ -3,6 +3,7 @@ use core::fmt::{Binary, Display, Formatter, LowerExp, LowerHex, Octal, UpperExp,
 
 macro_rules! fmt {
     ($format: expr, $pad: expr, $prefix: expr, $trait: tt) => {
+        #[inline]
         fn fmt(&self, f: &mut Formatter) -> fmt::Result {
             $trait::fmt(&self.bits, f)
         }
@@ -14,18 +15,21 @@ impl<const N: usize> Binary for Bint<N> {
 }
 
 impl<const N: usize> Display for Bint<N> {
+    #[inline]
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         f.pad_integral(!self.is_negative(), "", &format!("{}", self.unsigned_abs()))
     }
 }
 
 impl<const N: usize> fmt::Debug for Bint<N> {
+    #[inline]
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         Display::fmt(self, f)
     }
 }
 
 impl<const N: usize> LowerExp for Bint<N> {
+    #[inline]
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         let uint = self.unsigned_abs();
         f.pad_integral(!self.is_negative(), "", &format!("{:e}", uint))
@@ -41,6 +45,7 @@ impl<const N: usize> Octal for Bint<N> {
 }
 
 impl<const N: usize> UpperExp for Bint<N> {
+    #[inline]
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         let uint = self.unsigned_abs();
         f.pad_integral(!self.is_negative(), "", &format!("{:E}", uint))

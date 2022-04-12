@@ -1,6 +1,6 @@
 use super::Bint;
 use core::ops::{Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, DivAssign, Mul, MulAssign, Neg, Not, RemAssign, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign};
-use crate::macros::{expect, op_ref_impl, assign_ref_impl, all_shift_impls};
+use crate::macros::{option_expect, op_ref_impl, assign_ref_impl, all_shift_impls};
 use crate::ExpType;
 
 impl<const N: usize> const Add<Self> for Bint<N> {
@@ -9,7 +9,7 @@ impl<const N: usize> const Add<Self> for Bint<N> {
     #[inline]
     fn add(self, rhs: Self) -> Self {
         #[cfg(debug_assertions)]
-        return expect!(self.checked_add(rhs), "attempt to add with overflow");
+        return option_expect!(self.checked_add(rhs), "attempt to add with overflow");
 
         #[cfg(not(debug_assertions))]
         self.wrapping_add(rhs)
@@ -102,7 +102,7 @@ impl<const N: usize> const Mul for Bint<N> {
     #[inline]
     fn mul(self, rhs: Self) -> Self {
         #[cfg(debug_assertions)]
-        return expect!(self.checked_mul(rhs), "attempt to multiply with overflow");
+        return option_expect!(self.checked_mul(rhs), "attempt to multiply with overflow");
 
         #[cfg(not(debug_assertions))]
         self.wrapping_mul(rhs)
@@ -144,7 +144,7 @@ impl<const N: usize> const Neg for Bint<N> {
     #[inline]
     fn neg(self) -> Self {
         #[cfg(debug_assertions)]
-        return expect!(self.checked_neg(), "attempt to negate with overflow");
+        return option_expect!(self.checked_neg(), "attempt to negate with overflow");
 
         #[cfg(not(debug_assertions))]
         self.wrapping_neg()
@@ -175,7 +175,7 @@ impl<const N: usize> const Shl<ExpType> for Bint<N> {
     #[inline]
     fn shl(self, rhs: ExpType) -> Self {
         #[cfg(debug_assertions)]
-        return expect!(self.checked_shl(rhs), "attempt to shift left with overflow");
+        return option_expect!(self.checked_shl(rhs), "attempt to shift left with overflow");
 
         #[cfg(not(debug_assertions))]
         self.wrapping_shl(rhs)
@@ -199,7 +199,7 @@ impl<const N: usize> const Shr<ExpType> for Bint<N> {
     #[inline]
     fn shr(self, rhs: ExpType) -> Self {
         #[cfg(debug_assertions)]
-        return expect!(self.checked_shr(rhs), "attempt to shift left with overflow");
+        return option_expect!(self.checked_shr(rhs), "attempt to shift left with overflow");
 
         #[cfg(not(debug_assertions))]
         self.wrapping_shr(rhs)
@@ -227,7 +227,7 @@ impl<const N: usize> const Sub for Bint<N> {
     #[inline]
     fn sub(self, rhs: Self) -> Self {
         #[cfg(debug_assertions)]
-        return expect!(self.checked_sub(rhs), "attempt to subtract with overflow");
+        return option_expect!(self.checked_sub(rhs), "attempt to subtract with overflow");
 
         #[cfg(not(debug_assertions))]
         self.wrapping_sub(rhs)

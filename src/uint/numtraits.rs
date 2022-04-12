@@ -2,6 +2,7 @@ use super::{BUint, ExpType};
 use num_traits::{Bounded, CheckedAdd, CheckedDiv, CheckedMul, CheckedNeg, CheckedRem, CheckedShl, CheckedShr, CheckedSub, FromPrimitive, MulAdd, MulAddAssign, Num, One, SaturatingAdd, SaturatingMul, SaturatingSub, WrappingAdd, WrappingMul, WrappingNeg, WrappingShl, WrappingShr, WrappingSub, ToPrimitive, Unsigned, Zero, Pow, Saturating, AsPrimitive};
 use num_integer::{Integer, Roots};
 use crate::digit::{self, Digit};
+use crate::cast::CastFrom;
 
 impl<const N: usize> Bounded for BUint<N> {
     #[inline]
@@ -41,6 +42,7 @@ num_trait_impl!(WrappingMul, wrapping_mul, Self);
 num_trait_impl!(WrappingSub, wrapping_sub, Self);
 
 impl<const N: usize> CheckedNeg for BUint<N> {
+    #[inline]
     fn checked_neg(&self) -> Option<Self> {
         Self::checked_neg(*self)
     }
@@ -95,30 +97,19 @@ impl<const N: usize> Pow<ExpType> for BUint<N> {
 use core::convert::TryFrom;
 
 macro_rules! as_primitive_impl {
-    ($ty: ty, $method: ident) => {
-        impl<const N: usize> AsPrimitive<$ty> for BUint<N> {
-            #[inline]
-            fn as_(self) -> $ty {
-                self.$method()
+    ($($ty: ty), *) => {
+        $(
+            impl<const N: usize> AsPrimitive<$ty> for BUint<N> {
+                #[inline]
+                fn as_(self) -> $ty {
+                    crate::As::as_(self)
+                }
             }
-        }
+        )*
     }
 }
 
-as_primitive_impl!(f32, as_f32);
-as_primitive_impl!(f64, as_f64);
-as_primitive_impl!(u8, as_u8);
-as_primitive_impl!(u16, as_u16);
-as_primitive_impl!(u32, as_u32);
-as_primitive_impl!(usize, as_usize);
-as_primitive_impl!(u64, as_u64);
-as_primitive_impl!(u128, as_u128);
-as_primitive_impl!(i8, as_i8);
-as_primitive_impl!(i16, as_i16);
-as_primitive_impl!(i32, as_i32);
-as_primitive_impl!(isize, as_isize);
-as_primitive_impl!(i64, as_i64);
-as_primitive_impl!(i128, as_i128);
+as_primitive_impl!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64);
 
 macro_rules! uint_as_buint_impl {
     ($($ty: ty), *) => {
@@ -211,7 +202,7 @@ int_as_buint_impl!(i8 -> u8, i16 -> u16, i32 -> u32, isize -> usize, i64 -> u64,
 impl<const N: usize, const M: usize> AsPrimitive<BUint<M>> for BUint<N> {
     #[inline]
     fn as_(self) -> BUint<M> {
-        self.as_buint::<M>()
+        BUint::<M>::cast_from(self)
     }
 }
 
@@ -223,7 +214,7 @@ use crate::Bint;
 impl<const N: usize, const M: usize> AsPrimitive<Bint<M>> for BUint<N> {
     #[inline]
     fn as_(self) -> Bint<M> {
-        self.as_bint::<M>()
+        Bint::<M>::cast_from(self)
     }
 }
 
@@ -610,12 +601,12 @@ impl<const N: usize> ToPrimitive for BUint<N> {
 
     #[inline]
     fn to_f32(&self) -> Option<f32> {
-        Some(self.as_f32())
+        Some(self.as_())
     }
 
     #[inline]
     fn to_f64(&self) -> Option<f64> {
-        Some(self.as_f64())
+        Some(self.as_())
     }
 }
 

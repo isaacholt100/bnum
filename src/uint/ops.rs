@@ -1,6 +1,6 @@
 use super::{BUint, ExpType};
 use core::ops::{Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Div, DivAssign, Mul, MulAssign, Not, Rem, RemAssign, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign};
-use crate::macros::{expect, op_ref_impl, all_shift_impls};
+use crate::macros::{option_expect, op_ref_impl, all_shift_impls};
 use crate::digit::Digit;
 
 impl<const N: usize> const Add<Digit> for BUint<N> {
@@ -29,7 +29,7 @@ impl<const N: usize> const Add<Self> for BUint<N> {
     #[inline]
     fn add(self, rhs: Self) -> Self {
         #[cfg(debug_assertions)]
-        return expect!(self.checked_add(rhs), "attempt to add with overflow");
+        return option_expect!(self.checked_add(rhs), "attempt to add with overflow");
 
         #[cfg(not(debug_assertions))]
         self.wrapping_add(rhs)
@@ -37,6 +37,8 @@ impl<const N: usize> const Add<Self> for BUint<N> {
 }
 
 op_ref_impl!(Add<BUint<N>> for BUint<N>, add);
+
+// TODO: change so not generic assign impl, make it same as primitives
 
 impl<T, const N: usize> const AddAssign<T> for BUint<N> where Self: ~const Add<T, Output = Self> {
     #[inline]
@@ -150,7 +152,7 @@ impl<const N: usize> const Mul for BUint<N> {
     #[inline]
     fn mul(self, rhs: Self) -> Self {
         #[cfg(debug_assertions)]
-        return expect!(self.checked_mul(rhs), "attempt to multiply with overflow");
+        return option_expect!(self.checked_mul(rhs), "attempt to multiply with overflow");
 
         #[cfg(not(debug_assertions))]
         self.wrapping_mul(rhs)
@@ -214,7 +216,7 @@ impl<const N: usize> const Shl<ExpType> for BUint<N> {
     #[inline]
     fn shl(self, rhs: ExpType) -> Self {
         #[cfg(debug_assertions)]
-        return expect!(self.checked_shl(rhs), "attempt to shift left with overflow");
+        return option_expect!(self.checked_shl(rhs), "attempt to shift left with overflow");
 
         #[cfg(not(debug_assertions))]
         self.wrapping_shl(rhs)
@@ -236,7 +238,7 @@ impl<const N: usize> const Shr<ExpType> for BUint<N> {
     #[inline]
     fn shr(self, rhs: ExpType) -> Self {
         #[cfg(debug_assertions)]
-        return expect!(self.checked_shr(rhs), "attempt to shift right with overflow");
+        return option_expect!(self.checked_shr(rhs), "attempt to shift right with overflow");
 
         #[cfg(not(debug_assertions))]
         self.wrapping_shr(rhs)
@@ -262,7 +264,7 @@ impl<const N: usize> const Sub for BUint<N> {
     #[inline]
     fn sub(self, rhs: Self) -> Self {
         #[cfg(debug_assertions)]
-        return expect!(self.checked_sub(rhs), "attempt to subtract with overflow");
+        return option_expect!(self.checked_sub(rhs), "attempt to subtract with overflow");
 
         #[cfg(not(debug_assertions))]
         self.wrapping_sub(rhs)

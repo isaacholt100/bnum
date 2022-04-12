@@ -5,6 +5,7 @@ use alloc::string::String;
 
 macro_rules! fmt {
     ($format: expr, $format_pad: expr, $pad: expr, $prefix: expr) => {
+        #[inline]
         fn fmt(&self, f: &mut Formatter) -> fmt::Result {
             let mut format_string = String::new();
             self.digits.iter().rev().for_each(|digit| {
@@ -30,12 +31,14 @@ impl<const N: usize> Binary for BUint<N> {
 }
 
 impl<const N: usize> core::fmt::Debug for BUint<N> {
+    #[inline]
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(f, "{:0width$b}", &self, width = Self::BITS as usize)
     }
 }
 
 impl<const N: usize> Display for BUint<N> {
+    #[inline]
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(f, "{}", self.to_str_radix(10))
     }
@@ -43,6 +46,7 @@ impl<const N: usize> Display for BUint<N> {
 
 macro_rules! exp_fmt {
     ($e: expr) => {
+        #[inline]
         fn fmt(&self, f: &mut Formatter) -> fmt::Result {
             let decimal_str = format!("{}", self);
             if decimal_str == "0" {
@@ -70,6 +74,7 @@ impl<const N: usize> LowerHex for BUint<N> {
 }
 
 impl<const N: usize> Octal for BUint<N> {
+    #[inline]
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         let string = self.to_str_radix(8);
         f.pad_integral(true, "0o", &string)
@@ -86,26 +91,8 @@ impl<const N: usize> UpperHex for BUint<N> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{U128, BUint};
+    use crate::{U128};
     use crate::macros::test_fmt;
-
-    trait ToBinaryString {
-        fn to_binary_string(self) -> String;
-    }
-    impl<const N: usize> ToBinaryString for BUint<N> {
-        fn to_binary_string(self) -> String {
-            format!("{:b}", self)
-        }
-    }
-    impl ToBinaryString for u128 {
-        fn to_binary_string(self) -> String {
-            format!("{:b}", self)
-        }
-    }
-
-    /*test_unsigned! {
-        function: to_binary_string(u: u128)
-    }*/
 
     test_fmt! {
         int: U128,

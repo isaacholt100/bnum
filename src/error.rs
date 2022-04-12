@@ -8,6 +8,7 @@ pub struct TryFromIntError {
 }
 
 impl Display for TryFromIntError {
+    #[inline]
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         use TryFromErrorReason::*;
 
@@ -34,6 +35,7 @@ pub struct ParseIntError {
 }
 
 impl Display for ParseIntError {
+    #[inline]
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         use ParseIntErrorReason::*;
 
@@ -58,6 +60,7 @@ pub struct ParseRationalError {
 }
 
 impl Display for ParseRationalError {
+    #[inline]
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         match &self.reason {
             ParseRationalErrorReason::ParseIntError(e) => Display::fmt(e, f),

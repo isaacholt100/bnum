@@ -5,6 +5,7 @@ use crate::doc;
 
 impl<const N: usize> BUint<N> {
     #[doc=doc::from_be!(BUint::<2>)]
+    #[inline]
     pub const fn from_be(x: Self) -> Self {
         #[cfg(target_endian = "big")]
         return x;
@@ -13,6 +14,7 @@ impl<const N: usize> BUint<N> {
     }
 
     #[doc=doc::from_le!(BUint::<2>)]
+    #[inline]
     pub const fn from_le(x: Self) -> Self {
         #[cfg(target_endian = "little")]
         return x;
@@ -21,11 +23,13 @@ impl<const N: usize> BUint<N> {
     }
 
     #[doc=doc::to_be!(BUint::<2>)]
+    #[inline]
     pub const fn to_be(self) -> Self {
         Self::from_be(self)
     }
 
     #[doc=doc::to_be!(BUint::<2>)]
+    #[inline]
     pub const fn to_le(self) -> Self {
         Self::from_le(self)
     }
@@ -51,6 +55,7 @@ impl<const N: usize> BUint<N> {
     /// let invalid_slice = &[0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90];
     /// assert_eq!(BUint::<2>::from_be_slice(invalid_slice), None);
     /// ```
+    #[inline]
     pub const fn from_be_slice(slice: &[u8]) -> Option<Self> {
         let len = slice.len();
         let mut out = Self::ZERO;
@@ -113,6 +118,7 @@ impl<const N: usize> BUint<N> {
     /// let invalid_slice = &[0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90];
     /// assert_eq!(BUint::<2>::from_le_slice(invalid_slice), None);
     /// ```
+    #[inline]
     pub const fn from_le_slice(slice: &[u8]) -> Option<Self> {
         let len = slice.len();
         let mut out = Self::ZERO;

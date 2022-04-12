@@ -40,6 +40,7 @@ pub const HALF_BITS: ExpType = BITS / 2;
 
 pub const HALF: Digit = (1 << HALF_BITS) - 1;
 
+#[inline]
 pub const fn to_double_digit(high: Digit, low: Digit) -> DoubleDigit {
     ((high as DoubleDigit) << BITS) | low as DoubleDigit
 }

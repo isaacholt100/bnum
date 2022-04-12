@@ -4,11 +4,13 @@ use crate::macros::{overflowing_pow, div_zero, rem_zero, op_ref_impl};
 use crate::{ExpType, BUint};
 use crate::digit;
 
+#[inline]
 const fn carrying_add_signed(a: SignedDigit, b: SignedDigit, carry: bool) -> (SignedDigit, bool) {
     let sum = a as SignedDoubleDigit + b as SignedDoubleDigit + carry as SignedDoubleDigit;
     (sum as SignedDigit, sum > SignedDigit::MAX as SignedDoubleDigit || sum < SignedDigit::MIN as SignedDoubleDigit)
 }
 
+#[inline]
 const fn borrowing_sub_signed(a: SignedDigit, b: SignedDigit, borrow: bool) -> (SignedDigit, bool) {
     let diff = a as SignedDoubleDigit - b as SignedDoubleDigit - borrow as SignedDoubleDigit;
     (diff as SignedDigit, diff > SignedDigit::MAX as SignedDoubleDigit || diff < SignedDigit::MIN as SignedDoubleDigit)

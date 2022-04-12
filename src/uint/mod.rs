@@ -1,5 +1,5 @@
 use crate::digit::{Digit, DoubleDigit, self};
-use crate::macros::expect;
+use crate::macros::option_expect;
 use crate::ExpType;
 use core::cmp::Ordering;
 use core::mem::MaybeUninit;
@@ -54,11 +54,7 @@ macro_rules! test_unsigned {
     };
 }
 
-#[cfg(feature = "nightly")]
-pub use cast::{cast_up, cast_down};
-
-//pub use checked::div_float;
-
+#[inline]
 pub const fn unchecked_shl<const N: usize>(u: BUint<N>, rhs: ExpType) -> BUint<N> {
     // TODO: fix the commented method
     //return unchecked_shr(u.reverse_bits(), rhs).reverse_bits();
@@ -121,6 +117,7 @@ pub const fn unchecked_shl<const N: usize>(u: BUint<N>, rhs: ExpType) -> BUint<N
     }
 }
 
+#[inline]
 pub const fn unchecked_shr<const N: usize>(u: BUint<N>, rhs: ExpType) -> BUint<N> {
     // This is to make sure that the number of bits in `u` doesn't overflow a usize, which would cause unexpected behaviour for shifting
     assert!(BUint::<N>::BITS as usize <= usize::MAX);
@@ -163,9 +160,7 @@ pub const fn unchecked_shr<const N: usize>(u: BUint<N>, rhs: ExpType) -> BUint<N
 }
 
 #[cfg(feature = "serde_all")]
-use serde_big_array::BigArray;
-#[cfg(feature = "serde_all")]
-use serde::{Serialize, Deserialize};
+use ::{serde_big_array::BigArray, serde::{Serialize, Deserialize}};
 
 /// Big unsigned integer type. Digits are stored as little endian (least significant bit first);
 #[derive(Clone, Copy, Hash, /*Debug, */)]
@@ -400,7 +395,7 @@ impl<const N: usize> BUint<N> {
     #[inline]
     pub const fn pow(self, exp: ExpType) -> Self {
         #[cfg(debug_assertions)]
-        return expect!(self.checked_pow(exp), "attempt to calculate power with overflow");
+        return option_expect!(self.checked_pow(exp), "attempt to calculate power with overflow");
         #[cfg(not(debug_assertions))]
         self.wrapping_pow(exp)
     }
@@ -476,7 +471,7 @@ impl<const N: usize> BUint<N> {
     #[inline]
     pub const fn next_power_of_two(self) -> Self {
         #[cfg(debug_assertions)]
-        return expect!(self.checked_next_power_of_two(), "attempt to calculate next power of two with overflow");
+        return option_expect!(self.checked_next_power_of_two(), "attempt to calculate next power of two with overflow");
         #[cfg(not(debug_assertions))]
         self.wrapping_next_power_of_two()
     }
@@ -517,7 +512,7 @@ impl<const N: usize> BUint<N> {
     #[inline]
     pub const fn log2(self) -> ExpType {
         #[cfg(debug_assertions)]
-        return expect!(self.checked_log2(), "attempt to calculate log2 of zero");
+        return option_expect!(self.checked_log2(), "attempt to calculate log2 of zero");
         #[cfg(not(debug_assertions))]
         match self.checked_log2() {
             Some(n) => n,
@@ -528,7 +523,7 @@ impl<const N: usize> BUint<N> {
     #[inline]
     pub const fn log10(self) -> ExpType {
         #[cfg(debug_assertions)]
-        return expect!(self.checked_log10(), "attempt to calculate log10 of zero");
+        return option_expect!(self.checked_log10(), "attempt to calculate log10 of zero");
         #[cfg(not(debug_assertions))]
         match self.checked_log10() {
             Some(n) => n,
@@ -539,7 +534,7 @@ impl<const N: usize> BUint<N> {
     #[inline]
     pub const fn log(self, base: Self) -> ExpType {
         #[cfg(debug_assertions)]
-        return expect!(self.checked_log(base), "attempt to calculate log of zero");
+        return option_expect!(self.checked_log(base), "attempt to calculate log of zero");
         #[cfg(not(debug_assertions))]
         match self.checked_log(base) {
             Some(n) => n,
@@ -719,22 +714,6 @@ impl<const N: usize> BUint<N> {
             i += 1;
         }
         true
-    }
-
-    /// Returns the smallest of `self` and `other`.
-    pub const fn min(&self, other: &Self) -> Self {
-        match Self::cmp(&self, &other) {
-            Ordering::Greater => *other,
-            _ => *self,
-        }
-    }
-
-    /// Returns the largest of `self` and `other`.
-    pub const fn max(&self, other: &Self) -> Self {
-        match Self::cmp(&self, &other) {
-            Ordering::Less => *other,
-            _ => *self,
-        }
     }
 
     /// Calculates the greatest common denominator of `self` and `other`.
@@ -946,6 +925,27 @@ mod tests {
         ],
         quickcheck_skip: b == 0
     }
+    test_unsigned! {
+        function: abs_diff(a: u128, b: u128),
+        quickcheck_skip: b == 0
+    }
+    test_unsigned! {
+        function: checked_next_multiple_of(a: u128, b: u128),
+        converter: test::converters::option_converter
+    }
+    test_unsigned! {
+        function: next_multiple_of(a: u128, b: u128),
+        quickcheck_skip: b == 0 || a.checked_add(b - a % b).is_none()
+    }
+    test_unsigned! {
+        function: div_ceil(a: u128, b: u128),
+        quickcheck_skip: b == 0
+    }
+    test_unsigned! {
+        function: div_floor(a: u128, b: u128),
+        quickcheck_skip: b == 0
+    }
+
     #[test]
     fn is_power_of_two() {
         let power = U128::from(1u128 << 88);

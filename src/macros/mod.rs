@@ -17,6 +17,7 @@ macro_rules! try_int_impl {
         impl<const N: usize> TryFrom<$Struct<N>> for $int {
             type Error = crate::TryFromIntError;
         
+            #[inline]
             fn try_from(uint: $Struct<N>) -> Result<Self, Self::Error> {
                 uint.$method().ok_or(crate::TryFromIntError {
                     from: stringify!($Struct),
@@ -50,6 +51,7 @@ pub(crate) use all_try_int_impls;
 
 macro_rules! checked_pow {
     () => {
+        #[inline]
         pub const fn checked_pow(self, exp: crate::ExpType) -> Option<Self> {
             if exp == 0 {
                 return Some(Self::ONE);
@@ -94,6 +96,7 @@ pub(crate) use checked_pow;
 
 macro_rules! overflowing_pow {
     () => {
+        #[inline]
         pub const fn overflowing_pow(self, exp: crate::ExpType) -> (Self, bool) {
             if exp == 0 {
                 return (Self::ONE, false);
@@ -135,6 +138,7 @@ pub(crate) use overflowing_pow;
 
 macro_rules! wrapping_pow {
     () => {
+        #[inline]
         pub const fn wrapping_pow(self, exp: crate::ExpType) -> Self {
             if exp == 0 {
                 return Self::ONE;
@@ -163,7 +167,7 @@ macro_rules! wrapping_pow {
 }
 pub(crate) use wrapping_pow;
 
-macro_rules! expect {
+macro_rules! option_expect {
     ($option: expr, $msg: expr) => {
         match $option {
             Some(value) => value,
@@ -171,13 +175,14 @@ macro_rules! expect {
         }
     }
 }
-pub(crate) use expect;
+pub(crate) use option_expect;
 
 macro_rules! op_ref_impl {
     ($tr: ident <$rhs: ty> for $Struct: ident <$($C: ident),+>, $method: ident) => {
         impl<$(const $C: usize),+> $tr<&$rhs> for $Struct <$($C),+> {
             type Output = $Struct <$($C),+>;
         
+            #[inline]
             fn $method(self, rhs: &$rhs) -> Self::Output {
                 self.$method(*rhs)
             }
@@ -186,6 +191,7 @@ macro_rules! op_ref_impl {
         impl<$(const $C: usize),+> $tr<&$rhs> for &$Struct <$($C),+> {
             type Output = $Struct <$($C),+>;
         
+            #[inline]
             fn $method(self, rhs: &$rhs) -> Self::Output {
                 (*self).$method(*rhs)
             }
@@ -194,6 +200,7 @@ macro_rules! op_ref_impl {
         impl<$(const $C: usize),+> $tr<$rhs> for &$Struct <$($C),+> {
             type Output = $Struct <$($C),+>;
         
+            #[inline]
             fn $method(self, rhs: $rhs) -> Self::Output {
                 (*self).$method(rhs)
             }
@@ -205,6 +212,7 @@ pub(crate) use op_ref_impl;
 macro_rules! assign_ref_impl {
     ($tr: tt <$rhs: ty> for $Struct: tt, $method: ident) => {
         impl<const N: usize> $tr<&$rhs> for $Struct<N> {
+            #[inline]
             fn $method(&mut self, rhs: &$rhs) {
                 self.$method(*rhs);
             }
@@ -219,6 +227,7 @@ macro_rules! shift_impl {
             impl<const N: usize> const $tr<$rhs> for $Struct<N> {
                 type Output = Self;
 
+                #[inline]
                 fn $method(self, rhs: $rhs) -> Self {
                     use crate::ExpType;
                     self.$method(rhs as ExpType)
@@ -237,10 +246,11 @@ macro_rules! try_shift_impl {
             impl<const N: usize> $tr<$rhs> for $Struct<N> {
                 type Output = Self;
 
+                #[inline]
                 fn $method(self, rhs: $rhs) -> Self {
                     use crate::ExpType;
                     #[cfg(debug_assertions)]
-                    let rhs: ExpType = expect!(rhs.try_into().ok(), $err);
+                    let rhs: ExpType = option_expect!(rhs.try_into().ok(), $err);
                     #[cfg(not(debug_assertions))]
                     let rhs = rhs as ExpType;
                     self.$method(rhs)
@@ -259,9 +269,10 @@ macro_rules! shift_self_impl {
         impl<const N: usize, const M: usize> $tr<$rhs<M>> for $Struct<N> {
             type Output = Self;
         
+            #[inline]
             fn $method(self, rhs: $rhs<M>) -> Self {
                 use crate::ExpType;
-                let rhs: ExpType = expect!(rhs.try_into().ok(), $err);
+                let rhs: ExpType = option_expect!(rhs.try_into().ok(), $err);
                 self.$method(rhs)
             }
         }
@@ -269,6 +280,7 @@ macro_rules! shift_self_impl {
         impl<const N: usize, const M: usize> $tr<&$rhs<M>> for $Struct<N> {
             type Output = $Struct<N>;
         
+            #[inline]
             fn $method(self, rhs: &$rhs<M>) -> Self::Output {
                 self.$method(*rhs)
             }
@@ -277,6 +289,7 @@ macro_rules! shift_self_impl {
         impl<const N: usize, const M: usize> $tr<&$rhs<M>> for &$Struct<N> {
             type Output = $Struct<N>;
         
+            #[inline]
             fn $method(self, rhs: &$rhs<M>) -> Self::Output {
                 (*self).$method(*rhs)
             }
@@ -285,6 +298,7 @@ macro_rules! shift_self_impl {
         impl<const N: usize, const M: usize> $tr<$rhs<M>> for &$Struct<N> {
             type Output = $Struct<N>;
         
+            #[inline]
             fn $method(self, rhs: $rhs<M>) -> Self::Output {
                 (*self).$method(rhs)
             }

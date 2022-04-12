@@ -7,6 +7,7 @@ use crate::error::TryFromErrorReason::*;
 use crate::digit::{self, Digit};
 use crate::macros::all_try_int_impls;
 use crate::ExpType;
+use crate::As;
 
 impl<const N: usize> FromStr for BUint<N> {
     type Err = ParseIntError;
@@ -171,7 +172,7 @@ impl<const N: usize> TryFrom<BUint<N>> for f32 {
 
     #[inline]
     fn try_from(uint: BUint<N>) -> Result<Self, Self::Error> {
-        Ok(uint.as_f32())
+        Ok(uint.as_())
     }
 }
 
@@ -180,7 +181,7 @@ impl<const N: usize> TryFrom<BUint<N>> for f64 {
 
     #[inline]
     fn try_from(uint: BUint<N>) -> Result<Self, Self::Error> {
-        Ok(uint.as_f64())
+        Ok(uint.as_())
     }
 }
 

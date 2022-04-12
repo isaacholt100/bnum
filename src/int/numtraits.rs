@@ -49,30 +49,19 @@ impl<const N: usize> CheckedNeg for Bint<N> {
 }
 
 macro_rules! as_primitive_impl {
-    ($ty: ty, $method: ident) => {
-        impl<const N: usize> AsPrimitive<$ty> for Bint<N> {
-            #[inline]
-            fn as_(self) -> $ty {
-                self.$method()
+    ($($ty: ty), *) => {
+        $(
+            impl<const N: usize> AsPrimitive<$ty> for Bint<N> {
+                #[inline]
+                fn as_(self) -> $ty {
+                    crate::As::as_(self)
+                }
             }
-        }
+        )*
     }
 }
 
-as_primitive_impl!(f32, as_f32);
-as_primitive_impl!(f64, as_f64);
-as_primitive_impl!(u8, as_u8);
-as_primitive_impl!(u16, as_u16);
-as_primitive_impl!(u32, as_u32);
-as_primitive_impl!(usize, as_usize);
-as_primitive_impl!(u64, as_u64);
-as_primitive_impl!(u128, as_u128);
-as_primitive_impl!(i8, as_i8);
-as_primitive_impl!(i16, as_i16);
-as_primitive_impl!(i32, as_i32);
-as_primitive_impl!(isize, as_isize);
-as_primitive_impl!(i64, as_i64);
-as_primitive_impl!(i128, as_i128);
+as_primitive_impl!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64);
 
 macro_rules! as_bint {
     ($($ty: ty), *) => {
@@ -114,12 +103,13 @@ impl<const N: usize> AsPrimitive<Bint<N>> for f64 {
 }
 
 use crate::BUint;
+use crate::cast::CastFrom;
 
 #[cfg(feature = "nightly")]
 impl<const N: usize, const M: usize> AsPrimitive<BUint<M>> for Bint<N> {
     #[inline]
     fn as_(self) -> BUint<M> {
-        self.as_buint::<M>()
+        BUint::<M>::cast_from(self)
     }
 }
 
@@ -127,7 +117,7 @@ impl<const N: usize, const M: usize> AsPrimitive<BUint<M>> for Bint<N> {
 impl<const N: usize, const M: usize> AsPrimitive<Bint<M>> for Bint<N> {
     #[inline]
     fn as_(self) -> Bint<M> {
-        self.as_bint::<M>()
+        Bint::<M>::cast_from(self)
     }
 }
 
@@ -354,7 +344,7 @@ impl<const N: usize> ToPrimitive for Bint<N> {
             if self.leading_ones() < ones {
                 None
             } else {
-                Some(self.as_i64())
+                Some(self.as_())
                 //Some(self.digits()[0] as i64)
             }
         } else {
@@ -369,7 +359,7 @@ impl<const N: usize> ToPrimitive for Bint<N> {
             if self.leading_ones() < ones {
                 None
             } else {
-                Some(self.as_i128())
+                Some(self.as_())
             }
         } else {
             self.bits.to_i128()
@@ -396,12 +386,12 @@ impl<const N: usize> ToPrimitive for Bint<N> {
 
     #[inline]
     fn to_f32(&self) -> Option<f32> {
-        Some(self.as_f32())
+        Some(self.as_())
     }
 
     #[inline]
     fn to_f64(&self) -> Option<f64> {
-        Some(self.as_f64())
+        Some(self.as_())
     }
 }
 

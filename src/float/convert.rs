@@ -53,7 +53,8 @@ mod tests {
     use crate::test::U8ArrayWrapper;
 
     fn to_u64_bits(f: crate::F64) -> u64 {
-        f.to_bits().as_u64()
+        use crate::As;
+        f.to_bits().as_()
     }
 
     test_float! {

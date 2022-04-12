@@ -11,6 +11,7 @@ use crate::{macros};
 impl<const N: usize> FromStr for Bint<N> {
     type Err = ParseIntError;
 
+    #[inline]
     fn from_str(src: &str) -> Result<Self, Self::Err> {
         Self::from_str_radix(src, 10)
     }

@@ -30,6 +30,8 @@ pub struct RandomUniformInt<X> {
 
 pub struct Slice<T>(pub [T]);
 
+// TODO: credit this code and below to the rand crate
+
 macro_rules! fill_impl {
     ($ty: ty) => {
         impl<const N: usize> Fill for Slice<$ty> {

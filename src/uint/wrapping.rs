@@ -1,6 +1,6 @@
 use super::{BUint, ExpType};
 use crate::Bint;
-use crate::macros::{expect, wrapping_pow};
+use crate::macros::{option_expect, wrapping_pow};
 
 impl<const N: usize> BUint<N> {
     #[inline]
@@ -25,7 +25,7 @@ impl<const N: usize> BUint<N> {
 
     #[inline]
     pub const fn wrapping_div(self, rhs: Self) -> Self {
-        expect!(self.checked_div(rhs), "attempt to divide by zero")
+        option_expect!(self.checked_div(rhs), "attempt to divide by zero")
     }
 
     #[inline]
@@ -35,7 +35,7 @@ impl<const N: usize> BUint<N> {
 
     #[inline]
     pub const fn wrapping_rem(self, rhs: Self) -> Self {
-        expect!(self.checked_rem(rhs), "attempt to calculate the remainder with a divisor of zero")
+        option_expect!(self.checked_rem(rhs), "attempt to calculate the remainder with a divisor of zero")
     }
 
     #[inline]
