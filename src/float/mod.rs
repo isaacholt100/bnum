@@ -79,13 +79,14 @@ pub struct Float<const W: usize, const MB: usize> {
 // TODO: implement rand traits
 
 impl<const W: usize, const MB: usize> Float<W, MB> {
-    const BITS: usize = W * digit::BITS as usize;
+    const MB: ExpType = MB as _;
+    const BITS: ExpType = BUint::<W>::BITS;
     
-    const EXPONENT_BITS: usize = Self::BITS - MB - 1;
+    const EXPONENT_BITS: ExpType = Self::BITS - Self::MB - 1;
 
     /*const MANTISSA_WORDS: (usize, usize) = (MB / digit::BITS as usize, MB % digit::BITS as usize);
 
-    const EXPONENT_MASK: BUint<W> = BUint::MAX.wrapping_shl(MB as ExpType) ^ Bint::MIN.to_bits();*/
+    const EXPONENT_MASK: BUint<W> = BUint::MAX.wrapping_shl(Self::MB) ^ Bint::MIN.to_bits();*/
 }
 
 impl<const W: usize, const MB: usize> Float<W, MB> {
@@ -110,7 +111,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
     #[inline]
     const fn exponent(self) -> Bint<W> {
-        let u: BUint<W> = (self.to_bits() & Bint::MAX.to_bits()).wrapping_shr(MB as ExpType);
+        let u: BUint<W> = (self.to_bits() & Bint::MAX.to_bits()).wrapping_shr(Self::MB);
         Bint::from_bits(u)
     }
     
@@ -120,7 +121,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     const fn unshifted_exponent(self) -> Bint<W> {
         Bint::from_bits(self.to_bits() & Self::EXPONENT_MASK)
     }*/
-    const MANTISSA_MASK: BUint<W> = BUint::MAX.wrapping_shr(Self::EXPONENT_BITS as ExpType + 1);
+    const MANTISSA_MASK: BUint<W> = BUint::MAX.wrapping_shr(Self::EXPONENT_BITS + 1);
     /*const fn mantissa(self) -> BUint<W> {
         self.to_bits() & Self::MANTISSA_MASK
     }
@@ -165,21 +166,21 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     #[inline]
     const fn exp_mant(&self) -> (BUint<W>, BUint<W>) {
         let bits = self.bits;
-        let exp = (bits << 1u8) >> (MB + 1);
+        let exp = (bits << 1u8) >> (Self::MB + 1);
         let mant = bits & Self::MANTISSA_MASK;
         
         if exp.is_zero() {
             (BUint::ONE, mant)
         } else {
-            (exp, mant | (BUint::ONE << MB))
+            (exp, mant | (BUint::ONE << Self::MB))
         }
     }
 
     #[inline]
     const fn from_exp_mant(negative: bool, exp: BUint<W>, mant: BUint<W>) -> Self {
-        let mut bits = (exp << MB) | mant;
+        let mut bits = (exp << Self::MB) | mant;
         if negative {
-            bits |= Bint::MIN.to_bits();
+            bits = bits | Bint::MIN.to_bits();
         }
         let f = Self::from_bits(bits);
         if negative {

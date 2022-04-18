@@ -23,7 +23,7 @@ macro_rules! test_big_num {
                 let prim_result = <$primitive>::$name(
                     $($arg.into()), *
                 );
-                assert_eq!(big_result, $converter(prim_result));
+                assert_eq!(crate::test::TestConvert::into(big_result), crate::test::TestConvert::into(prim_result));
             )*
         })?
         $(paste::paste! {
@@ -35,7 +35,7 @@ macro_rules! test_big_num {
                     let big_result = <$big_type>::$name($($param.into()), *);
                     let prim_result = <$primitive>::$name($($param.into()), *);
 
-                    quickcheck::TestResult::from_bool($($big_converter)?(big_result) == $converter(prim_result))
+                    quickcheck::TestResult::from_bool(crate::test::TestConvert::into(big_result) == crate::test::TestConvert::into(prim_result))
                 }
             }
         })?
@@ -224,7 +224,8 @@ macro_rules! test_cast_from {
         paste::paste! {
             quickcheck::quickcheck! {
                 $(
-                    fn [<quickcheck_as_ $ty>](i: [<$big:lower>]) -> bool {
+                    #[allow(non_snake_case)]
+                    fn [<quickcheck_ $big as_ $ty>](i: [<$big:lower>]) -> bool {
                         let big = $big::from(i);
                         let a1: $ty = big.as_();
                         a1 == i.as_()
@@ -242,7 +243,8 @@ macro_rules! test_cast_to {
         paste::paste! {
             quickcheck::quickcheck! {
                 $(
-                    fn [<quickcheck_ $ty _as>](i: $ty) -> bool {
+                    #[allow(non_snake_case)]
+                    fn [<quickcheck_ $ty _as_ $big>](i: $ty) -> bool {
                         let big: $big = i.as_();
                         let primitive: [<$big:lower>] = i.as_();
                         big == primitive.into()
@@ -254,3 +256,194 @@ macro_rules! test_cast_to {
 }
 
 pub(crate) use test_cast_to;
+
+#[allow(unused)]
+macro_rules! test_fmt {
+    {
+        int: $int: ty,
+        name: $name: ident,
+        format: $format: expr,
+        numbers: {
+            $($number: expr), *
+        }
+    } => {
+        paste::paste! {
+            #[test]
+            fn [<$name _format>]() {
+                $(
+                    let big = <$int>::from($number);
+                    assert_eq!(format!(concat!("{:", $format, "}"), big), format!(concat!("{:", $format, "}"), $number));
+                    assert_eq!(format!(concat!("{:#", $format, "}"), big), format!(concat!("{:#", $format, "}"), $number));
+                )*
+            }
+            
+            quickcheck::quickcheck! {
+                fn [<quickcheck_ $name _format>](i: [<$int:lower>]) -> bool {
+                    let big = <$int>::from(i);
+                    format!(concat!("{:#", $format, "}"), big) == format!(concat!("{:#", $format, "}"), i)
+                }
+            }
+        }
+    }
+}
+
+#[allow(unused_imports)]
+pub(crate) use test_fmt;
+
+use crate::{U128, I128, U64, F64};
+
+pub trait TestConvert {
+    type Output;
+
+    fn into(self) -> Self::Output;
+}
+
+impl TestConvert for u128 {
+    type Output = u128;
+
+    #[inline]
+    fn into(self) -> Self::Output {
+        self.to_le()
+    }
+}
+
+impl TestConvert for U128 {
+    type Output = u128;
+
+    #[inline]
+    fn into(self) -> Self::Output {
+        unsafe {
+            core::mem::transmute(self)
+        }
+    }
+}
+
+impl TestConvert for u64 {
+    type Output = u64;
+
+    #[inline]
+    fn into(self) -> Self::Output {
+        self.to_le()
+    }
+}
+
+impl TestConvert for U64 {
+    type Output = u64;
+
+    #[inline]
+    fn into(self) -> Self::Output {
+        unsafe {
+            core::mem::transmute(self)
+        }
+    }
+}
+
+impl TestConvert for i128 {
+    type Output = i128;
+
+    #[inline]
+    fn into(self) -> Self::Output {
+        self.to_le()
+    }
+}
+
+impl TestConvert for I128 {
+    type Output = i128;
+
+    #[inline]
+    fn into(self) -> Self::Output {
+        unsafe {
+            core::mem::transmute(self)
+        }
+    }
+}
+
+impl<T: TestConvert> TestConvert for Option<T> {
+    type Output = Option<<T as TestConvert>::Output>;
+
+    #[inline]
+    fn into(self) -> Self::Output {
+        self.map(TestConvert::into)
+    }
+}
+
+impl TestConvert for f64 {
+    type Output = u64;
+
+    #[inline]
+    fn into(self) -> Self::Output {
+        self.to_bits().to_le()
+    }
+}
+
+impl TestConvert for F64 {
+    type Output = u64;
+
+    #[inline]
+    fn into(self) -> Self::Output {
+        unsafe {
+            core::mem::transmute(self.to_bits())
+        }
+    }
+}
+
+impl<T: TestConvert, U: TestConvert> TestConvert for (T, U) {
+    type Output = (<T as TestConvert>::Output, <U as TestConvert>::Output);
+
+    #[inline]
+    fn into(self) -> Self::Output {
+        (TestConvert::into(self.0), TestConvert::into(self.1))
+    }
+}
+
+impl<T, const N: usize> TestConvert for [T; N] {
+    type Output = Self;
+    
+    #[inline]
+    fn into(self) -> Self::Output {
+        self
+    }
+}
+
+impl TestConvert for u32 {
+    type Output = u32;
+    
+    fn into(self) -> Self::Output {
+        self
+    }
+}
+
+impl TestConvert for usize {
+    type Output = u32;
+    
+    #[inline]
+    fn into(self) -> Self::Output {
+        self as u32
+    }
+}
+
+impl<T: TestConvert, E: Debug> TestConvert for Result<T, E> {
+    type Output = <T as TestConvert>::Output;
+
+    #[inline]
+    fn into(self) -> Self::Output {
+        TestConvert::into(self.unwrap())
+    }
+}
+
+macro_rules! test_convert_to_self {
+    ($($ty: ty), *) => {
+        $(
+            impl TestConvert for $ty {
+                type Output = Self;
+                
+                #[inline]
+                fn into(self) -> Self::Output {
+                    self
+                }
+            }
+        )*
+    };
+}
+
+test_convert_to_self!(core::num::FpCategory, bool);

@@ -1,6 +1,6 @@
 use super::Bint;
 use crate::digit::{SignedDigit, Digit, SignedDoubleDigit};
-use crate::macros::{overflowing_pow, div_zero, rem_zero, op_ref_impl};
+use crate::macros::{overflowing_pow, div_zero, rem_zero};
 use crate::{ExpType, BUint};
 use crate::digit;
 
@@ -274,8 +274,6 @@ impl<const N: usize> const Div for Bint<N> {
     }
 }
 
-op_ref_impl!(Div<Bint<N>> for Bint<N>, div);
-
 impl<const N: usize> const Rem for Bint<N> {
     type Output = Self;
 
@@ -290,8 +288,6 @@ impl<const N: usize> const Rem for Bint<N> {
         }
     }
 }
-
-op_ref_impl!(Rem<Bint<N>> for Bint<N>, rem);
 
 #[cfg(test)]
 mod tests {

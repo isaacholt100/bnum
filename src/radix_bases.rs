@@ -1,6 +1,6 @@
 #[cfg(feature = "u8_digit")]
 mod bases {
-    pub static BASES_HALF: &[(u8, usize)] = &[
+    pub const BASES_HALF: &[(u8, usize)] = &[
         (0, 0), // 0
         (0, 0), // 1
         (0, 0), // 2
@@ -260,7 +260,7 @@ mod bases {
         (0, 0), // 256
     ];
     
-    pub(crate) static BASES_DIGIT: &[(u8, usize)] = &[
+    pub(crate) const BASES_DIGIT: &[(u8, usize)] = &[
         (0, 0), // 0
         (0, 0), // 1
         (0, 0), // 2
@@ -1047,16 +1047,10 @@ mod bases {
 use crate::digit::Digit;
 
 #[inline]
-pub fn get_radix_base(radix: u32, bits: u8) -> (Digit, usize) {
-    const BITS: u8 = Digit::BITS as u8;
-    const HALF_BITS: u8 = BITS / 2;
-    match bits {
-        HALF_BITS => {
-            bases::BASES_HALF[radix as usize]
-        },
-        BITS => {
-            bases::BASES_DIGIT[radix as usize]
-        },
-        _ => unreachable!(),
+pub const fn get_radix_base<const HALF: bool>(radix: u32) -> (Digit, usize) {
+    if HALF {
+        bases::BASES_HALF[radix as usize]
+    } else {
+        bases::BASES_DIGIT[radix as usize]
     }
 }

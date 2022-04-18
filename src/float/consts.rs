@@ -1,33 +1,33 @@
-use crate::ExpType;
 use super::Float;
 use crate::uint::BUint;
 use crate::int::Bint;
+use crate::As;
 
 impl<const W: usize, const MB: usize> Float<W, MB> {
     pub const RADIX: u32 = 2;
 
     pub const MANTISSA_DIGITS: u32 = MB as u32 + 1;
 
-    pub const DIGITS: u32 = BUint::<W>::ONE.wrapping_shl(MB as ExpType).log10() as u32;
+    pub const DIGITS: u32 = BUint::<W>::ONE.wrapping_shl(Self::MB).log10() as u32;
 
     pub const EPSILON: Self = {
-        let u = Self::EXP_BIAS.to_bits() - BUint::from(MB); // TODO: make this MB.as_buint() instead
-        Self::from_bits(u << MB)
+        let u = Self::EXP_BIAS.to_bits() - MB.as_::<BUint<W>>();
+        Self::from_bits(u << Self::MB)
     };
 
-    pub const EXP_BIAS: Bint<W> = Bint::MAX.wrapping_shr(MB as ExpType + 1);
+    pub const EXP_BIAS: Bint<W> = Bint::MAX.wrapping_shr(Self::MB + 1);
 
     pub const MIN: Self = {
         let mut e = BUint::MAX;
-        e = e.wrapping_shr(MB as ExpType + 1);
-        e = e.wrapping_shl(MB as ExpType + 1);
+        e = e.wrapping_shr(Self::MB + 1);
+        e = e.wrapping_shl(Self::MB + 1);
         let mut m = BUint::MAX;
-        m = m.wrapping_shr(Self::EXPONENT_BITS as ExpType + 1);
+        m = m.wrapping_shr(Self::EXPONENT_BITS + 1);
         Self::from_bits(e | m)
     };
 
     pub const MIN_POSITIVE: Self = {
-        Self::from_bits(BUint::ONE.wrapping_shl(MB as ExpType))
+        Self::from_bits(BUint::ONE.wrapping_shl(Self::MB))
     };
     pub const MAX_NEGATIVE: Self = -Self::MIN_POSITIVE;
     pub const MAX: Self = Self::MIN.abs();
@@ -38,7 +38,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     pub const MIN_10_EXP: Self = todo!();
     pub const MAX_10_EXP: Self = todo!();
 
-    pub const MAX_SUBNORMAL: Self = Self::from_bits(BUint::MAX.wrapping_shr(Self::EXPONENT_BITS as ExpType + 1));
+    pub const MAX_SUBNORMAL: Self = Self::from_bits(BUint::MAX.wrapping_shr(Self::EXPONENT_BITS + 1));
     pub const MIN_SUBNORMAL: Self = -Self::MAX_SUBNORMAL;
     pub const MIN_POSITIVE_SUBNORMAL: Self = Self::from_bits(BUint::ONE);
     pub const MAX_NEGATIVE_SUBNORMAL: Self = -Self::MIN_POSITIVE_SUBNORMAL;
@@ -46,14 +46,14 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     pub const NAN: Self = {
         let mut u = BUint::MAX;
         u = u.wrapping_shl(1);
-        u = u.wrapping_shr(MB as ExpType);
-        u = u.wrapping_shl(MB as ExpType - 1);
+        u = u.wrapping_shr(Self::MB);
+        u = u.wrapping_shl(Self::MB - 1);
         Self::from_bits(u)
     };
 
     pub const QNAN: Self = {
         let bits = Self::NAN.to_bits();
-        Self::from_bits(bits | (BUint::ONE << (MB - 1)))
+        Self::from_bits(bits | (BUint::ONE << (Self::MB - 1)))
     };
 
     pub const NEG_NAN: Self = -Self::NAN;
@@ -63,15 +63,15 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     pub const INFINITY: Self = {
         let mut u = BUint::MAX;
         u = u.wrapping_shl(1);
-        u = u.wrapping_shr(1 + MB as ExpType);
-        u = u.wrapping_shl(MB as ExpType);
+        u = u.wrapping_shr(1 + Self::MB);
+        u = u.wrapping_shl(Self::MB);
         Self::from_bits(u)
     };
 
     pub const NEG_INFINITY: Self = {
         let mut u = BUint::MAX;
-        u = u.wrapping_shr(MB as ExpType);
-        u = u.wrapping_shl(MB as ExpType);
+        u = u.wrapping_shr(Self::MB);
+        u = u.wrapping_shl(Self::MB);
         Self::from_bits(u)
     };
 
@@ -82,8 +82,8 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     pub const ONE: Self = {
         let mut u = BUint::MAX;
         u = u.wrapping_shl(2);
-        u = u.wrapping_shr(2 + MB as ExpType);
-        u = u.wrapping_shl(MB as ExpType);
+        u = u.wrapping_shr(2 + Self::MB);
+        u = u.wrapping_shl(Self::MB);
         Self::from_bits(u)
     };
 

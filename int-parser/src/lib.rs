@@ -2,6 +2,8 @@ extern crate proc_macro;
 
 use proc_macro::{TokenStream, TokenTree};
 use syn::{parse_macro_input, LitInt};
+use quote::quote;
+//use bint::BUint;
 
 #[proc_macro]
 pub fn n(input: TokenStream) -> TokenStream {
@@ -9,6 +11,7 @@ pub fn n(input: TokenStream) -> TokenStream {
     //u(input)
     println!("{:?}", literal.suffix());
     println!("{:?}", literal.base10_digits());
+    let base10_digits = literal.base10_digits();
     /*match literal.base10_parse::<>() {
         Ok(num) => {
 
@@ -17,8 +20,15 @@ pub fn n(input: TokenStream) -> TokenStream {
 
         }
     }*/
+    //let u = BUint::<8>::from_str(literal.base10_digits()).expect("");
     println!("{}", literal);
-    "1".parse().unwrap()
+    let output = quote! {
+        {
+            panic!("integer too large");
+        core::str::FromStr::from_str(#base10_digits).expect("integer literal is too large")
+        }
+    };
+    output.into()
 }
 
 #[proc_macro]

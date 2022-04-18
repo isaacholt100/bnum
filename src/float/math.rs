@@ -8,7 +8,7 @@ mul_add, div_euclid, rem_euclid, powi, powf, exp, exp2, ln, log, log2, log10, cb
 
 impl<const W: usize, const MB: usize> Float<W, MB> {
     pub fn scalbn(mut self, mut n: Bint<W>) -> Self where [(); W * 2]:, {
-        let x1p127 = Self::from_bits(BUint::MAX >> 1u8 << (MB + 2)); // 0x1p127f === 2 ^ 127
+        let x1p127 = Self::from_bits(BUint::MAX >> 1u8 << (Self::MB + 2)); // 0x1p127f === 2 ^ 127
         let x1p24 = Self::from_exp_mant(false, BUint::from(MB), BUint::ZERO); // 0x1p24f === 2 ^ 24
 
         if n > Self::EXP_BIAS {
@@ -32,7 +32,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                 }
             }
         }
-        self * Self::from_bits(((Self::EXP_BIAS + n).to_bits()) << MB)
+        self * Self::from_bits(((Self::EXP_BIAS + n).to_bits()) << Self::MB)
     }
 
     #[inline]
@@ -54,26 +54,26 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             return Self::INFINITY;
         }
         if self.is_sign_negative() {
-            let u = BUint::MAX << (MB - 1);
+            let u = BUint::MAX << (Self::MB - 1);
             return Self::from_bits(u);
         }
 
-        let tiny = Self::from_bits(BUint::from(0b11011u8) << MB); // TODO: may not work for exponents stored with very few bits
+        let tiny = Self::from_bits(BUint::from(0b11011u8) << Self::MB); // TODO: may not work for exponents stored with very few bits
         
         let mut ix = Bint::from_bits(bits);
         let mut i: Bint<W>;
-        let mut m = ix >> MB;
+        let mut m = ix >> Self::MB;
         if m.is_zero() {
             /* subnormal x */
             i = Bint::ZERO;
-            while (ix & (Bint::ONE << MB)).is_zero() {
+            while (ix & (Bint::ONE << Self::MB)).is_zero() {
                 ix <<= 1;
                 i = i + Bint::ONE;
             }
             m -= i - Bint::ONE;
         }
         m -= Self::EXP_BIAS; /* unbias exponent */
-        ix = (ix & Bint::from_bits(BUint::MAX >> (Self::BITS - MB))) | (Bint::ONE << MB);
+        ix = (ix & Bint::from_bits(BUint::MAX >> (Self::BITS - Self::MB))) | (Bint::ONE << Self::MB);
         if m & Bint::ONE == Bint::ONE {
             /* odd m, double x to make it even */
             ix += ix;
@@ -84,7 +84,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         ix += ix;
         let mut q = Bint::ZERO;
         let mut s = Bint::ZERO;
-        let mut r = BUint::ONE << (MB + 1); /* r = moving bit from right to left */
+        let mut r = BUint::ONE << (Self::MB + 1); /* r = moving bit from right to left */
 
         let mut t: Bint<W>;
         while !r.is_zero() {
@@ -95,7 +95,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                 q += Bint::from_bits(r);
             }
             ix += ix;
-            r >>= 1u8;
+            r = r >> 1u8;
         }
 
         /* use floating add to find out rounding direction */
@@ -112,8 +112,8 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             }
         }
 
-        ix = (q >> 1u8) + Bint::from_bits((BUint::MAX << (MB + 1 + 2)) >> 2u8);
-        ix += m << MB;
+        ix = (q >> 1u8) + Bint::from_bits((BUint::MAX << (Self::MB + 1 + 2)) >> 2u8);
+        ix += m << Self::MB;
         Self::from_bits(ix.to_bits())
     }
 
@@ -132,7 +132,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             return self;
         }
         if !e.is_negative() {
-            let m = (BUint::MAX >> (Self::BITS - MB)) >> e;
+            let m = (BUint::MAX >> (Self::BITS - Self::MB)) >> e;
             if (u & m).is_zero() {
                 return self;
             }
@@ -159,7 +159,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             return self;
         }
         if !e.is_negative() {
-            let m = (BUint::MAX >> (Self::BITS - MB)) >> e;
+            let m = (BUint::MAX >> (Self::BITS - Self::MB)) >> e;
             if (bits & m).is_zero() {
                 return self;
             }
@@ -181,7 +181,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     pub fn trunc(self) -> Self {
         //return self.fract_trunc().1;
         let mut i = self.to_bits();
-        let exp_bits = Bint::from(Self::BITS - MB);
+        let exp_bits = Bint::from(Self::BITS - Self::MB);
         let mut e = self.exponent() - Self::EXP_BIAS + exp_bits;
 
         if e >= Bint::from(Self::BITS) {
@@ -229,7 +229,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             return (self, trunc);
         }
 
-        let mask = BUint::<W>::MAX >> (e + Bint::from(Self::BITS - MB));
+        let mask = BUint::<W>::MAX >> (e + Bint::from(Self::BITS - Self::MB));
         if (u & mask).is_zero() {
             return (Self::ZERO, self);
         }
@@ -291,26 +291,26 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         /* normalize x and y */
         let mut i;
         if ex.is_zero() {
-            i = uxi << (Self::BITS - MB);
+            i = uxi << (Self::BITS - Self::MB);
             while !Bint::from_bits(i).is_negative() {
                 ex -= Bint::ONE;
                 i <<= 1u8;
             }
             uxi <<= -ex + Bint::ONE;
         } else {
-            uxi &= BUint::MAX >> (Self::BITS - MB);
-            uxi |= BUint::ONE << MB;
+            uxi &= BUint::MAX >> (Self::BITS - Self::MB);
+            uxi |= BUint::ONE << Self::MB;
         }
         if ey.is_zero() {
-            i = uy << (Self::BITS - MB);
+            i = uy << (Self::BITS - Self::MB);
             while !Bint::from_bits(i).is_negative() {
                 ey -= Bint::ONE;
                 i <<= 1u8;
             }
             uy <<= -ey + Bint::ONE;
         } else {
-            uy &= BUint::MAX >> (Self::BITS - MB);
-            uy |= BUint::ONE << MB;
+            uy &= BUint::MAX >> (Self::BITS - Self::MB);
+            uy |= BUint::ONE << Self::MB;
         }
     
         let mut q = BUint::<W>::ZERO;
@@ -338,7 +338,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                 //ex = Bint::TWO - Bint::from(Self::BITS);
                 ex = Bint::from(-60i8);
             } else {
-                while (uxi >> MB).is_zero() {
+                while (uxi >> Self::MB).is_zero() {
                     uxi <<= 1u8;
                     ex -= Bint::ONE;
                 }
@@ -347,8 +347,8 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     
         /* scale result and decide between |x| and |x|-|y| */
         if ex.is_positive() {
-            uxi -= BUint::ONE << MB;
-            uxi |= ex.to_bits() << MB;
+            uxi -= BUint::ONE << Self::MB;
+            uxi |= ex.to_bits() << Self::MB;
         } else {
             uxi >>= -ex + Bint::ONE;
         }

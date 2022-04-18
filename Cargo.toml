@@ -5,7 +5,7 @@ authors = ["isaac-holt <isaac_holt@icloud.com>"]
 edition = "2018"
 
 [features]
-default = ["u8_digit", "nightly", "numtraits", "usize_exptype", "rand"] # needs to change so numtraits is optional for uint and int folders
+default = ["u8_digit", "nightly", "numtraits", "rand"] # needs to change so numtraits is optional for uint and int folders
 u8_digit = []
 nightly = []
 usize_exptype = []

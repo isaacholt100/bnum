@@ -1,21 +1,11 @@
 use super::BUint;
 use num_traits::ToPrimitive;
 use core::convert::{TryFrom, TryInto};
-use core::str::FromStr;
-use crate::{TryFromIntError, ParseIntError};
+use crate::{TryFromIntError};
 use crate::error::TryFromErrorReason::*;
 use crate::digit::{self, Digit};
 use crate::macros::all_try_int_impls;
 use crate::ExpType;
-use crate::As;
-
-impl<const N: usize> FromStr for BUint<N> {
-    type Err = ParseIntError;
-
-    fn from_str(src: &str) -> Result<Self, Self::Err> {
-        Self::from_str_radix(src, 10)
-    }
-}
 
 impl<const N: usize> const From<bool> for BUint<N> {
     #[inline]
@@ -97,6 +87,7 @@ macro_rules! try_from_float {
         impl<const N: usize> TryFrom<$float> for BUint<N> {
             type Error = TryFromIntError;
         
+            #[inline]
             fn try_from(f: $float) -> Result<Self, Self::Error> {
                 if !f.is_finite() {
                     return Err(TryFromIntError {
@@ -167,24 +158,6 @@ try_from_iint!(i8 -> u8, i16 -> u16, i32 -> u32, isize -> usize, i64 -> u64, i12
 
 all_try_int_impls!(BUint);
 
-impl<const N: usize> TryFrom<BUint<N>> for f32 {
-    type Error = TryFromIntError;
-
-    #[inline]
-    fn try_from(uint: BUint<N>) -> Result<Self, Self::Error> {
-        Ok(uint.as_())
-    }
-}
-
-impl<const N: usize> TryFrom<BUint<N>> for f64 {
-    type Error = TryFromIntError;
-
-    #[inline]
-    fn try_from(uint: BUint<N>) -> Result<Self, Self::Error> {
-        Ok(uint.as_())
-    }
-}
-
 impl<const N: usize> const From<[Digit; N]> for BUint<N> {
     #[inline]
     fn from(digits: [Digit; N]) -> Self {
@@ -204,21 +177,6 @@ mod tests {
     use super::*;
     use crate::U128;
     use crate::test;
-
-    test::test_big_num! {
-        big: U128,
-        primitive: u128,
-        function: from_str,
-        cases: [
-            ("398475394875230495745")
-        ],
-        converter: |result| {
-            match result {
-                Ok(u) => Ok(U128::from(u)),
-                Err(_) => unreachable!()
-            }
-        }
-    }
 
     test::test_from! {
         big: U128,

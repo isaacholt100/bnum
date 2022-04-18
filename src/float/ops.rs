@@ -1,11 +1,13 @@
 use super::Float;
 use core::num::FpCategory;
 use core::ops::{Add, Sub, Mul, Div, Rem, Neg};
+use std::convert::TryInto;
 use crate::{BUint, Bint, ExpType, digit};
 use num_traits::ToPrimitive;
 use core::iter::{Product, Sum, Iterator};
 use crate::cast::As;
 
+// TODO: fix this function
 impl<const W: usize, const MB: usize> Float<W, MB> {
     #[inline]    
     fn add_internal(mut self, mut rhs: Self, negative: bool) -> Self {
@@ -23,16 +25,11 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         let sticky_bit = BUint::from(b_mant.trailing_zeros() + 1) < exp_diff;
     
         // Append extra bits to the mantissas to ensure correct rounding
-        a_mant <<= 2u32;
-        b_mant <<= 2u32;
+        a_mant <<= 2 as ExpType;
+        b_mant <<= 2 as ExpType;
     
         // If the shift causes an overflow, the b_mant is too small so is set to 0
-        #[cfg(feature="usize_exptype")]
-        let option = exp_diff.to_usize();
-        #[cfg(not(feature="usize_exptype"))]
-        let option = exp_diff.to_u32();
-
-        b_mant = match option {
+        b_mant = match exp_diff.try_into().ok() {
             Some(exp_diff) => b_mant.checked_shr(exp_diff).unwrap_or(BUint::ZERO),
             None => BUint::ZERO,
         };
@@ -48,38 +45,38 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         let overflow = !(mant >> (MB + 3)).is_zero();
         if !overflow {
             if mant & BUint::from_digit(0b11) == BUint::from_digit(0b11) || mant & BUint::from_digit(0b110) == BUint::from_digit(0b110) {
-                mant += 0b100;
+                mant += BUint::FOUR;
                 if !(mant >> (MB + 3)).is_zero() {
-                    mant >>= 1u32;
-                    a_exp += 1;
+                    mant >>= 1 as ExpType;
+                    a_exp += BUint::ONE;
                 }
             }
         } else {
             match (mant & BUint::from_digit(0b111)).digits()[0] {
                 0b111 | 0b110 | 0b101 => {
-                    mant += 0b1000;
+                    mant += BUint::EIGHT;
                 },
                 0b100 => {
                     if mant & BUint::from_digit(0b1000) == BUint::from_digit(0b1000) {
-                        mant += 0b1000;
+                        mant += BUint::EIGHT;
                     }
                 },
                 _ => {},
             }
             
-            mant >>= 1u32;
-            a_exp += 1;
+            mant >>= 1 as ExpType;
+            a_exp += BUint::ONE;
         }
         if a_exp > Self::MAX_UNBIASED_EXP {
             return Self::INFINITY;
         }
     
-        mant >>= 2u32;
+        mant >>= 2 as ExpType;
     
-        if (mant >> MB).is_zero() {
+        if (mant >> Self::MB).is_zero() {
             a_exp = BUint::ZERO;
         } else {
-            mant ^= BUint::ONE << MB;
+            mant ^= BUint::ONE << Self::MB;
         }
         //println!("{}", negative);
         //assert!(negative);
@@ -153,18 +150,18 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     
         let mut a_exp = Bint::from_bits(a_exp);
     
-        let sticky_bit2 = !exp_diff.is_zero() && exp_diff < BUint::<W>::BITS.into() && b_mant.bit(exp_diff.as_::<usize>() - 1);
+        let sticky_bit2 = !exp_diff.is_zero() && exp_diff < BUint::<W>::BITS.into() && b_mant.bit(exp_diff.as_::<ExpType>() - 1);
         let all_zeros = !exp_diff.is_zero() && b_mant.trailing_zeros() + 1 == exp_diff.as_();
     
     
         // Append extra bits to the mantissas to ensure correct rounding
-        a_mant <<= 1u8;
-        b_mant <<= 1u8;
+        a_mant = a_mant << 1 as ExpType;
+        b_mant = b_mant << 1 as ExpType;
     
         let sticky_bit = b_mant.trailing_zeros() < exp_diff.as_();
-    
+
         // If the shift causes an overflow, the b_mant is too small so is set to 0
-        let shifted_b_mant = match exp_diff.to_usize() {
+        let shifted_b_mant = match exp_diff.try_into().ok() {
             Some(exp_diff) => b_mant.checked_shr(exp_diff).unwrap_or(BUint::ZERO),
             None => BUint::ZERO,
         };
@@ -177,21 +174,21 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     
         let mut mant = a_mant - shifted_b_mant;
     
-        if mant.bits() == MB as ExpType + 2 {
+        if mant.bits() == Self::MB + 2 {
             if mant & BUint::from(0b10u8) == BUint::from(0b10u8) && !sticky_bit {
-                mant += 0b1;
+                mant += BUint::ONE;
             }
     
-            mant >>= 1u8;
+            mant >>= 1 as ExpType;
         } else {
             a_exp -= Bint::ONE;
-            a_mant <<= 1u8;
-            b_mant <<= 1u8;
+            a_mant <<= 1 as ExpType;
+            b_mant <<= 1 as ExpType;
     
             let sticky_bit = b_mant.trailing_zeros() < exp_diff.as_();
     
             // If the shift causes an overflow, the b_mant is too small so is set to 0
-            let shifted_b_mant = match exp_diff.to_usize() {
+            let shifted_b_mant = match exp_diff.try_into().ok() {
                 Some(exp_diff) => b_mant.checked_shr(exp_diff).unwrap_or(BUint::ZERO),
                 None => BUint::ZERO,
             };
@@ -204,12 +201,12 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     
             mant = a_mant - shifted_b_mant;
 
-            if mant.bits() == MB as ExpType + 2 {
+            if mant.bits() == Self::MB + 2 {
                 if mant & BUint::from(0b10u8) == BUint::from(0b10u8) && !sticky_bit {
-                    mant += 0b1;
+                    mant += BUint::ONE;
                 }
     
-                mant >>= 1u8;
+                mant >>= 1 as ExpType;
             } else {
                 
                 let _half_way = (); // TODO
@@ -219,7 +216,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                     mant -= BUint::ONE;
                 }
                 let bits = mant.bits();
-                mant <<= MB as ExpType + 1 - bits;
+                mant <<= Self::MB + 1 - bits;
                 a_exp -= Bint::from(MB as i64 + 2 - bits as i64);
                 if !a_exp.is_positive() {
                     a_exp = Bint::ONE;
@@ -228,10 +225,10 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             }
         }
     
-        if (mant >> MB).is_zero() {
+        if (mant >> Self::MB).is_zero() {
             a_exp = Bint::ZERO;
         } else {
-            mant ^= BUint::ONE << MB;
+            mant ^= BUint::ONE << Self::MB;
         }
         
         Self::from_exp_mant(negative, a_exp.to_bits(), mant)
@@ -284,8 +281,8 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             };
         }
 
-        let extra_bits = if prod_bits > (MB as ExpType + 1) {
-            prod_bits - (MB as ExpType + 1)
+        let extra_bits = if prod_bits > (Self::MB + 1) {
+            prod_bits - (Self::MB + 1)
         } else {
             0
         };
@@ -316,16 +313,16 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         if mant & BUint::ONE == BUint::ONE {
             if sticky_bit || mant & BUint::from(0b11u8) == BUint::from(0b11u8) {
                 // Round up
-                mant += 1;
+                mant += BUint::ONE;
             }
         }
-        mant >>= 1u8;
+        mant >>= 1 as ExpType;
 
-        if exp == Bint::ONE && mant.bits() < MB as ExpType + 1 {
+        if exp == Bint::ONE && mant.bits() < Self::MB + 1 {
             return Self::from_exp_mant(negative, BUint::ZERO, mant.as_());
         }
-        if mant >> MB != BUint::ZERO {
-            mant ^= BUint::ONE << MB as u32;
+        if mant >> Self::MB != BUint::ZERO {
+            mant ^= BUint::ONE << Self::MB as u32;
         }
         Self::from_exp_mant(negative, exp.to_bits(), mant.as_())
     }
@@ -393,14 +390,14 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         };
         let mut division = (large / (s2.as_::<BUint<{W * 2}>>())).as_::<BUint<W>>();
     
-        let rem = if division.bits() != MB as ExpType + 2 {
+        let rem = if division.bits() != Self::MB + 2 {
             let rem = (large % (s2.as_::<BUint<{W * 2}>>())).as_::<BUint<W>>();
             rem
         } else {
             e += Bint::ONE;
-            division = ((large >> 1u8) / (s2.as_::<BUint<{W * 2}>>())).as_::<BUint<W>>();
+            division = ((large >> 1 as ExpType) / (s2.as_::<BUint<{W * 2}>>())).as_::<BUint<W>>();
             //println!("div {} {}", large >> 1u8, s2);
-            let rem = ((large >> 1u8) % (s2.as_::<BUint<{W * 2}>>())).as_::<BUint<W>>();
+            let rem = ((large >> 1 as ExpType) % (s2.as_::<BUint<{W * 2}>>())).as_::<BUint<W>>();
             rem
         };
         //println!("{}", rem);
@@ -411,9 +408,9 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                 division += BUint::ONE;
             }
         }
-        if division.bits() == MB as ExpType + 2 {
+        if division.bits() == Self::MB + 2 {
             e += Bint::ONE;
-            division >>= 1u8;
+            division >>= 1 as ExpType;
         }
     
         if e > Self::MAX_EXP + Self::EXP_BIAS - Bint::ONE {
@@ -422,12 +419,12 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
         //println!("{:032b}", division);
     
-        if e == Bint::ONE && division.bits() < MB as ExpType + 1 {
+        if e == Bint::ONE && division.bits() < Self::MB + 1 {
             return Self::from_exp_mant(negative, BUint::ZERO, division);
         }
     
-        if division >> MB != BUint::ZERO {
-            division ^= BUint::ONE << MB;
+        if division >> Self::MB != BUint::ZERO {
+            division ^= BUint::ONE << Self::MB;
         }
         Self::from_exp_mant(negative, e.to_bits(), division)
     }
@@ -462,7 +459,7 @@ impl<const W: usize, const MB: usize> Div for Float<W, MB> where [(); W * 2]:, {
     }
 }
 
-impl<const W: usize, const MB: usize> const Rem for Float<W, MB> {
+impl<const W: usize, const MB: usize> Rem for Float<W, MB> {
     type Output = Self;
 
     #[inline]
@@ -489,8 +486,8 @@ impl<const W: usize, const MB: usize> const Rem for Float<W, MB> {
         let mut ey = y.exponent();
         let mut i;
 
-        if uxi << 1u8 <= uyi << 1u8 {
-            if uxi << 1u8 == uyi << 1u8 {
+        if uxi << 1 as ExpType <= uyi << 1 as ExpType {
+            if uxi << 1 as ExpType == uyi << 1 as ExpType {
                 return if self.is_sign_negative() {
                     Self::NEG_ZERO
                 } else {
@@ -503,30 +500,30 @@ impl<const W: usize, const MB: usize> const Rem for Float<W, MB> {
 
         /* normalize x and y */
         if ex.is_zero() {
-            i = uxi << (Self::BITS - MB);
+            i = uxi << (Self::BITS - Self::MB);
             while !Bint::from_bits(i).is_negative() {
                 ex -= Bint::ONE;
-                i <<= 1u8;
+                i <<= 1 as ExpType;
             }
 
             uxi <<= -ex + Bint::ONE;
         } else {
-            uxi &= BUint::MAX >> (Self::BITS - MB);
-            uxi |= BUint::ONE << MB;
+            uxi &= BUint::MAX >> (Self::BITS - Self::MB);
+            uxi |= BUint::ONE << Self::MB;
         }
         //println!("{}", i);
 
         if ey.is_zero() {
-            i = uyi << (Self::BITS - MB);
+            i = uyi << (Self::BITS - Self::MB);
             while !Bint::from_bits(i).is_negative() {
                 ey -= Bint::ONE;
-                i <<= 1u8;
+                i <<= 1 as ExpType;
             }
 
             uyi <<= -ey + Bint::ONE;
         } else {
-            uyi &= BUint::MAX >> (Self::BITS - MB);
-            uyi |= BUint::ONE << MB;
+            uyi &= BUint::MAX >> (Self::BITS - Self::MB);
+            uyi |= BUint::ONE << Self::MB;
         }
         /* x mod y */
         while ex > ey {
@@ -541,7 +538,7 @@ impl<const W: usize, const MB: usize> const Rem for Float<W, MB> {
                 }
                 uxi = i;
             }
-            uxi <<= 1u8;
+            uxi <<= 1 as ExpType;
 
             ex -= Bint::ONE;
         }
@@ -558,15 +555,15 @@ impl<const W: usize, const MB: usize> const Rem for Float<W, MB> {
             uxi = i;
         }
 
-        while (uxi >> MB).is_zero() {
-            uxi <<= 1u8;
+        while (uxi >> Self::MB).is_zero() {
+            uxi <<= 1 as ExpType;
             ex -= Bint::ONE;
         }
 
         /* scale result up */
         if ex.is_positive() {
-            uxi -= BUint::ONE << MB;
-            uxi |= (ex.to_bits()) << MB;
+            uxi -= BUint::ONE << Self::MB;
+            uxi |= (ex.to_bits()) << Self::MB;
         } else {
             uxi >>= -ex + Bint::ONE;
         }

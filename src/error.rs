@@ -1,5 +1,7 @@
 use core::fmt::{Display, self, Formatter};
 
+// TODO: improve errors readability
+
 #[derive(Debug, PartialEq, Eq)]
 pub struct TryFromIntError {
     pub from: &'static str,
@@ -53,24 +55,4 @@ pub enum ParseIntErrorReason {
     Empty,
     TooLarge,
     InvalidDigit,
-}
-
-pub struct ParseRationalError {
-    pub reason: ParseRationalErrorReason,
-}
-
-impl Display for ParseRationalError {
-    #[inline]
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        match &self.reason {
-            ParseRationalErrorReason::ParseIntError(e) => Display::fmt(e, f),
-            ParseRationalErrorReason::ZeroDenominator => write!(f, "Denominator is zero"),
-        }
-    }
-}
-
-#[derive(Debug, PartialEq, Eq)]
-pub enum ParseRationalErrorReason {
-    ParseIntError(ParseIntError),
-    ZeroDenominator,
 }

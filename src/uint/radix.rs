@@ -178,7 +178,7 @@ impl<const N: usize> BUint<N> {
                 Self::from_inexact_bitwise_digits_le(buf.iter().rev().copied(), bits)
             }
         } else {
-            let (base, power) = radix_bases::get_radix_base(radix, BITS_U8);
+            let (base, power) = radix_bases::get_radix_base::<false>(radix);
             let r = buf.len() % power;
             let i = if r == 0 {
                 power
@@ -243,7 +243,7 @@ impl<const N: usize> BUint<N> {
                 Self::from_inexact_bitwise_digits_le(buf.iter().copied(), bits)
             }
         } else {
-            let (base, power) = radix_bases::get_radix_base(radix, BITS_U8);
+            let (base, power) = radix_bases::get_radix_base::<false>(radix);
             let r = buf.len() % power;
             let i = if r == 0 {
                 power
@@ -264,7 +264,7 @@ impl<const N: usize> BUint<N> {
         };
         out
     }
-    fn byte_to_digit(byte: u8) -> u8 {
+    const fn byte_to_digit(byte: u8) -> u8 {
         match byte {
             b'0' ..= b'9' => byte - b'0',
             b'a' ..= b'z' => byte - b'a' + 10,
@@ -343,7 +343,7 @@ impl<const N: usize> BUint<N> {
                 })
             },
             radix => {
-                let (base, power) = radix_bases::get_radix_base(radix, BITS_U8);
+                let (base, power) = radix_bases::get_radix_base::<false>(radix);
                 let buf = validate_src()?;
                 let r = buf.len() % power;
                 let i = if r == 0 {
@@ -367,6 +367,58 @@ impl<const N: usize> BUint<N> {
                 })
             }
         }
+    }
+
+    const fn from_decimal(src: &str) -> Option<Self> {
+        let (base, power) = radix_bases::get_radix_base::<false>(10);
+        let buf = src.as_bytes();
+        let mut i = 0;
+        while i < buf.len() {
+            if Self::byte_to_digit(buf[i]) >= 10 {
+                return None;
+            }
+            i += 1;
+        }
+        
+        let r = buf.len() % power;
+        let split = if r == 0 {
+            power
+        } else {
+            r
+        };
+        let mut out = Self::ZERO;
+        let mut first = 0;
+        i = 0;
+        while i < split {
+            first = first * 10 + Self::byte_to_digit(buf[i]);
+            i += 1;
+        }
+        out.digits[0] = first;
+        let mut start = i;
+        while start < buf.len() {
+            let end = start + power;
+
+            let mut carry = 0;
+            let mut j = 0;
+            while j < N {
+                out.digits[j] = Self::mac_with_carry(out.digits[j], base, &mut carry);
+                j += 1;
+            }
+
+            let mut n = 0;
+            j = start;
+            while j < end && j < buf.len() {
+                n = n * 10 + Self::byte_to_digit(buf[j]) as Digit;
+                j += 1;
+            }
+
+            out = match out.checked_add(Self::from_digit(n)) {
+                Some(out) => out,
+                None => return None,
+            };
+            start = end;
+        }
+        Some(out)
     }
 
     /// Returns the integer as a string in the given radix.
@@ -511,7 +563,7 @@ impl<const N: usize> BUint<N> {
         let radix_log2 = f64::from(radix).log2();
         let radix_digits = ((self.bits() as f64) / radix_log2).ceil();
         let mut out = Vec::with_capacity(radix_digits as usize);
-        let (base, power) = radix_bases::get_radix_base(radix, BITS_U8 / 2);
+        let (base, power) = radix_bases::get_radix_base::<true>(radix);
         let radix = radix as Digit;
         let mut copy = *self;
         while copy.last_digit_index() > 0 {
@@ -531,11 +583,97 @@ impl<const N: usize> BUint<N> {
     }
 }
 
+use core::str::FromStr;
+
+// TODO: this is not rejecting numbers that are too large
+impl<const N: usize> const FromStr for BUint<N> {
+    type Err = ParseIntError;
+
+    fn from_str(src: &str) -> Result<Self, Self::Err> {
+        let (base, power) = radix_bases::get_radix_base::<false>(10);
+        let buf = src.as_bytes();
+        let mut i = 0;
+        while i < buf.len() {
+            if Self::byte_to_digit(buf[i]) >= 10 {
+                return Err(ParseIntError {
+                    reason: InvalidDigit,
+                });
+            }
+            i += 1;
+        }
+        
+        let r = buf.len() % power;
+        let split = if r == 0 {
+            power
+        } else {
+            r
+        };
+        let mut out = Self::ZERO;
+        let mut first = 0;
+        i = 0;
+        while i < split {
+            first = first * 10 + Self::byte_to_digit(buf[i]);
+            i += 1;
+        }
+        out.digits[0] = first;
+        let mut start = i;
+        while start < buf.len() {
+            let end = start + power;
+
+            let mut carry = 0;
+            let mut j = 0;
+            while j < N {
+                out.digits[j] = Self::mac_with_carry(out.digits[j], base, &mut carry);
+                j += 1;
+            }
+
+            let mut n = 0;
+            j = start;
+            while j < end && j < buf.len() {
+                n = n * 10 + Self::byte_to_digit(buf[j]) as Digit;
+                j += 1;
+            }
+
+            out = match out.checked_add(Self::from_digit(n)) {
+                Some(out) => out,
+                None => return Err(ParseIntError {
+                    reason: TooLarge,
+                }),
+            };
+            start = end;
+        }
+        Ok(out)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     #[allow(unused)]
     use crate::{BUint, U128};
     use crate::test;
+    use core::str::FromStr;
+
+    #[test]
+    fn test_dec() {
+        let u = U128::from_decimal("529348758293749857289437598274389572894334534575982347895723894759823475982743895128529348758293749857289437598274389572894334534575982347895723894759823475982743895128").unwrap();
+        let u2 = U128::from_str_radix("529348758293749857289437598274389572894334534575982347895723894759823475982743895128529348758293749857289437598274389572894334534575982347895723894759823475982743895128", 10).unwrap();
+        assert_eq!(u, u2);
+    }
+
+    test::test_big_num! {
+        big: U128,
+        primitive: u128,
+        function: from_str,
+        cases: [
+            ("398475394875230495745")
+        ],
+        converter: |result| {
+            match result {
+                Ok(u) => Ok(U128::from(u)),
+                Err(_) => unreachable!()
+            }
+        }
+    }
 
     test::test_big_num! {
         big: U128,

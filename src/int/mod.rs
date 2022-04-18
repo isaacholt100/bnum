@@ -351,6 +351,7 @@ impl<const N: usize> Bint<N> {
 
     #[inline]
     pub const fn checked_next_multiple_of(self, rhs: Self) -> Option<Self> {
+        // TODO: credit rust source code
         if rhs == Self::NEG_ONE {
             return Some(self);
         }
@@ -429,8 +430,8 @@ impl<const N: usize> Bint<N> {
 
     #[doc=doc::bit!(Bint::<4>)]
     #[inline]
-    pub const fn bit(&self, index: usize) -> bool {
-        self.bits.bit(index)
+    pub const fn bit(&self, b: ExpType) -> bool {
+        self.bits.bit(b)
     }
 
     #[inline(always)]
@@ -454,16 +455,19 @@ impl<const N: usize> Bint<N> {
     pub const fn digits(&self) -> &[Digit; N] {
         &self.bits.digits()
     }
+
     #[inline(always)]
     pub const fn from_digits(digits: [Digit; N]) -> Self {
         Self::from_bits(BUint::from_digits(digits))
     }
+
     #[inline(always)]
     pub const fn from_bits(bits: BUint<N>) -> Self {
         Self {
             bits,
         }
     }
+    
     #[inline(always)]
     pub const fn to_bits(self) -> BUint<N> {
         self.bits
@@ -628,7 +632,7 @@ mod tests {
             (4294567897594568765i128, 249798748956i128),
             (27456979757i128, 45i128)
         ],
-        quickcheck_skip: b == 0 || (a == i128::MIN && b == -1)
+        quickcheck_skip: a.checked_div(b).is_none()
     }
     test_signed! {
         function: rem_euclid(a: i128, b: i128),
@@ -637,7 +641,7 @@ mod tests {
             (-46945656i128, 896794576985645i128),
             (-45679i128, -8i128)
         ],
-        quickcheck_skip: b == 0 || (a == i128::MIN && b == -1)
+        quickcheck_skip: a.checked_rem(b).is_none()
     }
     test_signed! {
         function: abs(a: i128),
@@ -700,5 +704,73 @@ mod tests {
         assert_eq!(I128::from((1i128 << 75) + 4).wrapping_next_power_of_two(), (1i128 << 76).into());
         assert_eq!(I128::from(i128::MAX / 2 + 4).wrapping_next_power_of_two(), I128::MIN);
     }
-    // TODO: test other methods
+    test_signed! {
+        function: log(a: i128, base: i128),
+        quickcheck_skip: a <= 0 || base <= 1,
+        converter: test::u32_to_exp
+    }
+    test_signed! {
+        function: log2(a: i128),
+        quickcheck_skip: a <= 0,
+        converter: test::u32_to_exp
+    }
+    test_signed! {
+        function: log10(a: i128),
+        quickcheck_skip: a <= 0,
+        converter: test::u32_to_exp
+    }
+    test_signed! {
+        function: abs_diff(a: i128, b: i128)
+    }
+    test_signed! {
+        function: checked_next_multiple_of(a: i128, b: i128),
+        converter: crate::test::converters::option_converter
+    }
+    test_signed! {
+        function: next_multiple_of(a: i128, b: i128),
+        quickcheck_skip: a.checked_next_multiple_of(b).is_none()
+    }
+    test_signed! {
+        function: div_floor(a: i128, b: i128),
+        quickcheck_skip: a.checked_div(b).is_none()
+    }
+    test_signed! {
+        function: div_ceil(a: i128, b: i128),
+        quickcheck_skip: a.checked_div(b).is_none()
+    }
+    
+    #[test]
+    fn bit() {
+        let i = I128::from(0b1001010100101010101i128);
+        assert!(i.bit(2));
+        assert!(!i.bit(3));
+        assert!(i.bit(8));
+        assert!(!i.bit(9));
+        assert!(i.bit(i.bits() - 1));
+    }
+
+    #[test]
+    fn is_zero() {
+        assert!(I128::ZERO.is_zero());
+        assert!(!I128::MAX.is_zero());
+        assert!(!I128::ONE.is_zero());
+    }
+
+    #[test]
+    fn is_one() {
+        assert!(I128::ONE.is_one());
+        assert!(!I128::MAX.is_one());
+        assert!(!I128::ZERO.is_one());
+    }
+
+    #[test]
+    fn bits() {
+        let u = I128::from(0b11101001010100101010101i128);
+        assert_eq!(u.bits(), 23);
+    }
+
+    #[test]
+    fn default() {
+        assert_eq!(I128::default(), i128::default().into());
+    }
 }

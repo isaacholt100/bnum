@@ -30,13 +30,13 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     pub const fn is_infinite(self) -> bool {
         self.abs().to_bits() == Masks::<W, MB>::FINITE_MASK
         /*let bits = self.abs().to_bits();
-        bits.trailing_zeros() == MB as ExpType && bits.count_ones() == Self::EXPONENT_BITS as ExpType*/
+        bits.trailing_zeros() == Self::MB && bits.count_ones() == Self::EXPONENT_BITS as ExpType*/
     }
 
     #[inline]
     pub const fn is_nan(self) -> bool {
         //!(self.mantissa().is_zero() || self.is_finite())
-        !self.is_finite() && self.to_bits().trailing_zeros() < MB as ExpType
+        !self.is_finite() && self.to_bits().trailing_zeros() < Self::MB
     }
 
     #[inline]
@@ -58,7 +58,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     pub const fn is_subnormal(self) -> bool {
         /*!self.is_zero() && self.exponent().is_zero()*/
         let lz = self.abs().to_bits().leading_zeros();
-        lz < Self::BITS as ExpType && lz > Self::EXPONENT_BITS as ExpType
+        lz < Self::BITS && lz > Self::EXPONENT_BITS
     }
 
     #[inline]

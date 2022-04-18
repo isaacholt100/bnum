@@ -56,10 +56,7 @@ macro_rules! test_unsigned {
 
 #[inline]
 pub const fn unchecked_shl<const N: usize>(u: BUint<N>, rhs: ExpType) -> BUint<N> {
-    // TODO: fix the commented method
-    //return unchecked_shr(u.reverse_bits(), rhs).reverse_bits();
-    // This is to make sure that the number of bits in `u` doesn't overflow a usize, which would cause unexpected behaviour for shifting
-    assert!(BUint::<N>::BITS <= usize::MAX);
+    assert!(BUint::<N>::BITS <= usize::MAX as ExpType);
     if rhs == 0 {
         u
     } else {
@@ -120,7 +117,7 @@ pub const fn unchecked_shl<const N: usize>(u: BUint<N>, rhs: ExpType) -> BUint<N
 #[inline]
 pub const fn unchecked_shr<const N: usize>(u: BUint<N>, rhs: ExpType) -> BUint<N> {
     // This is to make sure that the number of bits in `u` doesn't overflow a usize, which would cause unexpected behaviour for shifting
-    assert!(BUint::<N>::BITS as usize <= usize::MAX);
+    assert!(BUint::<N>::BITS <= usize::MAX as ExpType);
     if rhs == 0 {
         u
     } else {
@@ -639,9 +636,9 @@ impl<const N: usize> BUint<N> {
 
     #[doc=doc::bit!(BUint::<4>)]
     #[inline]
-    pub const fn bit(&self, index: usize) -> bool {
-        let digit = self.digits[index >> digit::BIT_SHIFT];
-        digit & (1 << (index & digit::BITS_MINUS_1 as usize)) != 0
+    pub const fn bit(&self, index: ExpType) -> bool {
+        let digit = self.digits[index as usize >> digit::BIT_SHIFT];
+        digit & (1 << (index & digit::BITS_MINUS_1)) != 0
     }
 
     /// Returns a `BUint` whose value is `2^power`.
@@ -931,6 +928,12 @@ mod tests {
     }
     test_unsigned! {
         function: checked_next_multiple_of(a: u128, b: u128),
+        cases: [
+            (16u128, 8u128),
+            (23u128, 8u128),
+            (1u128, 0u128),
+            (u128::MAX, 2u128)
+        ],
         converter: test::converters::option_converter
     }
     test_unsigned! {
@@ -956,41 +959,34 @@ mod tests {
     test_unsigned! {
         function: checked_next_power_of_two(a: u128),
         cases: [
-            (1340539475937597893475987u128),
             (u128::MAX)
         ],
-        converter: |option: Option<u128>| option.map(|u| U128::from(u))
+        converter: crate::test::converters::option_converter
     }
     test_unsigned! {
         function: next_power_of_two(a: u128),
-        cases: [
-            (394857834758937458973489573894759879u128),
-            (800345894358459u128)
-        ],
         quickcheck_skip: a.checked_next_power_of_two().is_none()
+    }
+    test_unsigned! {
+        function: wrapping_next_power_of_two(a: u128),
+        cases: [(u128::MAX)]
     }
     test_unsigned! {
         function: log(u: u128, base: u128),
         quickcheck_skip: u == 0 || base <= 1,
-        converter: |u| u as ExpType
+        converter: test::u32_to_exp
     }
     test_unsigned! {
         function: log2(u: u128),
         quickcheck_skip: u == 0,
-        converter: |u| u as ExpType
+        converter: test::u32_to_exp
     }
     test_unsigned! {
         function: log10(u: u128),
         quickcheck_skip: u == 0,
-        converter: |u| u as ExpType
+        converter: test::u32_to_exp
     }
-    /*test_unsigned! {
-        function: wrapping_next_power_of_two,
-        cases: [
-            (97495768945869084687890u128),
-            (u128::MAX)
-        ]
-    }*/
+
     #[test]
     fn bit() {
         let u = U128::from(0b001010100101010101u128);
@@ -1000,12 +996,21 @@ mod tests {
         assert!(!u.bit(16));
         assert!(u.bit(15));
     }
+
     #[test]
     fn is_zero() {
         assert!(U128::MIN.is_zero());
         assert!(!U128::MAX.is_zero());
         assert!(!U128::ONE.is_zero());
     }
+
+    #[test]
+    fn is_one() {
+        assert!(U128::ONE.is_one());
+        assert!(!U128::MAX.is_one());
+        assert!(!U128::ZERO.is_one());
+    }
+
     #[test]
     fn bits() {
         let u = U128::from(0b1001010100101010101u128);
@@ -1016,10 +1021,7 @@ mod tests {
     }
 
     #[test]
-    fn checked_next_multiple_of() {
-        assert_eq!(U128::from(16u8).checked_next_multiple_of(8u8.into()), Some(16u8.into()));
-        assert_eq!(U128::from(23u8).checked_next_multiple_of(8u8.into()), Some(24u8.into()));
-        assert_eq!(U128::ONE.checked_next_multiple_of(0u8.into()), None);
-        assert_eq!(U128::from(u128::MAX).checked_next_multiple_of(2u8.into()), None);
+    fn default() {
+        assert_eq!(U128::default(), u128::default().into());
     }
 }

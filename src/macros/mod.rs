@@ -209,17 +209,25 @@ macro_rules! op_ref_impl {
 }
 pub(crate) use op_ref_impl;
 
-macro_rules! assign_ref_impl {
-    ($tr: tt <$rhs: ty> for $Struct: tt, $method: ident) => {
-        impl<const N: usize> $tr<&$rhs> for $Struct<N> {
+macro_rules! assign_op_impl {
+    ($OpTrait: ident, $AssignTrait: ident<$rhs: ty> for $Struct: ident, $assign: ident, $op: ident) => {
+        impl<const N: usize> $AssignTrait<$rhs> for $Struct<N> {
             #[inline]
-            fn $method(&mut self, rhs: &$rhs) {
-                self.$method(*rhs);
+            fn $assign(&mut self, rhs: $rhs) {
+                *self = (*self).$op(rhs);
             }
         }
-    };
+        impl<const N: usize> $AssignTrait<&$rhs> for $Struct<N> {
+            #[inline]
+            fn $assign(&mut self, rhs: &$rhs) {
+                self.$assign(*rhs);
+            }
+        }
+
+        crate::macros::op_ref_impl!($OpTrait<$rhs> for $Struct<N>, $op);
+    }
 }
-pub(crate) use assign_ref_impl;
+pub(crate) use assign_op_impl;
 
 macro_rules! shift_impl {
     ($Struct: tt, $tr: tt, $method: ident, $assign_tr: tt, $assign_method: ident, $($rhs: ty), *) => {
@@ -234,7 +242,7 @@ macro_rules! shift_impl {
                 }
             }
 
-            op_ref_impl!($tr<$rhs> for $Struct<N>, $method);
+            //op_ref_impl!($tr<$rhs> for $Struct<N>, $method);
         )*
     }
 }
@@ -250,14 +258,14 @@ macro_rules! try_shift_impl {
                 fn $method(self, rhs: $rhs) -> Self {
                     use crate::ExpType;
                     #[cfg(debug_assertions)]
-                    let rhs: ExpType = option_expect!(rhs.try_into().ok(), $err);
+                    let rhs: ExpType = crate::macros::option_expect!(rhs.try_into().ok(), $err);
                     #[cfg(not(debug_assertions))]
                     let rhs = rhs as ExpType;
                     self.$method(rhs)
                 }
             }
 
-            op_ref_impl!($tr<$rhs> for $Struct<N>, $method);
+            //op_ref_impl!($tr<$rhs> for $Struct<N>, $method);
         )*
     }
 }
@@ -265,14 +273,13 @@ pub(crate) use try_shift_impl;
 
 macro_rules! shift_self_impl {
     ($Struct: tt, $tr: tt<$rhs: tt>, $method: ident, $assign_tr: tt, $assign_method: ident, $err: expr) => {
-
         impl<const N: usize, const M: usize> $tr<$rhs<M>> for $Struct<N> {
             type Output = Self;
         
             #[inline]
             fn $method(self, rhs: $rhs<M>) -> Self {
                 use crate::ExpType;
-                let rhs: ExpType = option_expect!(rhs.try_into().ok(), $err);
+                let rhs: ExpType = crate::macros::option_expect!(rhs.try_into().ok(), $err);
                 self.$method(rhs)
             }
         }
@@ -303,6 +310,20 @@ macro_rules! shift_self_impl {
                 (*self).$method(rhs)
             }
         }
+
+        impl<const N: usize, const M: usize> $assign_tr<$rhs<M>> for $Struct<N> {
+            #[inline]
+            fn $assign_method(&mut self, rhs: $rhs<M>) {
+                *self = (*self).$method(rhs);
+            }
+        }
+
+        impl<const N: usize, const M: usize> $assign_tr<&$rhs<M>> for $Struct<N> {
+            #[inline]
+            fn $assign_method(&mut self, rhs: &$rhs<M>) {
+                (*self).$assign_method(*rhs);
+            }
+        }
     }
 }
 pub(crate) use shift_self_impl;
@@ -310,6 +331,7 @@ pub(crate) use shift_self_impl;
 macro_rules! all_shift_impls {
     ($Struct: tt) => {
         use core::convert::TryInto;
+        use crate::prelude::*;
 
         crate::macros::try_shift_impl!($Struct, Shl, shl, ShlAssign, shl_assign, "attempt to shift left with overflow", i8, i16, i32, isize, i64, i128);
 
@@ -321,10 +343,8 @@ macro_rules! all_shift_impls {
         #[cfg(feature="usize_exptype")]
         crate::macros::try_shift_impl!($Struct, Shr, shr, ShrAssign, shr_assign, "attempt to shift right with overflow", u32, u64, u128);
         
-        #[cfg(feature="usize_exptype")]
         crate::macros::shift_impl!($Struct, Shl, shl, ShlAssign, shl_assign, u8, u16);
 
-        #[cfg(feature="usize_exptype")]
         crate::macros::shift_impl!($Struct, Shr, shr, ShrAssign, shr_assign, u8, u16);
 
         #[cfg(not(feature="usize_exptype"))]
@@ -332,12 +352,6 @@ macro_rules! all_shift_impls {
 
         #[cfg(not(feature="usize_exptype"))]
         crate::macros::try_shift_impl!($Struct, Shr, shr, ShrAssign, shr_assign, "attempt to shift right with overflow", usize, u64, u128);
-        
-        #[cfg(not(feature="usize_exptype"))]
-        crate::macros::shift_impl!($Struct, Shl, shl, ShlAssign, shl_assign, u8, u16);
-
-        #[cfg(not(feature="usize_exptype"))]
-        crate::macros::shift_impl!($Struct, Shr, shr, ShrAssign, shr_assign, u8, u16);
 
         crate::macros::shift_self_impl!($Struct, Shl<BUint>, shl, ShlAssign, shl_assign, "attempt to shift left with overflow");
 
@@ -348,27 +362,109 @@ macro_rules! all_shift_impls {
         crate::macros::shift_self_impl!($Struct, Shr<Bint>, shr, ShrAssign, shr_assign, "attempt to shift right with overflow");
     }
 }
+
 pub(crate) use all_shift_impls;
 
-#[allow(unused)]
-macro_rules! test_fmt {
-    {
-        int: $int: ty,
-        name: $name: ident,
-        format: $format: expr,
-        numbers: {
-            $($number: expr), *
-        }
-    } => {
-        #[test]
-        fn $name() {
-            $(
-                let buint = <$int>::from($number);
-                assert_eq!(format!($format, buint), format!($format, $number));
-            )*
-        }
-    }
+macro_rules! shift_assign_ops {
+    ($OpTrait: ident, $AssignTrait: ident <$($rhs: ty), *> for $Struct: ident, $assign: ident, $op: ident) => {
+        $(
+            crate::macros::assign_op_impl!($OpTrait, $AssignTrait<$rhs> for $Struct, $assign, $op);
+        )*
+    };
 }
+pub(crate) use shift_assign_ops;
 
-#[allow(unused_imports)]
-pub(crate) use test_fmt;
+macro_rules! impl_ops {
+    ($Struct: ident) => {
+        impl<const N: usize> const Add<Self> for $Struct<N> {
+            type Output = Self;
+        
+            #[inline]
+            fn add(self, rhs: Self) -> Self {
+                #[cfg(debug_assertions)]
+                return crate::macros::option_expect!(self.checked_add(rhs), "attempt to add with overflow");
+        
+                #[cfg(not(debug_assertions))]
+                self.wrapping_add(rhs)
+            }
+        }
+        
+        impl<const N: usize> const Mul for $Struct<N> {
+            type Output = Self;
+        
+            #[inline]
+            fn mul(self, rhs: Self) -> Self {
+                #[cfg(debug_assertions)]
+                return crate::macros::option_expect!(self.checked_mul(rhs), "attempt to multiply with overflow");
+        
+                #[cfg(not(debug_assertions))]
+                self.wrapping_mul(rhs)
+            }
+        }
+        
+        impl<const N: usize> const Not for &$Struct<N> {
+            type Output = $Struct<N>;
+        
+            #[inline]
+            fn not(self) -> $Struct<N> {
+                !(*self)
+            }
+        }
+        
+        impl<const N: usize> const Shl<ExpType> for $Struct<N> {
+            type Output = Self;
+        
+            #[inline]
+            fn shl(self, rhs: ExpType) -> Self {
+                #[cfg(debug_assertions)]
+                return crate::macros::option_expect!(self.checked_shl(rhs), "attempt to shift left with overflow");
+        
+                #[cfg(not(debug_assertions))]
+                self.wrapping_shl(rhs)
+            }
+        }
+        
+        impl<const N: usize> const Shr<ExpType> for $Struct<N> {
+            type Output = Self;
+        
+            #[inline]
+            fn shr(self, rhs: ExpType) -> Self {
+                #[cfg(debug_assertions)]
+                return crate::macros::option_expect!(self.checked_shr(rhs), "attempt to shift left with overflow");
+        
+                #[cfg(not(debug_assertions))]
+                self.wrapping_shr(rhs)
+            }
+        }
+        
+        crate::macros::all_shift_impls!($Struct);
+        
+        impl<const N: usize> const Sub for $Struct<N> {
+            type Output = Self;
+        
+            #[inline]
+            fn sub(self, rhs: Self) -> Self {
+                #[cfg(debug_assertions)]
+                return crate::macros::option_expect!(self.checked_sub(rhs), "attempt to subtract with overflow");
+        
+                #[cfg(not(debug_assertions))]
+                self.wrapping_sub(rhs)
+            }
+        }
+
+        crate::macros::assign_op_impl!(Add, AddAssign<$Struct<N>> for $Struct, add_assign, add);
+        crate::macros::assign_op_impl!(BitAnd, BitAndAssign<$Struct<N>> for $Struct, bitand_assign, bitand);
+        crate::macros::assign_op_impl!(BitOr, BitOrAssign<$Struct<N>> for $Struct, bitor_assign, bitor);
+        crate::macros::assign_op_impl!(BitXor, BitXorAssign<$Struct<N>> for $Struct, bitxor_assign, bitxor);
+        crate::macros::assign_op_impl!(Div, DivAssign<$Struct<N>> for $Struct, div_assign, div);
+        crate::macros::assign_op_impl!(Mul, MulAssign<$Struct<N>> for $Struct, mul_assign, mul);
+        crate::macros::assign_op_impl!(Rem, RemAssign<$Struct<N>> for $Struct, rem_assign, rem);
+
+        crate::macros::shift_assign_ops!(Shl, ShlAssign<u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize> for $Struct, shl_assign, shl);
+
+        crate::macros::shift_assign_ops!(Shr, ShrAssign<u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize> for $Struct, shr_assign, shr);
+
+        crate::macros::assign_op_impl!(Sub, SubAssign<$Struct<N>> for $Struct, sub_assign, sub);
+    };
+}
+pub(crate) use impl_ops;

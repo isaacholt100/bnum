@@ -13,6 +13,7 @@
     test,
     int_log,
     float_minimum_maximum,
+    wrapping_next_power_of_two,
 ))]
 #![doc = include_str!("../README.md")]
 //#![no_std]

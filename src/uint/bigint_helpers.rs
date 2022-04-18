@@ -26,21 +26,20 @@ impl<const N: usize> BUint<N> {
         while i < N {
             carry = 0;
             let mut j = 0;
-            while j < N {
+            while j < N - i {
                 let index = i + j;
-                let d = if index < N {
-                    low.digits[index]
-                } else {
-                    high.digits[index - N]
-                };
+                let d = low.digits[index];
                 let (new_digit, new_carry) = super::carrying_mul(self.digits[i], rhs.digits[j], carry, d);//self.digits[i].carrying_mul(rhs.digits[j], carry + d);
                 carry = new_carry;
-                if index < N {
-                    low.digits[index] = new_digit;
-                } else {
-                    high.digits[index - N] = new_digit;
-                }
-                // TODO: change it so that index does not need to be compared
+                low.digits[index] = new_digit;
+                j += 1;
+            }
+            while j < N {
+                let index = i + j - N;
+                let d = high.digits[index];
+                let (new_digit, new_carry) = super::carrying_mul(self.digits[i], rhs.digits[j], carry, d);//self.digits[i].carrying_mul(rhs.digits[j], carry + d);
+                carry = new_carry;
+                high.digits[index] = new_digit;
                 j += 1;
             }
             high.digits[i] = carry;

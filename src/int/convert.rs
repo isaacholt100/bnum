@@ -110,11 +110,26 @@ impl<const N: usize> TryFrom<f64> for Bint<N> {
 
     #[inline]
     fn try_from(f: f64) -> Result<Self, Self::Error> {
-        if f < 0.0 {
+        if f.is_sign_negative() {
             let x = BUint::try_from(-f)?;
+            if x > Self::MIN.to_bits() {
+                return Err(TryFromIntError {
+                    from: stringify!($float),
+                    to: "Bint",
+                    reason: TooLarge,
+                });
+            }
             Ok(-Self::from_bits(x))
         } else {
-            Ok(Self::from_bits(BUint::try_from(f)?))
+            let x = BUint::try_from(f)?;
+            if x > Self::MIN.to_bits() {
+                return Err(TryFromIntError {
+                    from: stringify!($float),
+                    to: "Bint",
+                    reason: TooLarge,
+                });
+            }
+            Ok(Self::from_bits(x))
         }
     }
 }

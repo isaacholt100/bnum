@@ -534,28 +534,38 @@ impl<const N: usize> BUint<N> {
 
     #[inline]
     pub const fn checked_log10(self) -> Option<ExpType> {
-        // TODO: can optimise this better maybe
         self.checked_log(Self::TEN)
     }
 
     #[inline]
-    const fn unchecked_log2_exptype(self) -> ExpType {
-        self.bits() - 1
-    }
-
-    #[inline]
     pub const fn checked_log(self, base: Self) -> Option<ExpType> {
+        // TODO: this is SLOW, make faster
         if self.is_zero() || base < Self::TWO {
             None
         } else {
-            let b = self.unchecked_log2_exptype() / (base.unchecked_log2_exptype() + 1);
-            let mut n = b;
-            let mut r = self.div_rem_unchecked(base.pow(b)).0;
-            
+            if base == Self::TWO {
+                return self.checked_log2();
+            }
+            let (mut n, mut r) = if Self::BITS >= 128 {
+                let b = (self.bits() - 1) / base.bits();
+                let r = self.div_rem_unchecked(base.pow(b)).0;
+                (b, r)
+            } else {
+                (0, self)
+            };
             while r >= base {
-                r /= base;
+                r = r / base;
                 n += 1;
             }
+            
+            /*let mut b = base;
+            while b <= r {
+                n += 1;
+                b = match b.checked_mul(base) {
+                    Some(i) => i,
+                    None => break,
+                };
+            }*/
             Some(n)
         }
     }
@@ -564,6 +574,12 @@ impl<const N: usize> BUint<N> {
 #[cfg(test)]
 mod tests {
     use crate::test::converters;
+
+    #[test]
+    fn t_log() {
+        use crate::U8192;
+        U8192::MAX.checked_mul(U8192::THREE);
+    }
 
     test_unsigned! {
         function: checked_add(a: u128, b: u128),
@@ -655,5 +671,27 @@ mod tests {
             (5u128, 34 as u16)
         ],
         converter: converters::option_converter
+    }
+    test_unsigned! {
+        function: checked_log(a: u128, b: u128),
+        cases: [
+            //(4565u128, 100 as u16)
+        ],
+        converter: |option: Option<u32>| option.map(|u| u as crate::ExpType)
+    }
+    test_unsigned! {
+        function: checked_log2(a: u128),
+        cases: [
+            //(4565u128, 100 as u16)
+        ],
+        converter: |option: Option<u32>| option.map(|u| u as crate::ExpType)
+    }
+    test_unsigned! {
+        function: checked_log10(a: u128),
+        cases: [
+            (10000000000000000u128),
+            (10000u128)
+        ],
+        converter: |option: Option<u32>| option.map(|u| u as crate::ExpType)
     }
 }

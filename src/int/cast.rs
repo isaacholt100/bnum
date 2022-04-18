@@ -169,12 +169,16 @@ impl<const N: usize, const M: usize> const CastFrom<Bint<M>> for Bint<N> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{I128, U128, I64, test};
+    use crate::{I128, U128, I64, U64, test};
     use crate::cast::As;
     
-    test::test_cast_to!([u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, bool, char] as U128);
+    test::test_cast_to!([u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, /*f32, f64,*/ bool, char] as I128);
 
-    test::test_cast_from!(I128 as [u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32/*, f64*/]);
+    test::test_cast_to!([u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, bool, char] as I64);
+
+    test::test_cast_from!(I64 as [u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32/*, f64*/, U64, I64, I128, U128]);
+
+    test::test_cast_from!(I128 as [u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32/*, f64*/, U64, I64, I128, U128]);
 
     #[test]
     fn sign_fill_cast() {
@@ -184,29 +188,5 @@ mod tests {
         let i = -20495870948567i64;
         let int = I64::from(i);
         assert_eq!(i as u128, int.as_());
-    }
-
-    // TODO: quickcheck test as buint, as bint
-
-    #[cfg(feature = "nightly")]
-    #[test]
-    fn as_buint() {
-        let i = 39845968768945885i64;
-        let int = I64::from(i);
-        assert_eq!(U128::from(i as u128), int.as_());
-        let i = -4059684564856590i64;
-        let int = I64::from(i);
-        assert_eq!(U128::from(i as u128), int.as_());
-    }
-
-    #[cfg(feature = "nightly")]
-    #[test]
-    fn as_bint() {
-        let i = 230987495678497456i64;
-        let int = I64::from(i);
-        assert_eq!(I128::from(i), int.as_());
-        let i = -2398679420567947564i64;
-        let int = I64::from(i);
-        assert_eq!(I128::from(i), int.as_());
     }
 }
