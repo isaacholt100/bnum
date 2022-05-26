@@ -167,14 +167,46 @@ impl<const N: usize, const M: usize> const CastFrom<Bint<M>> for Bint<N> {
     }
 }
 
+macro_rules! cast_from_float {
+    ($f: ty) => {
+        #[inline]
+        fn cast_from(from: $f) -> Self {
+            if from.is_sign_negative() {
+                let u = BUint::<N>::cast_from(-from);
+                if u > Self::MIN.to_bits() {
+                    Self::MIN
+                } else {
+                    -Self::from_bits(u)
+                }
+            } else {
+                let u = BUint::<N>::cast_from(from);
+                let i = Self::from_bits(u);
+                if i.is_negative() {
+                    Self::MAX
+                } else {
+                    i
+                }
+            }
+        }
+    };
+}
+
+impl<const N: usize> CastFrom<f32> for Bint<N> {
+    cast_from_float!(f32);
+}
+
+impl<const N: usize> CastFrom<f64> for Bint<N> {
+    cast_from_float!(f64);
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{I128, U128, I64, U64, test};
     use crate::cast::As;
     
-    test::test_cast_to!([u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, /*f32, f64,*/ bool, char] as I128);
+    test::test_cast_to!([u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, /*f32,*/ f64, bool, char] as I128);
 
-    test::test_cast_to!([u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, bool, char] as I64);
+    test::test_cast_to!([u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, /*f32,*/ f64, bool, char] as I64);
 
     test::test_cast_from!(I64 as [u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32/*, f64*/, U64, I64, I128, U128]);
 

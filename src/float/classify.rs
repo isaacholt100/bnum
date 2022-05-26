@@ -1,5 +1,5 @@
 use super::Float;
-use crate::{digit::Digit, ExpType};
+use crate::digit::Digit;
 use core::num::FpCategory;
 use crate::BUint;
 

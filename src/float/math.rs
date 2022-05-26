@@ -374,65 +374,40 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
 #[cfg(test)]
 mod tests {
-    use crate::F64;
-    
-    fn to_u64_bits(f: F64) -> u64 {
-        use crate::As;
-        f.to_bits().as_()
+    test_float! {
+        function: abs(f: f64)
     }
 
     test_float! {
-        function: abs(f: f64),
-        big_converter: to_u64_bits,
-        converter: f64::to_bits
+        function: sqrt(f: f64)
     }
 
     test_float! {
-        function: sqrt(f: f64),
-        big_converter: to_u64_bits,
-        converter: f64::to_bits
+        function: ceil(f: f64)
     }
 
     test_float! {
-        function: ceil(f: f64),
-        big_converter: to_u64_bits,
-        converter: f64::to_bits
+        function: floor(f: f64)
     }
 
     test_float! {
-        function: floor(f: f64),
-        big_converter: to_u64_bits,
-        converter: f64::to_bits
+        function: round(f: f64)
     }
 
     test_float! {
-        function: round(f: f64),
-        big_converter: to_u64_bits,
-        converter: f64::to_bits
+        function: trunc(f: f64)
     }
 
     test_float! {
-        function: trunc(f: f64),
-        big_converter: to_u64_bits,
-        converter: f64::to_bits
+        function: fract(f: f64)
     }
 
     test_float! {
-        function: fract(f: f64),
-        big_converter: to_u64_bits,
-        converter: f64::to_bits
+        function: div_euclid(f1: f64, f2: f64)
     }
 
     test_float! {
-        function: div_euclid(f1: f64, f2: f64),
-        big_converter: to_u64_bits,
-        converter: f64::to_bits
-    }
-
-    test_float! {
-        function: rem_euclid(f1: f64, f2: f64),
-        big_converter: to_u64_bits,
-        converter: f64::to_bits
+        function: rem_euclid(f1: f64, f2: f64)
     }
 
     #[test]

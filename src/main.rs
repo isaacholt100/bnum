@@ -103,6 +103,9 @@ use std::cell::RefCell;
 use bint::I128;
 
 fn main() {
+    let a = 8;
+    let b: *const i32 = &a;
+    println!("{}", b as u128);
     let mut value = SharedValue::new(String::from("hello"));
 
     let a = value.create_dep();
@@ -141,6 +144,6 @@ fn main() {
     println!("{}", I128::from(-136910483565846334909092127208875491329i128).digits()[15] as i8);
     println!("{}", I128::from(-31901471898837980949691369446728269825i128).digits()[15] as i8);
     use bint::U128;
-    let a: U128 = int_parser::n!(0x5fe2239923487897294857u128);
-    println!("{:x}", a);
+    //let a: U128 = int_parser::n!(0x5fe2239923487897294857u128);
+    //println!("{:x}", a);
 }

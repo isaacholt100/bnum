@@ -52,44 +52,28 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 mod tests {
     use crate::test::U8ArrayWrapper;
 
-    fn to_u64_bits(f: crate::F64) -> u64 {
-        use crate::As;
-        f.to_bits().as_()
-    }
-
     test_float! {
         function: to_bits(a: f64)
     }
     test_float! {
-        function: from_bits(a: u64),
-        big_converter: to_u64_bits,
-        converter: f64::to_bits
+        function: from_bits(a: u64)
     }
     test_float! {
-        function: to_be_bytes(a: f64),
-        converter: U8ArrayWrapper::converter
+        function: to_be_bytes(a: f64)
     }
     test_float! {
-        function: to_le_bytes(a: f64),
-        converter: U8ArrayWrapper::converter
+        function: to_le_bytes(a: f64)
     }
     test_float! {
-        function: to_ne_bytes(a: f64),
-        converter: U8ArrayWrapper::converter
+        function: to_ne_bytes(a: f64)
     }
     test_float! {
-        function: from_be_bytes(a: U8ArrayWrapper<8>),
-        big_converter: to_u64_bits,
-        converter: f64::to_bits
+        function: from_be_bytes(a: U8ArrayWrapper<8>)
     }
     test_float! {
-        function: from_le_bytes(a: U8ArrayWrapper<8>),
-        big_converter: to_u64_bits,
-        converter: f64::to_bits
+        function: from_le_bytes(a: U8ArrayWrapper<8>)
     }
     test_float! {
-        function: from_ne_bytes(a: U8ArrayWrapper<8>),
-        big_converter: to_u64_bits,
-        converter: f64::to_bits
+        function: from_ne_bytes(a: U8ArrayWrapper<8>)
     }
 }

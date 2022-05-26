@@ -291,15 +291,12 @@ impl<const N: usize> const Rem for Bint<N> {
 
 #[cfg(test)]
 mod tests {
-    use crate::test::converters;
-
     test_signed! {
         function: overflowing_add(a: i128, b: i128),
         cases: [
             (-i128::MAX, i128::MIN),
             (i128::MAX, i128::MAX)
-        ],
-        converter: converters::tuple_converter
+        ]
     }
     test_signed! {
         function: overflowing_sub(a: i128, b: i128),
@@ -307,16 +304,14 @@ mod tests {
             (i128::MIN, 13i128),
             (i128::MAX, -1i128),
             (i128::MAX, i128::MIN)
-        ],
-        converter: converters::tuple_converter
+        ]
     }
     test_signed! {
         function: overflowing_mul(a: i128, b: i128),
         cases: [
             (1i128 << 64, 1i128 << 63),
             (-(1i128 << 100), 1i128 << 27)
-        ],
-        converter: converters::tuple_converter
+        ]
     }
     test_signed! {
         function: overflowing_div(a: i128, b: i128),
@@ -324,8 +319,7 @@ mod tests {
             (-1i128, 2i128),
             (i128::MIN, -1i128)
         ],
-        quickcheck_skip: b == 0,
-        converter: converters::tuple_converter
+        quickcheck_skip: b == 0
     }
     test_signed! {
         function: overflowing_div_euclid(a: i128, b: i128),
@@ -333,8 +327,7 @@ mod tests {
             (-1i128, 2i128),
             (i128::MIN, -1i128)
         ],
-        quickcheck_skip: b == 0,
-        converter: converters::tuple_converter
+        quickcheck_skip: b == 0
     }
     test_signed! {
         function: overflowing_rem(a: i128, b: i128),
@@ -342,8 +335,7 @@ mod tests {
             (-577i128 * 80456498576, 577i128),
             (i128::MIN, -1i128)
         ],
-        quickcheck_skip: b == 0,
-        converter: converters::tuple_converter
+        quickcheck_skip: b == 0
     }
     test_signed! {
         function: overflowing_rem_euclid(a: i128, b: i128),
@@ -352,8 +344,7 @@ mod tests {
             (i128::MIN, -1i128),
             (-1i128, 2i128)
         ],
-        quickcheck_skip: b == 0,
-        converter: converters::tuple_converter
+        quickcheck_skip: b == 0
     }
     test_signed! {
         function: overflowing_neg(a: i128),
@@ -361,8 +352,7 @@ mod tests {
             (0i128),
             (i128::MIN),
             (997340597745960395879i128)
-        ],
-        converter: converters::tuple_converter
+        ]
     }
     test_signed! {
         function: overflowing_shl(a: i128, b: u16),
@@ -370,24 +360,21 @@ mod tests {
             (i128::MAX - 3453475, 8 as u16),
             (77948798i128, 58743 as u16),
             (-9797456456456i128, 27 as u16)
-        ],
-        converter: converters::tuple_converter
+        ]
     }
     test_signed! {
         function: overflowing_shr(a: i128, b: u16),
         cases: [
             (i128::MIN, 11 as u16),
             (-1i128, 85 as u16)
-        ],
-        converter: converters::tuple_converter
+        ]
     }
     test_signed! {
         function: overflowing_abs(a: i128),
         cases: [
             (0i128),
             (i128::MIN)
-        ],
-        converter: converters::tuple_converter
+        ]
     }
     test_signed! {
         function: overflowing_pow(a: i128, b: u16),
@@ -395,7 +382,6 @@ mod tests {
             (97465984i128, 2555 as u16),
             (-19i128, 11 as u16),
             (-277i128, 14 as u16)
-        ],
-        converter: converters::tuple_converter
+        ]
     }
 }

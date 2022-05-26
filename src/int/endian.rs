@@ -220,24 +220,21 @@ mod tests {
         function: to_be_bytes(a: i128),
         cases: [
             (-94564564534345004567495879873945739i128)
-        ],
-        converter: U8ArrayWrapper::converter
+        ]
     }
     #[cfg(feature = "nightly")]
     test_signed! {
         function: to_le_bytes(a: i128),
         cases: [
             (4589674598797290345798374895793745019i128)
-        ],
-        converter: U8ArrayWrapper::converter
+        ]
     }
     #[cfg(feature = "nightly")]
     test_signed! {
         function: to_ne_bytes(a: i128),
         cases: [
             (-9547689209348758902934752103969375839i128)
-        ],
-        converter: U8ArrayWrapper::converter
+        ]
     }
 
     #[cfg(feature = "nightly")]

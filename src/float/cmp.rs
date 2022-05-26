@@ -4,7 +4,7 @@ use core::cmp::{PartialOrd, PartialEq, Ordering};
 
 impl<const W: usize, const MB: usize> Float<W, MB> {
     #[inline]
-    pub fn max(self, other: Self) -> Self {
+    pub const fn max(self, other: Self) -> Self {
         handle_nan!(other; self);
         handle_nan!(self; other);
         if self < other {
@@ -79,6 +79,7 @@ impl<const W: usize, const MB: usize> const PartialEq for Float<W, MB> {
         (self.is_zero() && other.is_zero()) || BUint::eq(&self.to_bits(), &other.to_bits())
     }
 }
+
 impl<const W: usize, const MB: usize> const PartialOrd for Float<W, MB> {
     #[inline]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
@@ -92,36 +93,21 @@ impl<const W: usize, const MB: usize> const PartialOrd for Float<W, MB> {
 
 #[cfg(test)]
 mod tests {
-    fn to_u64_bits(f: crate::F64) -> u64 {
-        use crate::As;
-        f.to_bits().as_()
-    }
-
     test_float! {
-        function: max(a: f64, b: f64),
-        big_converter: to_u64_bits,
-        converter: f64::to_bits
+        function: max(a: f64, b: f64)
     }
     test_float! {
-        function: min(a: f64, b: f64),
-        big_converter: to_u64_bits,
-        converter: f64::to_bits
+        function: min(a: f64, b: f64)
     }
     test_float! {
-        function: maximum(a: f64, b: f64),
-        big_converter: to_u64_bits,
-        converter: f64::to_bits
+        function: maximum(a: f64, b: f64)
     }
     test_float! {
-        function: minimum(a: f64, b: f64),
-        big_converter: to_u64_bits,
-        converter: f64::to_bits
+        function: minimum(a: f64, b: f64)
     }
     test_float! {
         function: clamp(a: f64, b: f64, c: f64),
-        quickcheck_skip: !(b <= c),
-        big_converter: to_u64_bits,
-        converter: f64::to_bits
+        quickcheck_skip: !(b <= c)
     }
 
     #[test]
@@ -135,5 +121,14 @@ mod tests {
         println!("{:064b}", b);
         assert!(a == b.into());
     }
-    // TODO: test total_cmp, partial_cmp, eq
+
+    test_float! {
+        function: total_cmp(a: ref &f64, b: ref &f64)
+    }
+    test_float! {
+        function: partial_cmp(a: ref &f64, b: ref &f64)
+    }
+    test_float! {
+        function: eq(a: ref &f64, b: ref &f64)
+    }
 }

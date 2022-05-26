@@ -3,7 +3,6 @@ use core::num::FpCategory;
 use core::ops::{Add, Sub, Mul, Div, Rem, Neg};
 use std::convert::TryInto;
 use crate::{BUint, Bint, ExpType, digit};
-use num_traits::ToPrimitive;
 use core::iter::{Product, Sum, Iterator};
 use crate::cast::As;
 
@@ -621,7 +620,6 @@ mod tests {
         big: F64,
         primitive: f64,
         function: <Add>::add(a: f64, b: f64),
-        converter: ToBits::to_bits,
         quickcheck_skip: a.is_sign_positive() || b.is_sign_positive()
     }
     
@@ -629,36 +627,31 @@ mod tests {
         big: F64,
         primitive: f64,
         function: <Sub>::sub(a: f64, b: f64),
-        converter: ToBits::to_bits,
         quickcheck_skip: a.is_sign_negative() != b.is_sign_negative()
     }
     
     crate::test::test_op! {
         big: F64,
         primitive: f64,
-        function: <Mul>::mul(a: f64, b: f64),
-        converter: ToBits::to_bits
+        function: <Mul>::mul(a: f64, b: f64)
     }
     
     crate::test::test_op! {
         big: F64,
         primitive: f64,
-        function: <Div>::div(a: f64, b: f64),
-        converter: ToBits::to_bits
+        function: <Div>::div(a: f64, b: f64)
     }
     
     crate::test::test_op! {
         big: F64,
         primitive: f64,
-        function: <Rem>::rem(a: f64, b: f64),
-        converter: ToBits::to_bits
+        function: <Rem>::rem(a: f64, b: f64)
     }
     
     crate::test::test_op! {
         big: F64,
         primitive: f64,
-        function: <Neg>::neg(f: f64),
-        converter: ToBits::to_bits
+        function: <Neg>::neg(f: f64)
     }
 
     #[test]

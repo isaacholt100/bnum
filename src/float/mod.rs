@@ -3,16 +3,16 @@ use crate::uint::BUint;
 use crate::int::Bint;
 use crate::digit::{Digit, self};
 //use crate::ExpType;
+use crate::As;
 
 #[allow(unused)]
 macro_rules! test_float {
     {
-        function: $name: ident ($($param: ident : $ty: ty), *)
+        function: $name: ident ($($param: ident : $(ref $re: tt)? $ty: ty), *)
         $(,cases: [
             $(($($arg: expr), *)), *
         ])?
         $(,quickcheck_skip: $skip: expr)?
-        $(,big_converter: $big_converter: expr)?
     } => {
         crate::test::test_big_num! {
             big: crate::F64,
@@ -20,33 +20,9 @@ macro_rules! test_float {
             function: $name,
             $(cases: [
                 $(($($arg), *) ), *
-            ],)?
-            quickcheck: ($($param : $ty), *),
-            $(quickcheck_skip: $skip,)?
-            $(big_converter: $big_converter,)?
-            converter: Into::into
-        }
-    };
-    {
-        function: $name: ident ($($param: ident : $ty: ty), *),
-        $(cases: [
-            $(($($arg: expr), *)), *
-        ],)?
-        $(quickcheck_skip: $skip: expr,)?
-        $(big_converter: $big_converter: expr,)?
-        converter: $converter: expr
-    } => {
-        crate::test::test_big_num! {
-            big: crate::F64,
-            primitive: f64,
-            function: $name,
-            $(cases: [
-                $(($($arg), *)), *
-            ],)?
-            quickcheck: ($($param : $ty), *),
-            $(quickcheck_skip: $skip,)?
-            $(big_converter: $big_converter,)?
-            converter: $converter
+            ])?
+            ,quickcheck: ($($param : $(ref $re)? $ty), *)
+            $(,quickcheck_skip: $skip)?
         }
     };
 }
@@ -177,6 +153,19 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     }
 
     #[inline]
+    pub(super) const fn decode(self) -> (BUint<W>, Bint<W>) {
+        let bits = self.bits;
+        let exp = (bits << 1u8) >> (Self::MB + 1);
+        let mant = if exp.is_zero() {
+            (bits & Self::MANTISSA_MASK) << 1 as ExpType
+        } else {
+            (bits & Self::MANTISSA_MASK) | (BUint::power_of_two(MB as ExpType))
+        };
+        let exp = Bint::from_bits(exp) - Self::EXP_BIAS + MB.as_::<Bint<W>>();
+        (mant, exp)
+    }
+
+    #[inline]
     const fn from_exp_mant(negative: bool, exp: BUint<W>, mant: BUint<W>) -> Self {
         let mut bits = (exp << Self::MB) | mant;
         if negative {
@@ -200,21 +189,12 @@ impl From<f64> for crate::F64 {
 
 #[cfg(test)]
 mod tests {
-    fn to_u64_bits(f: crate::F64) -> u64 {
-        use crate::As;
-        f.to_bits().as_()
+    test_float! {
+        function: copysign(f1: f64, f2: f64)
     }
 
     test_float! {
-        function: copysign(f1: f64, f2: f64),
-        big_converter: to_u64_bits,
-        converter: f64::to_bits
-    }
-
-    test_float! {
-        function: signum(f: f64),
-        big_converter: to_u64_bits,
-        converter: f64::to_bits
+        function: signum(f: f64)
     }
 
     #[test]

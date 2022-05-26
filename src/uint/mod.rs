@@ -14,7 +14,7 @@ pub const fn carrying_mul(a: Digit, b: Digit, carry: Digit, current: Digit) -> (
 #[allow(unused)]
 macro_rules! test_unsigned {
     {
-        function: $name: ident ($($param: ident : $ty: ty), *)
+        function: $name: ident ($($param: ident : $(ref $re: tt)? $ty: ty), *)
         $(,cases: [
             $(($($arg: expr), *)), *
         ])?
@@ -26,30 +26,9 @@ macro_rules! test_unsigned {
             function: $name,
             $(cases: [
                 $(($($arg), *) ), *
-            ],)?
-            quickcheck: ($($param : $ty), *),
-            $(quickcheck_skip: $skip,)?
-            converter: Into::into
-        }
-    };
-    {
-        function: $name: ident ($($param: ident : $ty: ty), *)
-        $(,cases: [
-            $(($($arg: expr), *)), *
-        ])?
-        $(,quickcheck_skip: $skip: expr)?,
-        converter: $converter: expr
-    } => {
-        crate::test::test_big_num! {
-            big: crate::U128,
-            primitive: u128,
-            function: $name,
-            $(cases: [
-                $(($($arg), *)), *
-            ],)?
-            quickcheck: ($($param : $ty), *),
-            $(quickcheck_skip: $skip,)?
-            converter: $converter
+            ])?
+            ,quickcheck: ($($param : $(ref $re)? $ty), *)
+            $(,quickcheck_skip: $skip)?
         }
     };
 }
@@ -713,6 +692,20 @@ impl<const N: usize> BUint<N> {
         true
     }
 
+    #[inline]
+    fn is_even(&self) -> bool {
+        N == 0 || self.digits[0] & 1 == 0
+    }
+
+    #[inline]
+    fn is_odd(&self) -> bool {
+        if N == 0 {
+            false
+        } else {
+            self.digits[0] & 1 == 1
+        }
+    }
+
     /// Calculates the greatest common denominator of `self` and `other`.
     #[inline]
     pub const fn gcd(self, other: Self) -> Self {
@@ -817,57 +810,49 @@ impl<'a, const N: usize> Sum<&'a Self> for BUint<N> {
 
 #[cfg(test)]
 mod tests {
-    use crate::ExpType;
     use crate::U128;
-    use crate::test;
 
     test_unsigned! {
         function: count_ones(a: u128),
         cases: [
             (203583443659837459073490583937485738404u128),
             (3947594755489u128)
-        ],
-        converter: test::u32_to_exp
+        ]
     }
     test_unsigned! {
         function: count_zeros(a: u128),
         cases: [
             (7435098345734853045348057390485934908u128),
             (3985789475546u128)
-        ],
-        converter: test::u32_to_exp
+        ]
     }
     test_unsigned! {
         function: leading_ones(a: u128),
         cases: [
             (3948590439409853946593894579834793459u128),
             (u128::MAX - 0b111)
-        ],
-        converter: test::u32_to_exp
+        ]
     }
     test_unsigned! {
         function: leading_zeros(a: u128),
         cases: [
             (49859830845963457783945789734895834754u128),
             (40545768945769u128)
-        ],
-        converter: test::u32_to_exp
+        ]
     }
     test_unsigned! {
         function: trailing_ones(a: u128),
         cases: [
             (45678345973495637458973488509345903458u128),
             (u128::MAX)
-        ],
-        converter: test::u32_to_exp
+        ]
     }
     test_unsigned! {
         function: trailing_zeros(a: u128),
         cases: [
             (23488903477439859084534857349857034599u128),
             (343453454565u128)
-        ],
-        converter: test::u32_to_exp
+        ]
     }
     test_unsigned! {
         function: rotate_left(a: u128, b: u16),
@@ -933,8 +918,7 @@ mod tests {
             (23u128, 8u128),
             (1u128, 0u128),
             (u128::MAX, 2u128)
-        ],
-        converter: test::converters::option_converter
+        ]
     }
     test_unsigned! {
         function: next_multiple_of(a: u128, b: u128),
@@ -960,8 +944,7 @@ mod tests {
         function: checked_next_power_of_two(a: u128),
         cases: [
             (u128::MAX)
-        ],
-        converter: crate::test::converters::option_converter
+        ]
     }
     test_unsigned! {
         function: next_power_of_two(a: u128),
@@ -973,18 +956,15 @@ mod tests {
     }
     test_unsigned! {
         function: log(u: u128, base: u128),
-        quickcheck_skip: u == 0 || base <= 1,
-        converter: test::u32_to_exp
+        quickcheck_skip: u == 0 || base <= 1
     }
     test_unsigned! {
         function: log2(u: u128),
-        quickcheck_skip: u == 0,
-        converter: test::u32_to_exp
+        quickcheck_skip: u == 0
     }
     test_unsigned! {
         function: log10(u: u128),
-        quickcheck_skip: u == 0,
-        converter: test::u32_to_exp
+        quickcheck_skip: u == 0
     }
 
     #[test]

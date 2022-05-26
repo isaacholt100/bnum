@@ -1,4 +1,5 @@
 use core::fmt::{Display, self, Formatter};
+use core::num::IntErrorKind;
 
 // TODO: improve errors readability
 
@@ -33,26 +34,24 @@ pub enum TryFromErrorReason {
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct ParseIntError {
-    pub reason: ParseIntErrorReason,
+    pub(super) kind: IntErrorKind,
 }
 
-impl Display for ParseIntError {
-    #[inline]
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        use ParseIntErrorReason::*;
-
-        let message = match &self.reason {
-            TooLarge => format!("Number is too large to fit in the target type"),
-            Empty => format!("Can't parse integer from empty string"),
-            InvalidDigit => format!("Invalid digit found in string"),
-        };
-        write!(f, "{}", message)
+impl ParseIntError {
+    pub const fn kind(&self) -> &IntErrorKind {
+        &self.kind
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
-pub enum ParseIntErrorReason {
-    Empty,
-    TooLarge,
-    InvalidDigit,
+impl fmt::Display for ParseIntError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", match &self.kind {
+            IntErrorKind::Empty => "cannot parse integer from empty string",
+            IntErrorKind::InvalidDigit => "invalid digit found in string",
+            IntErrorKind::PosOverflow => "number too large to fit in target type",
+            IntErrorKind::NegOverflow => "number too small to fit in target type",
+            IntErrorKind::Zero => "number would be zero for non-zero type",
+            _ => panic!("unsupported IntErrorKind variant"),
+        })
+    }
 }

@@ -1,7 +1,7 @@
 use super::BUint;
 use num_traits::ToPrimitive;
 use core::convert::{TryFrom, TryInto};
-use crate::{TryFromIntError};
+use crate::TryFromIntError;
 use crate::error::TryFromErrorReason::*;
 use crate::digit::{self, Digit};
 use crate::macros::all_try_int_impls;
@@ -18,11 +18,11 @@ impl<const N: usize> const From<bool> for BUint<N> {
     }
 }
 
-impl<const N: usize> From<char> for BUint<N> {
+impl<const N: usize> const From<char> for BUint<N> {
     #[inline]
     fn from(c: char) -> Self {
-        let u: u32 = c as u32;
-        u.into()
+        let u = c as u32;
+        Self::from(u)
     }
 }
 
@@ -211,8 +211,7 @@ mod tests {
         primitive: u128,
         test_name: to_f32,
         function: <TryInto<f32>>::try_into,
-        from: u128,
-        converter: result_ok_map
+        from: u128
     }*/
     // TODO: test float conversions
 }

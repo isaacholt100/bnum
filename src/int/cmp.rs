@@ -7,11 +7,6 @@ impl<const N: usize> const PartialEq for Bint<N> {
     fn eq(&self, other: &Self) -> bool {
         BUint::eq(&self.bits, &other.bits)
     }
-
-    #[inline]
-    fn ne(&self, other: &Self) -> bool {
-        !(self.eq(other))
-    }
 }
 
 impl<const N: usize> Eq for Bint<N> {}
@@ -20,38 +15,6 @@ impl<const N: usize> const PartialOrd for Bint<N> {
     #[inline]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
-    }
-
-    #[inline]
-    fn lt(&self, other: &Self) -> bool {
-        match self.cmp(other) {
-            Ordering::Less => true,
-            _ => false,
-        }
-    }
-
-    #[inline]
-    fn gt(&self, other: &Self) -> bool {
-        match self.cmp(other) {
-            Ordering::Greater => true,
-            _ => false,
-        }
-    }
-
-    #[inline]
-    fn le(&self, other: &Self) -> bool {
-        match self.cmp(other) {
-            Ordering::Less | Ordering::Equal => true,
-            _ => false,
-        }
-    }
-
-    #[inline]
-    fn ge(&self, other: &Self) -> bool {
-        match self.cmp(other) {
-            Ordering::Greater | Ordering::Equal => true,
-            _ => false,
-        }
     }
 }
 
@@ -89,6 +52,7 @@ impl<const N: usize> const Ord for Bint<N> {
     
     #[inline]
     fn clamp(self, min: Self, max: Self) -> Self {
+        assert!(min <= max);
         if let Ordering::Less = self.cmp(&min) {
             min
         } else if let Ordering::Greater = self.cmp(&max) {
@@ -101,34 +65,24 @@ impl<const N: usize> const Ord for Bint<N> {
 
 #[cfg(test)]
 mod tests {
-    use crate::I128;
-
-    #[test]
-    fn inequality() {
-        let a = I128::from(-2348273479989898i128);
-        let b = I128::from(-9049873947589473745i128);
-        assert!(a > b);
-        assert_ne!(a, b);
-
-        let a = I128::from(34578394758934759478789354i128);
-        let b = I128::from(3459374957834758394759782i128);
-        assert!(a > b);
-        assert_ne!(a, b);
-
-        let a = I128::from(-34578394758934759478789354i128);
-        let b = I128::from(3459374957834758394759782i128);
-        assert!(b > a);
-        assert_ne!(a, b);
+    test_signed! {
+        function: eq(a: ref &i128, b: ref &i128)
+    }
+    test_signed! {
+        function: partial_cmp(a: ref &i128, b: ref &i128)
     }
 
-    #[test]
-    fn equality() {
-        let a = I128::from(-9049873947589473745i128);
-        let b = I128::from(-9049873947589473745i128);
-        assert_eq!(a, b);
-        
-        let a = I128::from(34578394758934759478789354i128);
-        let b = I128::from(34578394758934759478789354i128);
-        assert_eq!(a, b);
+    test_signed! {
+        function: cmp(a: ref &i128, b: ref &i128)
+    }
+    test_signed! {
+        function: max(a: i128, b: i128)
+    }
+    test_signed! {
+        function: min(a: i128, b: i128)
+    }
+    test_signed! {
+        function: clamp(a: i128, min: i128, max: i128),
+        quickcheck_skip: min > max
     }
 }

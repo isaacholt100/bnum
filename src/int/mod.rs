@@ -9,7 +9,7 @@ use crate::doc;
 #[allow(unused)]
 macro_rules! test_signed {
     {
-        function: $name: ident ($($param: ident : $ty: ty), *)
+        function: $name: ident ($($param: ident : $(ref $re: tt)? $ty: ty), *)
         $(,cases: [
             $(($($arg: expr), *)), *
         ])?
@@ -21,30 +21,9 @@ macro_rules! test_signed {
             function: $name,
             $(cases: [
                 $(($($arg), *)), *
-            ],)?
-            quickcheck: ($($param : $ty), *),
-            $(quickcheck_skip: $skip,)?
-            converter: Into::into
-        }
-    };
-    {
-        function: $name: ident ($($param: ident : $ty: ty), *)
-        $(,cases: [
-            $(($($arg: expr), *)), *
-        ])?
-        $(,quickcheck_skip: $skip: expr)?,
-        converter: $converter: expr
-    } => {
-        crate::test::test_big_num! {
-            big: crate::I128,
-            primitive: i128,
-            function: $name,
-            $(cases: [
-                $(($($arg), *)), *
-            ],)?
-            quickcheck: ($($param : $ty), *),
-            $(quickcheck_skip: $skip,)?
-            converter: $converter
+            ])?
+            ,quickcheck: ($($param : $(ref $re)? $ty), *)
+            $(,quickcheck_skip: $skip)?
         }
     };
 }
@@ -526,23 +505,20 @@ impl<'a, const N: usize> Sum<&'a Self> for Bint<N> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test;
 
     test_signed! {
         function: count_ones(a: i128),
         cases: [
             (34579834758459769875878374593749837548i128),
             (-720496794375698745967489576984655i128)
-        ],
-        converter: test::u32_to_exp
+        ]
     }
     test_signed! {
         function: count_zeros(a: i128),
         cases: [
             (97894576897934857979834753847877889734i128),
             (-302984759749756756756756756756756i128)
-        ],
-        converter: test::u32_to_exp
+        ]
     }
     test_signed! {
         function: leading_zeros(a: i128),
@@ -550,8 +526,7 @@ mod tests {
             (1234897937459789793445634456858978937i128),
             (-30979347598678947567567567i128),
             (0i128)
-        ],
-        converter: test::u32_to_exp
+        ]
     }
     test_signed! {
         function: trailing_zeros(a: i128),
@@ -559,8 +534,7 @@ mod tests {
             (8003849534758937495734957034534073957i128),
             (-972079507984789567894375674857645i128),
             (0i128)
-        ],
-        converter: test::u32_to_exp
+        ]
     }
     test_signed! {
         function: leading_ones(a: i128),
@@ -568,8 +542,7 @@ mod tests {
             (1),
             (290758976947569734598679898445i128),
             (-1)
-        ],
-        converter: test::u32_to_exp
+        ]
     }
     test_signed! {
         function: trailing_ones(a: i128),
@@ -577,8 +550,7 @@ mod tests {
             (i128::MAX),
             (72984756897458906798456456456i128),
             (-1)
-        ],
-        converter: test::u32_to_exp
+        ]
     }
     test_signed! {
         function: rotate_left(a: i128, b: u16),
@@ -706,25 +678,21 @@ mod tests {
     }
     test_signed! {
         function: log(a: i128, base: i128),
-        quickcheck_skip: a <= 0 || base <= 1,
-        converter: test::u32_to_exp
+        quickcheck_skip: a <= 0 || base <= 1
     }
     test_signed! {
         function: log2(a: i128),
-        quickcheck_skip: a <= 0,
-        converter: test::u32_to_exp
+        quickcheck_skip: a <= 0
     }
     test_signed! {
         function: log10(a: i128),
-        quickcheck_skip: a <= 0,
-        converter: test::u32_to_exp
+        quickcheck_skip: a <= 0
     }
     test_signed! {
         function: abs_diff(a: i128, b: i128)
     }
     test_signed! {
-        function: checked_next_multiple_of(a: i128, b: i128),
-        converter: crate::test::converters::option_converter
+        function: checked_next_multiple_of(a: i128, b: i128)
     }
     test_signed! {
         function: next_multiple_of(a: i128, b: i128),

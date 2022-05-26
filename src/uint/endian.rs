@@ -295,8 +295,7 @@ mod tests {
         cases: [
             (883497884590834905834758374950859884u128),
             (456747598769u128)
-        ],
-        converter: U8ArrayWrapper::converter
+        ]
     }
     #[cfg(feature = "nightly")]
     test_unsigned! {
@@ -304,8 +303,7 @@ mod tests {
         cases: [
             (349587309485908349057389485093457397u128),
             (4985679837455u128)
-        ],
-        converter: U8ArrayWrapper::converter
+        ]
     }
     #[cfg(feature = "nightly")]
     test_unsigned! {
@@ -313,8 +311,7 @@ mod tests {
         cases: [
             (123423345734905803845939847534085908u128),
             (685947586789335u128)
-        ],
-        converter: U8ArrayWrapper::converter
+        ]
     }
 
     #[cfg(feature = "nightly")]

@@ -135,31 +135,26 @@ impl<const N: usize> BUint<N> {
 
 #[cfg(test)]
 mod tests {
-    use crate::test::converters;
-
     test_unsigned! {
         function: overflowing_add(a: u128, b: u128),
         cases: [
             (u128::MAX - 35348957, 34059304859034578959083490834850937458u128),
             (34987358947598374835u128, 340593453454564568u128)
-        ],
-        converter: converters::tuple_converter
+        ]
     }
     test_unsigned! {
         function: overflowing_sub(a: u128, b: u128),
         cases: [
             (34053457987u128, 34059304859034578959083490834850937458u128),
             (34987358947598374835345345345454645645u128, 9856946974958764564564508456849058u128)
-        ],
-        converter: converters::tuple_converter
+        ]
     }
     test_unsigned! {
         function: overflowing_mul(a: u128, b: u128),
         cases: [
             (93875893745946675675675675745687345u128, 394857456456456456434534355645384975u128),
             (103453534455674958789u128, 509u128)
-        ],
-        converter: converters::tuple_converter
+        ]
     }
     test_unsigned! {
         function: overflowing_div(a: u128, b: u128),
@@ -167,8 +162,7 @@ mod tests {
             (103573984758937498573594857389345u128, 3453454545345345345987u128),
             (193679457916593485358497389457u128, 684u128)
         ],
-        quickcheck_skip: b == 0,
-        converter: converters::tuple_converter
+        quickcheck_skip: b == 0
     }
     test_unsigned! {
         function: overflowing_div_euclid(a: u128, b: u128),
@@ -176,8 +170,7 @@ mod tests {
             (349573947593745898375u128, 349573947593745898375u128),
             (0u128, 3459745734895734957984579u128)
         ],
-        quickcheck_skip: b == 0,
-        converter: converters::tuple_converter
+        quickcheck_skip: b == 0
     }
     test_unsigned! {
         function: overflowing_rem(a: u128, b: u128),
@@ -185,8 +178,7 @@ mod tests {
             (2973459793475897343495439857u128, 56u128),
             (1u128 << 64, 2u128)
         ],
-        quickcheck_skip: b == 0,
-        converter: converters::tuple_converter
+        quickcheck_skip: b == 0
     }
     test_unsigned! {
         function: overflowing_rem_euclid(a: u128, b: u128),
@@ -194,39 +186,34 @@ mod tests {
             (27943758345638459034898756847983745u128, 37589734758937458973459u128),
             (0u128, 93745934953894u128)
         ],
-        quickcheck_skip: b == 0,
-        converter: converters::tuple_converter
+        quickcheck_skip: b == 0
     }
     test_unsigned! {
         function: overflowing_neg(a: u128),
         cases: [
             (0u128),
             (93498734534534273984577u128)
-        ],
-        converter: converters::tuple_converter
+        ]
     }
     test_unsigned! {
         function: overflowing_shl(a: u128, b: u16),
         cases: [
             (u128::MAX - 3453475, 5 as u16),
             (934987774987u128, 55645 as u16)
-        ],
-        converter: converters::tuple_converter
+        ]
     }
     test_unsigned! {
         function: overflowing_shr(a: u128, b: u16),
         cases: [
             (349573947593475973453348759u128, 10 as u16),
             (972456948567894576895749857u128, 58969 as u16)
-        ],
-        converter: converters::tuple_converter
+        ]
     }
     test_unsigned! {
         function: overflowing_pow(a: u128, b: u16),
         cases: [
             (3444334u128, 34345 as u16),
             (23u128, 31 as u16)
-        ],
-        converter: converters::tuple_converter
+        ]
     }
 }

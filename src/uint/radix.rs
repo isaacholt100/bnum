@@ -4,8 +4,8 @@ use crate::digit::{self, Digit, DoubleDigit};
 use core::iter::Iterator;
 use alloc::string::String;
 use alloc::vec::Vec;
-use crate::error::ParseIntErrorReason::*;
 use crate::radix_bases;
+use core::num::IntErrorKind;
 
 const BITS_U8: u8 = digit::BITS as u8;
 
@@ -100,6 +100,9 @@ impl<const N: usize> BUint<N> {
             let mut carry = 0;
             for digit in out.digits.iter_mut() {
                 *digit = Self::mac_with_carry(*digit, base, &mut carry);
+            }
+            if carry != 0 {
+                return None;
             }
             let n = chunk_iter.fold(0, |acc, d| {
                 acc * radix + d as Digit
@@ -300,7 +303,7 @@ impl<const N: usize> BUint<N> {
         }
         if src.is_empty() {
             return Err(ParseIntError {
-                reason: Empty,
+                kind: IntErrorKind::Empty,
             });
         }
         let buf = src.as_bytes();
@@ -309,7 +312,7 @@ impl<const N: usize> BUint<N> {
             for &byte in buf {
                 if Self::byte_to_digit(byte) >= radix {
                     return Err(ParseIntError {
-                        reason: InvalidDigit,
+                        kind: IntErrorKind::InvalidDigit,
                     });
                 }
             }
@@ -328,7 +331,7 @@ impl<const N: usize> BUint<N> {
                             .map(|byte| Self::byte_to_digit(*byte))
                     });
                 Self::from_bitwise_digits_le(iter, bits).ok_or(ParseIntError {
-                    reason: TooLarge,
+                    kind: IntErrorKind::PosOverflow,
                 })
             },
             8 | 32 => {
@@ -339,7 +342,7 @@ impl<const N: usize> BUint<N> {
                     .rev()
                     .map(|byte| Self::byte_to_digit(*byte));
                 Self::from_inexact_bitwise_digits_le(iter, bits).ok_or(ParseIntError {
-                    reason: TooLarge,
+                    kind: IntErrorKind::PosOverflow,
                 })
             },
             radix => {
@@ -363,62 +366,10 @@ impl<const N: usize> BUint<N> {
                             .map(|byte| Self::byte_to_digit(*byte))
                     });
                 Self::from_radix_digits_be(head, tail, radix as u32, base).ok_or(ParseIntError {
-                    reason: TooLarge,
+                    kind: IntErrorKind::PosOverflow,
                 })
             }
         }
-    }
-
-    const fn from_decimal(src: &str) -> Option<Self> {
-        let (base, power) = radix_bases::get_radix_base::<false>(10);
-        let buf = src.as_bytes();
-        let mut i = 0;
-        while i < buf.len() {
-            if Self::byte_to_digit(buf[i]) >= 10 {
-                return None;
-            }
-            i += 1;
-        }
-        
-        let r = buf.len() % power;
-        let split = if r == 0 {
-            power
-        } else {
-            r
-        };
-        let mut out = Self::ZERO;
-        let mut first = 0;
-        i = 0;
-        while i < split {
-            first = first * 10 + Self::byte_to_digit(buf[i]);
-            i += 1;
-        }
-        out.digits[0] = first;
-        let mut start = i;
-        while start < buf.len() {
-            let end = start + power;
-
-            let mut carry = 0;
-            let mut j = 0;
-            while j < N {
-                out.digits[j] = Self::mac_with_carry(out.digits[j], base, &mut carry);
-                j += 1;
-            }
-
-            let mut n = 0;
-            j = start;
-            while j < end && j < buf.len() {
-                n = n * 10 + Self::byte_to_digit(buf[j]) as Digit;
-                j += 1;
-            }
-
-            out = match out.checked_add(Self::from_digit(n)) {
-                Some(out) => out,
-                None => return None,
-            };
-            start = end;
-        }
-        Some(out)
     }
 
     /// Returns the integer as a string in the given radix.
@@ -585,7 +536,6 @@ impl<const N: usize> BUint<N> {
 
 use core::str::FromStr;
 
-// TODO: this is not rejecting numbers that are too large
 impl<const N: usize> const FromStr for BUint<N> {
     type Err = ParseIntError;
 
@@ -596,7 +546,7 @@ impl<const N: usize> const FromStr for BUint<N> {
         while i < buf.len() {
             if Self::byte_to_digit(buf[i]) >= 10 {
                 return Err(ParseIntError {
-                    reason: InvalidDigit,
+                    kind: IntErrorKind::InvalidDigit,
                 });
             }
             i += 1;
@@ -626,6 +576,11 @@ impl<const N: usize> const FromStr for BUint<N> {
                 out.digits[j] = Self::mac_with_carry(out.digits[j], base, &mut carry);
                 j += 1;
             }
+            if carry != 0 {
+                return Err(ParseIntError {
+                    kind: IntErrorKind::PosOverflow,
+                });
+            }
 
             let mut n = 0;
             j = start;
@@ -637,7 +592,7 @@ impl<const N: usize> const FromStr for BUint<N> {
             out = match out.checked_add(Self::from_digit(n)) {
                 Some(out) => out,
                 None => return Err(ParseIntError {
-                    reason: TooLarge,
+                    kind: IntErrorKind::PosOverflow,
                 }),
             };
             start = end;
@@ -653,26 +608,16 @@ mod tests {
     use crate::test;
     use core::str::FromStr;
 
-    #[test]
-    fn test_dec() {
-        let u = U128::from_decimal("529348758293749857289437598274389572894334534575982347895723894759823475982743895128529348758293749857289437598274389572894334534575982347895723894759823475982743895128").unwrap();
-        let u2 = U128::from_str_radix("529348758293749857289437598274389572894334534575982347895723894759823475982743895128529348758293749857289437598274389572894334534575982347895723894759823475982743895128", 10).unwrap();
-        assert_eq!(u, u2);
-    }
+    // TODO: find way of randomly generating strings to convert from
 
     test::test_big_num! {
         big: U128,
         primitive: u128,
         function: from_str,
         cases: [
-            ("398475394875230495745")
-        ],
-        converter: |result| {
-            match result {
-                Ok(u) => Ok(U128::from(u)),
-                Err(_) => unreachable!()
-            }
-        }
+            ("398475394875230495745"),
+            ("3984753948752304957423490785029749572977970985")
+        ]
     }
 
     test::test_big_num! {
@@ -683,16 +628,14 @@ mod tests {
             ("af7345asdofiuweor", 35u32),
             ("945hhdgi73945hjdfj", 32u32),
             ("3436847561345343455", 9u32),
-            ("affe758457bc345540ac399", 16u32)
-        ],
-        converter: |result: Result<u128, core::num::ParseIntError>| -> Result<U128, crate::ParseIntError> {
-            Ok(result.unwrap().into())
-        }
+            ("affe758457bc345540ac399", 16u32),
+            ("affe758457bc345540ac39929334534ee34579234795", 17u32)
+        ]
     }
 
-    test::quickcheck_from_to_radix!(U128, u128, radix_be, 255);
-    test::quickcheck_from_to_radix!(U128, u128, radix_le, 255);
-    test::quickcheck_from_to_radix!(U128, u128, str_radix, 36);
+    test::quickcheck_from_to_radix!(u128, radix_be, 255);
+    test::quickcheck_from_to_radix!(u128, radix_le, 255);
+    test::quickcheck_from_to_radix!(u128, str_radix, 36);
 
     #[test]
     fn from_to_radix_le() {

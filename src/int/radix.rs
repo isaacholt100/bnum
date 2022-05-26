@@ -2,7 +2,8 @@ use super::Bint;
 use crate::uint::BUint;
 use alloc::string::String;
 use alloc::vec::Vec;
-use crate::error::{ParseIntError, ParseIntErrorReason::*};
+use crate::error::ParseIntError;
+use core::num::IntErrorKind;
 
 macro_rules! assert_range {
     ($radix: expr, $max: expr) => {
@@ -44,7 +45,7 @@ impl<const N: usize> Bint<N> {
             negative = true;
             if src.starts_with('+') {
                 return Err(ParseIntError {
-                    reason: InvalidDigit,
+                    kind: IntErrorKind::InvalidDigit,
                 });
             }
         } else if src.starts_with('+') {
@@ -54,7 +55,7 @@ impl<const N: usize> Bint<N> {
         if negative {
             if uint > Self::MIN.to_bits() {
                 Err(ParseIntError {
-                    reason: TooLarge,
+                    kind: IntErrorKind::NegOverflow,
                 })
             } else {
                 Ok(Self::from_bits(uint).wrapping_neg())
@@ -63,7 +64,7 @@ impl<const N: usize> Bint<N> {
             let out = Self::from_bits(uint);
             if out.is_negative() {
                 Err(ParseIntError {
-                    reason: TooLarge,
+                    kind: IntErrorKind::PosOverflow,
                 })
             } else {
                 Ok(out)
@@ -93,7 +94,7 @@ impl<const N: usize> Bint<N> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{Bint, I128};
+    use crate::Bint;
     use crate::test;
 
     test::test_big_num! {
@@ -106,15 +107,12 @@ mod tests {
             ("-253613132341435345", 7u32),
             ("23467abcad47790809ef37", 16u32),
             ("-712930769245766867875986646", 10u32)
-        ],
-        converter: |result: Result<i128, core::num::ParseIntError>| -> Result<I128, crate::ParseIntError> {
-            Ok(result.unwrap().into())
-        }
+        ]
     }
 
-    test::quickcheck_from_to_radix!(I128, i128, radix_be, 255);
-    test::quickcheck_from_to_radix!(I128, i128, radix_le, 255);
-    test::quickcheck_from_to_radix!(I128, i128, str_radix, 36);
+    test::quickcheck_from_to_radix!(i128, radix_be, 255);
+    test::quickcheck_from_to_radix!(i128, radix_le, 255);
+    test::quickcheck_from_to_radix!(i128, str_radix, 36);
 
     #[test]
     fn from_to_radix_le() {

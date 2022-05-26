@@ -64,16 +64,13 @@ impl<const N: usize> BUint<N> {
 #[cfg(test)]
 mod tests {
     use crate::test;
-    use crate::U64;
-    use crate::test::converters;
 
     test_unsigned! {
         function: carrying_add(a: u128, rhs: u128, carry: bool),
         cases: [
             (u128::MAX, 1u128, true),
             (u128::MAX, 1u128, false)
-        ],
-        converter: converters::tuple_converter
+        ]
     }
 
     test_unsigned! {
@@ -81,8 +78,7 @@ mod tests {
         cases: [
             (0u128, 1u128, false),
             (0u128, 1u128, true)
-        ],
-        converter: converters::tuple_converter
+        ]
     }
 
     test::test_big_num! {
@@ -92,8 +88,7 @@ mod tests {
         cases: [
             (u64::MAX, u64::MAX)
         ],
-        quickcheck: (a: u64, rhs: u64),
-        converter: converters::tuple_converter
+        quickcheck: (a: u64, rhs: u64)
     }
 
     test::test_big_num! {
@@ -104,7 +99,6 @@ mod tests {
             (u64::MAX, u64::MAX, u64::MAX),
             (u64::MAX, u64::MAX, 1u64)
         ],
-        quickcheck: (a: u64, rhs: u64, carry: u64),
-        converter: converters::tuple_converter
+        quickcheck: (a: u64, rhs: u64, carry: u64)
     }
 }
