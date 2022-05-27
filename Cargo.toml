@@ -9,7 +9,7 @@ default = ["u8_digit", "nightly", "numtraits", "rand"] # needs to change so numt
 u8_digit = []
 nightly = []
 usize_exptype = []
-serde_all = ["serde", "serde-big-array"]
+serde = ["dep:serde", "serde-big-array"]
 numtraits = ["num-integer", "num-traits"]
 
 [dependencies]

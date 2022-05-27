@@ -204,6 +204,7 @@ pub const fn div_float<const N: usize>(u: BUint<N>, v: BUint<N>) -> (BUint<N>, b
 
 use crate::digit::{self, DoubleDigit};
 
+/// Methods 
 impl<const N: usize> BUint<N> {
     #[inline]
     #[doc=doc::checked_add!(BUint::<2>)]

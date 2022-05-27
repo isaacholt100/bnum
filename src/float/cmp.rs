@@ -117,8 +117,8 @@ mod tests {
         //println!("{:064b}", ((-0.0f64).div_euclid(f2)).to_bits());
         let a = (crate::F64::from(f1).min(crate::F64::from(f2))).to_bits();
         let b = (f1.min(f2)).to_bits();
-        println!("{:064b}", a);
-        println!("{:064b}", b);
+        /*println!("{:064b}", a);
+        println!("{:064b}", b);*/
         assert!(a == b.into());
     }
 

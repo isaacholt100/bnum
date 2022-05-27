@@ -16,7 +16,7 @@
     wrapping_next_power_of_two,
 ))]
 #![doc = include_str!("../README.md")]
-//#![no_std]
+#![no_std]
 
 // TODO: sort out license
 

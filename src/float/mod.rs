@@ -82,7 +82,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
     #[inline(always)]
     const fn words(&self) -> &[Digit; W] {
-        self.bits.digits()
+        &self.bits.digits
     }
 
     #[inline]

@@ -415,7 +415,7 @@ impl<const N: usize> Bint<N> {
 
     #[inline(always)]
     const fn signed_digit(&self) -> SignedDigit {
-        self.bits.digits()[N - 1] as SignedDigit
+        self.bits.digits[N - 1] as SignedDigit
     }
 
     #[doc=doc::is_zero!(Bint::<2>)]
@@ -432,7 +432,7 @@ impl<const N: usize> Bint<N> {
 
     #[inline(always)]
     pub const fn digits(&self) -> &[Digit; N] {
-        &self.bits.digits()
+        &self.bits.digits
     }
 
     #[inline(always)]

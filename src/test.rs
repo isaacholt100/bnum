@@ -171,7 +171,6 @@ impl Arbitrary for U8ArrayWrapper<8> {
 }
 
 use core::fmt::{Formatter, self, Debug};
-use std::ops::Deref;
 
 impl<const N: usize> Debug for U8ArrayWrapper<N> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
@@ -449,15 +448,6 @@ macro_rules! test_convert_to_self {
 }
 
 test_convert_to_self!(core::num::FpCategory, bool, core::cmp::Ordering);
-
-macro_rules! ttt {
-    (reff $ty: ty) => {
-        $ty
-    };
-    ($ty: ty) => {
-        $ty
-    }
-}
 
 macro_rules! qc_ref {
     ($name: ident, $primitive: ident, ($($param: ident : $(ref $re: tt)? $ty: ty), *)) => {

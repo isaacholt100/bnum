@@ -6,7 +6,7 @@ use crate::{TryFromIntError, ParseIntError};
 use crate::digit::{Digit, self};
 use crate::uint::BUint;
 use crate::error::TryFromErrorReason::*;
-use crate::{macros};
+use crate::macros;
 
 impl<const N: usize> FromStr for Bint<N> {
     type Err = ParseIntError;
@@ -42,7 +42,7 @@ macro_rules! from_int {
     }
 }
 
-from_int!(i8, i16, i32, isize, i64, i128);
+from_int!(i8, i16, i32, i64, i128, isize);
 
 macro_rules! from_uint {
     ($($from: tt), *) => {
@@ -59,7 +59,7 @@ macro_rules! from_uint {
     }
 }
 
-from_uint!(u8, u16, u32, usize, u64, u128);
+from_uint!(u8, u16, u32, u64, u128, usize);
 
 impl<const N: usize> const From<bool> for Bint<N> {
     #[inline]
@@ -74,7 +74,7 @@ impl<const N: usize> const From<bool> for Bint<N> {
 
 macros::all_try_int_impls!(Bint);
 
-impl<const N: usize> TryFrom<BUint<N>> for Bint<N> {
+impl<const N: usize> const TryFrom<BUint<N>> for Bint<N> {
     type Error = TryFromIntError;
 
     #[inline]

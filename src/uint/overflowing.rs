@@ -7,7 +7,6 @@ use crate::Bint;
 //const LONG_MUL_THRESHOLD: usize = 32;
 //const KARATSUBA_THRESHOLD: usize = 256;
 
-/// Tuple of (product, carry)
 impl<const N: usize> BUint<N> {
     #[inline]
     pub const fn overflowing_add(self, rhs: Self) -> (Self, bool) {

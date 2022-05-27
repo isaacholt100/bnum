@@ -135,15 +135,15 @@ pub const fn unchecked_shr<const N: usize>(u: BUint<N>, rhs: ExpType) -> BUint<N
     }
 }
 
-#[cfg(feature = "serde_all")]
+#[cfg(feature = "serde")]
 use ::{serde_big_array::BigArray, serde::{Serialize, Deserialize}};
 
 /// Big unsigned integer type. Digits are stored as little endian (least significant bit first);
 #[derive(Clone, Copy, Hash, /*Debug, */)]
-#[cfg_attr(feature = "serde_all", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct BUint<const N: usize> {
-    #[cfg_attr(feature = "serde_all", serde(with = "BigArray"))]
-    digits: [Digit; N],
+    #[cfg_attr(feature = "serde", serde(with = "BigArray"))]
+    pub(crate) digits: [Digit; N],
 }
 
 macro_rules! pos_const {
@@ -567,46 +567,6 @@ impl<const N: usize> BUint<N> {
 }
 
 impl<const N: usize> BUint<N> {
-    const fn to_mantissa(&self) -> u64 {
-        if N == 0 {
-            return 0;
-        }
-        let bits = self.bits();
-        if bits <= digit::BITS {
-            return self.digits[0] as u64;
-        }
-        let mut bits = bits;
-        let mut out: u64 = 0;
-        let mut out_bits = 0;
-
-        const fn min(a: ExpType, b: ExpType) -> ExpType {
-            if a < b {
-                a
-            } else {
-                b
-            }
-        }
-
-        let mut i = self.last_digit_index() + 1;
-        while i > 0 {
-            i -= 1;
-            let digit_bits = ((bits - 1) & digit::BITS_MINUS_1) + 1;
-            let bits_want = min(64 - out_bits, digit_bits);
-            if bits_want != 64 {
-                out <<= bits_want;
-            }
-            let d0 = self.digits[i] as u64 >> (digit_bits - bits_want);
-            out |= d0;
-            out_bits += bits_want;
-            bits -= bits_want;
-
-            if out_bits == 64 {
-                break;
-            }
-        }
-        out
-    }
-
     #[doc=doc::bits!(BUint::<2>)]
     #[inline]
     pub const fn bits(&self) -> ExpType {
@@ -695,15 +655,6 @@ impl<const N: usize> BUint<N> {
     #[inline]
     fn is_even(&self) -> bool {
         N == 0 || self.digits[0] & 1 == 0
-    }
-
-    #[inline]
-    fn is_odd(&self) -> bool {
-        if N == 0 {
-            false
-        } else {
-            self.digits[0] & 1 == 1
-        }
     }
 
     /// Calculates the greatest common denominator of `self` and `other`.

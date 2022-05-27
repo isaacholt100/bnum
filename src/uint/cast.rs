@@ -32,11 +32,6 @@ impl<const N: usize> BUint<N> {
     }
 }
 
-#[inline]
-const fn last_set_bit(n: u64) -> u8 {
-    64 - n.leading_zeros() as u8
-}
-
 macro_rules! buint_as {
     ($($int: ty), *) => {
         $(
@@ -87,22 +82,7 @@ impl<const N: usize> CastFrom<BUint<N>> for f32 {
             return f32::INFINITY;
         }
         let mant: u32 = mant.as_();
-        return f32::from_bits((exp << 23) | (mant & (u32::MAX >> (32 - 23))));
-        let mantissa = from.to_mantissa();
-        let exp = from.bits() - last_set_bit(mantissa) as ExpType;
-        if exp > f32::MAX_EXP as ExpType {
-            f32::INFINITY
-        } else {
-            let f = mantissa as f32;
-            let mut u = f.to_bits();
-            u |= (exp as u32) << 23;
-            if u >> 31 == 1 {
-                f32::INFINITY
-            } else {
-                f32::from_bits(u)
-            }
-            //(mantissa as f32) * 2f32.powi(exp as i32)
-        }
+        f32::from_bits((exp << 23) | (mant & (u32::MAX >> (32 - 23))))
     }
 }
 
@@ -135,23 +115,7 @@ impl<const N: usize> CastFrom<BUint<N>> for f64 {
             return f64::INFINITY;
         }
         let mant: u64 = mant.as_();
-        return f64::from_bits((exp << 52) | (mant & (u64::MAX >> (64 - 52))));
-        let mantissa = from.to_mantissa();
-        let exp = from.bits() - last_set_bit(mantissa) as ExpType;
-
-        if exp > f64::MAX_EXP as ExpType {
-            f64::INFINITY
-        } else {
-            let f = mantissa as f64;
-            let mut u = f.to_bits();
-            u += (exp as u64) << 52;
-            if u >> 63 == 1 {
-                f64::INFINITY
-            } else {
-                f64::from_bits(u)
-            }
-            //(mantissa as f64) * 2f64.powi(exp as i32)
-        }
+        f64::from_bits((exp << 52) | (mant & (u64::MAX >> (64 - 52))))
     }
 }
 
@@ -232,8 +196,6 @@ impl<const N: usize, const M: usize> const CastFrom<Bint<M>> for BUint<N> {
     }
 }
 
-use core::convert::TryFrom;
-
 fn decode_f32(f: f32) -> (u32, i16) {
     let bits = f.to_bits();
     let mut exponent = ((bits >> 23) & 0xff) as i16;
@@ -306,8 +268,6 @@ impl<const N: usize> CastFrom<f64> for BUint<N> {
     cast_from_float!(f64, u32, decode_f64, u64_bits);
 }
 
-use crate::Float;
-
 /*impl<const N: usize, const W: usize, const MB: usize> CastFrom<Float<W, MB>> for BUint<N> {
     cast_from_float!(Float<W, MB>, ExpType, Float::decode, BUint::bits);
 }*/
@@ -324,19 +284,6 @@ mod tests {
     test::test_cast_from!(U64 as [u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64, U64, I64, I128, U128]);
 
     test::test_cast_from!(U128 as [u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64, U64, I64, I128, U128]);
-
-    #[test]
-    fn test_f32() {
-        let i = 16777219u128;
-        println!("{:0b}", i);
-        let big = U128::from(i);
-        let b1 = (i as f32).to_bits();
-        let b2 = big.as_::<f32>().to_bits();
-        println!("{:032b}", b1);
-        println!("{:032b}", b2);
-        assert_eq!(b1, b2);
-        //panic!("");
-    }
 
     quickcheck::quickcheck! {
         fn check(a: u128) -> bool {
