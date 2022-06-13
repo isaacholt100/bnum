@@ -1,6 +1,7 @@
 use super::Bint;
-use crate::{ExpType, BUint};
+use crate::{ExpType, BUint, doc};
 
+#[doc=doc::wrapping::impl_desc!()]
 impl<const N: usize> Bint<N> {
     #[inline]
     pub const fn wrapping_add(self, rhs: Self) -> Self {

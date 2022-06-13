@@ -1,11 +1,11 @@
 use super::BUint;
-use num_traits::ToPrimitive;
 use core::convert::{TryFrom, TryInto};
 use crate::TryFromIntError;
 use crate::error::TryFromErrorReason::*;
 use crate::digit::{self, Digit};
 use crate::macros::all_try_int_impls;
 use crate::ExpType;
+use core::{f32, f64};
 
 impl<const N: usize> const From<bool> for BUint<N> {
     #[inline]
@@ -91,7 +91,7 @@ macro_rules! try_from_float {
             fn try_from(f: $float) -> Result<Self, Self::Error> {
                 if !f.is_finite() {
                     return Err(TryFromIntError {
-                        from: "f64",
+                        from: stringify!($float),
                         to: "BUint",
                         reason: NotFinite,
                     });
@@ -194,7 +194,7 @@ mod tests {
         big: U128,
         primitive: u128,
         function: <TryFrom>::try_from,
-        from_types: (i8, i16, i32, i64, i128, usize, isize),
+        from_types: (i8, i16, i32, i64, i128, isize, usize),
         converter: result_ok_map
     }
 
@@ -202,11 +202,18 @@ mod tests {
         big: U128,
         primitive: u128,
         function: <TryInto>::try_into,
-        from_types: (u8, u16, u32, u64, usize, i8, i16, i32, i64, i128, isize),
+        from_types: (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize),
         converter: Result::ok
-    }/* 
-
-    test::test_float_conv! {
+    }
+	#[test]
+	fn test_into() {
+		let u = -1i128;
+		let a: Result<u128, _> = u.try_into();
+		let b: Result<U128, _> = u.try_into();
+		//panic!("{:?}", a);
+		assert_eq!(b.is_ok(), a.is_ok())
+	}
+	/*test::test_float_conv! {
         big: U128,
         primitive: u128,
         test_name: to_f32,

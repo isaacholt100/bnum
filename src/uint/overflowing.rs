@@ -2,11 +2,12 @@ use super::BUint;
 use crate::macros::overflowing_pow;
 use crate::ExpType;
 use crate::digit::Digit;
-use crate::Bint;
+use crate::{Bint, doc};
 
 //const LONG_MUL_THRESHOLD: usize = 32;
 //const KARATSUBA_THRESHOLD: usize = 256;
 
+#[doc=doc::overflowing::impl_desc!()]
 impl<const N: usize> BUint<N> {
     #[inline]
     pub const fn overflowing_add(self, rhs: Self) -> (Self, bool) {

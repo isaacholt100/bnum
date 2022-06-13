@@ -111,94 +111,21 @@ macro_rules! as_primitive_impl {
 
 as_primitive_impl!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64);
 
-macro_rules! uint_as_buint_impl {
+macro_rules! as_buint_impl {
     ($($ty: ty), *) => {
         $(
             impl<const N: usize> AsPrimitive<BUint<N>> for $ty {
                 #[inline]
                 fn as_(self) -> BUint<N> {
-                    const UINT_BITS: usize = <$ty>::BITS as usize;
-                    let mut out = BUint::ZERO;
-                    let mut i = 0;
-                    while i << digit::BIT_SHIFT < UINT_BITS {
-                        out.digits[i] = (self >> (i << digit::BIT_SHIFT)) as Digit;
-                        i += 1;
-                    }
-                    out
+					BUint::cast_from(self)
                 }
             }
         )*
     }
 }
 
-uint_as_buint_impl!(u8, u16, u32, usize, u64, u128);
+as_buint_impl!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, bool, char, f32, f64);
 
-impl<const N: usize> AsPrimitive<BUint<N>> for char {
-    #[inline]
-    fn as_(self) -> BUint<N> {
-        (self as u32).as_()
-    }
-}
-
-impl<const N: usize> AsPrimitive<BUint<N>> for bool {
-    #[inline]
-    fn as_(self) -> BUint<N> {
-        if self {
-            BUint::ONE
-        } else {
-            BUint::ZERO
-        }
-    }
-}
-
-impl<const N: usize> AsPrimitive<BUint<N>> for f32 {
-    #[inline]
-    fn as_(self) -> BUint<N> {
-        BUint::try_from(self).unwrap_or(if self.is_sign_negative() {
-            BUint::MIN
-        } else {
-            BUint::MAX
-        })
-    }
-}
-
-impl<const N: usize> AsPrimitive<BUint<N>> for f64 {
-    #[inline]
-    fn as_(self) -> BUint<N> {
-        BUint::try_from(self).unwrap_or(if self.is_sign_negative() {
-            BUint::MIN
-        } else {
-            BUint::MAX
-        })
-    }
-}
-
-macro_rules! int_as_buint_impl {
-    ($($ty: tt -> $as_ty: tt), *) => {
-        $(
-            impl<const N: usize> AsPrimitive<BUint<N>> for $ty {
-                #[inline]
-                fn as_(self) -> BUint<N> {
-                    let mut digits = if self.is_negative() {
-                        [Digit::MAX; N]
-                    } else {
-                        [0; N]
-                    };
-                    let mut i = 0;
-                    while i << digit::BIT_SHIFT < $ty::BITS as usize && i < N {
-                        digits[i] = (self >> (i << digit::BIT_SHIFT)) as Digit;
-                        i += 1;
-                    }
-                    BUint::from_digits(digits)
-                }
-            }
-        )*
-    }
-}
-
-int_as_buint_impl!(i8 -> u8, i16 -> u16, i32 -> u32, isize -> usize, i64 -> u64, i128 -> u128);
-
-#[cfg(feature = "nightly")]
 impl<const N: usize, const M: usize> AsPrimitive<BUint<M>> for BUint<N> {
     #[inline]
     fn as_(self) -> BUint<M> {
@@ -206,11 +133,8 @@ impl<const N: usize, const M: usize> AsPrimitive<BUint<M>> for BUint<N> {
     }
 }
 
-//use crate::bound::{Assert, IsTrue};
-
 use crate::Bint;
 
-#[cfg(feature = "nightly")]
 impl<const N: usize, const M: usize> AsPrimitive<Bint<M>> for BUint<N> {
     #[inline]
     fn as_(self) -> Bint<M> {
@@ -550,54 +474,28 @@ impl<const N: usize> Roots for BUint<N> {
     }
 }
 
-macro_rules! to_uint {
-    ($name: ident, $uint: ty) => {
-        #[inline]
-        fn $name(&self) -> Option<$uint> {
-            let last_index = self.last_digit_index();
-            if self.digits[last_index] == 0 {
-                return Some(0);
-            }
-            if last_index >= <$uint>::BITS as usize >> digit::BIT_SHIFT {
-                return None;
-            }
-            let mut out = 0;
-            let mut i = 0;
-            while i <= last_index {
-                out |= self.digits[i] as $uint << (i << digit::BIT_SHIFT);
-                i += 1;
-            }
-            Some(out)
-        }
-    }
+macro_rules! to_int {
+	($int: ty, $method: ident) => {
+		#[inline]
+		fn $method(&self) -> Option<$int> {
+			<$int>::try_from(*self).ok()
+		}
+	}
 }
 
 impl<const N: usize> ToPrimitive for BUint<N> {
-    #[inline]
-    fn to_i64(&self) -> Option<i64> {
-        match self.to_u64() {
-            Some(int) => int.to_i64(),
-            None => None,
-        }
-    }
-
-    #[inline]
-    fn to_i128(&self) -> Option<i128> {
-        //self.to_u128().map(|int| int.to_i128())
-        match self.to_u128() {
-            Some(int) => int.to_i128(),
-            None => None,
-        }
-    }
-
-    #[inline]
-    fn to_u64(&self) -> Option<u64> {
-        match self.to_u128() {
-            Some(int) => int.to_u64(),
-            None => None,
-        }
-    }
-    to_uint!(to_u128, u128);
+    to_int!(i8, to_i8);
+    to_int!(i16, to_i16);
+    to_int!(i32, to_i32);
+    to_int!(i64, to_i64);
+    to_int!(i128, to_i128);
+    to_int!(isize, to_isize);
+    to_int!(u8, to_u8);
+    to_int!(u16, to_u16);
+    to_int!(u32, to_u32);
+    to_int!(u64, to_u64);
+    to_int!(u128, to_u128);
+    to_int!(usize, to_usize);
 
     #[inline]
     fn to_f32(&self) -> Option<f32> {
@@ -626,42 +524,16 @@ impl<const N: usize> Zero for BUint<N> {
 
 #[cfg(test)]
 mod tests {
-    use crate::U128;
     use super::Roots;
 
-    #[test]
-    fn sqrt() {
-        let u = 23984723947892374973985479u128;
-        assert_eq!(U128::from(u).sqrt(), u.sqrt().into());
-
-        let u = 9345878u128.pow(2);
-        assert_eq!(U128::from(u).sqrt(), u.sqrt().into());
-
-        let u = 1u128;
-        assert_eq!(U128::from(u).sqrt(), u.sqrt().into());
-    }
-
-    #[test]
-    fn cbrt() {
-        let u = 253450947984756967398457893475u128;
-        assert_eq!(U128::from(u).cbrt(), u.cbrt().into());
-
-        let u = 34345u128.pow(3);
-        assert_eq!(U128::from(u).cbrt(), u.cbrt().into());
-
-        let u = 0u128;
-        assert_eq!(U128::from(u).cbrt(), u.cbrt().into());
-    }
-
-    #[test]
-    fn nth_root() {
-        let u = 98234759704698792745469879u128;
-        assert_eq!(U128::from(u).nth_root(5), u.nth_root(5).into());
-
-        let u = 563u128.pow(7);
-        assert_eq!(U128::from(u).nth_root(7), u.nth_root(7).into());
-
-        let u = u + 5;
-        assert_eq!(U128::from(u).nth_root(7), u.nth_root(7).into());
-    }
+	test_unsigned! {
+		function: sqrt(a: ref &u128)
+	}
+	test_unsigned! {
+		function: cbrt(a: ref &u128)
+	}
+	test_unsigned! {
+		function: nth_root(u: ref &u128, n: u32),
+		quickcheck_skip: n == 0
+	}
 }

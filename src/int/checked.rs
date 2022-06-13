@@ -25,6 +25,7 @@ macro_rules! checked_log {
     }
 }
 
+#[doc=doc::checked::impl_desc!()]
 impl<const N: usize> Bint<N> {
     #[inline]
     #[doc=doc::checked_add!(Bint::<2>)]

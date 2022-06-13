@@ -124,7 +124,7 @@ macro_rules! test_into {
 
 pub(crate) use test_into;
 
-macro_rules! test_op {
+/*macro_rules! test_op {
     {
         big: $big_type: ty,
         primitive: $primitive: ty,
@@ -145,7 +145,7 @@ macro_rules! test_op {
     }
 }
 
-pub(crate) use test_op;
+pub(crate) use test_op;*/
 
 #[derive(Clone, Copy)]
 pub struct U8ArrayWrapper<const N: usize>([u8; N]);
@@ -270,7 +270,7 @@ macro_rules! test_fmt {
 #[allow(unused_imports)]
 pub(crate) use test_fmt;
 
-use crate::{U128, I128, U64, F64};
+use crate::{U128, I128, U64/*, F64*/};
 
 pub trait TestConvert {
     type Output;
@@ -356,7 +356,7 @@ impl TestConvert for f64 {
     }
 }
 
-impl TestConvert for F64 {
+/*impl TestConvert for F64 {
     type Output = u64;
 
     #[inline]
@@ -365,7 +365,7 @@ impl TestConvert for F64 {
             core::mem::transmute(self.to_bits())
         }
     }
-}
+}*/
 
 impl<T: TestConvert, U: TestConvert> TestConvert for (T, U) {
     type Output = (<T as TestConvert>::Output, <U as TestConvert>::Output);

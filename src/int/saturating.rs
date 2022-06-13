@@ -1,6 +1,7 @@
 use super::Bint;
-use crate::{ExpType, BUint};
+use crate::{ExpType, BUint, doc};
 
+#[doc=doc::saturating::impl_desc!()]
 impl<const N: usize> Bint<N> {
     #[inline]
     pub const fn saturating_add(self, rhs: Self) -> Self {

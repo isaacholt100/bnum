@@ -204,7 +204,7 @@ pub const fn div_float<const N: usize>(u: BUint<N>, v: BUint<N>) -> (BUint<N>, b
 
 use crate::digit::{self, DoubleDigit};
 
-/// Methods 
+#[doc=doc::checked::impl_desc!()]
 impl<const N: usize> BUint<N> {
     #[inline]
     #[doc=doc::checked_add!(BUint::<2>)]
@@ -310,7 +310,7 @@ impl<const N: usize> BUint<N> {
                     self.rest[index - 1] = digit;
                 }
             }
-            const fn to_uint(self, shift: ExpType) -> BUint<M> {
+            const fn into_uint(self, shift: ExpType) -> BUint<M> {
                 let mut out = BUint::ZERO;
                 let mut i = 0;
                 while i < M {
@@ -433,7 +433,7 @@ impl<const N: usize> BUint<N> {
             q.digits[j] = q_hat;
         }
 
-        let remainder = u.to_uint(shift);
+        let remainder = u.into_uint(shift);
         (q, remainder)
     }
 

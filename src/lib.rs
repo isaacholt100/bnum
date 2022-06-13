@@ -16,7 +16,7 @@
     wrapping_next_power_of_two,
 ))]
 #![doc = include_str!("../README.md")]
-#![no_std]
+//#![no_std]
 
 // TODO: sort out license
 
@@ -30,7 +30,7 @@ mod cast;
 mod digit;
 mod doc;
 mod error;
-mod float;
+//mod float;
 mod int;
 pub mod prelude;
 
@@ -57,7 +57,7 @@ type ExpType = usize;
 #[cfg(not(feature = "usize_exptype"))]
 type ExpType = u32;
 
-pub use float::Float;
+//pub use float::Float;
 
 pub use uint::BUint;
 pub use int::Bint;
@@ -76,7 +76,7 @@ pub type U8192 = BUint::<{8192 / digit::BITS as usize}>;
 pub type I128 = Bint::<{128 / digit::BITS as usize}>;
 pub type I64 = Bint::<{64 / digit::BITS as usize}>;
 
-pub type F64 = Float::<{64 / digit::BITS as usize}, 52>;
+/*pub type F64 = Float::<{64 / digit::BITS as usize}, 52>;
 
 pub const fn u64_words(bits: usize) -> usize {
     let bytes = (bits + 7) / 8;
@@ -102,7 +102,7 @@ pub const fn u8_words(bits: usize) -> usize {
     let bytes = (rem + 7) / 8;
     debug_assert!(bytes <= 8);
     bytes & 0b1
-}
+}*/
 
 /*pub struct U<const W64: usize, const W32: usize, const W16: usize, const W8: usize> {
     u64_words: [u64; W64],

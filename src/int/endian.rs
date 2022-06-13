@@ -20,6 +20,7 @@ macro_rules! set_digit {
     }
 }
 
+#[doc=doc::endian::impl_desc!(Bint)]
 impl<const N: usize> Bint<N> {
     #[doc=doc::from_be!(Bint::<2>)]
     #[inline]
@@ -145,10 +146,7 @@ impl<const N: usize> Bint<N> {
             })
         }
     }*/
-}
-
-#[cfg(feature = "nightly")]
-impl<const N: usize> Bint<N> {
+	
     #[doc=doc::to_be_bytes!(Bint::<2>, "i")]
     #[inline]
     pub const fn to_be_bytes(self) -> [u8; N * digit::BYTES as usize] {

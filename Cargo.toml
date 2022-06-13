@@ -2,10 +2,10 @@
 name = "bint"
 version = "0.1.0"
 authors = ["isaac-holt <isaac_holt@icloud.com>"]
-edition = "2018"
+edition = "2021"
 
 [features]
-default = ["u8_digit", "nightly", "numtraits", "rand"] # needs to change so numtraits is optional for uint and int folders
+default = ["u8_digit", "nightly"] # needs to change so numtraits is optional for uint and int folders
 u8_digit = []
 nightly = []
 usize_exptype = []

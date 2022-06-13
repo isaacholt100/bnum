@@ -1,5 +1,4 @@
 use super::Bint;
-use num_traits::ToPrimitive;
 use core::convert::TryFrom;
 use core::str::FromStr;
 use crate::{TryFromIntError, ParseIntError};
@@ -7,6 +6,7 @@ use crate::digit::{Digit, self};
 use crate::uint::BUint;
 use crate::error::TryFromErrorReason::*;
 use crate::macros;
+use core::{f32, f64};
 
 impl<const N: usize> FromStr for Bint<N> {
     type Err = ParseIntError;

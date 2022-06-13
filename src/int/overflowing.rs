@@ -1,7 +1,7 @@
 use super::Bint;
 use crate::digit::{SignedDigit, Digit, SignedDoubleDigit};
 use crate::macros::{overflowing_pow, div_zero, rem_zero};
-use crate::{ExpType, BUint};
+use crate::{ExpType, BUint, doc};
 use crate::digit;
 
 #[inline]
@@ -16,6 +16,7 @@ const fn borrowing_sub_signed(a: SignedDigit, b: SignedDigit, borrow: bool) -> (
     (diff as SignedDigit, diff > SignedDigit::MAX as SignedDoubleDigit || diff < SignedDigit::MIN as SignedDoubleDigit)
 }
 
+#[doc=doc::overflowing::impl_desc!()]
 impl<const N: usize> Bint<N> {
     #[inline]
     pub const fn overflowing_add(self, rhs: Self) -> (Self, bool) {
@@ -208,7 +209,6 @@ impl<const N: usize> Bint<N> {
             let out_ptr = out_digits.as_mut_ptr() as *mut Digit;
             unsafe {
                 digits_ptr.add(digit_shift).copy_to_nonoverlapping(out_ptr, N - digit_shift);
-                core::mem::forget(self);
             }
     
             if shift > 0 {

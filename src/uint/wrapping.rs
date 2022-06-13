@@ -1,7 +1,8 @@
 use super::{BUint, ExpType};
-use crate::Bint;
+use crate::{Bint, doc};
 use crate::macros::{option_expect, wrapping_pow};
 
+#[doc=doc::wrapping::impl_desc!()]
 impl<const N: usize> BUint<N> {
     #[inline]
     pub const fn wrapping_add(self, rhs: Self) -> Self {

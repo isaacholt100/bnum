@@ -3,6 +3,7 @@ use crate::digit::{Digit, self};
 use core::mem::MaybeUninit;
 use crate::doc;
 
+#[doc=doc::endian::impl_desc!(BUint)]
 impl<const N: usize> BUint<N> {
     #[doc=doc::from_be!(BUint::<2>)]
     #[inline]
@@ -159,100 +160,97 @@ impl<const N: usize> BUint<N> {
             Some(out)
         }
     }
-}
+	
+	#[doc=doc::to_be_bytes!(BUint::<2>, "u")]
+	#[inline]
+	pub const fn to_be_bytes(self) -> [u8; N * digit::BYTES as usize] {
+		let mut bytes = [0; N * digit::BYTES as usize];
+		let mut i = N;
+		while i > 0 {
+			let digit_bytes = self.digits[N - i].to_be_bytes();
+			i -= 1;
+			let mut j = 0;
+			while j < digit::BYTES as usize {
+				bytes[(i << digit::BYTE_SHIFT) + j] = digit_bytes[j];
+				j += 1;
+			}
+		}
+		bytes
+	}
 
-#[cfg(feature = "nightly")]
-impl<const N: usize> BUint<N> {
-    #[doc=doc::to_be_bytes!(BUint::<2>, "u")]
-    #[inline]
-    pub const fn to_be_bytes(self) -> [u8; N * digit::BYTES as usize] {
-        let mut bytes = [0; N * digit::BYTES as usize];
-        let mut i = N;
-        while i > 0 {
-            let digit_bytes = self.digits[N - i].to_be_bytes();
-            i -= 1;
-            let mut j = 0;
-            while j < digit::BYTES as usize {
-                bytes[(i << digit::BYTE_SHIFT) + j] = digit_bytes[j];
-                j += 1;
-            }
-        }
-        bytes
-    }
+	#[doc=doc::to_le_bytes!(BUint::<2>, "u")]
+	#[inline]
+	pub const fn to_le_bytes(self) -> [u8; N * digit::BYTES as usize] {
+		let mut bytes = [0; N * digit::BYTES as usize];
+		let mut i = 0;
+		while i < N {
+			let digit_bytes = self.digits[i].to_le_bytes();
+			let mut j = 0;
+			while j < digit::BYTES as usize {
+				bytes[(i << digit::BYTE_SHIFT) + j] = digit_bytes[j];
+				j += 1;
+			}
+			i += 1;
+		}
+		bytes
+	}
 
-    #[doc=doc::to_le_bytes!(BUint::<2>, "u")]
-    #[inline]
-    pub const fn to_le_bytes(self) -> [u8; N * digit::BYTES as usize] {
-        let mut bytes = [0; N * digit::BYTES as usize];
-        let mut i = 0;
-        while i < N {
-            let digit_bytes = self.digits[i].to_le_bytes();
-            let mut j = 0;
-            while j < digit::BYTES as usize {
-                bytes[(i << digit::BYTE_SHIFT) + j] = digit_bytes[j];
-                j += 1;
-            }
-            i += 1;
-        }
-        bytes
-    }
+	#[doc=doc::to_ne_bytes!(Bint::<2>, "u")]
+	#[inline]
+	pub const fn to_ne_bytes(self) -> [u8; N * digit::BYTES as usize] {
+		#[cfg(target_endian = "big")]
+		return self.to_be_bytes();
+		#[cfg(not(target_endian = "big"))]
+		self.to_le_bytes()
+	}
 
-    #[doc=doc::to_ne_bytes!(Bint::<2>, "u")]
-    #[inline]
-    pub const fn to_ne_bytes(self) -> [u8; N * digit::BYTES as usize] {
-        #[cfg(target_endian = "big")]
-        return self.to_be_bytes();
-        #[cfg(not(target_endian = "big"))]
-        self.to_le_bytes()
-    }
+	#[doc=doc::from_be_bytes!(BUint::<2>, "u")]
+	#[inline]
+	pub const fn from_be_bytes(bytes: [u8; N * digit::BYTES as usize]) -> Self {
+		let mut out = Self::ZERO;
+		let arr_ptr = bytes.as_ptr();
+		let mut i = 0;
+		while i < N {
+			let mut uninit = MaybeUninit::<[u8; digit::BYTES as usize]>::uninit();
+			let ptr = uninit.as_mut_ptr() as *mut u8;
+			let digit_bytes = unsafe {
+				arr_ptr.add((Self::N_MINUS_1 - i) << digit::BYTE_SHIFT).copy_to_nonoverlapping(ptr, digit::BYTES as usize);
+				uninit.assume_init()
+			};
+			out.digits[i] = Digit::from_be_bytes(digit_bytes);
+			i += 1;
+		}
+		out
+	}
 
-    #[doc=doc::from_be_bytes!(BUint::<2>, "u")]
-    #[inline]
-    pub const fn from_be_bytes(bytes: [u8; N * digit::BYTES as usize]) -> Self {
-        let mut out = Self::ZERO;
-        let arr_ptr = bytes.as_ptr();
-        let mut i = 0;
-        while i < N {
-            let mut uninit = MaybeUninit::<[u8; digit::BYTES as usize]>::uninit();
-            let ptr = uninit.as_mut_ptr() as *mut u8;
-            let digit_bytes = unsafe {
-                arr_ptr.add((Self::N_MINUS_1 - i) << digit::BYTE_SHIFT).copy_to_nonoverlapping(ptr, digit::BYTES as usize);
-                uninit.assume_init()
-            };
-            out.digits[i] = Digit::from_be_bytes(digit_bytes);
-            i += 1;
-        }
-        out
-    }
+	#[doc=doc::from_le_bytes!(BUint::<2>, "u")]
+	#[inline]
+	pub const fn from_le_bytes(bytes: [u8; N * digit::BYTES as usize]) -> Self {
+		let mut out = Self::ZERO;
+		let arr_ptr = bytes.as_ptr();
+		let mut i = 0;
+		while i < N {
+			let mut uninit = MaybeUninit::<[u8; digit::BYTES as usize]>::uninit();
+			let ptr = uninit.as_mut_ptr() as *mut u8;
+			let digit_bytes = unsafe {
+				arr_ptr.add(i << digit::BYTE_SHIFT).copy_to_nonoverlapping(ptr, digit::BYTES as usize);
+				uninit.assume_init()
+			};
+			out.digits[i] = Digit::from_le_bytes(digit_bytes);
+			i += 1;
+		}
+		out
+	}
 
-    #[doc=doc::from_le_bytes!(BUint::<2>, "u")]
-    #[inline]
-    pub const fn from_le_bytes(bytes: [u8; N * digit::BYTES as usize]) -> Self {
-        let mut out = Self::ZERO;
-        let arr_ptr = bytes.as_ptr();
-        let mut i = 0;
-        while i < N {
-            let mut uninit = MaybeUninit::<[u8; digit::BYTES as usize]>::uninit();
-            let ptr = uninit.as_mut_ptr() as *mut u8;
-            let digit_bytes = unsafe {
-                arr_ptr.add(i << digit::BYTE_SHIFT).copy_to_nonoverlapping(ptr, digit::BYTES as usize);
-                uninit.assume_init()
-            };
-            out.digits[i] = Digit::from_le_bytes(digit_bytes);
-            i += 1;
-        }
-        out
-    }
+	#[doc=doc::from_ne_bytes!(BUint::<2>, "u")]
+	#[inline]
+	pub const fn from_ne_bytes(bytes: [u8; N * digit::BYTES as usize]) -> Self {
+		#[cfg(target_endian = "big")]
+		return Self::from_be_bytes(bytes);
 
-    #[doc=doc::from_ne_bytes!(BUint::<2>, "u")]
-    #[inline]
-    pub const fn from_ne_bytes(bytes: [u8; N * digit::BYTES as usize]) -> Self {
-        #[cfg(target_endian = "big")]
-        return Self::from_be_bytes(bytes);
-
-        #[cfg(not(target_endian = "big"))]
-        Self::from_le_bytes(bytes)
-    }
+		#[cfg(not(target_endian = "big"))]
+		Self::from_le_bytes(bytes)
+	}
 }
 
 #[cfg(test)]

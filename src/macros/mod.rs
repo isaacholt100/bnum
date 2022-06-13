@@ -12,39 +12,57 @@ macro_rules! rem_zero {
 }
 pub(crate) use rem_zero;
 
+impl<const M: usize> crate::BUint<M> {
+	#[inline]
+	pub(crate) const fn is_negative(&self) -> bool {
+		false
+	}
+}
+
 macro_rules! try_int_impl {
-    ($Struct: tt, $int: ty, $method: ident, $err: expr) => {
-        impl<const N: usize> TryFrom<$Struct<N>> for $int {
-            type Error = crate::TryFromIntError;
-        
-            #[inline]
-            fn try_from(uint: $Struct<N>) -> Result<Self, Self::Error> {
-                uint.$method().ok_or(crate::TryFromIntError {
-                    from: stringify!($Struct),
-                    to: stringify!($int),
-                    reason: crate::error::TryFromErrorReason::TooLarge,
-                })
-            }
-        }
+    ($Struct: tt, [$($int: ty), *]) => {
+        $(
+			impl<const N: usize> TryFrom<$Struct<N>> for $int {
+				type Error = crate::TryFromIntError;
+			
+				#[inline]
+				fn try_from(from: $Struct<N>) -> Result<Self, Self::Error> {
+					let digits = from.digits();
+					let mut out = 0;
+					let mut i = 0;
+					while i < <$int>::BITS as usize >> digit::BIT_SHIFT && i < N {
+						out |= digits[i] as $int << (i << digit::BIT_SHIFT);
+						i += 1;
+					}
+					while i < N {
+						if digits[i] != 0 {
+							return Err(crate::TryFromIntError {
+								from: stringify!($Struct),
+								to: stringify!($int),
+								reason: crate::error::TryFromErrorReason::TooLarge,
+							});
+						}
+						i += 1;
+					}
+					#[allow(unused_comparisons)]
+					if (out < 0) ^ from.is_negative() {
+						return Err(crate::TryFromIntError {
+							from: stringify!($Struct),
+							to: stringify!($int),
+							reason: crate::error::TryFromErrorReason::TooLarge,
+						});
+					}
+					Ok(out)
+				}
+			}
+		)*
     }
 }
 pub(crate) use try_int_impl;
 
 macro_rules! all_try_int_impls {
     ($Struct: tt) => {
-        crate::macros::try_int_impl!($Struct, u128, to_u128, "BUint is too large to cast to u128");
-        crate::macros::try_int_impl!($Struct, u64, to_u64, "BUint is too large to cast to u64");
-        crate::macros::try_int_impl!($Struct, usize, to_usize, "BUint is too large to cast to usize");
-        crate::macros::try_int_impl!($Struct, u32, to_u32, "BUint is too large to cast to u32");
-        crate::macros::try_int_impl!($Struct, u16, to_u16, "BUint is too large to cast to u16");
-        crate::macros::try_int_impl!($Struct, u8, to_u8, "BUint is too large to cast to u8");
-
-        crate::macros::try_int_impl!($Struct, i128, to_i128, "BUint is too large to cast to i128");
-        crate::macros::try_int_impl!($Struct, i64, to_i64, "BUint is too large to cast to i64");
-        crate::macros::try_int_impl!($Struct, isize, to_isize, "BUint is too large to cast to isize");
-        crate::macros::try_int_impl!($Struct, i32, to_i32, "BUint is too large to cast to i32");
-        crate::macros::try_int_impl!($Struct, i16, to_i16, "BUint is too large to cast to i16");
-        crate::macros::try_int_impl!($Struct, i8, to_i8, "BUint is too large to cast to i8");
+        crate::macros::try_int_impl!($Struct, [u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize]);
     }
 }
 pub(crate) use all_try_int_impls;
@@ -468,3 +486,11 @@ macro_rules! impl_ops {
     };
 }
 pub(crate) use impl_ops;
+
+macro_rules! assert_radix_range {
+    ($radix: expr, $max: expr) => {
+        assert!((2..=$max).contains(&$radix), "Radix must be in range [2, {}]", $max)
+    }
+}
+
+pub(crate) use assert_radix_range;

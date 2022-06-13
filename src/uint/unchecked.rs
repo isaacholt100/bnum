@@ -1,19 +1,21 @@
 use super::BUint;
+use crate::doc;
 
+#[doc=doc::unchecked::impl_desc!()]
 impl<const N: usize> BUint<N> {
     #[inline]
     pub unsafe fn unchecked_add(self, rhs: Self) -> Self {
-        self.checked_add(rhs).unwrap_unchecked()
+        self.wrapping_add(rhs)
     }
 
     #[inline]
     pub unsafe fn unchecked_sub(self, rhs: Self) -> Self {
-        self.checked_sub(rhs).unwrap_unchecked()
+        self.wrapping_sub(rhs)
     }
 
     #[inline]
     pub unsafe fn unchecked_mul(self, rhs: Self) -> Self {
-        self.checked_add(rhs).unwrap_unchecked()
+		self.wrapping_mul(rhs)
     }
     
     #[inline]

@@ -2,6 +2,7 @@ pub trait CastFrom<T> {
     fn cast_from(from: T) -> Self;
 }
 
+/// Trait which allows panic-free casting between integer types. The behavior matches the behavior of the `as` conversion operator between primitive integers. This trait can be used to convert between `BUint` and `Bint` of any sizes, as well as between `BUint`/`Bint` and Rust's primitive integers. Conversions between Rust's primitive integers themselves are also defined for consistency.
 pub trait As {
     fn as_<T>(self) -> T where T: ~const CastFrom<Self>, Self: Sized;
 }

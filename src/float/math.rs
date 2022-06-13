@@ -140,12 +140,10 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                 u += m;
             }
             u &= !m;
-        } else {
-            if self.is_sign_negative() {
-                return Self::NEG_ZERO;
-            } else if !(u << 1u8).is_zero() {
-                return Self::ONE;
-            }
+        } else if self.is_sign_negative() {
+			return Self::NEG_ZERO;
+		} else if !(u << 1u8).is_zero() {
+			return Self::ONE;
         }
         Self::from_bits(u)
     }
@@ -167,13 +165,11 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                 bits += m;
             }
             bits &= !m;
-        } else {
-            if self.is_sign_positive() {
-                return Self::ZERO;
-            } else if !(bits << 1u8).is_zero() {
-                return Self::NEG_ONE;
-            }
-        }
+        } else if self.is_sign_positive() {
+			return Self::ZERO;
+		} else if !(bits << 1u8).is_zero() {
+			return Self::NEG_ONE;
+		}
         Self::from_bits(bits)
     }
 

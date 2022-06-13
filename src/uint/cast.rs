@@ -40,7 +40,7 @@ macro_rules! buint_as {
                 fn cast_from(from: BUint<N>) -> Self {
                     let mut out = 0;
                     let mut i = 0;
-                    while i << digit::BIT_SHIFT < <$int>::BITS as usize && i < N {
+                    while i < <$int>::BITS as usize >> digit::BIT_SHIFT && i < N {
                         out |= from.digits[i] as $int << (i << digit::BIT_SHIFT);
                         i += 1;
                     }
@@ -66,11 +66,9 @@ impl<const N: usize> CastFrom<BUint<N>> for f32 {
             from >> (bits - 24)
         };
         let mut round_up = true;
-        if bits <= 24 || !from.bit(bits - 25) {
+        if bits <= 24 || !from.bit(bits - 25) || (mant.is_even() && from.trailing_zeros() == bits - 25) {
             round_up = false;
-        } else if mant.is_even() && from.trailing_zeros() == bits - 25 {
-            round_up = false;
-        };
+        }
         let mut exp = bits as u32 + 127 - 1;
         if round_up {
             mant += BUint::ONE;
@@ -99,11 +97,9 @@ impl<const N: usize> CastFrom<BUint<N>> for f64 {
             from >> (bits - 53)
         };
         let mut round_up = true;
-        if bits <= 53 || !from.bit(bits - 54) {
+        if bits <= 53 || !from.bit(bits - 54) || (mant.is_even() && from.trailing_zeros() == bits - 54) {
             round_up = false;
-        } else if mant.is_even() && from.trailing_zeros() == bits - 54 {
-            round_up = false;
-        };
+        }
         let mut exp = bits as u64 + 1023 - 1;
         if round_up {
             mant += BUint::ONE;

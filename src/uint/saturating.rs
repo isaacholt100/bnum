@@ -1,5 +1,5 @@
 use super::{BUint, ExpType};
-use crate::Bint;
+use crate::{Bint, doc};
 
 #[inline]
 const fn saturate_up<const N: usize>((int, overflow): (BUint<N>, bool)) -> BUint<N> {
@@ -19,6 +19,7 @@ const fn saturate_down<const N: usize>((int, overflow): (BUint<N>, bool)) -> BUi
     }
 }
 
+#[doc=doc::saturating::impl_desc!()]
 impl<const N: usize> BUint<N> {
     #[inline]
     pub const fn saturating_add(self, rhs: Self) -> Self {

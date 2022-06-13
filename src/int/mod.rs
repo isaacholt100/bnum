@@ -46,6 +46,7 @@ mod wrapping;
 #[cfg(feature = "serde_all")]
 use serde::{Serialize, Deserialize};
 
+/// Big signed integer type, of fixed size which must be known at compile time. `Bint<N>` aims to exactly replicate the behaviours of Rust's built-in signed integer types: `i8`, `i16`, `i32`, `i64`, `i128` and `isize`. The const generic parameter `N` is the number of digits that are stored in the underlying `BUint`.
 #[derive(Clone, Copy, Hash, /*Debug, */)]
 #[cfg_attr(feature = "serde_all", derive(Serialize, Deserialize))]
 pub struct Bint<const N: usize> {

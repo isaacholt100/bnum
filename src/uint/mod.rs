@@ -48,7 +48,6 @@ pub const fn unchecked_shl<const N: usize>(u: BUint<N>, rhs: ExpType) -> BUint<N
         let out_ptr = out.digits.as_mut_ptr() as *mut Digit;
         unsafe {
             digits_ptr.copy_to_nonoverlapping(out_ptr.add(digit_shift), N - digit_shift);
-            core::mem::forget(u);
         }
         /*if rhs == 13 {
         let mut i = 0;
@@ -108,7 +107,6 @@ pub const fn unchecked_shr<const N: usize>(u: BUint<N>, rhs: ExpType) -> BUint<N
         let out_ptr = out.digits.as_mut_ptr() as *mut Digit;
         unsafe {
             digits_ptr.add(digit_shift).copy_to_nonoverlapping(out_ptr, N - digit_shift);
-            core::mem::forget(u);
         }
         /*let mut i = 0;
         while i < N - digit_shift {
@@ -138,7 +136,7 @@ pub const fn unchecked_shr<const N: usize>(u: BUint<N>, rhs: ExpType) -> BUint<N
 #[cfg(feature = "serde")]
 use ::{serde_big_array::BigArray, serde::{Serialize, Deserialize}};
 
-/// Big unsigned integer type. Digits are stored as little endian (least significant bit first);
+/// Big unsigned integer type, of fixed size which must be known at compile time. `BUint<N>` aims to exactly replicate the behaviours of Rust's built-in unsigned integer types: `u8`, `u16`, `u32`, `u64`, `u128` and `usize`. The const generic parameter `N` is the number of digits that are stored.
 #[derive(Clone, Copy, Hash, /*Debug, */)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct BUint<const N: usize> {
@@ -291,7 +289,6 @@ impl<const N: usize> BUint<N> {
         unsafe {
             digits_ptr.copy_to_nonoverlapping(uninit_ptr.add(n), N - n);
             digits_ptr.add(N - n).copy_to_nonoverlapping(uninit_ptr, n);
-            core::mem::forget(self);
             Self::from_digits(uninit.assume_init())
         }
     }
@@ -701,7 +698,7 @@ impl<const N: usize> BUint<N> {
     }
 
     #[inline]
-    pub const fn to_exp_type(self) -> Option<ExpType> {
+    pub(crate) const fn to_exp_type(self) -> Option<ExpType> {
         let last_index = self.last_digit_index();
         if self.digits[last_index] == 0 {
             return Some(0);

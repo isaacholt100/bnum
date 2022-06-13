@@ -1,5 +1,8 @@
+use crate::doc;
+
 use super::Bint;
 
+#[doc=doc::unchecked::impl_desc!()]
 impl<const N: usize> Bint<N> {
     #[inline]
     pub unsafe fn unchecked_add(self, rhs: Self) -> Self {

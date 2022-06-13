@@ -1,4 +1,5 @@
 use super::BUint;
+use crate::doc;
 use crate::{ParseIntError, ExpType};
 use crate::digit::{self, Digit, DoubleDigit};
 use core::iter::Iterator;
@@ -6,14 +7,9 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use crate::radix_bases;
 use core::num::IntErrorKind;
+use crate::macros::assert_radix_range;
 
 const BITS_U8: u8 = digit::BITS as u8;
-
-macro_rules! assert_range {
-    ($radix: expr, $max: expr) => {
-        assert!(2 <= $radix && $radix <= $max, "Radix must be in range [2, {}]", $max)
-    }
-}
 
 fn last_set_bit(n: u32) -> u8 {
     ((core::mem::size_of_val(&n) as u8) << 3) - n.leading_zeros() as u8
@@ -22,6 +18,7 @@ fn ilog2(n: u32) -> u8 {
     last_set_bit(n) - 1
 }
 
+#[doc=doc::radix::impl_desc!(BUint)]
 impl<const N: usize> BUint<N> {
     fn from_bitwise_digits_le<InnerIter, OuterIter>(iter: OuterIter, bits: u8) -> Option<Self>
     where
@@ -54,14 +51,14 @@ impl<const N: usize> BUint<N> {
         let mut index = 0;
 
         for byte in iter {
-            digit |= Digit::from(byte) << dbits;
+            digit |= (byte as Digit) << dbits;
             dbits += bits;
             if dbits >= BITS_U8 {
                 if index < N {
                     out.digits[index] = digit;
                     index += 1;
                     dbits -= BITS_U8;
-                    digit = Digit::from(byte) >> (bits - dbits);
+                    digit = (byte as Digit) >> (bits - dbits);
                 } else if digit != 0 {
                     return None;
                 }
@@ -153,7 +150,7 @@ impl<const N: usize> BUint<N> {
     /// ```
     // Taken from the num_bigint crate
     pub fn from_radix_be(buf: &[u8], radix: u32) -> Option<Self> {
-        assert_range!(radix, 256);
+        assert_radix_range!(radix, 256);
         if buf.is_empty() {
             return Some(Self::ZERO);
         }
@@ -218,7 +215,7 @@ impl<const N: usize> BUint<N> {
     /// ```
     // Taken from the num_bigint crate
     pub fn from_radix_le(buf: &[u8], radix: u32) -> Option<Self> {
-        assert_range!(radix, 256);
+        assert_radix_range!(radix, 256);
         if buf.is_empty() {
             return Some(Self::ZERO);
         }
@@ -296,7 +293,7 @@ impl<const N: usize> BUint<N> {
     /// ```
     // Taken from the num_bigint crate
     pub fn from_str_radix(src: &str, radix: u32) -> Result<Self, ParseIntError> {
-        assert_range!(radix, 36);
+        assert_radix_range!(radix, 36);
         let mut src = src;
         if src.starts_with('+') {
             src = &src[1..];
@@ -389,7 +386,7 @@ impl<const N: usize> BUint<N> {
     /// ```
     // Taken from the num_bigint crate
     pub fn to_str_radix(&self, radix: u32) -> String {
-        let mut out = Self::to_radix_be(&self, radix);
+        let mut out = Self::to_radix_be(self, radix);
 
         for byte in out.iter_mut() {
             if *byte < 10 {
@@ -458,7 +455,8 @@ impl<const N: usize> BUint<N> {
             self.to_radix_digits_le(radix)
         }
     }
-    fn to_bitwise_digits_le(&self, bits: u8) -> Vec<u8> {
+
+    fn to_bitwise_digits_le(self, bits: u8) -> Vec<u8> {
         let last_digit_index = self.last_digit_index();
         let mask: Digit = (1 << bits) - 1;
         let digits_per_big_digit = BITS_U8 / bits;
@@ -467,20 +465,22 @@ impl<const N: usize> BUint<N> {
             .div_ceil(bits as ExpType);
         let mut out = Vec::with_capacity(digits as usize);
 
-        for mut r in self.digits[..last_digit_index].iter().cloned() {
+        let mut r = self.digits[last_digit_index];
+
+        for mut d in IntoIterator::into_iter(self.digits).take(last_digit_index) {
             for _ in 0..digits_per_big_digit {
-                out.push((r & mask) as u8);
-                r >>= bits;
+                out.push((d & mask) as u8);
+                d >>= bits;
             }
         }
-        let mut r = self.digits[last_digit_index];
         while r != 0 {
             out.push((r & mask) as u8);
             r >>= bits;
         }
         out
     }
-    fn to_inexact_bitwise_digits_le(&self, bits: u8) -> Vec<u8> {
+
+    fn to_inexact_bitwise_digits_le(self, bits: u8) -> Vec<u8> {
         let mask: Digit = (1 << bits) - 1;
         let digits = self
             .bits()
@@ -488,8 +488,8 @@ impl<const N: usize> BUint<N> {
         let mut out = Vec::with_capacity(digits as usize);
         let mut r = 0;
         let mut rbits = 0;
-        for c in &self.digits[..] {
-            r |= *c << rbits;
+        for c in self.digits {
+            r |= c << rbits;
             rbits += BITS_U8;
 
             while rbits >= bits {
@@ -497,7 +497,7 @@ impl<const N: usize> BUint<N> {
                 r >>= bits;
 
                 if rbits > BITS_U8 {
-                    r = *c >> (BITS_U8 - (rbits - bits));
+                    r = c >> (BITS_U8 - (rbits - bits));
                 }
                 rbits -= bits;
             }
@@ -510,13 +510,14 @@ impl<const N: usize> BUint<N> {
         }
         out
     }
-    fn to_radix_digits_le(&self, radix: u32) -> Vec<u8> {
+
+    fn to_radix_digits_le(self, radix: u32) -> Vec<u8> {
         let radix_log2 = f64::from(radix).log2();
         let radix_digits = ((self.bits() as f64) / radix_log2).ceil();
         let mut out = Vec::with_capacity(radix_digits as usize);
         let (base, power) = radix_bases::get_radix_base::<true>(radix);
         let radix = radix as Digit;
-        let mut copy = *self;
+        let mut copy = self;
         while copy.last_digit_index() > 0 {
             let (q, mut r) = copy.div_rem_digit(base);
             for _ in 0..power {

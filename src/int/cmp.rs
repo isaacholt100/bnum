@@ -25,13 +25,11 @@ impl<const N: usize> const Ord for Bint<N> {
         let s2 = other.signed_digit();
         if s1 == s2 {
             BUint::cmp(&self.bits, &other.bits)
-        } else {
-            if s1 > s2 {
-                Ordering::Greater
-            } else {
-                Ordering::Less
-            }
-        }
+        } else if s1 > s2 {
+			Ordering::Greater
+		} else {
+			Ordering::Less
+		}
     }
 
     #[inline]

@@ -2,21 +2,22 @@ use super::BUint;
 use crate::digit;
 use core::fmt::{Binary, Display, Formatter, LowerExp, LowerHex, Octal, UpperExp, UpperHex, self};
 use alloc::string::String;
+use core::fmt::Write;
 
-macro_rules! fmt {
+macro_rules! fmt_method {
     ($format: expr, $format_pad: expr, $pad: expr, $prefix: expr) => {
         #[inline]
         fn fmt(&self, f: &mut Formatter) -> fmt::Result {
             let mut format_string = String::new();
-            self.digits.iter().rev().for_each(|digit| {
+            for digit in self.digits.iter().rev() {
                 if format_string.is_empty() {
                     if digit != &0 {
-                        format_string.push_str(&format!($format, digit));
+						write!(format_string, $format, digit)?;
                     }
                 } else {
-                    format_string.push_str(&format!($format_pad, digit, $pad));
+					write!(format_string, $format_pad, digit, $pad)?;
                 }
-            });
+            };
             f.pad_integral(true, $prefix, if format_string.is_empty() {
                 "0"
             } else {
@@ -27,7 +28,7 @@ macro_rules! fmt {
 }
 
 impl<const N: usize> Binary for BUint<N> {
-    fmt!("{:b}", "{:01$b}", digit::BITS as usize, "0b");
+    fmt_method!("{:b}", "{:01$b}", digit::BITS as usize, "0b");
 }
 
 impl<const N: usize> core::fmt::Debug for BUint<N> {
@@ -70,7 +71,7 @@ impl<const N: usize> LowerExp for BUint<N> {
 const HEX_PADDING: usize = digit::BITS as usize / 4;
 
 impl<const N: usize> LowerHex for BUint<N> {
-    fmt!("{:x}", "{:01$x}", HEX_PADDING, "0x");
+    fmt_method!("{:x}", "{:01$x}", HEX_PADDING, "0x");
 }
 
 impl<const N: usize> Octal for BUint<N> {
@@ -86,7 +87,7 @@ impl<const N: usize> UpperExp for BUint<N> {
 }
 
 impl<const N: usize> UpperHex for BUint<N> {
-    fmt!("{:X}", "{:01$X}", HEX_PADDING, "0x");
+    fmt_method!("{:X}", "{:01$X}", HEX_PADDING, "0x");
 }
 
 #[cfg(test)]

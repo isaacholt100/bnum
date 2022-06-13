@@ -1,16 +1,13 @@
 use super::Bint;
+use crate::doc;
 use crate::uint::BUint;
 use alloc::string::String;
 use alloc::vec::Vec;
 use crate::error::ParseIntError;
 use core::num::IntErrorKind;
+use crate::macros::assert_radix_range;
 
-macro_rules! assert_range {
-    ($radix: expr, $max: expr) => {
-        assert!(2 <= $radix && $radix <= $max, "Radix must be in range [2, {}]", $max)
-    }
-}
-
+#[doc=doc::radix::impl_desc!(Bint)]
 impl<const N: usize> Bint<N> {
     #[inline]
     pub fn parse_bytes(buf: &[u8], radix: u32) -> Option<Self> {
@@ -20,24 +17,17 @@ impl<const N: usize> Bint<N> {
 
     #[inline]
     pub fn from_radix_be(buf: &[u8], radix: u32) -> Option<Self> {
-        match BUint::from_radix_be(buf, radix) {
-            None => None,
-            Some(uint) => Some(Self::from_bits(uint)),
-        }
+        BUint::from_radix_be(buf, radix).map(Self::from_bits)
     }
 
     #[inline]
     pub fn from_radix_le(buf: &[u8], radix: u32) -> Option<Self> {
-        assert_range!(radix, 256);
-        match BUint::from_radix_le(buf, radix) {
-            None => None,
-            Some(uint) => Some(Self::from_bits(uint)),
-        }
+        BUint::from_radix_le(buf, radix).map(Self::from_bits)
     }
 
     #[inline]
     pub fn from_str_radix(mut src: &str, radix: u32) -> Result<Self, ParseIntError> {
-        assert_range!(radix, 36);
+        assert_radix_range!(radix, 36);
         //let mut src = src;
         let mut negative = false;
         if src.starts_with('-') {

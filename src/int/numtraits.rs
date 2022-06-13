@@ -105,7 +105,6 @@ impl<const N: usize> AsPrimitive<Bint<N>> for f64 {
 use crate::BUint;
 use crate::cast::CastFrom;
 
-#[cfg(feature = "nightly")]
 impl<const N: usize, const M: usize> AsPrimitive<BUint<M>> for Bint<N> {
     #[inline]
     fn as_(self) -> BUint<M> {
@@ -113,7 +112,6 @@ impl<const N: usize, const M: usize> AsPrimitive<BUint<M>> for Bint<N> {
     }
 }
 
-#[cfg(feature = "nightly")]
 impl<const N: usize, const M: usize> AsPrimitive<Bint<M>> for Bint<N> {
     #[inline]
     fn as_(self) -> Bint<M> {

@@ -1,3 +1,19 @@
+pub mod checked;
+pub mod endian;
+pub mod overflowing;
+pub mod radix;
+pub mod saturating;
+pub mod unchecked;
+pub mod wrapping;
+
+macro_rules! arithmetic_impl_desc {
+	($name: literal, $method: literal, $rest: literal) => {
+		concat!($name, " arithmetic methods which act on `self`: `self.", $method, "_...`. ", $rest)
+	};
+}
+
+pub(crate) use arithmetic_impl_desc;
+
 macro_rules! int_str {
     ($ty: ident ::< $n: literal >) => {
         concat!(stringify!($ty), "::<", $n, ">")
