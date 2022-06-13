@@ -255,7 +255,7 @@ impl<const N: usize> BUint<N> {
 
 #[cfg(test)]
 mod tests {
-    use crate::U128;
+    use crate::types::U128;
     use crate::test::U8ArrayWrapper;
 
     test_unsigned! {
@@ -287,7 +287,6 @@ mod tests {
         ]
     }
 
-    #[cfg(feature = "nightly")]
     test_unsigned! {
         function: to_be_bytes(a: u128),
         cases: [
@@ -295,7 +294,7 @@ mod tests {
             (456747598769u128)
         ]
     }
-    #[cfg(feature = "nightly")]
+
     test_unsigned! {
         function: to_le_bytes(a: u128),
         cases: [
@@ -303,7 +302,7 @@ mod tests {
             (4985679837455u128)
         ]
     }
-    #[cfg(feature = "nightly")]
+
     test_unsigned! {
         function: to_ne_bytes(a: u128),
         cases: [
@@ -312,7 +311,6 @@ mod tests {
         ]
     }
 
-    #[cfg(feature = "nightly")]
     test_unsigned! {
         function: from_be_bytes(a: U8ArrayWrapper<16>),
         cases: [
@@ -320,7 +318,7 @@ mod tests {
             ([0, 0, 0, 0, 30, 0, 64, 53, 54, 78, 0, 8, 91, 16, 25, 42])
         ]
     }
-    #[cfg(feature = "nightly")]
+
     test_unsigned! {
         function: from_le_bytes(a: U8ArrayWrapper<16>),
         cases: [
@@ -328,7 +326,7 @@ mod tests {
             ([0, 0, 0, 0, 0, 200, 244, 167, 44, 6, 9, 11, 90, 56, 77, 150])
         ]
     }
-    #[cfg(feature = "nightly")]
+	
     test_unsigned! {
         function: from_ne_bytes(a: U8ArrayWrapper<16>),
         cases: [

@@ -5,10 +5,9 @@ authors = ["isaac-holt <isaac_holt@icloud.com>"]
 edition = "2021"
 
 [features]
-default = ["u8_digit", "nightly"] # needs to change so numtraits is optional for uint and int folders
+default = ["u8_digit"]
 u8_digit = []
-nightly = []
-usize_exptype = []
+# usize_exptype = []
 serde = ["dep:serde", "serde-big-array"]
 numtraits = ["num-integer", "num-traits"]
 
