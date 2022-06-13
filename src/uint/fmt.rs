@@ -34,7 +34,7 @@ impl<const N: usize> Binary for BUint<N> {
 impl<const N: usize> core::fmt::Debug for BUint<N> {
     #[inline]
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "{:0width$b}", &self, width = Self::BITS as usize)
+        Display::fmt(&self, f)
     }
 }
 
@@ -92,7 +92,7 @@ impl<const N: usize> UpperHex for BUint<N> {
 
 #[cfg(test)]
 mod tests {
-    use crate::U128;
+    use crate::types::U128;
     use crate::test::test_fmt;
 
     test_fmt! {
@@ -146,6 +146,15 @@ mod tests {
         numbers: {
             349578347589374664564568395748345u128,
             93847934758734u128,
+            0u128,
+            1u128
+        }
+    }
+    test_fmt! {
+        int: U128,
+        name: debug,
+        format: "?",
+        numbers: {
             0u128,
             1u128
         }

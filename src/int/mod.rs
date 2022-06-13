@@ -1,7 +1,7 @@
 use crate::digit::{Digit, SignedDigit, self};
 use crate::uint::BUint;
 #[allow(unused_imports)]
-use crate::I128;
+use crate::types::I128;
 use crate::macros::option_expect;
 use crate::ExpType;
 use crate::doc;
@@ -16,7 +16,7 @@ macro_rules! test_signed {
         $(,quickcheck_skip: $skip: expr)?
     } => {
         crate::test::test_big_num! {
-            big: crate::I128,
+            big: crate::types::I128,
             primitive: i128,
             function: $name,
             $(cases: [
@@ -46,7 +46,10 @@ mod wrapping;
 #[cfg(feature = "serde_all")]
 use serde::{Serialize, Deserialize};
 
-/// Big signed integer type, of fixed size which must be known at compile time. `Bint<N>` aims to exactly replicate the behaviours of Rust's built-in signed integer types: `i8`, `i16`, `i32`, `i64`, `i128` and `isize`. The const generic parameter `N` is the number of digits that are stored in the underlying `BUint`.
+/// Big signed integer type, of fixed size which must be known at compile time. Digits are stored in little endian (least significant digit first). `Bint<N>` aims to exactly replicate the behaviours of Rust's built-in signed integer types: `i8`, `i16`, `i32`, `i64`, `i128` and `isize`. The const generic parameter `N` is the number of digits that are stored in the underlying `BUint`.
+
+// We can allow derivation of `Hash` and manual implementation of `PartialEq` as the derived `PartialEq` would be the same except we make our implementation const.
+#[allow(clippy::derive_hash_xor_eq)]
 #[derive(Clone, Copy, Hash, /*Debug, */)]
 #[cfg_attr(feature = "serde_all", derive(Serialize, Deserialize))]
 pub struct Bint<const N: usize> {

@@ -21,7 +21,7 @@ macro_rules! test_unsigned {
         $(,quickcheck_skip: $skip: expr)?
     } => {
         crate::test::test_big_num! {
-            big: crate::U128,
+            big: crate::types::U128,
             primitive: u128,
             function: $name,
             $(cases: [
@@ -136,7 +136,10 @@ pub const fn unchecked_shr<const N: usize>(u: BUint<N>, rhs: ExpType) -> BUint<N
 #[cfg(feature = "serde")]
 use ::{serde_big_array::BigArray, serde::{Serialize, Deserialize}};
 
-/// Big unsigned integer type, of fixed size which must be known at compile time. `BUint<N>` aims to exactly replicate the behaviours of Rust's built-in unsigned integer types: `u8`, `u16`, `u32`, `u64`, `u128` and `usize`. The const generic parameter `N` is the number of digits that are stored.
+/// Big unsigned integer type, of fixed size which must be known at compile time. Digits are stored in little endian (least significant digit first). `BUint<N>` aims to exactly replicate the behaviours of Rust's built-in unsigned integer types: `u8`, `u16`, `u32`, `u64`, `u128` and `usize`. The const generic parameter `N` is the number of digits that are stored.
+
+// We can allow derivation of `Hash` and manual implementation of `PartialEq` as the derived `PartialEq` would be the same except we make our implementation const.
+#[allow(clippy::derive_hash_xor_eq)]
 #[derive(Clone, Copy, Hash, /*Debug, */)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct BUint<const N: usize> {
@@ -183,13 +186,10 @@ impl<const N: usize> BUint<N> {
     #[doc=doc::bytes_const!(BUint::<2>, 8)]
     pub const BYTES: ExpType = Self::BITS / 8;
 
-    #[doc=doc::zero_const!(BUint::<2>)]
-    pub const ZERO: Self = Self::MIN;
-    
-    #[doc=doc::one_const!(BUint::<2>)]
-    pub const ONE: Self = Self::from_digit(1);
+	#[doc=doc::zero_const!(BUint::<2>)]
+	pub const ZERO: Self = Self::MIN;
 
-    pos_const!(TWO 2, THREE 3, FOUR 4, FIVE 5, SIX 6, SEVEN 7, EIGHT 8, NINE 9, TEN 10);
+    pos_const!(ONE 1, TWO 2, THREE 3, FOUR 4, FIVE 5, SIX 6, SEVEN 7, EIGHT 8, NINE 9, TEN 10);
 }
 
 impl<const N: usize> BUint<N> {
@@ -758,7 +758,7 @@ impl<'a, const N: usize> Sum<&'a Self> for BUint<N> {
 
 #[cfg(test)]
 mod tests {
-    use crate::U128;
+    use crate::types::U128;
 
     test_unsigned! {
         function: count_ones(a: u128),

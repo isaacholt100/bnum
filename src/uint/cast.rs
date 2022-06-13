@@ -270,8 +270,9 @@ impl<const N: usize> CastFrom<f64> for BUint<N> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{U128, I128, U64, I64, test};
+    use crate::types::{U128, I128, U64, I64};
     use crate::cast::As;
+	use crate::test;
 
     test::test_cast_to!([u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64, bool, char] as U128);
 

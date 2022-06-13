@@ -123,7 +123,7 @@ impl_ops!(BUint);
 
 #[cfg(test)]
 mod tests {
-    use crate::U128;
+    use crate::types::U128;
 
     #[test]
     fn bitand() {

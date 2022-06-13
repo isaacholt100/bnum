@@ -136,7 +136,7 @@ impl<const N: usize> TryFrom<f64> for Bint<N> {
 
 #[cfg(test)]
 mod tests {
-    use crate::I128;
+    use crate::types::I128;
     use super::*;
     use crate::test;
     use core::convert::TryInto;

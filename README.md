@@ -8,17 +8,21 @@ The aim of this crate is to provide integer types of any fixed size which behave
 
 This crate uses Rust's const generics to creation allow integers of any size that can be determined at compile time. `BUint<N>` is stored as an array of digits (primitive unsigned integers) of length `N`. `Bint` is simply stored as a `BUint` in two's complement.
 
-**NB: this library relies on a few features that are only available on the nightly Rust compiler, and so currently it can only run on nightly. These features are `generic_const_exprs`, `const_intrinsic_copy`, `const_mut_refs`, `const_maybe_uninit_as_mut_ptr`, `const_trait_impl`. This allows nearly all methods defined on `BUint` and `Bint` to be `const`, just as the ones on Rust's primitive integers are.** 
+**NB: this library relies on a few features that are only available on the nightly Rust compiler, and so currently it can only run on nightly. These features are [`generic_const_exprs`](https://github.com/rust-lang/rust/issues/76560), `const_mut_refs`, [`const_maybe_uninit_as_mut_ptr`](https://github.com/rust-lang/rust/issues/75251), [`const_trait_impl`](https://github.com/rust-lang/rust/issues/67792). This allows nearly all methods defined on `BUint` and `Bint` to be `const`, just as the ones on Rust's primitive integers are.** 
 
 ## Features
 
 ### Random Number Generation
 
-Random `Bint`s and `BUint`s can be created via the popular `rand` crate when the `rand` feature is enabled.
+Random `Bint`s and `BUint`s can be created via the `rand` crate when the [`rand`](https://docs.rs/rand/latest/rand/) feature is enabled.
 
 ### Serialization and Deserialization
 
-The `serde` feature enables serialization and deserialization of `Bint` and `BUint` via the `serde` and `serde-big-array` crates.
+The `serde` feature enables serialization and deserialization of `Bint` and `BUint` via the [`serde`](https://docs.rs/serde/latest/serde/) and [`serde_big_array`](https://docs.rs/serde-big-array/latest/serde_big_array/) crates.
+
+### `num_traits` and `num_integer`
+
+The `numtraits` feature includes implementations of traits from the [`num_traits`](https://docs.rs/num-traits/latest/num_traits/) and [`num_integer`](https://docs.rs/num-integer/latest/num_integer/) crates, e.g. `AsPrimitive`, `Signed`, `Integer` and `Roots`.
 
 ### `u8` Digit
 
@@ -26,7 +30,7 @@ By default, each "digit" which is stored in a `BUint` (or a `Bint`) is a `u64`. 
 
 ## Testing
 
-This crate is tested with the `quickcheck` crate as well as with specific edge cases.
+This crate is tested with the [`quickcheck`](https://docs.rs/quickcheck/latest/quickcheck/) crate as well as with specific edge cases.
 
 ## Future Work
 

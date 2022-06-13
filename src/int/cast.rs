@@ -116,7 +116,8 @@ impl<const N: usize> CastFrom<f64> for Bint<N> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{I128, U128, I64, U64, test};
+    use crate::types::{I128, U128, I64, U64};
+	use crate::test;
     use crate::cast::As;
     
     test::test_cast_to!([u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64, bool, char] as I128);

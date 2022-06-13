@@ -24,7 +24,7 @@ impl<const N: usize> Display for Bint<N> {
 impl<const N: usize> fmt::Debug for Bint<N> {
     #[inline]
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        Display::fmt(self, f)
+        Display::fmt(&self, f)
     }
 }
 
@@ -58,7 +58,7 @@ impl<const N: usize> UpperHex for Bint<N> {
 
 #[cfg(test)]
 mod tests {
-    use crate::I128;
+    use crate::types::I128;
     use crate::test::test_fmt;
 
     test_fmt! {
@@ -112,6 +112,16 @@ mod tests {
         numbers: {
             780294576934567943754566574566i128,
             -2495876290456749576984576456i128,
+            0i128,
+            1i128,
+            -1i128
+        }
+    }
+    test_fmt! {
+        int: I128,
+        name: debug,
+        format: "?",
+        numbers: {
             0i128,
             1i128,
             -1i128

@@ -53,6 +53,7 @@ use core::convert::TryInto;
 impl<const N: usize> CheckedShl for BUint<N> {
     #[inline]
     fn checked_shl(&self, rhs: u32) -> Option<Self> {
+		// TODO: can be optimised
         Self::checked_shl(*self, rhs.try_into().ok()?)
     }
 }

@@ -605,7 +605,7 @@ impl<const N: usize> const FromStr for BUint<N> {
 #[cfg(test)]
 mod tests {
     #[allow(unused)]
-    use crate::{BUint, U128};
+    use crate::BUint;
     use crate::test;
     use core::str::FromStr;
 

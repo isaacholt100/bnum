@@ -213,21 +213,20 @@ mod tests {
         ]
     }
 
-    #[cfg(feature = "nightly")]
     test_signed! {
         function: to_be_bytes(a: i128),
         cases: [
             (-94564564534345004567495879873945739i128)
         ]
     }
-    #[cfg(feature = "nightly")]
+
     test_signed! {
         function: to_le_bytes(a: i128),
         cases: [
             (4589674598797290345798374895793745019i128)
         ]
     }
-    #[cfg(feature = "nightly")]
+
     test_signed! {
         function: to_ne_bytes(a: i128),
         cases: [
@@ -235,7 +234,6 @@ mod tests {
         ]
     }
 
-    #[cfg(feature = "nightly")]
     test_signed! {
         function: from_be_bytes(a: U8ArrayWrapper<16>),
         cases: [
@@ -243,7 +241,7 @@ mod tests {
             ([50, 40, 31, 80, 150, 167, 205, 132, 254, 1, 56, 89, 189, 124, 67, 176])
         ]
     }
-    #[cfg(feature = "nightly")]
+    
     test_signed! {
         function: from_le_bytes(a: U8ArrayWrapper<16>),
         cases: [
@@ -251,7 +249,7 @@ mod tests {
             ([80, 13, 87, 0, 0, 43, 29, 68, 95, 100, 167, 222, 21, 32, 49, 163])
         ]
     }
-    #[cfg(feature = "nightly")]
+	
     test_signed! {
         function: from_ne_bytes(a: U8ArrayWrapper<16>),
         cases: [

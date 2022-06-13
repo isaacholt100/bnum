@@ -270,7 +270,7 @@ macro_rules! test_fmt {
 #[allow(unused_imports)]
 pub(crate) use test_fmt;
 
-use crate::{U128, I128, U64/*, F64*/};
+use crate::types::{U128, I128, U64/*, F64*/};
 
 pub trait TestConvert {
     type Output;

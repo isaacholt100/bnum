@@ -174,8 +174,7 @@ impl<const N: usize> const From<BUint<N>> for [Digit; N] {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::U128;
+    use crate::types::U128;
     use crate::test;
 
     test::test_from! {
