@@ -5,9 +5,8 @@ authors = ["isaac-holt <isaac_holt@icloud.com>"]
 edition = "2021"
 
 [features]
-default = ["u8_digit"]
+default = []
 u8_digit = []
-# usize_exptype = []
 serde = ["dep:serde", "serde-big-array"]
 numtraits = ["num-integer", "num-traits"]
 
@@ -16,7 +15,6 @@ num-integer = { version = "0.1.44", optional = true }
 num-traits = { version = "0.2.14", optional = true }
 serde = { version = "1.0.126", features = ["derive"], optional = true }
 serde-big-array = { version = "0.3.2", features = ["const-generics"], optional = true }
-int-parser = { path = "int-parser" }
 rand = { version = "0.8.5", features = ["min_const_gen"], optional = true }
 
 [dev-dependencies]

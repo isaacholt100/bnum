@@ -370,40 +370,42 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
 #[cfg(test)]
 mod tests {
-    test_float! {
-        function: abs(f: f64)
+	use crate::test::test_bignum;
+	
+    test_bignum! {
+        function: <f64>::abs(f: f64)
     }
 
-    test_float! {
-        function: sqrt(f: f64)
+    test_bignum! {
+        function: <f64>::sqrt(f: f64)
     }
 
-    test_float! {
-        function: ceil(f: f64)
+    test_bignum! {
+        function: <f64>::ceil(f: f64)
     }
 
-    test_float! {
-        function: floor(f: f64)
+    test_bignum! {
+        function: <f64>::floor(f: f64)
     }
 
-    test_float! {
-        function: round(f: f64)
+    test_bignum! {
+        function: <f64>::round(f: f64)
     }
 
-    test_float! {
-        function: trunc(f: f64)
+    test_bignum! {
+        function: <f64>::trunc(f: f64)
     }
 
-    test_float! {
-        function: fract(f: f64)
+    test_bignum! {
+        function: <f64>::fract(f: f64)
     }
 
-    test_float! {
-        function: div_euclid(f1: f64, f2: f64)
+    test_bignum! {
+        function: <f64>::div_euclid(f1: f64, f2: f64)
     }
 
-    test_float! {
-        function: rem_euclid(f1: f64, f2: f64)
+    test_bignum! {
+        function: <f64>::rem_euclid(f1: f64, f2: f64)
     }
 
     #[test]

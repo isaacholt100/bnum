@@ -40,7 +40,7 @@ macro_rules! buint_as {
                 fn cast_from(from: BUint<N>) -> Self {
                     let mut out = 0;
                     let mut i = 0;
-                    while i < <$int>::BITS as usize >> digit::BIT_SHIFT && i < N {
+                    while i << digit::BIT_SHIFT < <$int>::BITS as usize && i < N {
                         out |= from.digits[i] as $int << (i << digit::BIT_SHIFT);
                         i += 1;
                     }
@@ -271,21 +271,14 @@ impl<const N: usize> CastFrom<f64> for BUint<N> {
 #[cfg(test)]
 mod tests {
     use crate::types::{U128, I128, U64, I64};
-    use crate::cast::As;
+    use crate::cast::{As, CastFrom};
 	use crate::test;
 
-    test::test_cast_to!([u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64, bool, char] as U128);
+    test::test_cast_to!([u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64, bool, char] as u64);
 
-    test::test_cast_to!([u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64, bool, char] as U64);
+    test::test_cast_to!([u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64, bool, char] as u128);
 
-    test::test_cast_from!(U64 as [u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64, U64, I64, I128, U128]);
+    test::test_cast_from!(u64 as [u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64, U64, I64, I128, U128]);
 
-    test::test_cast_from!(U128 as [u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64, U64, I64, I128, U128]);
-
-    quickcheck::quickcheck! {
-        fn check(a: u128) -> bool {
-            let f = a as f64;
-            f == f.trunc()
-        }
-    }
+    test::test_cast_from!(u128 as [u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64, U64, I64, I128, U128]);
 }

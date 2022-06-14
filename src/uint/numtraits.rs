@@ -48,20 +48,18 @@ impl<const N: usize> CheckedNeg for BUint<N> {
     }
 }
 
-use core::convert::TryInto;
-
 impl<const N: usize> CheckedShl for BUint<N> {
     #[inline]
     fn checked_shl(&self, rhs: u32) -> Option<Self> {
 		// TODO: can be optimised
-        Self::checked_shl(*self, rhs.try_into().ok()?)
+        Self::checked_shl(*self, rhs)
     }
 }
 
 impl<const N: usize> CheckedShr for BUint<N> {
     #[inline]
     fn checked_shr(&self, rhs: u32) -> Option<Self> {
-        Self::checked_shr(*self, rhs.try_into().ok()?)
+        Self::checked_shr(*self, rhs)
     }
 }
 
@@ -112,20 +110,7 @@ macro_rules! as_primitive_impl {
 
 as_primitive_impl!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64);
 
-macro_rules! as_buint_impl {
-    ($($ty: ty), *) => {
-        $(
-            impl<const N: usize> AsPrimitive<BUint<N>> for $ty {
-                #[inline]
-                fn as_(self) -> BUint<N> {
-					BUint::cast_from(self)
-                }
-            }
-        )*
-    }
-}
-
-as_buint_impl!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, bool, char, f32, f64);
+crate::macros::as_bigint_impl!([u8, u16, u32, usize, u64, u128, i8, i16, i32, isize, i64, i128, char, bool] as BUint);
 
 impl<const N: usize, const M: usize> AsPrimitive<BUint<M>> for BUint<N> {
     #[inline]
@@ -222,10 +207,29 @@ impl<const N: usize> Integer for BUint<N> {
 
     #[inline]
     fn gcd(&self, other: &Self) -> Self {
-        if other.is_zero() {
-            *self
-        } else {
-            other.gcd(&self.mod_floor(other))
+        let (mut u, mut v) = (*self, *other);
+        if u.is_zero() {
+            return v;
+        } else if v.is_zero() {
+            return u;
+        }
+        let i = u.trailing_zeros();
+        u = super::unchecked_shr(u, i);
+        let j = v.trailing_zeros();
+        v = super::unchecked_shr(v, j);
+        let k = if i > j { j } else { i };
+
+        loop {
+            if let core::cmp::Ordering::Greater = u.cmp(&v)  {
+                let t = (u, v);
+                v = t.0;
+                u = t.1;
+            }
+            v = v.wrapping_sub(u);
+            if v.is_zero() {
+                return super::unchecked_shl(u, k);
+            }
+            v = super::unchecked_shr(v, v.trailing_zeros());
         }
     }
 
@@ -525,16 +529,64 @@ impl<const N: usize> Zero for BUint<N> {
 
 #[cfg(test)]
 mod tests {
-    use super::Roots;
+    use super::{Roots, ToPrimitive, FromPrimitive, Integer};
+	use crate::test::test_bignum;
 
-	test_unsigned! {
-		function: sqrt(a: ref &u128)
+	test_bignum! {
+		function: <u128>::sqrt(a: ref &u128)
 	}
-	test_unsigned! {
-		function: cbrt(a: ref &u128)
+	test_bignum! {
+		function: <u128>::cbrt(a: ref &u128)
 	}
-	test_unsigned! {
-		function: nth_root(u: ref &u128, n: u32),
-		quickcheck_skip: n == 0
+	test_bignum! {
+		function: <u128>::nth_root(u: ref &u128, n: u32),
+		skip: n == 0
+	}
+
+	macro_rules! test_to_primitive {
+		($($prim: ty), *) => {
+			paste::paste! {
+				$(
+					test_bignum! {
+						function: <u128>::[<to_ $prim>](u: ref &u128)
+					}
+				)*
+			}
+		};
+	}
+
+	test_to_primitive!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64);
+
+	macro_rules! test_from_primitive {
+		($($prim: ty), *) => {
+			paste::paste! {
+				$(
+					test_bignum! {
+						function: <u128>::[<from_ $prim>](u: $prim)
+					}
+				)*
+			}
+		};
+	}
+
+	test_from_primitive!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64);
+
+	macro_rules! test_integer_trait {
+		(<$primitive: ty> :: $($function: ident), *) => {
+			$(
+				test_bignum! {
+					function: <$primitive as Integer>::$function(a: ref &$primitive, b: ref &$primitive)
+				}
+			)*
+		};
+	}
+
+	test_integer_trait!(<u128>::div_floor, mod_floor, gcd, lcm, divides, is_multiple_of, div_rem);
+
+	test_bignum! {
+		function: <u128 as Integer>::is_even(a: ref &u128)
+	}
+	test_bignum! {
+		function: <u128 as Integer>::is_odd(a: ref &u128)
 	}
 }

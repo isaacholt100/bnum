@@ -63,42 +63,36 @@ impl<const N: usize> BUint<N> {
 
 #[cfg(test)]
 mod tests {
-    use crate::test;
+    use crate::test::test_bignum;
 
-    test_unsigned! {
-        function: carrying_add(a: u128, rhs: u128, carry: bool),
-        cases: [
+	test_bignum! {
+		function: <u128>::carrying_add(a: u128, rhs: u128, carry: bool),
+		cases: [
             (u128::MAX, 1u128, true),
             (u128::MAX, 1u128, false)
         ]
-    }
+	}
 
-    test_unsigned! {
-        function: borrowing_sub(a: u128, rhs: u128, carry: bool),
+    test_bignum! {
+		function: <u128>::borrowing_sub(a: u128, rhs: u128, carry: bool),
         cases: [
             (0u128, 1u128, false),
             (0u128, 1u128, true)
         ]
     }
 
-    test::test_big_num! {
-        big: U64,
-        primitive: u64,
-        function: widening_mul,
+    test_bignum! {
+        function: <u64>::widening_mul(a: u64, b: u64),
         cases: [
             (u64::MAX, u64::MAX)
-        ],
-        quickcheck: (a: u64, rhs: u64)
+        ]
     }
 
-    test::test_big_num! {
-        big: U64,
-        primitive: u64,
-        function: carrying_mul,
+    test_bignum! {
+        function: <u64>::carrying_mul(a: u64, b: u64, c: u64),
         cases: [
             (u64::MAX, u64::MAX, u64::MAX),
             (u64::MAX, u64::MAX, 1u64)
-        ],
-        quickcheck: (a: u64, rhs: u64, carry: u64)
+        ]
     }
 }

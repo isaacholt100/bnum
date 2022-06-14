@@ -118,13 +118,13 @@ impl<const N: usize> CastFrom<f64> for Bint<N> {
 mod tests {
     use crate::types::{I128, U128, I64, U64};
 	use crate::test;
-    use crate::cast::As;
+    use crate::cast::{As, CastFrom};
     
-    test::test_cast_to!([u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64, bool, char] as I128);
+    test::test_cast_to!([u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64, bool, char] as i64);
 
-    test::test_cast_to!([u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64, bool, char] as I64);
+    test::test_cast_to!([u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64, bool, char] as i128);
 
-    test::test_cast_from!(I64 as [u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64, U64, I64, I128, U128]);
+    test::test_cast_from!(i64 as [u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64, U64, I64, I128, U128]);
 
-    test::test_cast_from!(I128 as [u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64, U64, I64, I128, U128]);
+    test::test_cast_from!(i128 as [u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64, U64, I64, I128, U128]);
 }

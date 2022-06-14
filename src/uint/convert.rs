@@ -174,50 +174,20 @@ impl<const N: usize> const From<BUint<N>> for [Digit; N] {
 
 #[cfg(test)]
 mod tests {
-    use crate::types::U128;
     use crate::test;
 
     test::test_from! {
-        big: U128,
-        primitive: u128,
-        function: <From>::from,
-        from_types: (u8, u16, u32, u64, u128, bool, char),
-        converter: U128::from
-    }
-
-    fn result_ok_map<T: Into<U128>, E>(result: Result<T, E>) -> Option<U128> {
-        result.ok().map(|u| u.into()) 
+        function: <u128 as From>::from,
+        from_types: (u8, u16, u32, u64, u128, bool, char)
     }
 
     test::test_from! {
-        big: U128,
-        primitive: u128,
-        function: <TryFrom>::try_from,
-        from_types: (i8, i16, i32, i64, i128, isize, usize),
-        converter: result_ok_map
+        function: <u128 as TryFrom>::try_from,
+        from_types: (i8, i16, i32, i64, i128, isize, usize)
     }
 
     test::test_into! {
-        big: U128,
-        primitive: u128,
-        function: <TryInto>::try_into,
-        from_types: (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize),
-        converter: Result::ok
+        function: <u128 as TryInto>::try_into,
+        into_types: (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize)
     }
-	#[test]
-	fn test_into() {
-		let u = -1i128;
-		let a: Result<u128, _> = u.try_into();
-		let b: Result<U128, _> = u.try_into();
-		//panic!("{:?}", a);
-		assert_eq!(b.is_ok(), a.is_ok())
-	}
-	/*test::test_float_conv! {
-        big: U128,
-        primitive: u128,
-        test_name: to_f32,
-        function: <TryInto<f32>>::try_into,
-        from: u128
-    }*/
-    // TODO: test float conversions
 }

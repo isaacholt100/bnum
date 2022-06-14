@@ -136,37 +136,21 @@ impl<const N: usize> TryFrom<f64> for Bint<N> {
 
 #[cfg(test)]
 mod tests {
-    use crate::types::I128;
     use super::*;
     use crate::test;
-    use core::convert::TryInto;
 
     test::test_from! {
-        big: I128,
-        primitive: i128,
-        function: <From>::from,
-        from_types: (i8, i16, i32, i64, i128, u8, u16, u32, u64, bool),
-        converter: I128::from
-    }
-
-    fn result_ok_map<T: Into<I128>, E>(result: Result<T, E>) -> Option<I128> {
-        result.ok().map(|u| u.into()) 
+        function: <i128 as From>::from,
+        from_types: (i8, i16, i32, i64, i128, u8, u16, u32, u64, bool)
     }
 
     test::test_from! {
-        big: I128,
-        primitive: i128,
-        function: <TryFrom>::try_from,
-        from_types: (usize, isize),
-        converter: result_ok_map
+        function: <i128 as TryFrom>::try_from,
+        from_types: (u128, usize, isize)
     }
 
     test::test_into! {
-        big: I128,
-        primitive: i128,
-        function: <TryInto>::try_into,
-        from_types: (u8, u16, u32, u64, usize, u128, i8, i16, i32, i64, i128, isize),
-        converter: Result::ok
+        function: <i128 as TryInto>::try_into,
+        into_types: (u8, u16, u32, u64, usize, u128, i8, i16, i32, i64, i128, isize)
     }
-    // TODO: test float conversions
 }

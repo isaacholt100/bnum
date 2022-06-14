@@ -51,29 +51,30 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 #[cfg(test)]
 mod tests {
     use crate::test::U8ArrayWrapper;
+	use crate::test::test_bignum;
 
-    test_float! {
-        function: to_bits(a: f64)
+    test_bignum! {
+        function: <f64>::to_bits(a: f64)
     }
-    test_float! {
-        function: from_bits(a: u64)
+    test_bignum! {
+        function: <f64>::from_bits(a: u64)
     }
-    test_float! {
-        function: to_be_bytes(a: f64)
+    test_bignum! {
+        function: <f64>::to_be_bytes(a: f64)
     }
-    test_float! {
-        function: to_le_bytes(a: f64)
+    test_bignum! {
+        function: <f64>::to_le_bytes(a: f64)
     }
-    test_float! {
-        function: to_ne_bytes(a: f64)
+    test_bignum! {
+        function: <f64>::to_ne_bytes(a: f64)
     }
-    test_float! {
-        function: from_be_bytes(a: U8ArrayWrapper<8>)
+    test_bignum! {
+        function: <f64>::from_be_bytes(a: U8ArrayWrapper<8>)
     }
-    test_float! {
-        function: from_le_bytes(a: U8ArrayWrapper<8>)
+    test_bignum! {
+        function: <f64>::from_le_bytes(a: U8ArrayWrapper<8>)
     }
-    test_float! {
-        function: from_ne_bytes(a: U8ArrayWrapper<8>)
+    test_bignum! {
+        function: <f64>::from_ne_bytes(a: U8ArrayWrapper<8>)
     }
 }

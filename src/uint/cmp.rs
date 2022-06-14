@@ -72,24 +72,26 @@ impl<const N: usize> const Ord for BUint<N> {
 
 #[cfg(test)]
 mod tests {
-    test_unsigned! {
-        function: eq(a: ref &u128, b: ref &u128)
+	use crate::test::test_bignum;
+
+    test_bignum! {
+		function: <u128>::eq(a: ref &u128, b: ref &u128)
     }
-    test_unsigned! {
-        function: partial_cmp(a: ref &u128, b: ref &u128)
+    test_bignum! {
+		function: <u128>::partial_cmp(a: ref &u128, b: ref &u128)
     }
 
-    test_unsigned! {
-        function: cmp(a: ref &u128, b: ref &u128)
+    test_bignum! {
+		function: <u128>::cmp(a: ref &u128, b: ref &u128)
     }
-    test_unsigned! {
-        function: max(a: u128, b: u128)
+    test_bignum! {
+		function: <u128>::max(a: u128, b: u128)
     }
-    test_unsigned! {
-        function: min(a: u128, b: u128)
+    test_bignum! {
+		function: <u128>::min(a: u128, b: u128)
     }
-    test_unsigned! {
-        function: clamp(a: u128, min: u128, max: u128),
-        quickcheck_skip: min > max
+    test_bignum! {
+		function: <u128>::clamp(a: u128, min: u128, max: u128),
+        skip: min > max
     }
 }

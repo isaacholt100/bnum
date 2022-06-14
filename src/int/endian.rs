@@ -186,72 +186,72 @@ impl<const N: usize> Bint<N> {
 
 #[cfg(test)]
 mod tests {
-    use crate::test::U8ArrayWrapper;
+    use crate::test::{U8ArrayWrapper, test_bignum};
 
-    test_signed! {
-        function: from_be(a: i128),
+    test_bignum! {
+        function: <i128>::from_be(a: i128),
         cases: [
             (-34958734895739475893434758937397458i128)
         ]
     }
-    test_signed! {
-        function: from_le(a: i128),
+    test_bignum! {
+        function: <i128>::from_le(a: i128),
         cases: [
             (34053485789374589734957349573987458934i128)
         ]
     }
-    test_signed! {
-        function: to_be(a: i128),
+    test_bignum! {
+        function: <i128>::to_be(a: i128),
         cases: [
             (938495078934875384738495787358743854i128)
         ]
     }
-    test_signed! {
-        function: to_le(a: i128),
+    test_bignum! {
+        function: <i128>::to_le(a: i128),
         cases: [
             (-634985790475394859374957339475897443i128)
         ]
     }
 
-    test_signed! {
-        function: to_be_bytes(a: i128),
+    test_bignum! {
+        function: <i128>::to_be_bytes(a: i128),
         cases: [
             (-94564564534345004567495879873945739i128)
         ]
     }
 
-    test_signed! {
-        function: to_le_bytes(a: i128),
+    test_bignum! {
+        function: <i128>::to_le_bytes(a: i128),
         cases: [
             (4589674598797290345798374895793745019i128)
         ]
     }
 
-    test_signed! {
-        function: to_ne_bytes(a: i128),
+    test_bignum! {
+        function: <i128>::to_ne_bytes(a: i128),
         cases: [
             (-9547689209348758902934752103969375839i128)
         ]
     }
 
-    test_signed! {
-        function: from_be_bytes(a: U8ArrayWrapper<16>),
+    test_bignum! {
+        function: <i128>::from_be_bytes(a: U8ArrayWrapper<16>),
         cases: [
             ([4, 60, 57, 100, 57, 44, 39, 43, 5, 0, 200, 240, 233, 54, 79, 33]),
             ([50, 40, 31, 80, 150, 167, 205, 132, 254, 1, 56, 89, 189, 124, 67, 176])
         ]
     }
     
-    test_signed! {
-        function: from_le_bytes(a: U8ArrayWrapper<16>),
+    test_bignum! {
+        function: <i128>::from_le_bytes(a: U8ArrayWrapper<16>),
         cases: [
             ([44, 30, 26, 88, 123, 105, 119, 251, 226, 218, 243, 10, 18, 5, 0, 9]),
             ([80, 13, 87, 0, 0, 43, 29, 68, 95, 100, 167, 222, 21, 32, 49, 163])
         ]
     }
 	
-    test_signed! {
-        function: from_ne_bytes(a: U8ArrayWrapper<16>),
+    test_bignum! {
+        function: <i128>::from_ne_bytes(a: U8ArrayWrapper<16>),
         cases: [
             ([55, 49, 2, 24, 88, 120, 160, 253, 1, 0, 9, 59, 48, 195, 167, 86]),
             ([67, 0, 80, 53, 185, 196, 205, 68, 226, 58, 91, 58, 194, 139, 45, 183])

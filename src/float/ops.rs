@@ -601,6 +601,7 @@ impl<const W: usize, const MB: usize> const Neg for &Float<W, MB> {
 mod tests {
     use super::*;
     use crate::F64;
+	use crate::test::test_bignum;
 
     trait ToBits {
         fn to_bits(self) -> u64;
@@ -616,42 +617,30 @@ mod tests {
         }
     }
     
-    crate::test::test_op! {
-        big: F64,
-        primitive: f64,
-        function: <Add>::add(a: f64, b: f64),
-        quickcheck_skip: a.is_sign_positive() || b.is_sign_positive()
+    test_bignum! {
+        function: <f64 as Add>::add(a: f64, b: f64),
+        skip: a.is_sign_positive() || b.is_sign_positive()
     }
     
-    crate::test::test_op! {
-        big: F64,
-        primitive: f64,
-        function: <Sub>::sub(a: f64, b: f64),
-        quickcheck_skip: a.is_sign_negative() != b.is_sign_negative()
+    test_bignum! {
+        function: <f64 as Sub>::sub(a: f64, b: f64),
+        skip: a.is_sign_negative() != b.is_sign_negative()
     }
     
-    crate::test::test_op! {
-        big: F64,
-        primitive: f64,
-        function: <Mul>::mul(a: f64, b: f64)
+    test_bignum! {
+        function: <f64 as Mul>::mul(a: f64, b: f64)
     }
     
-    crate::test::test_op! {
-        big: F64,
-        primitive: f64,
-        function: <Div>::div(a: f64, b: f64)
+    test_bignum! {
+        function: <f64 as Div>::div(a: f64, b: f64)
     }
     
-    crate::test::test_op! {
-        big: F64,
-        primitive: f64,
-        function: <Rem>::rem(a: f64, b: f64)
+    test_bignum! {
+        function: <f64 as Rem>::rem(a: f64, b: f64)
     }
     
-    crate::test::test_op! {
-        big: F64,
-        primitive: f64,
-        function: <Neg>::neg(f: f64)
+	test_bignum! {
+        function: <f64 as Neg>::neg(f: f64)
     }
 
     #[test]

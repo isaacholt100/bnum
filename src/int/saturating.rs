@@ -94,48 +94,50 @@ impl<const N: usize> Bint<N> {
 
 #[cfg(test)]
 mod tests {
-    test_signed! {
-        function: saturating_add(a: i128, b: i128),
+	use crate::test::test_bignum;
+
+    test_bignum! {
+        function: <i128>::saturating_add(a: i128, b: i128),
         cases: [
             (i128::MAX, 2),
             (i128::MIN, -1),
             (275869749506754546i128, 4275689745096754896785i128)
         ]
     }
-    test_signed! {
-        function: saturating_sub(a: i128, b: i128),
+    test_bignum! {
+        function: <i128>::saturating_sub(a: i128, b: i128),
         cases: [
             (i128::MAX, -5),
             (i128::MIN, i128::MAX),
             (27456873894567457667567i128, 784569026784526789475698i128)
         ]
     }
-    test_signed! {
-        function: saturating_neg(a: i128),
+    test_bignum! {
+        function: <i128>::saturating_neg(a: i128),
         cases: [
             (i128::MAX),
             (i128::MIN),
             (-2568974589675445698456i128)
         ]
     }
-    test_signed! {
-        function: saturating_abs(a: i128),
+    test_bignum! {
+        function: <i128>::saturating_abs(a: i128),
         cases: [
             (i128::MAX),
             (i128::MIN),
             (-7635479863709875678056409486i128)
         ]
     }
-    test_signed! {
-        function: saturating_mul(a: i128, b: i128),
+    test_bignum! {
+        function: <i128>::saturating_mul(a: i128, b: i128),
         cases: [
             (i128::MAX, -5),
             (i128::MAX, -1),
             (i128::MIN, -1)
         ]
     }
-    test_signed! {
-        function: saturating_pow(a: i128, b: u16),
+    test_bignum! {
+        function: <i128>::saturating_pow(a: i128, b: u16),
         cases: [
             (55i128, 12 as u16),
             (3678i128, 123 as u16),

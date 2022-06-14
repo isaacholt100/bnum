@@ -85,12 +85,10 @@ impl<const N: usize> Bint<N> {
 #[cfg(test)]
 mod tests {
     use crate::Bint;
-    use crate::test;
+    use crate::test::{test_bignum, quickcheck_from_to_radix};
 
-    test::test_big_num! {
-        big: I128,
-        primitive: i128,
-        function: from_str_radix,
+    test_bignum! {
+        function: <i128>::from_str_radix,
         cases: [
             ("-14359abcasdhfkdgdfgsde", 34u32),
             ("23797984569ahgkhhjdskjdfiu", 32u32),
@@ -100,9 +98,9 @@ mod tests {
         ]
     }
 
-    test::quickcheck_from_to_radix!(i128, radix_be, 255);
-    test::quickcheck_from_to_radix!(i128, radix_le, 255);
-    test::quickcheck_from_to_radix!(i128, str_radix, 36);
+    quickcheck_from_to_radix!(i128, radix_be, 255);
+    quickcheck_from_to_radix!(i128, radix_le, 255);
+    quickcheck_from_to_radix!(i128, str_radix, 36);
 
     #[test]
     fn from_to_radix_le() {

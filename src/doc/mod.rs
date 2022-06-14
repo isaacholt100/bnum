@@ -54,6 +54,14 @@ macro_rules! doc_comment {
 
 pub(crate) use doc_comment;
 
+macro_rules! assoc_consts {
+	() => {
+		"Associated constants for this type."
+	}
+}
+
+pub(crate) use assoc_consts;
+
 macro_rules! min_const {
     ($ty: ident ::< $n: literal >) => {
         doc::doc_comment! {

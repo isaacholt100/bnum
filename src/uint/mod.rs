@@ -1,7 +1,6 @@
 use crate::digit::{Digit, DoubleDigit, self};
 use crate::macros::option_expect;
 use crate::ExpType;
-use core::cmp::Ordering;
 use core::mem::MaybeUninit;
 use crate::doc;
 
@@ -9,28 +8,6 @@ use crate::doc;
 pub const fn carrying_mul(a: Digit, b: Digit, carry: Digit, current: Digit) -> (Digit, Digit) {
     let prod = carry as DoubleDigit + current as DoubleDigit + (a as DoubleDigit) * (b as DoubleDigit);
     (prod as Digit, (prod >> Digit::BITS) as Digit)
-}
-
-#[allow(unused)]
-macro_rules! test_unsigned {
-    {
-        function: $name: ident ($($param: ident : $(ref $re: tt)? $ty: ty), *)
-        $(,cases: [
-            $(($($arg: expr), *)), *
-        ])?
-        $(,quickcheck_skip: $skip: expr)?
-    } => {
-        crate::test::test_big_num! {
-            big: crate::types::U128,
-            primitive: u128,
-            function: $name,
-            $(cases: [
-                $(($($arg), *) ), *
-            ])?
-            ,quickcheck: ($($param : $(ref $re)? $ty), *)
-            $(,quickcheck_skip: $skip)?
-        }
-    };
 }
 
 #[inline]
@@ -41,7 +18,6 @@ pub const fn unchecked_shl<const N: usize>(u: BUint<N>, rhs: ExpType) -> BUint<N
     } else {
         let digit_shift = (rhs >> digit::BIT_SHIFT) as usize;
         let shift = (rhs & digit::BITS_MINUS_1) as u8;
-        //println!("{}", digit_shift);
         
         let mut out = BUint::ZERO;
         let digits_ptr = u.digits.as_ptr();
@@ -49,15 +25,6 @@ pub const fn unchecked_shl<const N: usize>(u: BUint<N>, rhs: ExpType) -> BUint<N
         unsafe {
             digits_ptr.copy_to_nonoverlapping(out_ptr.add(digit_shift), N - digit_shift);
         }
-        /*if rhs == 13 {
-        let mut i = 0;
-        while i < N - 1 {
-            assert!(out.digits[i] == 0);
-            i += 1;
-        }
-        assert!(out.digits[N - 1] == 0b01001000);
-        assert!(shift == 5);
-    }*/
 
         if shift > 0 {
             let mut carry = 0;
@@ -75,9 +42,6 @@ pub const fn unchecked_shl<const N: usize>(u: BUint<N>, rhs: ExpType) -> BUint<N
                 out.digits[i] = new_digit;
                 carry = new_carry;
                 i += 1;
-            }
-            if rhs == 13 {
-                //assert!(last_index == 1);
             }
 
             if carry != 0 {
@@ -108,11 +72,6 @@ pub const fn unchecked_shr<const N: usize>(u: BUint<N>, rhs: ExpType) -> BUint<N
         unsafe {
             digits_ptr.add(digit_shift).copy_to_nonoverlapping(out_ptr, N - digit_shift);
         }
-        /*let mut i = 0;
-        while i < N - digit_shift {
-            out.digits[i] = u.digits[i + digit_shift];
-            i += 1;
-        }*/
 
         if shift > 0 {
             let mut borrow = 0;
@@ -138,9 +97,9 @@ use ::{serde_big_array::BigArray, serde::{Serialize, Deserialize}};
 
 /// Big unsigned integer type, of fixed size which must be known at compile time. Digits are stored in little endian (least significant digit first). `BUint<N>` aims to exactly replicate the behaviours of Rust's built-in unsigned integer types: `u8`, `u16`, `u32`, `u64`, `u128` and `usize`. The const generic parameter `N` is the number of digits that are stored.
 
-// We can allow derivation of `Hash` and manual implementation of `PartialEq` as the derived `PartialEq` would be the same except we make our implementation const.
+// Clippy: we can allow derivation of `Hash` and manual implementation of `PartialEq` as the derived `PartialEq` would be the same except we make our implementation const.
 #[allow(clippy::derive_hash_xor_eq)]
-#[derive(Clone, Copy, Hash, /*Debug, */)]
+#[derive(Clone, Copy, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct BUint<const N: usize> {
     #[cfg_attr(feature = "serde", serde(with = "BigArray"))]
@@ -172,7 +131,7 @@ mod saturating;
 mod unchecked;
 mod wrapping;
 
-/// Associated constants for this type.
+#[doc=doc::assoc_consts!()]
 impl<const N: usize> BUint<N> {
     #[doc=doc::min_const!(BUint::<2>)]
     pub const MIN: Self = Self::from_digits([Digit::MIN; N]);
@@ -654,36 +613,6 @@ impl<const N: usize> BUint<N> {
         N == 0 || self.digits[0] & 1 == 0
     }
 
-    /// Calculates the greatest common denominator of `self` and `other`.
-    #[inline]
-    pub const fn gcd(self, other: Self) -> Self {
-        //use std::mem;
-        let (mut u, mut v) = (self, other);
-        if u.is_zero() {
-            return v;
-        } else if v.is_zero() {
-            return u;
-        }
-        let i = u.trailing_zeros();
-        u = unchecked_shr(u, i);
-        let j = v.trailing_zeros();
-        v = unchecked_shr(v, j);
-        let k = if i > j { j } else { i };
-
-        loop {
-            if let Ordering::Greater = u.cmp(&v)  {
-                let t = (u, v);
-                v = t.0;
-                u = t.1;
-            }
-            v = v.wrapping_sub(u);
-            if v.is_zero() {
-                return unchecked_shl(u, k);
-            }
-            v = unchecked_shr(v, v.trailing_zeros());
-        }
-    }
-
     #[inline]
     const fn last_digit_index(&self) -> usize {
         let mut index = 0;
@@ -759,108 +688,109 @@ impl<'a, const N: usize> Sum<&'a Self> for BUint<N> {
 #[cfg(test)]
 mod tests {
     use crate::types::U128;
+	use crate::test::test_bignum;
 
-    test_unsigned! {
-        function: count_ones(a: u128),
+    test_bignum! {
+		function: <u128>::count_ones(a: u128),
         cases: [
             (203583443659837459073490583937485738404u128),
             (3947594755489u128)
         ]
     }
-    test_unsigned! {
-        function: count_zeros(a: u128),
+    test_bignum! {
+		function: <u128>::count_zeros(a: u128),
         cases: [
             (7435098345734853045348057390485934908u128),
             (3985789475546u128)
         ]
     }
-    test_unsigned! {
-        function: leading_ones(a: u128),
+    test_bignum! {
+		function: <u128>::leading_ones(a: u128),
         cases: [
             (3948590439409853946593894579834793459u128),
             (u128::MAX - 0b111)
         ]
     }
-    test_unsigned! {
-        function: leading_zeros(a: u128),
+    test_bignum! {
+		function: <u128>::leading_zeros(a: u128),
         cases: [
             (49859830845963457783945789734895834754u128),
             (40545768945769u128)
         ]
     }
-    test_unsigned! {
-        function: trailing_ones(a: u128),
+    test_bignum! {
+		function: <u128>::trailing_ones(a: u128),
         cases: [
             (45678345973495637458973488509345903458u128),
             (u128::MAX)
         ]
     }
-    test_unsigned! {
-        function: trailing_zeros(a: u128),
+    test_bignum! {
+		function: <u128>::trailing_zeros(a: u128),
         cases: [
             (23488903477439859084534857349857034599u128),
             (343453454565u128)
         ]
     }
-    test_unsigned! {
-        function: rotate_left(a: u128, b: u16),
+    test_bignum! {
+		function: <u128>::rotate_left(a: u128, b: u16),
         cases: [
             (394857348975983475983745983798579483u128, 5555 as u16),
             (4056890546059u128, 12 as u16)
         ]
     }
-    test_unsigned! {
-        function: rotate_right(a: u128, b: u16),
+    test_bignum! {
+		function: <u128>::rotate_right(a: u128, b: u16),
         cases: [
             (90845674987957297107197973489575938457u128, 10934 as u16),
             (1345978945679u128, 33 as u16)
         ]
     }
-    test_unsigned! {
-        function: swap_bytes(a: u128),
+    test_bignum! {
+		function: <u128>::swap_bytes(a: u128),
         cases: [
             (3749589304858934758390485937458349058u128),
             (3405567798345u128)
         ]
     }
-    test_unsigned! {
-        function: reverse_bits(a: u128),
+    test_bignum! {
+		function: <u128>::reverse_bits(a: u128),
         cases: [
             (3345565093489578938485934957893745984u128),
             (608670986790835u128)
         ]
     }
-    test_unsigned! {
-        function: pow(a: u128, b: u16),
+    test_bignum! {
+		function: <u128>::pow(a: u128, b: u16),
+        skip: a.checked_pow(b as u32).is_none(),
         cases: [
             (59345u128, 4 as u16),
             (54u128, 9 as u16)
-        ],
-        quickcheck_skip: a.checked_pow(b as u32).is_none()
+        ]
     }
-    test_unsigned! {
-        function: div_euclid(a: u128, b: u128),
+    test_bignum! {
+		function: <u128>::div_euclid(a: u128, b: u128),
+        skip: b == 0,
         cases: [
             (345987945738945789347u128, 345987945738945789347u128),
             (139475893475987093754099u128, 3459837453479u128),
             (84949881323520u128, 9393082u128)
-        ],
-        quickcheck_skip: b == 0
+        ]
     }
-    test_unsigned! {
-        function: rem_euclid(a: u128, b: u128),
+    test_bignum! {
+		function: <u128>::rem_euclid(a: u128, b: u128),
+        skip: b == 0,
         cases: [
             (8094589656797897987u128, 8094589656797897987u128),
             (3734597349574397598374594598u128, 3495634895793845783745897u128)
-        ],
-        quickcheck_skip: b == 0
+        ]
     }
-    test_unsigned! {
-        function: abs_diff(a: u128, b: u128),
-        quickcheck_skip: b == 0
+    test_bignum! {
+		function: <u128>::abs_diff(a: u128, b: u128),
+        skip: b == 0
     }
-    test_unsigned! {
-        function: checked_next_multiple_of(a: u128, b: u128),
+    test_bignum! {
+		function: <u128>::checked_next_multiple_of(a: u128, b: u128),
         cases: [
             (16u128, 8u128),
             (23u128, 8u128),
@@ -868,17 +798,17 @@ mod tests {
             (u128::MAX, 2u128)
         ]
     }
-    test_unsigned! {
-        function: next_multiple_of(a: u128, b: u128),
-        quickcheck_skip: b == 0 || a.checked_add(b - a % b).is_none()
+    test_bignum! {
+		function: <u128>::next_multiple_of(a: u128, b: u128),
+        skip: b == 0 || a.checked_add(b - a % b).is_none()
     }
-    test_unsigned! {
-        function: div_ceil(a: u128, b: u128),
-        quickcheck_skip: b == 0
+    test_bignum! {
+		function: <u128>::div_ceil(a: u128, b: u128),
+        skip: b == 0
     }
-    test_unsigned! {
-        function: div_floor(a: u128, b: u128),
-        quickcheck_skip: b == 0
+    test_bignum! {
+		function: <u128>::div_floor(a: u128, b: u128),
+        skip: b == 0
     }
 
     #[test]
@@ -888,31 +818,31 @@ mod tests {
         assert!(power.is_power_of_two());
         assert!(!non_power.is_power_of_two());
     }
-    test_unsigned! {
-        function: checked_next_power_of_two(a: u128),
+    test_bignum! {
+		function: <u128>::checked_next_power_of_two(a: u128),
         cases: [
             (u128::MAX)
         ]
     }
-    test_unsigned! {
-        function: next_power_of_two(a: u128),
-        quickcheck_skip: a.checked_next_power_of_two().is_none()
+    test_bignum! {
+		function: <u128>::next_power_of_two(a: u128),
+        skip: a.checked_next_power_of_two().is_none()
     }
-    test_unsigned! {
-        function: wrapping_next_power_of_two(a: u128),
+    test_bignum! {
+		function: <u128>::wrapping_next_power_of_two(a: u128),
         cases: [(u128::MAX)]
     }
-    test_unsigned! {
-        function: log(u: u128, base: u128),
-        quickcheck_skip: u == 0 || base <= 1
+    test_bignum! {
+		function: <u128>::log(u: u128, base: u128),
+        skip: u == 0 || base <= 1
     }
-    test_unsigned! {
-        function: log2(u: u128),
-        quickcheck_skip: u == 0
+    test_bignum! {
+		function: <u128>::log2(u: u128),
+        skip: u == 0
     }
-    test_unsigned! {
-        function: log10(u: u128),
-        quickcheck_skip: u == 0
+    test_bignum! {
+		function: <u128>::log10(u: u128),
+        skip: u == 0
     }
 
     #[test]

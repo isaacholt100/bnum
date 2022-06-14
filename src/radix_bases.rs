@@ -1,6 +1,8 @@
+use crate::Digit;
+
 #[cfg(feature = "u8_digit")]
 mod bases {
-    pub const BASES_HALF: &[(u8, usize)] = &[
+    pub static BASES_HALF: &[(u8, usize)] = &[
         (0, 0), // 0
         (0, 0), // 1
         (0, 0), // 2
@@ -260,7 +262,7 @@ mod bases {
         (0, 0), // 256
     ];
     
-    pub(crate) const BASES_DIGIT: &[(u8, usize)] = &[
+    pub(crate) static BASES_DIGIT: &[(u8, usize)] = &[
         (0, 0), // 0
         (0, 0), // 1
         (0, 0), // 2
@@ -518,7 +520,9 @@ mod bases {
         (254, 1), // 254
         (255, 1), // 255
         (0, 0), // 256
-    ];    
+    ];
+
+	pub const RADIX_BASE_10: (crate::Digit, usize) = (100, 2);
 }
 
 #[cfg(not(feature = "u8_digit"))]
@@ -1042,12 +1046,14 @@ mod bases {
         (17878103347812890625, 8), // 255
         (0, 0), // 256
     ];
+
+	pub const RADIX_BASE_10: (crate::Digit, usize) = (10000000000000000000, 19);
 }
 
-use crate::digit::Digit;
+pub use bases::RADIX_BASE_10;
 
 #[inline]
-pub const fn get_radix_base<const HALF: bool>(radix: u32) -> (Digit, usize) {
+pub fn get_radix_base<const HALF: bool>(radix: u32) -> (Digit, usize) {
     if HALF {
         bases::BASES_HALF[radix as usize]
     } else {

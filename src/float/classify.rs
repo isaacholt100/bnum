@@ -102,30 +102,31 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 #[cfg(test)]
 mod tests {
     use crate::F64;
+	use crate::test::test_bignum;
 
-    test_float! {
-        function: is_sign_positive(a: f64)
+    test_bignum! {
+        function: <f64>::is_sign_positive(a: f64)
     }
-    test_float! {
-        function: is_sign_negative(a: f64)
+    test_bignum! {
+        function: <f64>::is_sign_negative(a: f64)
     }
-    test_float! {
-        function: is_finite(a: f64)
+    test_bignum! {
+        function: <f64>::is_finite(a: f64)
     }
-    test_float! {
-        function: is_infinite(a: f64)
+    test_bignum! {
+        function: <f64>::is_infinite(a: f64)
     }
-    test_float! {
-        function: is_nan(a: f64)
+    test_bignum! {
+        function: <f64>::is_nan(a: f64)
     }
-    test_float! {
-        function: is_subnormal(a: f64)
+    test_bignum! {
+        function: <f64>::is_subnormal(a: f64)
     }
-    test_float! {
-        function: is_normal(a: f64)
+    test_bignum! {
+        function: <f64>::is_normal(a: f64)
     }
-    test_float! {
-        function: classify(a: f64)
+    test_bignum! {
+        function: <f64>::classify(a: f64)
     }
     #[test]
     fn is_zero() {

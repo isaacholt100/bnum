@@ -2,7 +2,7 @@ use crate::{BUint, digit, Bint};
 
 macro_rules! int_type_doc {
 	($bits: literal, $sign: literal) => {
-		concat!($bits, " bit ", $sign, " integer type.")
+		concat!($bits, "-bit ", $sign, " integer type.")
 	};
 }
 

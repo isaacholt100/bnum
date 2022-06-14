@@ -63,24 +63,26 @@ impl<const N: usize> const Ord for Bint<N> {
 
 #[cfg(test)]
 mod tests {
-    test_signed! {
-        function: eq(a: ref &i128, b: ref &i128)
+	use crate::test::test_bignum;
+
+    test_bignum! {
+        function: <i128>::eq(a: ref &i128, b: ref &i128)
     }
-    test_signed! {
-        function: partial_cmp(a: ref &i128, b: ref &i128)
+    test_bignum! {
+        function: <i128>::partial_cmp(a: ref &i128, b: ref &i128)
     }
 
-    test_signed! {
-        function: cmp(a: ref &i128, b: ref &i128)
+    test_bignum! {
+        function: <i128>::cmp(a: ref &i128, b: ref &i128)
     }
-    test_signed! {
-        function: max(a: i128, b: i128)
+    test_bignum! {
+        function: <i128>::max(a: i128, b: i128)
     }
-    test_signed! {
-        function: min(a: i128, b: i128)
+    test_bignum! {
+        function: <i128>::min(a: i128, b: i128)
     }
-    test_signed! {
-        function: clamp(a: i128, min: i128, max: i128),
-        quickcheck_skip: min > max
+    test_bignum! {
+        function: <i128>::clamp(a: i128, min: i128, max: i128),
+        skip: min > max
     }
 }

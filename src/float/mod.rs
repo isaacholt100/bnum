@@ -5,28 +5,6 @@ use crate::digit::{Digit, self};
 //use crate::ExpType;
 use crate::As;
 
-#[allow(unused)]
-macro_rules! test_float {
-    {
-        function: $name: ident ($($param: ident : $(ref $re: tt)? $ty: ty), *)
-        $(,cases: [
-            $(($($arg: expr), *)), *
-        ])?
-        $(,quickcheck_skip: $skip: expr)?
-    } => {
-        crate::test::test_big_num! {
-            big: crate::F64,
-            primitive: f64,
-            function: $name,
-            $(cases: [
-                $(($($arg), *) ), *
-            ])?
-            ,quickcheck: ($($param : $(ref $re)? $ty), *)
-            $(,quickcheck_skip: $skip)?
-        }
-    };
-}
-
 macro_rules! handle_nan {
     ($ret: expr; $($n: expr), +) => {
         if $($n.is_nan()) || + {
@@ -189,12 +167,14 @@ impl From<f64> for crate::F64 {
 
 #[cfg(test)]
 mod tests {
-    test_float! {
-        function: copysign(f1: f64, f2: f64)
+	use crate::test::test_bignum;
+
+    test_bignum! {
+        function: <f64>::copysign(f1: f64, f2: f64)
     }
 
-    test_float! {
-        function: signum(f: f64)
+    test_bignum! {
+        function: <f64>::signum(f: f64)
     }
 
     #[test]

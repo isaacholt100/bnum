@@ -93,21 +93,23 @@ impl<const W: usize, const MB: usize> const PartialOrd for Float<W, MB> {
 
 #[cfg(test)]
 mod tests {
-    test_float! {
-        function: max(a: f64, b: f64)
+	use crate::test::test_bignum;
+
+    test_bignum! {
+        function: <f64>::max(a: f64, b: f64)
     }
-    test_float! {
-        function: min(a: f64, b: f64)
+    test_bignum! {
+        function: <f64>::min(a: f64, b: f64)
     }
-    test_float! {
-        function: maximum(a: f64, b: f64)
+    test_bignum! {
+        function: <f64>::maximum(a: f64, b: f64)
     }
-    test_float! {
-        function: minimum(a: f64, b: f64)
+    test_bignum! {
+        function: <f64>::minimum(a: f64, b: f64)
     }
-    test_float! {
-        function: clamp(a: f64, b: f64, c: f64),
-        quickcheck_skip: !(b <= c)
+    test_bignum! {
+        function: <f64>::clamp(a: f64, b: f64, c: f64),
+        skip: !(b <= c)
     }
 
     #[test]
@@ -122,13 +124,13 @@ mod tests {
         assert!(a == b.into());
     }
 
-    test_float! {
-        function: total_cmp(a: ref &f64, b: ref &f64)
+    test_bignum! {
+        function: <f64>::total_cmp(a: ref &f64, b: ref &f64)
     }
-    test_float! {
-        function: partial_cmp(a: ref &f64, b: ref &f64)
+    test_bignum! {
+        function: <f64>::partial_cmp(a: ref &f64, b: ref &f64)
     }
-    test_float! {
-        function: eq(a: ref &f64, b: ref &f64)
+    test_bignum! {
+        function: <f64>::eq(a: ref &f64, b: ref &f64)
     }
 }

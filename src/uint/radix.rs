@@ -541,7 +541,7 @@ impl<const N: usize> const FromStr for BUint<N> {
     type Err = ParseIntError;
 
     fn from_str(src: &str) -> Result<Self, Self::Err> {
-        let (base, power) = radix_bases::get_radix_base::<false>(10);
+        let (base, power) = radix_bases::RADIX_BASE_10;
         let buf = src.as_bytes();
         let mut i = 0;
         while i < buf.len() {
@@ -560,10 +560,10 @@ impl<const N: usize> const FromStr for BUint<N> {
             r
         };
         let mut out = Self::ZERO;
-        let mut first = 0;
+        let mut first: Digit = 0;
         i = 0;
         while i < split {
-            first = first * 10 + Self::byte_to_digit(buf[i]);
+            first = first * 10 + Self::byte_to_digit(buf[i]) as Digit;
             i += 1;
         }
         out.digits[0] = first;
@@ -606,37 +606,32 @@ impl<const N: usize> const FromStr for BUint<N> {
 mod tests {
     #[allow(unused)]
     use crate::BUint;
-    use crate::test;
+    use crate::test::{test_bignum, quickcheck_from_to_radix};
     use core::str::FromStr;
 
     // TODO: find way of randomly generating strings to convert from
-
-    test::test_big_num! {
-        big: U128,
-        primitive: u128,
-        function: from_str,
-        cases: [
+	test_bignum! {
+		function: <u128>::from_str,
+		cases: [
             ("398475394875230495745"),
             ("3984753948752304957423490785029749572977970985")
         ]
-    }
+	}
 
-    test::test_big_num! {
-        big: U128,
-        primitive: u128,
-        function: from_str_radix,
-        cases: [
+	test_bignum! {
+		function: <u128>::from_str_radix,
+		cases: [
             ("af7345asdofiuweor", 35u32),
             ("945hhdgi73945hjdfj", 32u32),
             ("3436847561345343455", 9u32),
             ("affe758457bc345540ac399", 16u32),
             ("affe758457bc345540ac39929334534ee34579234795", 17u32)
         ]
-    }
+	}
 
-    test::quickcheck_from_to_radix!(u128, radix_be, 255);
-    test::quickcheck_from_to_radix!(u128, radix_le, 255);
-    test::quickcheck_from_to_radix!(u128, str_radix, 36);
+    quickcheck_from_to_radix!(u128, radix_be, 255);
+    quickcheck_from_to_radix!(u128, radix_le, 255);
+    quickcheck_from_to_radix!(u128, str_radix, 36);
 
     #[test]
     fn from_to_radix_le() {

@@ -1,151 +1,114 @@
-#[allow(unused)]
-macro_rules! test_big_num {
-    {
-        big: $big_type: ty,
-        primitive: $primitive: ty,
-        function: $(<$Trait: ident>::)? $name: ident,
-        $(cases: [
+macro_rules! test_bignum {
+	{
+		function: <$primitive: ty $(as $Trait: ident $(<$($gen: ty), *>)?)?> :: $function: ident ($($param: ident : $(ref $re: tt)? $ty: ty), *)
+		$(, skip: $skip: expr)?
+	} => {
+		paste::paste! {
+			quickcheck::quickcheck! {
+				#[allow(non_snake_case)]
+				fn [<quickcheck_ $primitive _ $($Trait _ $($($gen _) *)?)? $function>]($($param : $ty), *) -> quickcheck::TestResult {
+					$(if $skip {
+						return quickcheck::TestResult::discard();
+					})?
+	
+					let (big, primitive) = crate::test::results!(<$primitive $(as $Trait $(<$($gen), *>)?)?>::$function ($($($re)? Into::into($param)), *));
+	
+					quickcheck::TestResult::from_bool(big == primitive)
+				}
+			}
+		}
+	};
+	{
+		function: <$primitive: ty $(as $Trait: ty)?> :: $function: ident,
+		cases: [
             $(($($arg: expr), *)), *
-        ])?
-        $(
-            ,quickcheck: ($($param: ident : $(ref $re: tt)? $ty: ty), *)
-            $(,quickcheck_skip: $skip: expr)?
-        )?
-    } => {
-        paste::paste! {
-            $(
-                #[test]
-                fn $name() {
-                    $(
-                        let big_result = <crate::[<$primitive:upper>]>::$name(
-                            $(Into::into(($arg))), *
-                        );
-                        let prim_result = <$primitive>::$name(
-                            $(Into::into(($arg))), *
-                        );
-                        assert_eq!(crate::test::TestConvert::into(big_result), crate::test::TestConvert::into(prim_result));
-                    )*
-                }
-            )?
-            $(
-                quickcheck::quickcheck! {
-                    fn [<quickcheck_ $name>]($($param : $ty), *) -> quickcheck::TestResult {
-                        $(if $skip {
-                            return quickcheck::TestResult::discard();
-                        })?
-                        let big_result = <crate::[<$primitive:upper>]>::$name($($($re)? Into::into(($param))), *);
-                        let prim_result = <$primitive>::$name($($($re)? Into::into(($param))), *);
-    
-                        quickcheck::TestResult::from_bool(crate::test::TestConvert::into(big_result) == crate::test::TestConvert::into(prim_result))
-                    }
-                }
-            )?
-        }
-    }
+        ]
+	} => {
+		paste::paste! {
+			#[test]
+			fn [<cases_ $function>]() {
+				$(
+					let (big, primitive) = crate::test::results!(<$primitive> :: $function ($(Into::into($arg)), *));
+					assert_eq!(big, primitive);
+				)*
+			}
+		}
+	};
+	{
+		function: <$primitive: ty $(as $Trait: ty)?> :: $function: ident ($($param: ident : $(ref $re: tt)? $ty: ty), *)
+		$(, skip: $skip: expr)?
+		, cases: [
+            $(($($arg: expr), *)), *
+        ]
+	} => {
+		crate::test::test_bignum! {
+			function: <$primitive $(as $Trait)?> :: $function,
+			cases: [
+				$(($($arg), *)), *
+			]
+		}
+		crate::test::test_bignum! {
+			function: <$primitive $(as $Trait)?> :: $function ($($param : $(ref $re)? $ty), *)
+			$(, skip: $skip)?
+		}
+	};
 }
 
-pub(crate) use test_big_num;
+pub(crate) use test_bignum;
 
-#[allow(unused)]
-macro_rules! test_trait {
-    {
-        big: $big_type: ty,
-        primitive: $primitive: ty,
-        test_name: $test_name: ident,
-        function: <$Trait: ty>::$name: ident,
-        $(quickcheck: ($($param: ident : $ty: ty), *),
-        $(quickcheck_skip: $skip: expr,)?)?
-        converter: $converter: expr
-    } => {
-        $(paste::paste! {
-            quickcheck::quickcheck! {
-                #[inline]
-                fn [<quickcheck_ $test_name>]($($param : $ty), *) -> quickcheck::TestResult {
-                    $(if $skip {
-                        return quickcheck::TestResult::discard();
-                    })?
-                    let big_result = <$big_type as $Trait>::$name($(Into::into(($param))), *);
-                    let prim_result = <$primitive as $Trait>::$name($(Into::into(($param))), *);
+macro_rules! results {
+	(<$primitive: ty $(as $Trait: ty)?> :: $function: ident ($($arg: expr), *)) => {
+		paste::paste! {
+			{
+				let big_result = <crate::[<$primitive:upper>] $(as $Trait)?>::$function(
+					$($arg), *
+				);
+				let prim_result = <$primitive $(as $Trait)?>::$function(
+					$($arg), *
+				);
 
-                    quickcheck::TestResult::from_bool($converter(big_result) == $converter(prim_result))
-                }
-            }
-        })?
-    }
+				use crate::test::TestConvert;
+				(TestConvert::into(big_result), TestConvert::into(prim_result))
+			}
+		}
+	};
 }
 
-pub(crate) use test_trait;
+pub(crate) use results;
 
-#[allow(unused)]
 macro_rules! test_from {
     {
-        big: $big_type: ty,
-        primitive: $primitive: ty,
-        function: <$Trait: ty>:: $name: ident,
-        from_types: ($($from_type: ty), *),
-        converter: $converter: expr
+        function: <$primitive: ty as $Trait: ident>:: $name: ident,
+        from_types: ($($from_type: ty), *)
     } => {
-        $(paste::paste! {
-            crate::test::test_trait! {
-                big: $big_type,
-                primitive: $primitive,
-                test_name: [<$name _ $from_type>],
-                function: <$Trait<$from_type>>::$name,
-                quickcheck: (a: $from_type),
-                converter: $converter
-            }
-        })*
+		paste::paste! {
+			$(
+				crate::test::test_bignum! {
+					function: < $primitive as $Trait<$from_type> >::$name(from: $from_type)
+				}
+			)*
+		}
     }
 }
 
 pub(crate) use test_from;
 
-#[allow(unused)]
 macro_rules! test_into {
     {
-        big: $big_type: ty,
-        primitive: $primitive: ty,
-        function: <$Trait: ty>:: $name: ident,
-        from_types: ($($from_type: ty), *),
-        converter: $converter: expr
+        function: <$primitive: ty as $Trait: ident>:: $name: ident,
+        into_types: ($($into_type: ty), *)
     } => {
-        $(paste::paste! {
-            crate::test::test_trait! {
-                big: $big_type,
-                primitive: $primitive,
-                test_name: [<$name _ $from_type>],
-                function: <$Trait<$from_type>>::$name,
-                quickcheck: (a: $primitive),
-                converter: $converter
-            }
-        })*
+		paste::paste! {
+			$(
+				crate::test::test_bignum! {
+					function: < $primitive as $Trait<$into_type> >::$name(from: $primitive)
+				}
+			)*
+		}
     }
 }
 
 pub(crate) use test_into;
-
-/*macro_rules! test_op {
-    {
-        big: $big_type: ty,
-        primitive: $primitive: ty,
-        function: <$Trait: ty> :: $name: ident ($($param: ident : $ty: ty), *)
-        $(,quickcheck_skip: $skip: expr)?
-    } => {
-        paste::paste! {
-            crate::test::test_trait! {
-                big: $big_type,
-                primitive: $primitive,
-                test_name: $name,
-                function: <$Trait>::$name,
-                quickcheck: ($($param : $ty), *)
-                $(,quickcheck_skip: $skip)?
-                ,converter: crate::test::TestConvert::into
-            }
-        }
-    }
-}
-
-pub(crate) use test_op;*/
 
 #[derive(Clone, Copy)]
 pub struct U8ArrayWrapper<const N: usize>([u8; N]);
@@ -200,13 +163,13 @@ macro_rules! quickcheck_from_to_radix {
 pub(crate) use quickcheck_from_to_radix;
 
 macro_rules! test_cast_from {
-    ($big: ty as [$($ty: ty), *]) => {
+    ($primitive: ty as [$($ty: ty), *]) => {
         paste::paste! {
             quickcheck::quickcheck! {
                 $(
                     #[allow(non_snake_case)]
-                    fn [<quickcheck_ $big _as_ $ty>](i: [<$big:lower>]) -> bool {
-                        let big = $big::from(i);
+                    fn [<quickcheck_ $primitive _as_ $ty>](i: [<$primitive>]) -> bool {
+                        let big = [<$primitive:upper>]::from(i);
                         let a1: $ty = big.as_();
                         a1 == i.as_()
                     }
@@ -219,19 +182,12 @@ macro_rules! test_cast_from {
 pub(crate) use test_cast_from;
 
 macro_rules! test_cast_to {
-    ([$($ty: ty), *] as $big: ty) => {
-        paste::paste! {
-            quickcheck::quickcheck! {
-                $(
-                    #[allow(non_snake_case)]
-                    fn [<quickcheck_ $ty _as_ $big>](i: $ty) -> bool {
-                        let big: $big = i.as_();
-                        let primitive: [<$big:lower>] = i.as_();
-                        big == Into::into(primitive)
-                    }
-                )*
-            }
-        }
+    ([$($ty: ty), *] as $primitive: ty) => {
+		$(
+			crate::test::test_bignum! {
+				function: < $primitive as CastFrom<$ty> >::cast_from(from: $ty)
+			}
+		)*
     }
 }
 
@@ -270,7 +226,7 @@ macro_rules! test_fmt {
 #[allow(unused_imports)]
 pub(crate) use test_fmt;
 
-use crate::types::{U128, I128, U64/*, F64*/};
+use crate::types::{U128, I128, U64, I64/*, F64*/};
 
 pub trait TestConvert {
     type Output;
@@ -318,6 +274,17 @@ impl TestConvert for U64 {
     }
 }
 
+impl TestConvert for I64 {
+    type Output = i64;
+
+    #[inline]
+    fn into(self) -> Self::Output {
+        unsafe {
+            core::mem::transmute(self)
+        }
+    }
+}
+
 impl TestConvert for i128 {
     type Output = i128;
 
@@ -349,6 +316,15 @@ impl<T: TestConvert> TestConvert for Option<T> {
 
 impl TestConvert for f64 {
     type Output = u64;
+
+    #[inline]
+    fn into(self) -> Self::Output {
+        self.to_bits().to_le()
+    }
+}
+
+impl TestConvert for f32 {
+    type Output = u32;
 
     #[inline]
     fn into(self) -> Self::Output {
@@ -393,15 +369,6 @@ impl TestConvert for u32 {
     }
 }
 
-impl TestConvert for usize {
-    type Output = u32;
-    
-    #[inline]
-    fn into(self) -> Self::Output {
-        self as u32
-    }
-}
-
 impl TestConvert for crate::ParseIntError {
     type Output = core::num::IntErrorKind;
 
@@ -432,6 +399,33 @@ impl<T: TestConvert, E: TestConvert> TestConvert for Result<T, E> {
     }
 }
 
+impl TestConvert for core::num::TryFromIntError {
+	type Output = ();
+
+	#[inline]
+	fn into(self) -> Self::Output {
+		()
+	}
+}
+
+impl TestConvert for crate::error::TryFromIntError {
+	type Output = ();
+
+	#[inline]
+	fn into(self) -> Self::Output {
+		()
+	}
+}
+
+impl TestConvert for core::convert::Infallible {
+	type Output = ();
+
+	#[inline]
+	fn into(self) -> Self::Output {
+		()
+	}
+}
+
 macro_rules! test_convert_to_self {
     ($($ty: ty), *) => {
         $(
@@ -447,21 +441,4 @@ macro_rules! test_convert_to_self {
     };
 }
 
-test_convert_to_self!(core::num::FpCategory, bool, core::cmp::Ordering);
-
-macro_rules! qc_ref {
-    ($name: ident, $primitive: ident, ($($param: ident : $(ref $re: tt)? $ty: ty), *)) => {
-        paste::paste! {
-            quickcheck::quickcheck! {
-                fn [<quickcheck_ $name>]($($param : $ty), *) -> quickcheck::TestResult {
-                    let big_result = <crate::[<$primitive:upper>]>::$name($($($re)? Into::into($param)), *);
-                    let prim_result = <$primitive>::$name($($($re)? Into::into($param)), *);
-    
-                    quickcheck::TestResult::from_bool(crate::test::TestConvert::into(big_result) == crate::test::TestConvert::into(prim_result))
-                }
-            }
-        }
-    }
-}
-
-qc_ref!(eq, u128, (a: ref &u128, b: ref &u128));
+test_convert_to_self!(core::num::FpCategory, bool, core::cmp::Ordering, u8, u16, usize, i8, i16, i32, i64, isize);

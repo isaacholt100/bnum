@@ -30,7 +30,7 @@ macro_rules! try_int_impl {
 					let digits = from.digits();
 					let mut out = 0;
 					let mut i = 0;
-					while i < <$int>::BITS as usize >> digit::BIT_SHIFT && i < N {
+					while i << digit::BIT_SHIFT < <$int>::BITS as usize && i < N {
 						out |= digits[i] as $int << (i << digit::BIT_SHIFT);
 						i += 1;
 					}
@@ -494,3 +494,20 @@ macro_rules! assert_radix_range {
 }
 
 pub(crate) use assert_radix_range;
+
+#[allow(unused)]
+macro_rules! as_bigint_impl {
+    ([$($ty: ty), *] as $Big: ident) => {
+        $(
+            impl<const N: usize> AsPrimitive<$Big<N>> for $ty {
+                #[inline]
+                fn as_(self) -> $Big<N> {
+					$Big::cast_from(self)
+                }
+            }
+        )*
+    }
+}
+
+#[allow(unused)]
+pub(crate) use as_bigint_impl;

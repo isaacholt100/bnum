@@ -53,32 +53,18 @@ impl<const N: usize> BUint<N> {
 
 #[cfg(test)]
 mod tests {
-    test_unsigned! {
-        function: saturating_add(a: u128, b: u128),
-        cases: [
-            (3945873849578934759897458u128, 304578347593745734845646957398u128),
-            (u128::MAX, 345345u128)
-        ]
+	use crate::test::test_bignum;
+
+    test_bignum! {
+		function: <u128>::saturating_add(a: u128, b: u128)
     }
-    test_unsigned! {
-        function: saturating_sub(a: u128, b: u128),
-        cases: [
-            (43054734875u128, 304578347593745348455647398u128),
-            (394587384957893459664565697458u128, 304578347593745348455647398u128)
-        ]
+    test_bignum! {
+		function: <u128>::saturating_sub(a: u128, b: u128)
     }
-    test_unsigned! {
-        function: saturating_mul(a: u128, b: u128),
-        cases: [
-            (u128::MAX, 1u128),
-            (u128::MAX, 345u128)
-        ]
+    test_bignum! {
+		function: <u128>::saturating_mul(a: u128, b: u128)
     }
-    test_unsigned! {
-        function: saturating_pow(a: u128, b: u16),
-        cases: [
-            (3593745u128, 3451 as u16),
-            (11u128, 34 as u16)
-        ]
+    test_bignum! {
+		function: <u128>::saturating_pow(a: u128, b: u16)
     }
 }

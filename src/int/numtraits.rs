@@ -63,42 +63,19 @@ macro_rules! as_primitive_impl {
 
 as_primitive_impl!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64);
 
-macro_rules! as_bint {
-    ($($ty: ty), *) => {
-        $(
-            impl<const N: usize> AsPrimitive<Bint<N>> for $ty {
-                #[inline]
-                fn as_(self) -> Bint<N> {
-                    Bint {
-                        bits: self.as_(),
-                    }
-                }
-            }
-        )*
-    }
-}
-
-as_bint!(u8, u16, u32, usize, u64, u128, i8, i16, i32, isize, i64, i128, char, bool);
+crate::macros::as_bigint_impl!([u8, u16, u32, usize, u64, u128, i8, i16, i32, isize, i64, i128, char, bool] as Bint);
 
 impl<const N: usize> AsPrimitive<Bint<N>> for f32 {
     #[inline]
     fn as_(self) -> Bint<N> {
-        Bint::try_from(self).unwrap_or(if self.is_sign_negative() {
-            Bint::MIN
-        } else {
-            Bint::MAX
-        })
+		Bint::cast_from(self)
     }
 }
 
 impl<const N: usize> AsPrimitive<Bint<N>> for f64 {
     #[inline]
     fn as_(self) -> Bint<N> {
-        Bint::try_from(self).unwrap_or(if self.is_sign_negative() {
-            Bint::MIN
-        } else {
-            Bint::MAX
-        })
+		Bint::cast_from(self)
     }
 }
 
