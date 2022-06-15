@@ -1,10 +1,12 @@
-use super::Bint;
+use super::BInt;
 use num_traits::{Bounded, CheckedAdd, CheckedDiv, CheckedMul, CheckedNeg, CheckedRem, CheckedShl, CheckedShr, CheckedSub, FromPrimitive, MulAdd, MulAddAssign, Num, One, SaturatingAdd, SaturatingMul, SaturatingSub, WrappingAdd, WrappingMul, WrappingNeg, WrappingShl, WrappingShr, WrappingSub, ToPrimitive, Signed, Zero, Pow, Saturating, AsPrimitive};
 use num_integer::{Integer, Roots};
 use core::convert::TryFrom;
 use crate::ExpType;
+use crate::digit::{self, Digit};
+use crate::error;
 
-impl<const N: usize> Bounded for Bint<N> {
+impl<const N: usize> Bounded for BInt<N> {
     #[inline]
     fn min_value() -> Self {
         Self::MIN
@@ -18,7 +20,7 @@ impl<const N: usize> Bounded for Bint<N> {
 
 macro_rules! num_trait_impl {
     ($tr: ident, $method: ident, $ret: ty) => {
-        impl<const N: usize> $tr for Bint<N> {
+        impl<const N: usize> $tr for BInt<N> {
             #[inline]
             fn $method(&self, rhs: &Self) -> $ret {
                 Self::$method(*self, *rhs)
@@ -41,7 +43,7 @@ num_trait_impl!(WrappingAdd, wrapping_add, Self);
 num_trait_impl!(WrappingMul, wrapping_mul, Self);
 num_trait_impl!(WrappingSub, wrapping_sub, Self);
 
-impl<const N: usize> CheckedNeg for Bint<N> {
+impl<const N: usize> CheckedNeg for BInt<N> {
     #[inline]
     fn checked_neg(&self) -> Option<Self> {
         Self::checked_neg(*self)
@@ -51,7 +53,7 @@ impl<const N: usize> CheckedNeg for Bint<N> {
 macro_rules! as_primitive_impl {
     ($($ty: ty), *) => {
         $(
-            impl<const N: usize> AsPrimitive<$ty> for Bint<N> {
+            impl<const N: usize> AsPrimitive<$ty> for BInt<N> {
                 #[inline]
                 fn as_(self) -> $ty {
                     crate::As::as_(self)
@@ -63,77 +65,75 @@ macro_rules! as_primitive_impl {
 
 as_primitive_impl!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64);
 
-crate::macros::as_bigint_impl!([u8, u16, u32, usize, u64, u128, i8, i16, i32, isize, i64, i128, char, bool] as Bint);
+crate::macros::as_bigint_impl!([u8, u16, u32, usize, u64, u128, i8, i16, i32, isize, i64, i128, char, bool] as BInt);
 
-impl<const N: usize> AsPrimitive<Bint<N>> for f32 {
+impl<const N: usize> AsPrimitive<BInt<N>> for f32 {
     #[inline]
-    fn as_(self) -> Bint<N> {
-		Bint::cast_from(self)
+    fn as_(self) -> BInt<N> {
+		BInt::cast_from(self)
     }
 }
 
-impl<const N: usize> AsPrimitive<Bint<N>> for f64 {
+impl<const N: usize> AsPrimitive<BInt<N>> for f64 {
     #[inline]
-    fn as_(self) -> Bint<N> {
-		Bint::cast_from(self)
+    fn as_(self) -> BInt<N> {
+		BInt::cast_from(self)
     }
 }
 
 use crate::BUint;
 use crate::cast::CastFrom;
 
-impl<const N: usize, const M: usize> AsPrimitive<BUint<M>> for Bint<N> {
+impl<const N: usize, const M: usize> AsPrimitive<BUint<M>> for BInt<N> {
     #[inline]
     fn as_(self) -> BUint<M> {
         BUint::<M>::cast_from(self)
     }
 }
 
-impl<const N: usize, const M: usize> AsPrimitive<Bint<M>> for Bint<N> {
+impl<const N: usize, const M: usize> AsPrimitive<BInt<M>> for BInt<N> {
     #[inline]
-    fn as_(self) -> Bint<M> {
-        Bint::<M>::cast_from(self)
+    fn as_(self) -> BInt<M> {
+        BInt::<M>::cast_from(self)
     }
 }
 
-use core::convert::TryInto;
-
-impl<const N: usize> CheckedShl for Bint<N> {
+impl<const N: usize> CheckedShl for BInt<N> {
     #[inline]
     fn checked_shl(&self, rhs: u32) -> Option<Self> {
-        Self::checked_shl(*self, rhs.try_into().ok()?)
+        Self::checked_shl(*self, rhs)
     }
 }
 
-impl<const N: usize> CheckedShr for Bint<N> {
+impl<const N: usize> CheckedShr for BInt<N> {
     #[inline]
     fn checked_shr(&self, rhs: u32) -> Option<Self> {
-        Self::checked_shr(*self, rhs.try_into().ok()?)
+        Self::checked_shr(*self, rhs)
     }
 }
 
-impl<const N: usize> WrappingNeg for Bint<N> {
+impl<const N: usize> WrappingNeg for BInt<N> {
     #[inline]
     fn wrapping_neg(&self) -> Self {
         Self::wrapping_neg(*self)
     }
 }
 
-impl<const N: usize> WrappingShl for Bint<N> {
+impl<const N: usize> WrappingShl for BInt<N> {
     #[inline]
     fn wrapping_shl(&self, rhs: u32) -> Self {
         Self::wrapping_shl(*self, rhs as ExpType)
     }
 }
 
-impl<const N: usize> WrappingShr for Bint<N> {
+impl<const N: usize> WrappingShr for BInt<N> {
     #[inline]
     fn wrapping_shr(&self, rhs: u32) -> Self {
         Self::wrapping_shr(*self, rhs as ExpType)
     }
 }
 
-impl<const N: usize> FromPrimitive for Bint<N> {
+impl<const N: usize> FromPrimitive for BInt<N> {
     #[inline]
     fn from_u64(n: u64) -> Option<Self> {
         Some(n.into())
@@ -146,12 +146,48 @@ impl<const N: usize> FromPrimitive for Bint<N> {
 
     #[inline]
     fn from_u128(n: u128) -> Option<Self> {
-        Some(n.into())
+        const UINT_BITS: usize = u128::BITS as usize;
+        let mut out = BInt::ZERO;
+        let mut i = 0;
+        while i << digit::BIT_SHIFT < UINT_BITS {
+            let d = (n >> (i << digit::BIT_SHIFT)) as Digit;
+            if d != 0 {
+                if i < N {
+                    out.bits.digits[i] = d;
+                } else {
+                    return None;
+                }
+            }
+            i += 1;
+        }
+		if Signed::is_negative(&out) {
+			None
+		} else {
+			Some(out)
+		}
     }
 
     #[inline]
     fn from_i128(n: i128) -> Option<Self> {
-        Some(n.into())
+        const INT_BITS: usize = i128::BITS as usize;
+        let mut out = if n.is_negative() {
+			BInt::ZERO
+		} else {
+			BInt::NEG_ONE
+		};
+        let mut i = 0;
+        while i << digit::BIT_SHIFT < INT_BITS {
+            let d = (n >> (i << digit::BIT_SHIFT)) as Digit;
+            if d != 0 {
+                if i < N {
+                    out.bits.digits[i] = d;
+                } else {
+                    return None;
+                }
+            }
+            i += 1;
+        }
+		Some(out)
     }
 
     #[inline]
@@ -165,7 +201,7 @@ impl<const N: usize> FromPrimitive for Bint<N> {
     }
 }
 
-impl<const N: usize> Integer for Bint<N> {
+impl<const N: usize> Integer for BInt<N> {
     #[inline]
     fn div_floor(&self, other: &Self) -> Self {
         *self / *other
@@ -216,7 +252,7 @@ impl<const N: usize> Integer for Bint<N> {
     }
 }
 
-impl<const N: usize> MulAdd for Bint<N> {
+impl<const N: usize> MulAdd for BInt<N> {
     type Output = Self;
 
     #[inline]
@@ -225,7 +261,7 @@ impl<const N: usize> MulAdd for Bint<N> {
     }
 }
 
-impl<const N: usize> MulAddAssign for Bint<N> {
+impl<const N: usize> MulAddAssign for BInt<N> {
     #[inline]
     fn mul_add_assign(&mut self, a: Self, b: Self) {
         *self = self.mul_add(a, b);
@@ -234,7 +270,7 @@ impl<const N: usize> MulAddAssign for Bint<N> {
 
 use crate::ParseIntError;
 
-impl<const N: usize> Num for Bint<N> {
+impl<const N: usize> Num for BInt<N> {
     type FromStrRadixErr = ParseIntError;
 
     #[inline]
@@ -243,7 +279,7 @@ impl<const N: usize> Num for Bint<N> {
     }
 }
 
-impl<const N: usize> One for Bint<N> {
+impl<const N: usize> One for BInt<N> {
     #[inline]
     fn one() -> Self {
         Self::ONE
@@ -255,7 +291,7 @@ impl<const N: usize> One for Bint<N> {
     }
 }
 
-impl<const N: usize> Pow<ExpType> for Bint<N> {
+impl<const N: usize> Pow<ExpType> for BInt<N> {
     type Output = Self;
 
     #[inline]
@@ -264,11 +300,11 @@ impl<const N: usize> Pow<ExpType> for Bint<N> {
     }
 }
 
-impl<const N: usize> Roots for Bint<N> {
+impl<const N: usize> Roots for BInt<N> {
     #[inline]
     fn sqrt(&self) -> Self {
         if self.is_negative() {
-            panic!("imaginary square root")
+            panic!(error::err_msg!("imaginary square root"))
         } else {
             Self::from_bits(self.bits.sqrt())
         }
@@ -288,7 +324,7 @@ impl<const N: usize> Roots for Bint<N> {
     fn nth_root(&self, n: u32) -> Self {
         if self.is_negative() {
             if n.is_even() {
-                panic!("imaginary root degree of {}", n)
+                panic!("{} imaginary root degree of {}", error::err_prefix!(), n)
             } else {
                 let out = Self::from_bits(self.unsigned_abs().nth_root(n));
                 -out
@@ -299,7 +335,7 @@ impl<const N: usize> Roots for Bint<N> {
     }
 }
 
-impl<const N: usize> Saturating for Bint<N> {
+impl<const N: usize> Saturating for BInt<N> {
     #[inline]
     fn saturating_add(self, rhs: Self) -> Self {
         Self::saturating_add(self, rhs)
@@ -311,7 +347,7 @@ impl<const N: usize> Saturating for Bint<N> {
     }
 }
 
-impl<const N: usize> ToPrimitive for Bint<N> {
+impl<const N: usize> ToPrimitive for BInt<N> {
     #[inline]
     fn to_i64(&self) -> Option<i64> {
         if self.is_negative() {
@@ -320,7 +356,6 @@ impl<const N: usize> ToPrimitive for Bint<N> {
                 None
             } else {
                 Some(self.as_())
-                //Some(self.digits()[0] as i64)
             }
         } else {
             self.bits.to_i64()
@@ -370,7 +405,7 @@ impl<const N: usize> ToPrimitive for Bint<N> {
     }
 }
 
-impl<const N: usize> Signed for Bint<N> {
+impl<const N: usize> Signed for BInt<N> {
     #[inline]
     fn abs(&self) -> Self {
         Self::abs(*self)
@@ -401,7 +436,7 @@ impl<const N: usize> Signed for Bint<N> {
     }
 }
 
-impl<const N: usize> Zero for Bint<N> {
+impl<const N: usize> Zero for BInt<N> {
     #[inline]
     fn zero() -> Self {
         Self::ZERO
@@ -411,4 +446,68 @@ impl<const N: usize> Zero for Bint<N> {
     fn is_zero(&self) -> bool {
         self == &Self::ZERO
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{Roots, ToPrimitive, FromPrimitive, Integer};
+	use crate::test::test_bignum;
+
+	test_bignum! {
+		function: <i128>::sqrt(a: ref &i128)
+	}
+	test_bignum! {
+		function: <i128>::cbrt(a: ref &i128)
+	}
+	test_bignum! {
+		function: <i128>::nth_root(u: ref &i128, n: u32),
+		skip: n == 0
+	}
+
+	macro_rules! test_to_primitive {
+		($($prim: ty), *) => {
+			paste::paste! {
+				$(
+					test_bignum! {
+						function: <i128>::[<to_ $prim>](u: ref &i128)
+					}
+				)*
+			}
+		};
+	}
+
+	test_to_primitive!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64);
+
+	macro_rules! test_from_primitive {
+		($($prim: ty), *) => {
+			paste::paste! {
+				$(
+					test_bignum! {
+						function: <i64>::[<from_ $prim>](u: $prim)
+					}
+				)*
+			}
+		};
+	}
+
+	test_from_primitive!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64);
+
+	macro_rules! test_integer_trait {
+		(<$primitive: ty> :: $($function: ident), *) => {
+			$(
+				test_bignum! {
+					function: <$primitive as Integer>::$function(a: ref &$primitive, b: ref &$primitive)
+				}
+			)*
+		};
+	}
+
+	test_integer_trait!(<i128>::div_floor, mod_floor, gcd, lcm, divides, is_multiple_of, div_rem);
+
+	test_bignum! {
+		function: <i128 as Integer>::is_even(a: ref &i128)
+	}
+	test_bignum! {
+		function: <i128 as Integer>::is_odd(a: ref &i128)
+	}
 }

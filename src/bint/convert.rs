@@ -1,14 +1,12 @@
-use super::Bint;
-use core::convert::TryFrom;
+use super::BInt;
 use core::str::FromStr;
-use crate::{TryFromIntError, ParseIntError};
+use crate::{TryFromIntError, ParseIntError, As};
 use crate::digit::{Digit, self};
-use crate::uint::BUint;
+use crate::buint::BUint;
 use crate::error::TryFromErrorReason::*;
 use crate::macros;
-use core::{f32, f64};
 
-impl<const N: usize> FromStr for Bint<N> {
+impl<const N: usize> FromStr for BInt<N> {
     type Err = ParseIntError;
 
     #[inline]
@@ -19,7 +17,7 @@ impl<const N: usize> FromStr for Bint<N> {
 
 macro_rules! from_int {
     ($($int: tt),*) => {
-        $(impl<const N: usize> const From<$int> for Bint<N> {
+        $(impl<const N: usize> const From<$int> for BInt<N> {
             #[inline]
             fn from(int: $int) -> Self {
                 let initial_digit = if int.is_negative() {
@@ -46,7 +44,7 @@ from_int!(i8, i16, i32, i64, i128, isize);
 
 macro_rules! from_uint {
     ($($from: tt), *) => {
-        $(impl<const N: usize> From<$from> for Bint<N> {
+        $(impl<const N: usize> From<$from> for BInt<N> {
             #[inline]
             fn from(int: $from) -> Self {
                 let out = Self::from_bits(int.into());
@@ -61,20 +59,16 @@ macro_rules! from_uint {
 
 from_uint!(u8, u16, u32, u64, u128, usize);
 
-impl<const N: usize> const From<bool> for Bint<N> {
+impl<const N: usize> const From<bool> for BInt<N> {
     #[inline]
     fn from(small: bool) -> Self {
-        if small {
-            Self::ONE
-        } else {
-            Self::ZERO
-        }
+        small.as_()
     }
 }
 
-macros::all_try_int_impls!(Bint);
+macros::all_try_int_impls!(BInt);
 
-impl<const N: usize> const TryFrom<BUint<N>> for Bint<N> {
+impl<const N: usize> const TryFrom<BUint<N>> for BInt<N> {
     type Error = TryFromIntError;
 
     #[inline]
@@ -82,7 +76,7 @@ impl<const N: usize> const TryFrom<BUint<N>> for Bint<N> {
         if u.leading_ones() != 0 {
             Err(TryFromIntError {
                 from: "BUint",
-                to: "Bint",
+                to: "BInt",
                 reason: TooLarge,   
             })
         } else {
@@ -91,21 +85,36 @@ impl<const N: usize> const TryFrom<BUint<N>> for Bint<N> {
     }
 }
 
-impl<const N: usize> TryFrom<f32> for Bint<N> {
+impl<const N: usize> TryFrom<f32> for BInt<N> {
     type Error = TryFromIntError;
 
     #[inline]
     fn try_from(f: f32) -> Result<Self, Self::Error> {
         if f.is_sign_negative() {
-            let x = BUint::try_from(-f)?;
-            Ok(-Self::from_bits(x))
+            let x = BInt::from_bits(BUint::try_from(-f)?);
+			if x.is_negative() {
+                return Err(TryFromIntError {
+                    from: stringify!($float),
+                    to: "BInt",
+                    reason: TooLarge,
+                });
+            }
+            Ok(-x)
         } else {
-            Ok(Self::from_bits(BUint::try_from(f)?))
+			let x = BInt::from_bits(BUint::try_from(f)?);
+			if x.is_negative() {
+                return Err(TryFromIntError {
+                    from: stringify!($float),
+                    to: "BInt",
+                    reason: TooLarge,
+                });
+            }
+            Ok(x)
         }
     }
 }
 
-impl<const N: usize> TryFrom<f64> for Bint<N> {
+impl<const N: usize> TryFrom<f64> for BInt<N> {
     type Error = TryFromIntError;
 
     #[inline]
@@ -115,7 +124,7 @@ impl<const N: usize> TryFrom<f64> for Bint<N> {
             if x > Self::MIN.to_bits() {
                 return Err(TryFromIntError {
                     from: stringify!($float),
-                    to: "Bint",
+                    to: "BInt",
                     reason: TooLarge,
                 });
             }
@@ -125,7 +134,7 @@ impl<const N: usize> TryFrom<f64> for Bint<N> {
             if x > Self::MIN.to_bits() {
                 return Err(TryFromIntError {
                     from: stringify!($float),
-                    to: "Bint",
+                    to: "BInt",
                     reason: TooLarge,
                 });
             }
@@ -136,7 +145,6 @@ impl<const N: usize> TryFrom<f64> for Bint<N> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::test;
 
     test::test_from! {

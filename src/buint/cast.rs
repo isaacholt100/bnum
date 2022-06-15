@@ -1,6 +1,6 @@
 use super::BUint;
 use crate::digit::{self, Digit};
-use crate::{Bint, ExpType};
+use crate::{BInt, ExpType};
 use crate::cast::CastFrom;
 use core::mem::MaybeUninit;
 use crate::cast::As;
@@ -9,7 +9,7 @@ use crate::cast::As;
 
 impl<const N: usize> BUint<N> {
     #[inline]
-    const fn cast_up<const M: usize>(&self, digit: Digit) -> BUint<M> {
+    const fn cast_up<const M: usize>(self, digit: Digit) -> BUint<M> {
         let mut digits = [digit; M];
         let digits_ptr = digits.as_mut_ptr() as *mut Digit;
         let self_ptr = self.digits.as_ptr();
@@ -20,7 +20,7 @@ impl<const N: usize> BUint<N> {
     }
 
     #[inline]
-    const fn cast_down<const M: usize>(&self) -> BUint<M> {
+    const fn cast_down<const M: usize>(self) -> BUint<M> {
         let mut digits = MaybeUninit::<[Digit; M]>::uninit();
         let digits_ptr = digits.as_mut_ptr() as *mut Digit;
         let self_ptr = self.digits.as_ptr();
@@ -176,9 +176,9 @@ impl<const N: usize, const M: usize> const CastFrom<BUint<M>> for BUint<N> {
     }
 }
 
-impl<const N: usize, const M: usize> const CastFrom<Bint<M>> for BUint<N> {
+impl<const N: usize, const M: usize> const CastFrom<BInt<M>> for BUint<N> {
     #[inline]
-    fn cast_from(from: Bint<M>) -> Self {
+    fn cast_from(from: BInt<M>) -> Self {
         if M < N {
             let padding_digit = if from.is_negative() {
                 Digit::MAX
@@ -193,6 +193,7 @@ impl<const N: usize, const M: usize> const CastFrom<Bint<M>> for BUint<N> {
 }
 
 fn decode_f32(f: f32) -> (u32, i16) {
+	// credit num_traits source code
     let bits = f.to_bits();
     let mut exponent = ((bits >> 23) & 0xff) as i16;
     let mantissa = if exponent == 0 {
@@ -206,6 +207,7 @@ fn decode_f32(f: f32) -> (u32, i16) {
 
 #[inline]
 fn decode_f64(f: f64) -> (u64, i16) {
+	// credit num_traits source code
     let bits = f.to_bits();
     let mut exponent = ((bits >> 52) & 0x7ff) as i16;
     let mantissa = if exponent == 0 {
@@ -232,7 +234,6 @@ macro_rules! cast_from_float {
             if from.is_nan() {
                 return Self::ZERO;
             }
-            // TODO: this is checked when used by the float to signed integer conversion method, which is unnecessary. Very fast check so may not be worth optimising though
             if from.is_sign_negative() {
                 return Self::MIN;
             }
@@ -264,21 +265,4 @@ impl<const N: usize> CastFrom<f64> for BUint<N> {
     cast_from_float!(f64, u32, decode_f64, u64_bits);
 }
 
-/*impl<const N: usize, const W: usize, const MB: usize> CastFrom<Float<W, MB>> for BUint<N> {
-    cast_from_float!(Float<W, MB>, ExpType, Float::decode, BUint::bits);
-}*/
-
-#[cfg(test)]
-mod tests {
-    use crate::types::{U128, I128, U64, I64};
-    use crate::cast::{As, CastFrom};
-	use crate::test;
-
-    test::test_cast_to!([u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64, bool, char] as u64);
-
-    test::test_cast_to!([u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64, bool, char] as u128);
-
-    test::test_cast_from!(u64 as [u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64, U64, I64, I128, U128]);
-
-    test::test_cast_from!(u128 as [u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64, U64, I64, I128, U128]);
-}
+crate::int::cast::tests!(u64, u128);

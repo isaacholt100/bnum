@@ -5,7 +5,7 @@ use crate::doc;
 
 #[doc=doc::endian::impl_desc!(BUint)]
 impl<const N: usize> BUint<N> {
-    #[doc=doc::from_be!(BUint::<2>)]
+    #[doc=doc::from_be!(U256)]
     #[inline]
     pub const fn from_be(x: Self) -> Self {
         #[cfg(target_endian = "big")]
@@ -14,7 +14,7 @@ impl<const N: usize> BUint<N> {
         x.swap_bytes()
     }
 
-    #[doc=doc::from_le!(BUint::<2>)]
+    #[doc=doc::from_le!(U256)]
     #[inline]
     pub const fn from_le(x: Self) -> Self {
         #[cfg(target_endian = "little")]
@@ -23,19 +23,19 @@ impl<const N: usize> BUint<N> {
         x.swap_bytes()
     }
 
-    #[doc=doc::to_be!(BUint::<2>)]
+    #[doc=doc::to_be!(U256)]
     #[inline]
     pub const fn to_be(self) -> Self {
         Self::from_be(self)
     }
 
-    #[doc=doc::to_be!(BUint::<2>)]
+    #[doc=doc::to_be!(U256)]
     #[inline]
     pub const fn to_le(self) -> Self {
         Self::from_le(self)
     }
 
-    /// Create a native endian integer value from a slice of bytes in big endian. The value is wrapped in an `Option` as the integer represented by the slice of bytes may be too large to be represented by the type.
+    /// Create an integer value from a slice of bytes in big endian. The value is wrapped in an `Option` as the integer represented by the slice of bytes may be too large to be represented by the type.
     /// 
     /// If the length of the slice is shorter than `Self::BYTES`, the slice is padded with zeros at the start so that it's length equals `Self::BYTES`.
     /// 
@@ -44,7 +44,7 @@ impl<const N: usize> BUint<N> {
     /// # Examples
     /// 
     /// ```
-    /// use bint::BUint;
+    /// use bnum::BUint;
     /// 
     /// let value_from_array = BUint::<2>::from_be_bytes([0, 0, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12]);
     /// let value_from_slice = BUint::<2>::from_be_slice(&[0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12]).unwrap();
@@ -98,7 +98,7 @@ impl<const N: usize> BUint<N> {
         }
     }
 
-    /// Create a native endian integer value from a slice of bytes in little endian. The value is wrapped in an `Option` as the bytes may be too large to be represented by the type.
+    /// Creates an integer value from a slice of bytes in little endian. The value is wrapped in an `Option` as the bytes may be too large to be represented by the type.
     /// 
     /// If the length of the slice is shorter than `Self::BYTES`, the slice is padded with zeros at the end so that it's length equals `Self::BYTES`.
     /// 
@@ -107,7 +107,7 @@ impl<const N: usize> BUint<N> {
     /// # Examples
     /// 
     /// ```
-    /// use bint::BUint;
+    /// use bnum::BUint;
     /// 
     /// let value_from_array = BUint::<2>::from_le_bytes([0x12, 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0, 0]);
     /// let value_from_slice = BUint::<2>::from_le_slice(&[0x12, 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56]).unwrap();
@@ -161,7 +161,7 @@ impl<const N: usize> BUint<N> {
         }
     }
 	
-	#[doc=doc::to_be_bytes!(BUint::<2>, "u")]
+	#[doc=doc::to_be_bytes!(U256, "u")]
 	#[inline]
 	pub const fn to_be_bytes(self) -> [u8; N * digit::BYTES as usize] {
 		let mut bytes = [0; N * digit::BYTES as usize];
@@ -169,6 +169,7 @@ impl<const N: usize> BUint<N> {
 		while i > 0 {
 			let digit_bytes = self.digits[N - i].to_be_bytes();
 			i -= 1;
+			// TODO: make this faster by using MaybeUninit
 			let mut j = 0;
 			while j < digit::BYTES as usize {
 				bytes[(i << digit::BYTE_SHIFT) + j] = digit_bytes[j];
@@ -178,13 +179,14 @@ impl<const N: usize> BUint<N> {
 		bytes
 	}
 
-	#[doc=doc::to_le_bytes!(BUint::<2>, "u")]
+	#[doc=doc::to_le_bytes!(U256, "u")]
 	#[inline]
 	pub const fn to_le_bytes(self) -> [u8; N * digit::BYTES as usize] {
 		let mut bytes = [0; N * digit::BYTES as usize];
 		let mut i = 0;
 		while i < N {
 			let digit_bytes = self.digits[i].to_le_bytes();
+			// TODO: make this faster by using MaybeUninit
 			let mut j = 0;
 			while j < digit::BYTES as usize {
 				bytes[(i << digit::BYTE_SHIFT) + j] = digit_bytes[j];
@@ -195,7 +197,7 @@ impl<const N: usize> BUint<N> {
 		bytes
 	}
 
-	#[doc=doc::to_ne_bytes!(Bint::<2>, "u")]
+	#[doc=doc::to_ne_bytes!(U256, "u")]
 	#[inline]
 	pub const fn to_ne_bytes(self) -> [u8; N * digit::BYTES as usize] {
 		#[cfg(target_endian = "big")]
@@ -204,7 +206,7 @@ impl<const N: usize> BUint<N> {
 		self.to_le_bytes()
 	}
 
-	#[doc=doc::from_be_bytes!(BUint::<2>, "u")]
+	#[doc=doc::from_be_bytes!(U256, "u")]
 	#[inline]
 	pub const fn from_be_bytes(bytes: [u8; N * digit::BYTES as usize]) -> Self {
 		let mut out = Self::ZERO;
@@ -223,7 +225,7 @@ impl<const N: usize> BUint<N> {
 		out
 	}
 
-	#[doc=doc::from_le_bytes!(BUint::<2>, "u")]
+	#[doc=doc::from_le_bytes!(U256, "u")]
 	#[inline]
 	pub const fn from_le_bytes(bytes: [u8; N * digit::BYTES as usize]) -> Self {
 		let mut out = Self::ZERO;
@@ -242,7 +244,7 @@ impl<const N: usize> BUint<N> {
 		out
 	}
 
-	#[doc=doc::from_ne_bytes!(BUint::<2>, "u")]
+	#[doc=doc::from_ne_bytes!(U256, "u")]
 	#[inline]
 	pub const fn from_ne_bytes(bytes: [u8; N * digit::BYTES as usize]) -> Self {
 		#[cfg(target_endian = "big")]
@@ -259,82 +261,7 @@ mod tests {
     use crate::test::U8ArrayWrapper;
 	use crate::test::test_bignum;
 
-    test_bignum! {
-		function: <u128>::from_be(a: u128),
-        cases: [
-            (234889034774398590845348573498570345u128),
-            (349857348957u128)
-        ]
-    }
-    test_bignum! {
-		function: <u128>::from_le(a: u128),
-        cases: [
-            (374598340857345349875907438579348534u128),
-            (9875474394587u128)
-        ]
-    }
-    test_bignum! {
-		function: <u128>::to_be(a: u128),
-        cases: [
-            (938495078934875384738495787358743854u128),
-            (394567834657835489u128)
-        ]
-    }
-    test_bignum! {
-		function: <u128>::to_le(a: u128),
-        cases: [
-            (634985790475394859374957339475897443u128),
-            (12379045679853u128)
-        ]
-    }
-
-    test_bignum! {
-		function: <u128>::to_be_bytes(a: u128),
-        cases: [
-            (883497884590834905834758374950859884u128),
-            (456747598769u128)
-        ]
-    }
-
-    test_bignum! {
-		function: <u128>::to_le_bytes(a: u128),
-        cases: [
-            (349587309485908349057389485093457397u128),
-            (4985679837455u128)
-        ]
-    }
-
-    test_bignum! {
-		function: <u128>::to_ne_bytes(a: u128),
-        cases: [
-            (123423345734905803845939847534085908u128),
-            (685947586789335u128)
-        ]
-    }
-
-    test_bignum! {
-		function: <u128>::from_be_bytes(a: U8ArrayWrapper<16>),
-        cases: [
-            ([3, 5, 44, 253, 55, 110, 64, 53, 54, 78, 0, 8, 91, 16, 25, 42]),
-            ([0, 0, 0, 0, 30, 0, 64, 53, 54, 78, 0, 8, 91, 16, 25, 42])
-        ]
-    }
-
-    test_bignum! {
-		function: <u128>::from_le_bytes(a: U8ArrayWrapper<16>),
-        cases: [
-            ([15, 65, 44, 30, 115, 200, 244, 167, 44, 6, 9, 11, 90, 56, 77, 150]),
-            ([0, 0, 0, 0, 0, 200, 244, 167, 44, 6, 9, 11, 90, 56, 77, 150])
-        ]
-    }
-	
-    test_bignum! {
-		function: <u128>::from_ne_bytes(a: U8ArrayWrapper<16>),
-        cases: [
-            ([73, 80, 2, 24, 160, 188, 204, 45, 33, 88, 4, 68, 230, 180, 145, 32]),
-            ([0, 0, 0, 0, 0, 188, 204, 45, 33, 88, 4, 68, 230, 180, 0, 0])
-        ]
-    }
+	crate::int::endian::tests!(u128);
 
     #[test]
     fn from_be_slice() {

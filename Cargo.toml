@@ -1,11 +1,19 @@
 [package]
-name = "bint"
+name = "bnum"
 version = "0.1.0"
 authors = ["isaac-holt <isaac_holt@icloud.com>"]
 edition = "2021"
+license = "MIT OR Apache-2.0"
+description = "Arbitrary precision, fixed size numeric types that behave the same as the primitive numeric types."
+homepage = "https://crates.io/" # TODO: decide on name
+documentation = "https://docs.rs/"
+repository = "https://github.com/isaacholt100/"
+readme = "README.md"
+keywords = ["uint", "int", "bignum", "maths", "arbitrary"]
+categories = ["numbers", "algorithms", "mathematics"]
 
 [features]
-default = []
+default = ["u8_digit", "numtraits"]
 u8_digit = []
 serde = ["dep:serde", "serde-big-array"]
 numtraits = ["num-integer", "num-traits"]

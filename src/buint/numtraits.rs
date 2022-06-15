@@ -51,7 +51,6 @@ impl<const N: usize> CheckedNeg for BUint<N> {
 impl<const N: usize> CheckedShl for BUint<N> {
     #[inline]
     fn checked_shl(&self, rhs: u32) -> Option<Self> {
-		// TODO: can be optimised
         Self::checked_shl(*self, rhs)
     }
 }
@@ -119,12 +118,12 @@ impl<const N: usize, const M: usize> AsPrimitive<BUint<M>> for BUint<N> {
     }
 }
 
-use crate::Bint;
+use crate::BInt;
 
-impl<const N: usize, const M: usize> AsPrimitive<Bint<M>> for BUint<N> {
+impl<const N: usize, const M: usize> AsPrimitive<BInt<M>> for BUint<N> {
     #[inline]
-    fn as_(self) -> Bint<M> {
-        Bint::<M>::cast_from(self)
+    fn as_(self) -> BInt<M> {
+        BInt::<M>::cast_from(self)
     }
 }
 
@@ -207,6 +206,7 @@ impl<const N: usize> Integer for BUint<N> {
 
     #[inline]
     fn gcd(&self, other: &Self) -> Self {
+		// credit wikipedia source code: https://en.wikipedia.org/wiki/Binary_GCD_algorithm#Implementation
         let (mut u, mut v) = (*self, *other);
         if u.is_zero() {
             return v;
@@ -390,6 +390,7 @@ impl<const N: usize> BUint<N> {
     #[inline]
     fn fixpoint<F>(mut self, max_bits: ExpType, f: F) -> Self
     where F: Fn(Self) -> Self {
+		// credit num_bigint source code
         let mut xn = f(self);
         while self < xn {
             self = if xn.bits() > max_bits {
@@ -410,6 +411,7 @@ impl<const N: usize> BUint<N> {
 impl<const N: usize> Roots for BUint<N> {
     #[inline]
     fn sqrt(&self) -> Self {
+		// credit num_bigint source code
         check_zero_or_one!(self);
 
         if let Some(n) = self.to_u128() {
@@ -428,6 +430,7 @@ impl<const N: usize> Roots for BUint<N> {
 
     #[inline]
     fn cbrt(&self) -> Self {
+		// credit num_bigint source code
         check_zero_or_one!(self);
 
         if let Some(n) = self.to_u128() {
@@ -446,8 +449,9 @@ impl<const N: usize> Roots for BUint<N> {
 
     #[inline]
     fn nth_root(&self, n: u32) -> Self {
+		// credit num_bigint source code
         match n {
-            0 => panic!("attempt to calculate zeroth root"),
+            0 => panic!(crate::error::err_msg!("attempt to calculate zeroth root")),
             1 => *self,
             2 => self.sqrt(),
             3 => self.cbrt(),

@@ -81,13 +81,11 @@ macro_rules! test_from {
         function: <$primitive: ty as $Trait: ident>:: $name: ident,
         from_types: ($($from_type: ty), *)
     } => {
-		paste::paste! {
-			$(
-				crate::test::test_bignum! {
-					function: < $primitive as $Trait<$from_type> >::$name(from: $from_type)
-				}
-			)*
-		}
+		$(
+			crate::test::test_bignum! {
+				function: < $primitive as $Trait<$from_type> >::$name(from: $from_type)
+			}
+		)*
     }
 }
 
@@ -110,37 +108,6 @@ macro_rules! test_into {
 
 pub(crate) use test_into;
 
-#[derive(Clone, Copy)]
-pub struct U8ArrayWrapper<const N: usize>([u8; N]);
-
-impl<const N: usize> From<U8ArrayWrapper<N>> for [u8; N] {
-    fn from(a: U8ArrayWrapper<N>) -> Self {
-        a.0
-    }
-}
-
-use quickcheck::{Arbitrary, Gen};
-
-impl Arbitrary for U8ArrayWrapper<16> {
-    fn arbitrary(g: &mut Gen) -> Self {
-        Self(u128::arbitrary(g).to_be_bytes())
-    }
-}
-
-impl Arbitrary for U8ArrayWrapper<8> {
-    fn arbitrary(g: &mut Gen) -> Self {
-        Self(u64::arbitrary(g).to_be_bytes())
-    }
-}
-
-use core::fmt::{Formatter, self, Debug};
-
-impl<const N: usize> Debug for U8ArrayWrapper<N> {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        self.0.fmt(f)
-    }
-}
-
 macro_rules! quickcheck_from_to_radix {
     ($primitive: ty, $name: ident, $max: expr) => {
         paste::paste! {
@@ -161,37 +128,6 @@ macro_rules! quickcheck_from_to_radix {
 }
 
 pub(crate) use quickcheck_from_to_radix;
-
-macro_rules! test_cast_from {
-    ($primitive: ty as [$($ty: ty), *]) => {
-        paste::paste! {
-            quickcheck::quickcheck! {
-                $(
-                    #[allow(non_snake_case)]
-                    fn [<quickcheck_ $primitive _as_ $ty>](i: [<$primitive>]) -> bool {
-                        let big = [<$primitive:upper>]::from(i);
-                        let a1: $ty = big.as_();
-                        a1 == i.as_()
-                    }
-                )*
-            }
-        }
-    }
-}
-
-pub(crate) use test_cast_from;
-
-macro_rules! test_cast_to {
-    ([$($ty: ty), *] as $primitive: ty) => {
-		$(
-			crate::test::test_bignum! {
-				function: < $primitive as CastFrom<$ty> >::cast_from(from: $ty)
-			}
-		)*
-    }
-}
-
-pub(crate) use test_cast_to;
 
 #[allow(unused)]
 macro_rules! test_fmt {
@@ -225,6 +161,37 @@ macro_rules! test_fmt {
 
 #[allow(unused_imports)]
 pub(crate) use test_fmt;
+
+#[derive(Clone, Copy)]
+pub struct U8ArrayWrapper<const N: usize>([u8; N]);
+
+impl<const N: usize> From<U8ArrayWrapper<N>> for [u8; N] {
+    fn from(a: U8ArrayWrapper<N>) -> Self {
+        a.0
+    }
+}
+
+use quickcheck::{Arbitrary, Gen};
+
+impl Arbitrary for U8ArrayWrapper<16> {
+    fn arbitrary(g: &mut Gen) -> Self {
+        Self(u128::arbitrary(g).to_be_bytes())
+    }
+}
+
+impl Arbitrary for U8ArrayWrapper<8> {
+    fn arbitrary(g: &mut Gen) -> Self {
+        Self(u64::arbitrary(g).to_be_bytes())
+    }
+}
+
+use core::fmt::{Formatter, self, Debug};
+
+impl<const N: usize> Debug for U8ArrayWrapper<N> {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        self.0.fmt(f)
+    }
+}
 
 use crate::types::{U128, I128, U64, I64/*, F64*/};
 

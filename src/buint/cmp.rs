@@ -32,6 +32,9 @@ impl<const N: usize> const Ord for BUint<N> {
             i -= 1;
             let a = self.digits[i];
             let b = other.digits[i];
+			
+			// Don't use match here as `cmp` is not yet const for primitive integers
+			#[allow(clippy::comparison_chain)]
             if a > b {
                 return Ordering::Greater;
             } else if a < b {
@@ -70,28 +73,4 @@ impl<const N: usize> const Ord for BUint<N> {
     }
 }
 
-#[cfg(test)]
-mod tests {
-	use crate::test::test_bignum;
-
-    test_bignum! {
-		function: <u128>::eq(a: ref &u128, b: ref &u128)
-    }
-    test_bignum! {
-		function: <u128>::partial_cmp(a: ref &u128, b: ref &u128)
-    }
-
-    test_bignum! {
-		function: <u128>::cmp(a: ref &u128, b: ref &u128)
-    }
-    test_bignum! {
-		function: <u128>::max(a: u128, b: u128)
-    }
-    test_bignum! {
-		function: <u128>::min(a: u128, b: u128)
-    }
-    test_bignum! {
-		function: <u128>::clamp(a: u128, min: u128, max: u128),
-        skip: min > max
-    }
-}
+crate::int::cmp::tests!(u128);

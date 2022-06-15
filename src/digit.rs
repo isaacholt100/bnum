@@ -23,16 +23,14 @@ use crate::ExpType;
 
 pub use types::*;
 
-//pub const HALF_MAX: Digit = Digit::MAX / 2;
-
 pub const BITS: ExpType = Digit::BITS as ExpType;
 
 pub const BITS_MINUS_1: ExpType = BITS - 1;
 
 pub const BYTES: ExpType = BITS / 8;
 
+// This calculates log2 of BYTES as BYTES is guaranteed to only have one '1' bit, since it must be a power of two.
 pub const BYTE_SHIFT: ExpType = BYTES.trailing_zeros() as ExpType;
-// This calculates log2 of BYTES as BYTES is guaranteed to only have one '1' bit.
 
 pub const BIT_SHIFT: ExpType = BITS.trailing_zeros() as ExpType;
 

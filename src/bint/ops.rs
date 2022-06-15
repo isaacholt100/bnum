@@ -1,31 +1,32 @@
-use super::Bint;
+use super::BInt;
 use core::ops::{Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Div, Rem, DivAssign, Mul, MulAssign, Neg, Not, RemAssign, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign};
 use crate::macros::{option_expect, impl_ops};
 use crate::ExpType;
+use crate::error;
         
-impl<const N: usize> const Neg for Bint<N> {
+impl<const N: usize> const Neg for BInt<N> {
     type Output = Self;
 
     #[inline]
     fn neg(self) -> Self {
         #[cfg(debug_assertions)]
-        return option_expect!(self.checked_neg(), "attempt to negate with overflow");
+        return option_expect!(self.checked_neg(), error::err_msg!("attempt to negate with overflow"));
 
         #[cfg(not(debug_assertions))]
         self.wrapping_neg()
     }
 }
 
-impl<const N: usize> const Neg for &Bint<N> {
-    type Output = Bint<N>;
+impl<const N: usize> const Neg for &BInt<N> {
+    type Output = BInt<N>;
 
     #[inline]
-    fn neg(self) -> Bint<N> {
+    fn neg(self) -> BInt<N> {
         (*self).neg()
     }
 }
         
-impl<const N: usize> const BitAnd for Bint<N> {
+impl<const N: usize> const BitAnd for BInt<N> {
     type Output = Self;
 
     #[inline]
@@ -34,7 +35,7 @@ impl<const N: usize> const BitAnd for Bint<N> {
     }
 }
 
-impl<const N: usize> const BitOr for Bint<N> {
+impl<const N: usize> const BitOr for BInt<N> {
     type Output = Self;
 
     #[inline]
@@ -43,7 +44,7 @@ impl<const N: usize> const BitOr for Bint<N> {
     }
 }
 
-impl<const N: usize> const BitXor for Bint<N> {
+impl<const N: usize> const BitXor for BInt<N> {
     type Output = Self;
 
     #[inline]
@@ -52,7 +53,7 @@ impl<const N: usize> const BitXor for Bint<N> {
     }
 }
         
-impl<const N: usize> const Not for Bint<N> {
+impl<const N: usize> const Not for BInt<N> {
     type Output = Self;
 
     #[inline]
@@ -61,4 +62,4 @@ impl<const N: usize> const Not for Bint<N> {
     }
 }
 
-impl_ops!(Bint);
+impl_ops!(BInt);

@@ -1,13 +1,13 @@
 macro_rules! div_zero {
     () => {
-        panic!("attempt to divide by zero")
+        panic!(crate::error::err_msg!("attempt to divide by zero"))
     };
 }
 pub(crate) use div_zero;
 
 macro_rules! rem_zero {
     () => {
-        panic!("attempt to calculate remainder with a divisor of zero")
+        panic!(crate::error::err_msg!("attempt to calculate remainder with a divisor of zero"))
     };
 }
 pub(crate) use rem_zero;
@@ -71,6 +71,7 @@ macro_rules! checked_pow {
     () => {
         #[inline]
         pub const fn checked_pow(self, exp: crate::ExpType) -> Option<Self> {
+			// credit Rust source code
             if exp == 0 {
                 return Some(Self::ONE);
             }
@@ -116,6 +117,7 @@ macro_rules! overflowing_pow {
     () => {
         #[inline]
         pub const fn overflowing_pow(self, exp: crate::ExpType) -> (Self, bool) {
+			// credit Rust source code
             if exp == 0 {
                 return (Self::ONE, false);
             }
@@ -158,6 +160,7 @@ macro_rules! wrapping_pow {
     () => {
         #[inline]
         pub const fn wrapping_pow(self, exp: crate::ExpType) -> Self {
+			// credit Rust source code
             if exp == 0 {
                 return Self::ONE;
             }
@@ -259,8 +262,6 @@ macro_rules! shift_impl {
                     self.$method(rhs as ExpType)
                 }
             }
-
-            //op_ref_impl!($tr<$rhs> for $Struct<N>, $method);
         )*
     }
 }
@@ -276,14 +277,12 @@ macro_rules! try_shift_impl {
                 fn $method(self, rhs: $rhs) -> Self {
                     use crate::ExpType;
                     #[cfg(debug_assertions)]
-                    let rhs: ExpType = crate::macros::option_expect!(rhs.try_into().ok(), $err);
+                    let rhs: ExpType = crate::macros::option_expect!(rhs.try_into().ok(), crate::error::err_msg!($err));
                     #[cfg(not(debug_assertions))]
                     let rhs = rhs as ExpType;
                     self.$method(rhs)
                 }
             }
-
-            //op_ref_impl!($tr<$rhs> for $Struct<N>, $method);
         )*
     }
 }
@@ -375,9 +374,9 @@ macro_rules! all_shift_impls {
 
         crate::macros::shift_self_impl!($Struct, Shr<BUint>, shr, ShrAssign, shr_assign, "attempt to shift right with overflow");
 
-        crate::macros::shift_self_impl!($Struct, Shl<Bint>, shl, ShlAssign, shl_assign, "attempt to shift left with overflow");
+        crate::macros::shift_self_impl!($Struct, Shl<BInt>, shl, ShlAssign, shl_assign, "attempt to shift left with overflow");
 
-        crate::macros::shift_self_impl!($Struct, Shr<Bint>, shr, ShrAssign, shr_assign, "attempt to shift right with overflow");
+        crate::macros::shift_self_impl!($Struct, Shr<BInt>, shr, ShrAssign, shr_assign, "attempt to shift right with overflow");
     }
 }
 
@@ -489,7 +488,7 @@ pub(crate) use impl_ops;
 
 macro_rules! assert_radix_range {
     ($radix: expr, $max: expr) => {
-        assert!((2..=$max).contains(&$radix), "Radix must be in range [2, {}]", $max)
+        assert!((2..=$max).contains(&$radix), crate::error::err_msg!("Radix must be in range [2, {}]"), $max)
     }
 }
 

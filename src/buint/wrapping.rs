@@ -1,5 +1,5 @@
 use super::{BUint, ExpType};
-use crate::{Bint, doc};
+use crate::{BInt, doc, error};
 use crate::macros::{option_expect, wrapping_pow};
 
 #[doc=doc::wrapping::impl_desc!()]
@@ -10,7 +10,7 @@ impl<const N: usize> BUint<N> {
     }
 
     #[inline]
-    pub const fn wrapping_add_signed(self, rhs: Bint<N>) -> Self {
+    pub const fn wrapping_add_signed(self, rhs: BInt<N>) -> Self {
         self.overflowing_add_signed(rhs).0
     }
 
@@ -26,7 +26,7 @@ impl<const N: usize> BUint<N> {
 
     #[inline]
     pub const fn wrapping_div(self, rhs: Self) -> Self {
-        option_expect!(self.checked_div(rhs), "attempt to divide by zero")
+        option_expect!(self.checked_div(rhs), error::err_msg!("attempt to divide by zero"))
     }
 
     #[inline]
@@ -36,7 +36,7 @@ impl<const N: usize> BUint<N> {
 
     #[inline]
     pub const fn wrapping_rem(self, rhs: Self) -> Self {
-        option_expect!(self.checked_rem(rhs), "attempt to calculate the remainder with a divisor of zero")
+        option_expect!(self.checked_rem(rhs), error::err_msg!("attempt to calculate the remainder with a divisor of zero"))
     }
 
     #[inline]

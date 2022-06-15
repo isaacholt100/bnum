@@ -4,6 +4,7 @@ use crate::digit::Digit;
 impl<const N: usize> BUint<N> {
     #[inline]
     pub const fn carrying_add(self, rhs: Self, carry: bool) -> (Self, bool) {
+		// credit Rust source code
         let (a, b) = self.overflowing_add(rhs);
         let (c, d) = a.overflowing_add(Self::from(carry));
         (c, b || d)
@@ -11,6 +12,7 @@ impl<const N: usize> BUint<N> {
 
     #[inline]
     pub const fn borrowing_sub(self, rhs: Self, borrow: bool) -> (Self, bool) {
+		// credit Rust source code
         let (a, b) = self.overflowing_sub(rhs);
         let (c, d) = a.overflowing_sub(Self::from(borrow));
         (c, b || d)
@@ -29,7 +31,7 @@ impl<const N: usize> BUint<N> {
             while j < N - i {
                 let index = i + j;
                 let d = low.digits[index];
-                let (new_digit, new_carry) = super::carrying_mul(self.digits[i], rhs.digits[j], carry, d);//self.digits[i].carrying_mul(rhs.digits[j], carry + d);
+                let (new_digit, new_carry) = super::carrying_mul(self.digits[i], rhs.digits[j], carry, d);
                 carry = new_carry;
                 low.digits[index] = new_digit;
                 j += 1;
@@ -37,7 +39,7 @@ impl<const N: usize> BUint<N> {
             while j < N {
                 let index = i + j - N;
                 let d = high.digits[index];
-                let (new_digit, new_carry) = super::carrying_mul(self.digits[i], rhs.digits[j], carry, d);//self.digits[i].carrying_mul(rhs.digits[j], carry + d);
+                let (new_digit, new_carry) = super::carrying_mul(self.digits[i], rhs.digits[j], carry, d);
                 carry = new_carry;
                 high.digits[index] = new_digit;
                 j += 1;
@@ -51,6 +53,7 @@ impl<const N: usize> BUint<N> {
 
     #[inline]
     pub const fn carrying_mul(self, rhs: Self, carry: Self) -> (Self, Self) {
+		// credit Rust source code
         let (low, high) = self.widening_mul(rhs);
         let (low, overflow) = low.overflowing_add(carry);
         if overflow {

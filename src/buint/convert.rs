@@ -1,6 +1,5 @@
 use super::BUint;
-use core::convert::{TryFrom, TryInto};
-use crate::TryFromIntError;
+use crate::{TryFromIntError, As};
 use crate::error::TryFromErrorReason::*;
 use crate::digit::{self, Digit};
 use crate::macros::all_try_int_impls;
@@ -10,11 +9,7 @@ use core::{f32, f64};
 impl<const N: usize> const From<bool> for BUint<N> {
     #[inline]
     fn from(small: bool) -> Self {
-        if small {
-            Self::ONE
-        } else {
-            Self::ZERO
-        }
+        small.as_()
     }
 }
 
@@ -25,8 +20,6 @@ impl<const N: usize> const From<char> for BUint<N> {
         Self::from(u)
     }
 }
-
-//use crate::bound::{Assert, IsTrue};
 
 macro_rules! from_uint {
     ($($uint: tt),*) => {
@@ -42,7 +35,6 @@ macro_rules! from_uint {
                         if d != 0 {
                             out.digits[i] = d;
                         }
-                        //out.digits[i] = (int >> (i << digit::BIT_SHIFT)) as Digit;
                         i += 1;
                     }
                     out
@@ -56,6 +48,7 @@ from_uint!(u8, u16, u32, usize, u64, u128);
 
 #[inline]
 fn decode_f32(f: f32) -> (u64, i16, i8) {
+	// credit num_traits source code
     let bits = f.to_bits();
     let sign = if bits >> 31 == 0 { 1 } else { -1 };
     let mut exponent = ((bits >> 23) & 0xff) as i16;
@@ -70,6 +63,7 @@ fn decode_f32(f: f32) -> (u64, i16, i8) {
 
 #[inline]
 fn decode_f64(f: f64) -> (u64, i16, i8) {
+	// credit num_traits source code
     let bits = f.to_bits();
     let sign = if bits >> 63 == 0 { 1 } else { -1 };
     let mut exponent = ((bits >> 52) & 0x7ff) as i16;
@@ -89,6 +83,7 @@ macro_rules! try_from_float {
         
             #[inline]
             fn try_from(f: $float) -> Result<Self, Self::Error> {
+				// credit num_traits source code
                 if !f.is_finite() {
                     return Err(TryFromIntError {
                         from: stringify!($float),

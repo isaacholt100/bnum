@@ -2,10 +2,7 @@ use super::BUint;
 use crate::macros::overflowing_pow;
 use crate::ExpType;
 use crate::digit::Digit;
-use crate::{Bint, doc};
-
-//const LONG_MUL_THRESHOLD: usize = 32;
-//const KARATSUBA_THRESHOLD: usize = 256;
+use crate::{BInt, doc};
 
 #[doc=doc::overflowing::impl_desc!()]
 impl<const N: usize> BUint<N> {
@@ -24,7 +21,8 @@ impl<const N: usize> BUint<N> {
     }
 
     #[inline]
-    pub const fn overflowing_add_signed(self, rhs: Bint<N>) -> (Self, bool) {
+    pub const fn overflowing_add_signed(self, rhs: BInt<N>) -> (Self, bool) {
+		// credit Rust source code
         let (out, overflow) = self.overflowing_add(rhs.to_bits());
         (out, overflow ^ rhs.is_negative())
     }
@@ -71,6 +69,7 @@ impl<const N: usize> BUint<N> {
 
     #[inline]
     pub const fn overflowing_mul(self, rhs: Self) -> (Self, bool) {
+		// TODO: implement a faster multiplication algorithm for large values of `N`
         self.long_mul(rhs)
     }
     /*const fn overflowing_mul_digit(self, rhs: Digit) -> (Self, Digit) {
@@ -123,7 +122,6 @@ impl<const N: usize> BUint<N> {
     #[inline]
     pub const fn overflowing_shr(self, rhs: ExpType) -> (Self, bool) {
         if rhs >= Self::BITS {
-            //assert_eq!(rhs & Self::BITS_MINUS_1, 13);
             (super::unchecked_shr(self, rhs & Self::BITS_MINUS_1), true)
         } else {
             (super::unchecked_shr(self, rhs), false)

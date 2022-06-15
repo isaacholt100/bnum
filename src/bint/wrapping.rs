@@ -1,8 +1,8 @@
-use super::Bint;
+use super::BInt;
 use crate::{ExpType, BUint, doc};
 
 #[doc=doc::wrapping::impl_desc!()]
-impl<const N: usize> Bint<N> {
+impl<const N: usize> BInt<N> {
     #[inline]
     pub const fn wrapping_add(self, rhs: Self) -> Self {
         Self::from_bits(self.bits.wrapping_add(rhs.bits))

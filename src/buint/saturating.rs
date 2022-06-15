@@ -1,10 +1,10 @@
 use super::{BUint, ExpType};
-use crate::{Bint, doc};
+use crate::{BInt, doc};
 
 #[inline]
 const fn saturate_up<const N: usize>((int, overflow): (BUint<N>, bool)) -> BUint<N> {
     if overflow {
-        BUint::<N>::MAX
+        BUint::MAX
     } else {
         int
     }
@@ -13,7 +13,7 @@ const fn saturate_up<const N: usize>((int, overflow): (BUint<N>, bool)) -> BUint
 #[inline]
 const fn saturate_down<const N: usize>((int, overflow): (BUint<N>, bool)) -> BUint<N> {
     if overflow {
-        BUint::<N>::MIN
+        BUint::MIN
     } else {
         int
     }
@@ -27,7 +27,7 @@ impl<const N: usize> BUint<N> {
     }
 
     #[inline]
-    pub const fn saturating_add_signed(self, rhs: Bint<N>) -> Self {
+    pub const fn saturating_add_signed(self, rhs: BInt<N>) -> Self {
         if rhs.is_negative() {
             saturate_down(self.overflowing_add_signed(rhs))
         } else {

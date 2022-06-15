@@ -1,7 +1,9 @@
 use rand::distributions::uniform::{SampleUniform, UniformSampler, SampleBorrow};
 use rand::distributions::{Distribution, Standard};
 use rand::{Rng, Fill, Error};
-use crate::{BUint, Bint};
+use crate::{BUint, BInt};
+
+// credit all below code to rand source code
 
 impl<const N: usize> Distribution<BUint<N>> for Standard {
     #[inline]
@@ -10,18 +12,18 @@ impl<const N: usize> Distribution<BUint<N>> for Standard {
     }
 }
 
-impl<const N: usize> Distribution<Bint<N>> for Standard {
+impl<const N: usize> Distribution<BInt<N>> for Standard {
     #[inline]
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Bint<N> {
-        Bint::from_bits(rng.gen())
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> BInt<N> {
+        BInt::from_bits(rng.gen())
     }
 }
 
-#[cfg(feature = "serde_all")]
+#[cfg(feature = "serde")]
 use serde::{Serialize, Deserialize};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-#[cfg_attr(feature = "serde_all", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct RandomUniformInt<X> {
     low: X,
     range: X,
@@ -29,8 +31,6 @@ pub struct RandomUniformInt<X> {
 }
 
 pub struct Slice<T>(pub [T]);
-
-// TODO: credit this code and below to the rand crate
 
 macro_rules! fill_impl {
     ($ty: ty) => {
@@ -54,7 +54,7 @@ macro_rules! fill_impl {
 }
 
 fill_impl!(BUint<N>);
-fill_impl!(Bint<N>);
+fill_impl!(BInt<N>);
 
 macro_rules! uniform_int_impl {
     ($ty:ty, $u_large:ty $(, $as_unsigned: ident, $as_signed: ident)?) => {
@@ -99,8 +99,8 @@ macro_rules! uniform_int_impl {
 
                 RandomUniformInt {
                     low,
-                    range: $(Bint::$as_signed)?(range),
-                    z: $(Bint::$as_signed)?(ints_to_reject),
+                    range: $(BInt::$as_signed)?(range),
+                    z: $(BInt::$as_signed)?(ints_to_reject),
                 }
             }
 
@@ -113,7 +113,7 @@ macro_rules! uniform_int_impl {
                         let v: $u_large = rng.gen();
                         let (lo, hi) = v.widening_mul(range);
                         if lo <= zone {
-                            return self.low.wrapping_add($(Bint::$as_signed)?(hi));
+                            return self.low.wrapping_add($(BInt::$as_signed)?(hi));
                         }
                     }
                 } else {
@@ -158,7 +158,7 @@ macro_rules! uniform_int_impl {
                     let v: $u_large = rng.gen();
                     let (lo, hi) = v.widening_mul(range);
                     if lo <= zone {
-                        return low.wrapping_add($(Bint::$as_signed)?(hi));
+                        return low.wrapping_add($(BInt::$as_signed)?(hi));
                     }
                 }
             }
@@ -168,4 +168,4 @@ macro_rules! uniform_int_impl {
 
 uniform_int_impl!(BUint<N>, BUint<N>);
 
-uniform_int_impl!(Bint<N>, BUint<N>, to_bits, from_bits);
+uniform_int_impl!(BInt<N>, BUint<N>, to_bits, from_bits);

@@ -1,4 +1,4 @@
-use crate::{BUint, digit, Bint};
+use crate::{BUint, digit, BInt};
 
 macro_rules! int_type_doc {
 	($bits: literal, $sign: literal) => {
@@ -13,7 +13,7 @@ macro_rules! int_types {
 			pub type $u = BUint::<{$bits / digit::BITS as usize}>;
 
 			#[doc=int_type_doc!($bits, "signed")]
-			pub type $i = Bint::<{$bits / digit::BITS as usize}>;
+			pub type $i = BInt::<{$bits / digit::BITS as usize}>;
 		)*
 	};
 }
@@ -27,7 +27,7 @@ int_types! {
 	8192 U8192 I8192;
 }
 
-// These are for testing purposes only
+// The below types are for testing purposes only and are not publicly exposed
 
 #[allow(unused)]
 pub(crate) type U64 = BUint::<{64 / digit::BITS as usize}>;
@@ -36,6 +36,6 @@ pub(crate) type U64 = BUint::<{64 / digit::BITS as usize}>;
 pub(crate) type U128 = BUint::<{128 / digit::BITS as usize}>;
 
 #[allow(unused)]
-pub(crate) type I64 = Bint::<{64 / digit::BITS as usize}>;
+pub(crate) type I64 = BInt::<{64 / digit::BITS as usize}>;
 #[allow(unused)]
-pub(crate) type I128 = Bint::<{128 / digit::BITS as usize}>;
+pub(crate) type I128 = BInt::<{128 / digit::BITS as usize}>;

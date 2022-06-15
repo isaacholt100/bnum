@@ -1,3 +1,4 @@
+// credit num_bigint source code
 use crate::Digit;
 
 #[cfg(feature = "u8_digit")]

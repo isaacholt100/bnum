@@ -1,9 +1,9 @@
 use crate::doc;
 
-use super::Bint;
+use super::BInt;
 
 #[doc=doc::unchecked::impl_desc!()]
-impl<const N: usize> Bint<N> {
+impl<const N: usize> BInt<N> {
     #[inline]
     pub unsafe fn unchecked_add(self, rhs: Self) -> Self {
         self.checked_add(rhs).unwrap_unchecked()

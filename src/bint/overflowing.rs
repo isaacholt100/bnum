@@ -1,8 +1,8 @@
-use super::Bint;
+use super::BInt;
 use crate::digit::{SignedDigit, Digit, SignedDoubleDigit};
 use crate::macros::{overflowing_pow, div_zero, rem_zero};
 use crate::{ExpType, BUint, doc};
-use crate::digit;
+use crate::{digit, error};
 
 #[inline]
 const fn carrying_add_signed(a: SignedDigit, b: SignedDigit, carry: bool) -> (SignedDigit, bool) {
@@ -17,14 +17,14 @@ const fn borrowing_sub_signed(a: SignedDigit, b: SignedDigit, borrow: bool) -> (
 }
 
 #[doc=doc::overflowing::impl_desc!()]
-impl<const N: usize> Bint<N> {
+impl<const N: usize> BInt<N> {
     #[inline]
     pub const fn overflowing_add(self, rhs: Self) -> (Self, bool) {
         let mut digits = [0; N];
         let mut carry = false;
 
-        let self_digits = self.digits();
-        let rhs_digits = rhs.digits();
+        let self_digits = self.bits.digits;
+        let rhs_digits = rhs.bits.digits;
 
         let mut i = 0;
         while i < Self::N_MINUS_1 {
@@ -45,6 +45,7 @@ impl<const N: usize> Bint<N> {
 
     #[inline]
     pub const fn overflowing_add_unsigned(self, rhs: BUint<N>) -> (Self, bool) {
+		// credit Rust source code
         let rhs = Self::from_bits(rhs);
         let (out, overflow) = self.overflowing_add(rhs);
         (out, overflow ^ rhs.is_negative())
@@ -55,8 +56,8 @@ impl<const N: usize> Bint<N> {
         let mut digits = [0; N];
         let mut borrow = false;
 
-        let self_digits = self.digits();
-        let rhs_digits = rhs.digits();
+        let self_digits = self.bits.digits;
+        let rhs_digits = rhs.bits.digits;
 
         let mut i = 0;
         while i < Self::N_MINUS_1 {
@@ -98,6 +99,7 @@ impl<const N: usize> Bint<N> {
 
     #[inline]
     const fn div_rem_unchecked(self, rhs: Self) -> (Self, Self) {
+		// credit Rust source code
         let (div, rem) = self.unsigned_abs().div_rem_unchecked(rhs.unsigned_abs());
         let div = Self::from_bits(div);
         let rem = Self::from_bits(rem);
@@ -116,6 +118,7 @@ impl<const N: usize> Bint<N> {
 
     #[inline]
     pub const fn overflowing_div(self, rhs: Self) -> (Self, bool) {
+		// credit Rust source code
         if self == Self::MIN && rhs == Self::NEG_ONE {
             (self, true)
         } else {
@@ -128,6 +131,7 @@ impl<const N: usize> Bint<N> {
 
     #[inline]
     pub const fn overflowing_div_euclid(self, rhs: Self) -> (Self, bool) {
+		// credit Rust source code
         if self == Self::MIN && rhs == Self::NEG_ONE {
             (self, true)
         } else {
@@ -154,6 +158,7 @@ impl<const N: usize> Bint<N> {
 
     #[inline]
     pub const fn overflowing_rem(self, rhs: Self) -> (Self, bool) {
+		// credit Rust source code
         if self == Self::MIN && rhs == Self::NEG_ONE {
             (Self::ZERO, true)
         } else {
@@ -166,6 +171,7 @@ impl<const N: usize> Bint<N> {
 
     #[inline]
     pub const fn overflowing_rem_euclid(self, rhs: Self) -> (Self, bool) {
+		// credit Rust source code
         if self == Self::MIN && rhs == Self::NEG_ONE {
             (Self::ZERO, true)
         } else {
@@ -198,6 +204,7 @@ impl<const N: usize> Bint<N> {
 
     #[inline]
     const fn shr_internal(self, rhs: ExpType) -> Self {
+		// credit num_bigint source code
         if rhs == 0 {
             self
         } else {
@@ -205,7 +212,7 @@ impl<const N: usize> Bint<N> {
             let shift = (rhs & digit::BITS_MINUS_1) as u8;
     
             let mut out_digits = [Digit::MAX; N];
-            let digits_ptr = self.digits().as_ptr();
+            let digits_ptr = self.bits.digits.as_ptr();
             let out_ptr = out_digits.as_mut_ptr() as *mut Digit;
             unsafe {
                 digits_ptr.add(digit_shift).copy_to_nonoverlapping(out_ptr, N - digit_shift);
@@ -259,12 +266,12 @@ impl<const N: usize> Bint<N> {
 
 use core::ops::{Div, Rem};
 
-impl<const N: usize> const Div for Bint<N> {
+impl<const N: usize> const Div for BInt<N> {
     type Output = Self;
 
     fn div(self, rhs: Self) -> Self {
         if self.eq(&Self::MIN) && rhs.eq(&Self::NEG_ONE) {
-            panic!("attempt to divide with overflow")
+            panic!(error::err_msg!("attempt to divide with overflow"))
         } else {
             if rhs.is_zero() {
                 div_zero!()
@@ -274,12 +281,12 @@ impl<const N: usize> const Div for Bint<N> {
     }
 }
 
-impl<const N: usize> const Rem for Bint<N> {
+impl<const N: usize> const Rem for BInt<N> {
     type Output = Self;
 
     fn rem(self, rhs: Self) -> Self {
         if self.eq(&Self::MIN) && rhs.eq(&Self::NEG_ONE) {
-            panic!("attempt to calculate remainder with overflow")
+            panic!(error::err_msg!("attempt to calculate remainder with overflow"))
         } else {
             if rhs.is_zero() {
                 rem_zero!()
