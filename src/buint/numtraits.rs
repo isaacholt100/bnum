@@ -2,130 +2,8 @@ use super::{BUint, ExpType};
 use num_traits::{Bounded, CheckedAdd, CheckedDiv, CheckedMul, CheckedNeg, CheckedRem, CheckedShl, CheckedShr, CheckedSub, FromPrimitive, MulAdd, MulAddAssign, Num, One, SaturatingAdd, SaturatingMul, SaturatingSub, WrappingAdd, WrappingMul, WrappingNeg, WrappingShl, WrappingShr, WrappingSub, ToPrimitive, Unsigned, Zero, Pow, Saturating, AsPrimitive};
 use num_integer::{Integer, Roots};
 use crate::digit::{self, Digit};
-use crate::cast::CastFrom;
 
-impl<const N: usize> Bounded for BUint<N> {
-    #[inline]
-    fn min_value() -> Self {
-        Self::MIN
-    }
-
-    #[inline]
-    fn max_value() -> Self {
-        Self::MAX
-    }
-}
-
-macro_rules! num_trait_impl {
-    ($tr: ident, $method: ident, $ret: ty) => {
-        impl<const N: usize> $tr for BUint<N> {
-            #[inline]
-            fn $method(&self, rhs: &Self) -> $ret {
-                Self::$method(*self, *rhs)
-            }
-        }
-    }
-}
-
-num_trait_impl!(CheckedAdd, checked_add, Option<Self>);
-num_trait_impl!(CheckedDiv, checked_div, Option<Self>);
-num_trait_impl!(CheckedMul, checked_mul, Option<Self>);
-num_trait_impl!(CheckedRem, checked_rem, Option<Self>);
-num_trait_impl!(CheckedSub, checked_sub, Option<Self>);
-
-num_trait_impl!(SaturatingAdd, saturating_add, Self);
-num_trait_impl!(SaturatingMul, saturating_mul, Self);
-num_trait_impl!(SaturatingSub, saturating_sub, Self);
-
-num_trait_impl!(WrappingAdd, wrapping_add, Self);
-num_trait_impl!(WrappingMul, wrapping_mul, Self);
-num_trait_impl!(WrappingSub, wrapping_sub, Self);
-
-impl<const N: usize> CheckedNeg for BUint<N> {
-    #[inline]
-    fn checked_neg(&self) -> Option<Self> {
-        Self::checked_neg(*self)
-    }
-}
-
-impl<const N: usize> CheckedShl for BUint<N> {
-    #[inline]
-    fn checked_shl(&self, rhs: u32) -> Option<Self> {
-        Self::checked_shl(*self, rhs)
-    }
-}
-
-impl<const N: usize> CheckedShr for BUint<N> {
-    #[inline]
-    fn checked_shr(&self, rhs: u32) -> Option<Self> {
-        Self::checked_shr(*self, rhs)
-    }
-}
-
-impl<const N: usize> WrappingNeg for BUint<N> {
-    #[inline]
-    fn wrapping_neg(&self) -> Self {
-        Self::wrapping_neg(*self)
-    }
-}
-
-impl<const N: usize> WrappingShl for BUint<N> {
-    #[inline]
-    fn wrapping_shl(&self, rhs: u32) -> Self {
-        Self::wrapping_shl(*self, rhs as ExpType)
-    }
-}
-
-impl<const N: usize> WrappingShr for BUint<N> {
-    #[inline]
-    fn wrapping_shr(&self, rhs: u32) -> Self {
-        Self::wrapping_shr(*self, rhs as ExpType)
-    }
-}
-
-impl<const N: usize> Pow<ExpType> for BUint<N> {
-    type Output = Self;
-
-    #[inline]
-    fn pow(self, exp: ExpType) -> Self {
-        Self::pow(self, exp)
-    }
-}
-
-use core::convert::TryFrom;
-
-macro_rules! as_primitive_impl {
-    ($($ty: ty), *) => {
-        $(
-            impl<const N: usize> AsPrimitive<$ty> for BUint<N> {
-                #[inline]
-                fn as_(self) -> $ty {
-                    crate::As::as_(self)
-                }
-            }
-        )*
-    }
-}
-
-as_primitive_impl!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64);
-
-crate::macros::as_bigint_impl!([u8, u16, u32, usize, u64, u128, i8, i16, i32, isize, i64, i128, char, bool] as BUint);
-
-impl<const N: usize, const M: usize> AsPrimitive<BUint<M>> for BUint<N> {
-    #[inline]
-    fn as_(self) -> BUint<M> {
-        BUint::<M>::cast_from(self)
-    }
-}
-
-use crate::BInt;
-
-impl<const N: usize, const M: usize> AsPrimitive<BInt<M>> for BUint<N> {
-    #[inline]
-    fn as_(self) -> BInt<M> {
-        BInt::<M>::cast_from(self)
-    }
-}
+crate::int::numtraits::impls!(BUint);
 
 impl<const N: usize> FromPrimitive for BUint<N> {
     #[inline]
@@ -206,31 +84,37 @@ impl<const N: usize> Integer for BUint<N> {
 
     #[inline]
     fn gcd(&self, other: &Self) -> Self {
-		// credit wikipedia source code: https://en.wikipedia.org/wiki/Binary_GCD_algorithm#Implementation
-        let (mut u, mut v) = (*self, *other);
-        if u.is_zero() {
-            return v;
-        } else if v.is_zero() {
-            return u;
-        }
-        let i = u.trailing_zeros();
-        u = super::unchecked_shr(u, i);
-        let j = v.trailing_zeros();
-        v = super::unchecked_shr(v, j);
-        let k = if i > j { j } else { i };
+		// Paul E. Black, "binary GCD", in Dictionary of Algorithms and Data Structures [online], Paul E. Black, ed. 2 November 2020. (accessed 15th June 2022) Available from: https://www.nist.gov/dads/HTML/binaryGCD.html
+		// https://en.wikipedia.org/wiki/Binary_GCD_algorithm#Implementation
 
-        loop {
-            if let core::cmp::Ordering::Greater = u.cmp(&v)  {
-                let t = (u, v);
-                v = t.0;
-                u = t.1;
-            }
-            v = v.wrapping_sub(u);
-            if v.is_zero() {
-                return super::unchecked_shl(u, k);
-            }
-            v = super::unchecked_shr(v, v.trailing_zeros());
-        }
+		let (mut a, mut b) = (*self, *other);
+		if a.is_zero() {
+			return b;
+		}
+		if b.is_zero() {
+			return a;
+		}
+		let mut a_tz = a.trailing_zeros();
+		let mut b_tz = b.trailing_zeros();
+		// Normalise `a` and `b` so that both of them has no leading zeros, so both must be odd.
+		a = super::unchecked_shr(a, a_tz);
+		b = super::unchecked_shr(b, b_tz);
+
+		if b_tz > a_tz {
+			// Ensure `a_tz >= b_tz`
+			core::mem::swap(&mut a_tz, &mut b_tz);
+		}
+		loop {
+			if a < b {
+				// Ensure `a >= b`
+				core::mem::swap(&mut a, &mut b);
+			}
+			a -= b;
+			if a.is_zero() {
+				return super::unchecked_shl(b, b_tz);
+			}
+			a = super::unchecked_shr(a, a.trailing_zeros());
+		}
     }
 
     #[inline]
@@ -261,45 +145,6 @@ impl<const N: usize> Integer for BUint<N> {
     #[inline]
     fn div_rem(&self, rhs: &Self) -> (Self, Self) {
         Self::div_rem(*self, *rhs)
-    }
-}
-
-impl<const N: usize> MulAdd for BUint<N> {
-    type Output = Self;
-
-    #[inline]
-    fn mul_add(self, a: Self, b: Self) -> Self {
-        (self * a) + b
-    }
-}
-
-impl<const N: usize> MulAddAssign for BUint<N> {
-    #[inline]
-    fn mul_add_assign(&mut self, a: Self, b: Self) {
-        *self = self.mul_add(a, b);
-    }
-}
-
-use crate::ParseIntError;
-
-impl<const N: usize> Num for BUint<N> {
-    type FromStrRadixErr = ParseIntError;
-
-    #[inline]
-    fn from_str_radix(string: &str, radix: u32) -> Result<Self, Self::FromStrRadixErr> {
-        Self::from_str_radix(string, radix)
-    }
-}
-
-impl<const N: usize> One for BUint<N> {
-    #[inline]
-    fn one() -> Self {
-        Self::ONE
-    }
-
-    #[inline]
-    fn is_one(&self) -> bool {
-        self == &Self::ONE
     }
 }
 
@@ -360,18 +205,6 @@ impl<const N: usize> One for BUint<N> {
     }
 }*/
 
-impl<const N: usize> Saturating for BUint<N> {
-    #[inline]
-    fn saturating_add(self, rhs: Self) -> Self {
-        Self::saturating_add(self, rhs)
-    }
-
-    #[inline]
-    fn saturating_sub(self, rhs: Self) -> Self {
-        Self::saturating_sub(self, rhs)
-    }
-}
-
 macro_rules! check_zero_or_one {
     ($self: ident) => {
         if N == 0 {
@@ -411,6 +244,25 @@ impl<const N: usize> BUint<N> {
 impl<const N: usize> Roots for BUint<N> {
     #[inline]
     fn sqrt(&self) -> Self {
+		/*if self.is_zero() {
+			return Self::ZERO;
+		}
+		let m = *self;
+		let mut u = m;
+		let mut s: Self;
+		let mut t: Self;
+
+		loop {
+			s = u;
+			let d = m / s;
+			u = super::unchecked_shr(s, 1) + super::unchecked_shr(d, 1);
+			if s.is_odd() && d.is_odd() {
+				u += Self::ONE;
+			}
+			if u >= s {
+				return s;
+			}
+		}*/
 		// credit num_bigint source code
         check_zero_or_one!(self);
 
@@ -519,78 +371,4 @@ impl<const N: usize> ToPrimitive for BUint<N> {
 
 impl<const N: usize> Unsigned for BUint<N> {}
 
-impl<const N: usize> Zero for BUint<N> {
-    #[inline]
-    fn zero() -> Self {
-        Self::ZERO
-    }
-
-    #[inline]
-    fn is_zero(&self) -> bool {
-        Self::is_zero(self)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::{Roots, ToPrimitive, FromPrimitive, Integer};
-	use crate::test::test_bignum;
-
-	test_bignum! {
-		function: <u128>::sqrt(a: ref &u128)
-	}
-	test_bignum! {
-		function: <u128>::cbrt(a: ref &u128)
-	}
-	test_bignum! {
-		function: <u128>::nth_root(u: ref &u128, n: u32),
-		skip: n == 0
-	}
-
-	macro_rules! test_to_primitive {
-		($($prim: ty), *) => {
-			paste::paste! {
-				$(
-					test_bignum! {
-						function: <u128>::[<to_ $prim>](u: ref &u128)
-					}
-				)*
-			}
-		};
-	}
-
-	test_to_primitive!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64);
-
-	macro_rules! test_from_primitive {
-		($($prim: ty), *) => {
-			paste::paste! {
-				$(
-					test_bignum! {
-						function: <u128>::[<from_ $prim>](u: $prim)
-					}
-				)*
-			}
-		};
-	}
-
-	test_from_primitive!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64);
-
-	macro_rules! test_integer_trait {
-		(<$primitive: ty> :: $($function: ident), *) => {
-			$(
-				test_bignum! {
-					function: <$primitive as Integer>::$function(a: ref &$primitive, b: ref &$primitive)
-				}
-			)*
-		};
-	}
-
-	test_integer_trait!(<u128>::div_floor, mod_floor, gcd, lcm, divides, is_multiple_of, div_rem);
-
-	test_bignum! {
-		function: <u128 as Integer>::is_even(a: ref &u128)
-	}
-	test_bignum! {
-		function: <u128 as Integer>::is_odd(a: ref &u128)
-	}
-}
+crate::int::numtraits::tests!(u128);

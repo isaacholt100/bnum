@@ -29,9 +29,9 @@ impl Display for TryFromIntError {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         use TryFromErrorReason::*;
         let message = match &self.reason {
-            TooLarge => format!("(bnum) {} is too large to convert to {}", self.from, self.to),
-            Negative => format!("(bnum) can't convert negative {} to {}", self.from, self.to),
-            NotFinite => format!("(bnum) can't convert type {} which is not finite to type {}", self.from, self.to),
+            TooLarge => format!("{} is too large to convert to {}", self.from, self.to),
+            Negative => format!("can't convert negative {} to {}", self.from, self.to),
+            NotFinite => format!("can't convert type {} which is not finite to type {}", self.from, self.to),
         };
         write!(f, "{} {}", err_prefix!(), message)
     }
@@ -59,12 +59,12 @@ impl ParseIntError {
 impl fmt::Display for ParseIntError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		let msg = match &self.kind {
-            IntErrorKind::Empty => "(bnum) cannot parse integer from empty string",
-            IntErrorKind::InvalidDigit => "(bnum) invalid digit found in string",
-            IntErrorKind::PosOverflow => "(bnum) number too large to fit in target type",
-            IntErrorKind::NegOverflow => "(bnum) number too small to fit in target type",
-            IntErrorKind::Zero => "(bnum) number would be zero for non-zero type",
-            _ => panic!("(bnum) unsupported IntErrorKind variant"),
+            IntErrorKind::Empty => "cannot parse integer from empty string",
+            IntErrorKind::InvalidDigit => "invalid digit found in string",
+            IntErrorKind::PosOverflow => "number too large to fit in target type",
+            IntErrorKind::NegOverflow => "number too small to fit in target type",
+            IntErrorKind::Zero => "number would be zero for non-zero type",
+            _ => panic!("unsupported IntErrorKind variant"),
         };
         write!(f, "{} {}", err_prefix!(), msg)
     }

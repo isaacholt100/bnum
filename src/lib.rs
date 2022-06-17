@@ -5,17 +5,18 @@
     const_maybe_uninit_as_mut_ptr,
     const_trait_impl,
     bigint_helper_methods, // not necessary TODO: change code so doesn't need this, otherwise include in README, same for others
-    int_roundings, // not necessary
     const_bigint_helper_methods, // not necessary
 )]
 #![cfg_attr(test, feature(
+	test,
     int_log,
+	int_roundings,
     float_minimum_maximum,
     wrapping_next_power_of_two,
 	mixed_integer_ops,
 ))]
 #![doc = include_str!("../README.md")]
-//#![no_std]
+#![no_std]
 
 // TODO: sort out license
 // TODO: credit all necessary bits of code/rewrite myself. have already commented where all bits which need crediting, just need to actually credit them properly
@@ -50,8 +51,8 @@ pub use cast::As;
 #[cfg(feature = "rand")]
 pub use random::RandomUniformInt;
 
-#[cfg(test)]
-mod benchmarks;
+//#[cfg(test)]
+//mod benches;
 
 #[cfg(feature = "usize_exptype")]
 type ExpType = usize;

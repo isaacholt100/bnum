@@ -1,4 +1,4 @@
-# BInt
+# bnum
 
 Arbitrary precision, fixed-size signed and unsigned integer types for Rust: `BInt` and `BUint`.
 
@@ -7,6 +7,8 @@ Arbitrary precision, fixed-size signed and unsigned integer types for Rust: `BIn
 The aim of this crate is to provide integer types of any fixed size which behave exactly like Rust's primitive integer types: `u8`, `i8`, `u16`, `i16`, etc. Nearly all methods defined on Rust's signed and unsigned primitive integers are defined on `BInt` and `BUint` respectively. Additionally, some other useful methods are provided, mostly inspired by the `BigInt` and `BigUint` types from the `num` crate.
 
 This crate uses Rust's const generics to creation allow integers of any size that can be determined at compile time. `BUint<N>` is stored as an array of digits (primitive unsigned integers) of length `N`. `BInt` is simply stored as a `BUint` in two's complement.
+
+`bnum` can be used in `no_std` environments, provided a global default allocator is configured.
 
 **NB: this library relies on a few features that are only available on the nightly Rust compiler, and so currently it can only run on nightly. These features are [`generic_const_exprs`](https://github.com/rust-lang/rust/issues/76560), [`const_mut_refs`](https://github.com/rust-lang/rust/issues/57349), [`const_maybe_uninit_as_mut_ptr`](https://github.com/rust-lang/rust/issues/75251), [`const_trait_impl`](https://github.com/rust-lang/rust/issues/67792). This allows nearly all methods defined on `BUint` and `BInt` to be `const`, just as the ones on Rust's primitive integers are.** 
 

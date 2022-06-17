@@ -105,12 +105,18 @@ mod tests {
         ]
     }
     test_bignum! {
+		function: <i128>::saturating_add_unsigned(a: i128, b: u128)
+    }
+    test_bignum! {
         function: <i128>::saturating_sub(a: i128, b: i128),
         cases: [
             (i128::MAX, -5),
             (i128::MIN, i128::MAX),
             (27456873894567457667567i128, 784569026784526789475698i128)
         ]
+    }
+    test_bignum! {
+		function: <i128>::saturating_sub_unsigned(a: i128, b: u128)
     }
     test_bignum! {
         function: <i128>::saturating_neg(a: i128),

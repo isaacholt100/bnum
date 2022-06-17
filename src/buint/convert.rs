@@ -2,7 +2,6 @@ use super::BUint;
 use crate::{TryFromIntError, As};
 use crate::error::TryFromErrorReason::*;
 use crate::digit::{self, Digit};
-use crate::macros::all_try_int_impls;
 use crate::ExpType;
 use core::{f32, f64};
 
@@ -46,87 +45,88 @@ macro_rules! from_uint {
 
 from_uint!(u8, u16, u32, usize, u64, u128);
 
-#[inline]
-fn decode_f32(f: f32) -> (u64, i16, i8) {
-	// credit num_traits source code
-    let bits = f.to_bits();
-    let sign = if bits >> 31 == 0 { 1 } else { -1 };
-    let mut exponent = ((bits >> 23) & 0xff) as i16;
-    let mantissa = if exponent == 0 {
-        (bits & 0x7fffff) << 1
-    } else {
-        (bits & 0x7fffff) | 0x800000
-    };
-    exponent -= 127 + 23;
-    (mantissa as u64, exponent, sign)
+macro_rules! decode_float {
+	($name: ident, $f: ty, $u: ty) => {
+		pub fn $name(f: $f) -> ($u, i16) {
+			const BITS: u32 = core::mem::size_of::<$f>() as u32 * 8;
+			const MANT_MASK: $u = <$u>::MAX >> (BITS - (<$f>::MANTISSA_DIGITS - 1));
+			const EXP_MASK: $u = <$u>::MAX >> 1;
+			const BIAS: i16 = <$f>::MAX_EXP as i16 - 1;
+
+			let bits = f.to_bits();
+			let exp = ((bits & EXP_MASK) >> (<$f>::MANTISSA_DIGITS - 1)) as i16;
+			let mut mant = bits & MANT_MASK;
+			if exp != 0 {
+				mant |= (1 << (<$f>::MANTISSA_DIGITS - 1));
+			}
+			(mant, exp - (BIAS + <$f>::MANTISSA_DIGITS as i16 - 1))
+		}
+	};
 }
 
-#[inline]
-fn decode_f64(f: f64) -> (u64, i16, i8) {
-	// credit num_traits source code
-    let bits = f.to_bits();
-    let sign = if bits >> 63 == 0 { 1 } else { -1 };
-    let mut exponent = ((bits >> 52) & 0x7ff) as i16;
-    let mantissa = if exponent == 0 {
-        (bits & 0xfffffffffffff) << 1
-    } else {
-        (bits & 0xfffffffffffff) | 0x10000000000000
-    };
-    exponent -= 1023 + 52;
-    (mantissa, exponent, sign)
+decode_float!(decode_f32, f32, u32);
+decode_float!(decode_f64, f64, u64);
+
+const fn u32_bits(u: u32) -> ExpType {
+    32 - u.leading_zeros() as ExpType
+}
+
+const fn u64_bits(u: u64) -> ExpType {
+    64 - u.leading_zeros() as ExpType
 }
 
 macro_rules! try_from_float {
-    ($float: ty, $decoder: ident) => {
+    ($float: ty, $decoder: ident, $mant_bits: ident) => {
         impl<const N: usize> TryFrom<$float> for BUint<N> {
             type Error = TryFromIntError;
         
             #[inline]
             fn try_from(f: $float) -> Result<Self, Self::Error> {
-				// credit num_traits source code
-                if !f.is_finite() {
-                    return Err(TryFromIntError {
+				if !f.is_finite() {
+					return Err(TryFromIntError {
                         from: stringify!($float),
                         to: "BUint",
                         reason: NotFinite,
                     });
-                }
-                let f = f.trunc();
-                if f == 0.0 {
-                    return Ok(Self::ZERO);
-                }
-                use core::cmp::Ordering;
-                let (mantissa, exponent, sign) = $decoder(f);
-                if sign == -1 {
-                    return Err(TryFromIntError {
+				}
+				if f == 0.0 {
+					return Ok(Self::ZERO);
+				}
+				if f.is_sign_negative() {
+					return Err(TryFromIntError {
                         from: stringify!($float),
                         to: "BUint",
                         reason: Negative,
                     });
-                }
-                let out = Self::from(mantissa);
-                match exponent.cmp(&0) {
-                    Ordering::Greater => {
-                        if out.bits() + exponent as ExpType >= Self::BITS {
-                            Err(TryFromIntError {
-                                from: stringify!($float),
-                                to: "BUint",
-                                reason: TooLarge,
-                            })
-                        } else {
-                            Ok(out << exponent)
-                        }
-                    },
-                    Ordering::Equal => Ok(out),
-                    Ordering::Less => Ok(out >> (-exponent)),
-                }
+				}
+				let (mut mant, exp) = $decoder(f);
+				if exp.is_negative() {
+					mant = mant.checked_shr((-exp) as ExpType).unwrap_or(0);
+					if $mant_bits(mant) > Self::BITS {
+						return Err(TryFromIntError {
+							from: stringify!($float),
+							to: "BUint",
+							reason: TooLarge,
+						});
+					}
+					Ok(mant.as_())
+				} else {
+					if $mant_bits(mant) + exp as ExpType > Self::BITS {
+						return Err(TryFromIntError {
+							from: stringify!($float),
+							to: "BUint",
+							reason: TooLarge,
+						});
+					}
+					Ok(mant.as_::<Self>() << exp)
+				}
             }
         }
     }
 }
 
-try_from_float!(f32, decode_f32);
-try_from_float!(f64, decode_f64);
+try_from_float!(f32, decode_f32, u32_bits);
+try_from_float!(f64, decode_f64, u64_bits);
 
 macro_rules! try_from_iint {
     ($($int: tt -> $uint: tt),*) => {
@@ -151,7 +151,7 @@ macro_rules! try_from_iint {
 
 try_from_iint!(i8 -> u8, i16 -> u16, i32 -> u32, isize -> usize, i64 -> u64, i128 -> u128);
 
-all_try_int_impls!(BUint);
+crate::int::convert::all_try_int_impls!(BUint);
 
 impl<const N: usize> const From<[Digit; N]> for BUint<N> {
     #[inline]

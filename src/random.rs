@@ -1,9 +1,18 @@
+/*
+Most of the code in this file is adapted from the Rust `rand` library: https://docs.rs/rand/latest/rand/ used under the MIT license.
+The original license file for this project can be found in this project's root at licenses/LICENSE-rand
+
+The appropriate copyright notices for this is given below:
+Copyright 2018 Developers of the Rand project.
+Copyright 2013-2017 The Rust Project Developers.
+Copyright 2018-2020 Developers of the Rand project.
+Copyright 2017 The Rust Project Developers.
+*/
+
 use rand::distributions::uniform::{SampleUniform, UniformSampler, SampleBorrow};
 use rand::distributions::{Distribution, Standard};
 use rand::{Rng, Fill, Error};
 use crate::{BUint, BInt};
-
-// credit all below code to rand source code
 
 impl<const N: usize> Distribution<BUint<N>> for Standard {
     #[inline]
@@ -38,8 +47,8 @@ macro_rules! fill_impl {
             fn try_fill<R: Rng + ?Sized>(&mut self, rng: &mut R) -> Result<(), Error> {
                 if self.0.len() > 0 {
                     rng.try_fill_bytes(unsafe {
-                        core::slice::from_raw_parts_mut(self.0.as_mut_ptr()
-                            as *mut u8,
+                        core::slice::from_raw_parts_mut(
+							self.0.as_mut_ptr() as *mut u8,
                             self.0.len() * core::mem::size_of::<$ty>()
                         )
                     })?;

@@ -1,5 +1,4 @@
 use super::BUint;
-use crate::macros::overflowing_pow;
 use crate::ExpType;
 use crate::digit::Digit;
 use crate::{BInt, doc};
@@ -127,8 +126,28 @@ impl<const N: usize> BUint<N> {
             (super::unchecked_shr(self, rhs), false)
         }
     }
-    
-    overflowing_pow!();
+
+	#[inline]
+	pub const fn overflowing_pow(mut self, mut pow: ExpType) -> (Self, bool) {
+		if pow == 0 {
+			return (Self::ONE, false);
+		}
+		let mut overflow = false;
+		let mut y = Self::ONE;
+		while pow > 1 {
+			if pow & 1 == 1 {
+				let (prod, o) = y.overflowing_mul(self);
+				overflow |= o;
+				y = prod;
+			}
+			let (prod, o) = self.overflowing_mul(self);
+			overflow |= o;
+			self = prod;
+			pow >>= 1;
+		}
+		let (prod, o) = self.overflowing_mul(y);
+		(prod, o || overflow)
+	}
 }
 
 #[cfg(test)]

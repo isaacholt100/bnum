@@ -26,7 +26,7 @@ macro_rules! test_bignum {
 	} => {
 		paste::paste! {
 			#[test]
-			fn [<cases_ $function>]() {
+			fn [<cases_ $primitive _ $function>]() {
 				$(
 					let (big, primitive) = crate::test::results!(<$primitive> :: $function ($(Into::into($arg)), *));
 					assert_eq!(big, primitive);
@@ -114,7 +114,7 @@ macro_rules! quickcheck_from_to_radix {
             quickcheck::quickcheck! {
                 fn [<quickcheck_from_to_ $name>](u: $primitive, radix: u8) -> quickcheck::TestResult {
                     #[allow(unused_comparisons)]
-                    if radix < 2 || radix > $max {
+                    if !((2..=$max).contains(&radix)) {
                         return quickcheck::TestResult::discard();
                     }
                     let u = <crate::[<$primitive:upper>]>::from(u);
@@ -129,7 +129,6 @@ macro_rules! quickcheck_from_to_radix {
 
 pub(crate) use quickcheck_from_to_radix;
 
-#[allow(unused)]
 macro_rules! test_fmt {
     {
         int: $int: ty,
@@ -159,8 +158,22 @@ macro_rules! test_fmt {
     }
 }
 
-#[allow(unused_imports)]
 pub(crate) use test_fmt;
+
+macro_rules! debug_skip {
+	($skip: expr) => {
+		{
+			#[cfg(debug_assertions)]
+			let skip = $skip;
+			#[cfg(not(debug_assertions))]
+			let skip = false;
+
+			skip
+		}
+	};
+}
+
+pub(crate) use debug_skip;
 
 #[derive(Clone, Copy)]
 pub struct U8ArrayWrapper<const N: usize>([u8; N]);

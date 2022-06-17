@@ -4,6 +4,7 @@ use crate::{BInt, ExpType};
 use crate::cast::CastFrom;
 use core::mem::MaybeUninit;
 use crate::cast::As;
+use super::convert::{decode_f32, decode_f64};
 
 // TODO: implement as_float (cast to big float type), implement primitive types as_float
 
@@ -192,33 +193,6 @@ impl<const N: usize, const M: usize> const CastFrom<BInt<M>> for BUint<N> {
     }
 }
 
-fn decode_f32(f: f32) -> (u32, i16) {
-	// credit num_traits source code
-    let bits = f.to_bits();
-    let mut exponent = ((bits >> 23) & 0xff) as i16;
-    let mantissa = if exponent == 0 {
-        (bits & 0x7fffff) << 1
-    } else {
-        (bits & 0x7fffff) | 0x800000
-    };
-    exponent -= 127 + 23;
-    (mantissa as u32, exponent)
-}
-
-#[inline]
-fn decode_f64(f: f64) -> (u64, i16) {
-	// credit num_traits source code
-    let bits = f.to_bits();
-    let mut exponent = ((bits >> 52) & 0x7ff) as i16;
-    let mantissa = if exponent == 0 {
-        (bits & 0xfffffffffffff) << 1
-    } else {
-        (bits & 0xfffffffffffff) | 0x10000000000000
-    };
-    exponent -= 1023 + 52;
-    (mantissa, exponent)
-}
-
 const fn u32_bits(u: &u32) -> ExpType {
     32 - u.leading_zeros() as ExpType
 }
@@ -246,12 +220,12 @@ macro_rules! cast_from_float {
                 if $mant_bits(&mant) > Self::BITS {
                     return Self::MAX;
                 }
-                return mant.as_();
+                mant.as_()
             } else {
                 if $mant_bits(&mant) + exp as ExpType > Self::BITS {
                     return Self::MAX;
                 }
-                return mant.as_::<Self>() << exp;
+                mant.as_::<Self>() << exp
             }
         }
     }

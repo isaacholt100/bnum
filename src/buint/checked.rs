@@ -1,6 +1,6 @@
 use super::BUint;
 use crate::digit::Digit;
-use crate::macros::{div_zero, checked_pow};
+use crate::macros::div_zero;
 use crate::{ExpType, BInt};
 use crate::doc;
 use crate::int::checked::tuple_to_option;
@@ -334,7 +334,29 @@ impl<const N: usize> BUint<N> {
             Some(super::unchecked_shr(self, rhs))
         }
     }
-    checked_pow!();
+
+	#[inline]
+	pub const fn checked_pow(mut self, mut pow: ExpType) -> Option<Self> {
+		// https://en.wikipedia.org/wiki/Exponentiation_by_squaring#Basic_method
+		if pow == 0 {
+			return Some(Self::ONE);
+		}
+		let mut y = Self::ONE;
+		while pow > 1 {
+			if pow & 1 == 1 {
+				y = match self.checked_mul(y) {
+					Some(m) => m,
+					None => return None,
+				};
+			}
+			self = match self.checked_mul(self) {
+				Some(m) => m,
+				None => return None,
+			};
+			pow >>= 1;
+		}
+		self.checked_mul(y)
+	}
 
     #[inline]
     pub const fn checked_log2(self) -> Option<ExpType> {
@@ -379,6 +401,22 @@ impl<const N: usize> BUint<N> {
             Some(n)
         }
     }
+
+	#[inline]
+	pub const fn checked_next_multiple_of(self, rhs: Self) -> Option<Self> {
+		match self.checked_rem(rhs) {
+			Some(rem) => {
+				if rem.is_zero() {
+					// `rhs` divides `self` exactly so just return `self`
+					Some(self)
+				} else {
+					// `next_multiple = (self / rhs) * rhs + rhs = (self - rem) + rhs`
+					self.checked_add(rhs - rem)
+				}
+			},
+			None => None,
+		}
+	}
 }
 
 #[cfg(test)]

@@ -1,6 +1,6 @@
 use super::BInt;
 use crate::digit::{SignedDigit, Digit, SignedDoubleDigit};
-use crate::macros::{overflowing_pow, div_zero, rem_zero};
+use crate::macros::{div_zero, rem_zero};
 use crate::{ExpType, BUint, doc};
 use crate::{digit, error};
 
@@ -78,6 +78,7 @@ impl<const N: usize> BInt<N> {
 
     #[inline]
     pub const fn overflowing_sub_unsigned(self, rhs: BUint<N>) -> (Self, bool) {
+		// credit Rust source code
         let rhs = Self::from_bits(rhs);
         let (out, overflow) = self.overflowing_sub(rhs);
         (out, overflow ^ rhs.is_negative())
@@ -97,97 +98,83 @@ impl<const N: usize> BInt<N> {
         }
     }
 
-    #[inline]
-    const fn div_rem_unchecked(self, rhs: Self) -> (Self, Self) {
-		// credit Rust source code
-        let (div, rem) = self.unsigned_abs().div_rem_unchecked(rhs.unsigned_abs());
-        let div = Self::from_bits(div);
-        let rem = Self::from_bits(rem);
-        if self.is_negative() {
-            if rhs.is_negative() {
-                (div, -rem)
-            } else {
-                (-div, -rem)
-            }
-        } else if rhs.is_negative() {
-            (-div, rem)
-        } else {
-            (div, rem)
-        }
-    }
+	#[inline]
+	pub(super) const fn div_rem_unchecked(self, rhs: Self) -> (Self, Self) {
+		let (div, rem) = self.unsigned_abs().div_rem_unchecked(rhs.unsigned_abs());
+		let (div, rem) = (Self::from_bits(div), Self::from_bits(rem));
+
+		match (self.is_negative(), rhs.is_negative()) {
+			(false, false) => (div, rem),
+			(false, true) => (-div, rem),
+			(true, false) => (-div, -rem),
+			(true, true) => (div, -rem),
+		}
+	}
 
     #[inline]
     pub const fn overflowing_div(self, rhs: Self) -> (Self, bool) {
-		// credit Rust source code
+		if rhs.is_zero() {
+			div_zero!()
+		}
         if self == Self::MIN && rhs == Self::NEG_ONE {
             (self, true)
         } else {
-            if rhs.is_zero() {
-                div_zero!()
-            }
             (self.div_rem_unchecked(rhs).0, false)
         }
     }
 
     #[inline]
     pub const fn overflowing_div_euclid(self, rhs: Self) -> (Self, bool) {
-		// credit Rust source code
+		if rhs.is_zero() {
+			div_zero!()
+		}
         if self == Self::MIN && rhs == Self::NEG_ONE {
             (self, true)
         } else {
-            if rhs.is_zero() {
-                div_zero!()
-            }
-            let (div, rem) = self.div_rem_unchecked(rhs);
-            if self.is_negative() {
-                if rem.is_zero() {
-                    (div, false)
-                } else {
-                    let div = if rhs.is_negative() {
-                        div + Self::ONE
-                    } else {
-                        div - Self::ONE
-                    };
-                    (div, false)
-                }
-            } else {
-                (div, false)
-            }
+			let (div, rem) = self.div_rem_unchecked(rhs);
+			if self.is_negative() {
+				let r_neg = rhs.is_negative();
+				if !rem.is_zero() {
+					if r_neg {
+						return (div + Self::ONE, false)
+					} else {
+						return (div - Self::ONE, false)
+					};
+				}
+			}
+			(div, false)
         }
     }
 
     #[inline]
     pub const fn overflowing_rem(self, rhs: Self) -> (Self, bool) {
-		// credit Rust source code
+		if rhs.is_zero() {
+			div_zero!()
+		}
         if self == Self::MIN && rhs == Self::NEG_ONE {
             (Self::ZERO, true)
         } else {
-            if rhs.is_zero() {
-                div_zero!()
-            }
             (self.div_rem_unchecked(rhs).1, false)
         }
     }
 
     #[inline]
     pub const fn overflowing_rem_euclid(self, rhs: Self) -> (Self, bool) {
-		// credit Rust source code
+		if rhs.is_zero() {
+			div_zero!()
+		}
         if self == Self::MIN && rhs == Self::NEG_ONE {
             (Self::ZERO, true)
         } else {
-            if rhs.is_zero() {
-                rem_zero!()
-            }
-            let rem = self.div_rem_unchecked(rhs).1;
-            if rem.is_negative() {
-                if rhs.is_negative() {
-                    (rem - rhs, false)
-                } else {
-                    (rem + rhs, false)
-                }
-            } else {
-                (rem, false)
-            }
+			let mut rem = self.div_rem_unchecked(rhs).1;
+			if rem.is_negative() {
+				if rhs.is_negative() {
+					rem = rem.wrapping_sub(rhs);
+				} else {
+					rem = rem.wrapping_add(rhs);
+				}
+			}
+			(rem, false)
         }
     }
 
@@ -261,7 +248,20 @@ impl<const N: usize> BInt<N> {
             (self, false)
         }
     }
-    overflowing_pow!();
+
+	#[inline]
+	pub const fn overflowing_pow(self, pow: ExpType) -> (Self, bool) {
+		let (u, mut overflow) = self.unsigned_abs().overflowing_pow(pow);
+		let out_neg = self.is_negative() && pow & 1 == 1;
+		let mut out = Self::from_bits(u);
+		if out_neg {
+			out = out.wrapping_neg();
+			overflow = overflow || !out.is_negative();
+		} else {
+			overflow = overflow || out.is_negative();
+		}
+		(out, overflow)
+	}
 }
 
 use core::ops::{Div, Rem};
@@ -390,7 +390,8 @@ mod tests {
         cases: [
             (97465984i128, 2555 as u16),
             (-19i128, 11 as u16),
-            (-277i128, 14 as u16)
+            (-277i128, 14 as u16),
+			(-3i128, 81u16)
         ]
     }
 }

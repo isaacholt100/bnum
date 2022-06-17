@@ -11,13 +11,6 @@ use crate::macros::assert_radix_range;
 
 const BITS_U8: u8 = digit::BITS as u8;
 
-fn last_set_bit(n: u32) -> u8 {
-    ((core::mem::size_of_val(&n) as u8) << 3) - n.leading_zeros() as u8
-}
-fn ilog2(n: u32) -> u8 {
-    last_set_bit(n) - 1
-}
-
 #[doc=doc::radix::impl_desc!(BUint)]
 impl<const N: usize> BUint<N> {
     fn from_bitwise_digits_le<InnerIter, OuterIter>(iter: OuterIter, bits: u8) -> Option<Self>
@@ -466,9 +459,7 @@ impl<const N: usize> BUint<N> {
         let last_digit_index = self.last_digit_index();
         let mask: Digit = (1 << bits) - 1;
         let digits_per_big_digit = BITS_U8 / bits;
-        let digits = self
-            .bits()
-            .div_ceil(bits as ExpType);
+        let digits = div_ceil(self.bits(), bits as ExpType);
         let mut out = Vec::with_capacity(digits as usize);
 
         let mut r = self.digits[last_digit_index];
@@ -489,9 +480,7 @@ impl<const N: usize> BUint<N> {
     fn to_inexact_bitwise_digits_le(self, bits: u8) -> Vec<u8> {
 		// credit num_bigint source code
         let mask: Digit = (1 << bits) - 1;
-        let digits = self
-            .bits()
-            .div_ceil(bits as ExpType);
+        let digits = div_ceil(self.bits(), bits as ExpType);
         let mut out = Vec::with_capacity(digits as usize);
         let mut r = 0;
         let mut rbits = 0;
@@ -520,8 +509,7 @@ impl<const N: usize> BUint<N> {
 
     fn to_radix_digits_le(self, radix: u32) -> Vec<u8> {
 		// credit num_bigint source code
-        let radix_log2 = f64::from(radix).log2();
-        let radix_digits = ((self.bits() as f64) / radix_log2).ceil();
+        let radix_digits = div_ceil(self.bits(), ilog2(radix) as ExpType);
         let mut out = Vec::with_capacity(radix_digits as usize);
         let (base, power) = radix_bases::get_radix_base::<true>(radix);
         let radix = radix as Digit;
@@ -541,6 +529,20 @@ impl<const N: usize> BUint<N> {
         }
         out
     }
+}
+
+#[inline]
+const fn ilog2(a: u32) -> u8 {
+	31 - a.leading_zeros() as u8
+}
+
+#[inline]
+const fn div_ceil(a: ExpType, b: ExpType) -> ExpType {
+	if a % b == 0 {
+		a / b
+	} else {
+		(a / b) + 1
+	}
 }
 
 use core::str::FromStr;
@@ -613,7 +615,6 @@ impl<const N: usize> const FromStr for BUint<N> {
 
 #[cfg(test)]
 mod tests {
-    #[allow(unused)]
     use crate::BUint;
     use crate::test::{test_bignum, quickcheck_from_to_radix};
     use core::str::FromStr;

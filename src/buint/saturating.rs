@@ -59,6 +59,9 @@ mod tests {
 		function: <u128>::saturating_add(a: u128, b: u128)
     }
     test_bignum! {
+		function: <u128>::saturating_add_signed(a: u128, b: i128)
+    }
+    test_bignum! {
 		function: <u128>::saturating_sub(a: u128, b: u128)
     }
     test_bignum! {

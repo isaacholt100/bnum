@@ -1,5 +1,4 @@
 use super::BInt;
-use crate::macros::checked_pow;
 use crate::{ExpType, BUint};
 use crate::doc;
 use crate::int::checked::tuple_to_option;
@@ -100,10 +99,52 @@ impl<const N: usize> BInt<N> {
     pub const fn checked_abs(self) -> Option<Self> {
         tuple_to_option(self.overflowing_abs())
     }
+
+	#[inline]
+	pub const fn checked_pow(self, pow: ExpType) -> Option<Self> {
+		match self.unsigned_abs().checked_pow(pow) {
+			Some(u) => {
+				let out = Self::from_bits(u);
+				let neg = self.is_negative();
+				if !neg || pow & 1 == 0 {
+					if out.is_negative() {
+						None
+					} else {
+						Some(out)
+					}
+				} else {
+					let out = out.wrapping_neg();
+					if !out.is_negative() {
+						None
+					} else {
+						Some(out)
+					}
+				}
+			},
+			None => None,
+		}
+	}
     
-    checked_pow!();
     checked_log!(checked_log2);
     checked_log!(checked_log10);
+
+	#[inline]
+	pub const fn checked_next_multiple_of(self, rhs: Self) -> Option<Self> {
+		match self.checked_rem_euclid(rhs) {
+			Some(rem) => {
+				if rhs.is_negative() {
+					self.checked_sub(rem)
+				} else {
+					if rem.is_zero() {
+						Some(self)
+					} else {
+						self.checked_add(rhs - rem)
+					}
+				}
+			},
+			None => None,
+		}
+	}
 }
 
 #[cfg(test)]

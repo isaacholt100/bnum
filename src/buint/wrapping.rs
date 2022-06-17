@@ -1,28 +1,17 @@
 use super::{BUint, ExpType};
 use crate::{BInt, doc, error};
-use crate::macros::{option_expect, wrapping_pow};
+use crate::macros::option_expect;
+use crate::int::wrapping::wrapping_method;
 
 #[doc=doc::wrapping::impl_desc!()]
 impl<const N: usize> BUint<N> {
-    #[inline]
-    pub const fn wrapping_add(self, rhs: Self) -> Self {
-        self.overflowing_add(rhs).0
-    }
+	wrapping_method!(wrapping_add, overflowing_add, Self);
 
-    #[inline]
-    pub const fn wrapping_add_signed(self, rhs: BInt<N>) -> Self {
-        self.overflowing_add_signed(rhs).0
-    }
+	wrapping_method!(wrapping_add_signed, overflowing_add_signed, BInt<N>);
 
-    #[inline]
-    pub const fn wrapping_sub(self, rhs: Self) -> Self {
-        self.overflowing_sub(rhs).0
-    }
+	wrapping_method!(wrapping_sub, overflowing_sub, Self);
 
-    #[inline]
-    pub const fn wrapping_mul(self, rhs: Self) -> Self {
-        self.overflowing_mul(rhs).0
-    }
+	wrapping_method!(wrapping_mul, overflowing_mul, Self);
 
     #[inline]
     pub const fn wrapping_div(self, rhs: Self) -> Self {
@@ -44,22 +33,27 @@ impl<const N: usize> BUint<N> {
         self.wrapping_rem(rhs)
     }
 
-    #[inline]
-    pub const fn wrapping_neg(self) -> Self {
-        self.overflowing_neg().0
-    }
+	wrapping_method!(wrapping_neg, overflowing_neg);
 
-    #[inline]
-    pub const fn wrapping_shl(self, rhs: ExpType) -> Self {
-        self.overflowing_shl(rhs).0
-    }
+	wrapping_method!(wrapping_shl, overflowing_shl, ExpType);
 
-    #[inline]
-    pub const fn wrapping_shr(self, rhs: ExpType) -> Self {
-        self.overflowing_shr(rhs).0
-    }
-    
-    wrapping_pow!();
+	wrapping_method!(wrapping_shr, overflowing_shr, ExpType);
+
+	pub const fn wrapping_pow(mut self, mut pow: ExpType) -> Self {
+		// https://en.wikipedia.org/wiki/Exponentiation_by_squaring#Basic_method
+		if pow == 0 {
+			return Self::ONE;
+		}
+		let mut y = Self::ONE;
+		while pow > 1 {
+			if pow & 1 == 1 {
+				y = self.wrapping_mul(y);
+			}
+			self = self.wrapping_mul(self);
+			pow >>= 1;
+		}
+		self.wrapping_mul(y)
+	}
 }
 
 #[cfg(test)]

@@ -4,7 +4,6 @@ use crate::{TryFromIntError, ParseIntError, As};
 use crate::digit::{Digit, self};
 use crate::buint::BUint;
 use crate::error::TryFromErrorReason::*;
-use crate::macros;
 
 impl<const N: usize> FromStr for BInt<N> {
     type Err = ParseIntError;
@@ -20,21 +19,18 @@ macro_rules! from_int {
         $(impl<const N: usize> const From<$int> for BInt<N> {
             #[inline]
             fn from(int: $int) -> Self {
-                let initial_digit = if int.is_negative() {
-                    Digit::MAX
-                } else {
-                    0
-                };
-                let mut digits = [initial_digit; N];
+				let mut out = if int.is_negative() {
+					Self::NEG_ONE
+				} else {
+					Self::ZERO
+				};
                 let mut i = 0;
                 while i << digit::BIT_SHIFT < $int::BITS as usize {
                     let d = (int >> (i << digit::BIT_SHIFT)) as Digit;
-                    if d != initial_digit {
-                        digits[i] = d;
-                    }
+					out.bits.digits[i] = d;
                     i += 1;
                 }
-                Self::from_digits(digits)
+                out
             }
         })*
     }
@@ -66,7 +62,7 @@ impl<const N: usize> const From<bool> for BInt<N> {
     }
 }
 
-macros::all_try_int_impls!(BInt);
+crate::int::convert::all_try_int_impls!(BInt);
 
 impl<const N: usize> const TryFrom<BUint<N>> for BInt<N> {
     type Error = TryFromIntError;
@@ -121,24 +117,26 @@ impl<const N: usize> TryFrom<f64> for BInt<N> {
     fn try_from(f: f64) -> Result<Self, Self::Error> {
         if f.is_sign_negative() {
             let x = BUint::try_from(-f)?;
-            if x > Self::MIN.to_bits() {
+			let out = Self::from_bits(x);
+            if out.is_negative() {
                 return Err(TryFromIntError {
                     from: stringify!($float),
                     to: "BInt",
                     reason: TooLarge,
                 });
             }
-            Ok(-Self::from_bits(x))
+            Ok(-out)
         } else {
             let x = BUint::try_from(f)?;
-            if x > Self::MIN.to_bits() {
+			let out = Self::from_bits(x);
+            if out.is_negative() {
                 return Err(TryFromIntError {
                     from: stringify!($float),
                     to: "BInt",
                     reason: TooLarge,
                 });
             }
-            Ok(Self::from_bits(x))
+            Ok(out)
         }
     }
 }
@@ -154,7 +152,7 @@ mod tests {
 
     test::test_from! {
         function: <i128 as TryFrom>::try_from,
-        from_types: (u128, usize, isize)
+        from_types: (usize, isize)
     }
 
     test::test_into! {

@@ -4,18 +4,24 @@ use crate::digit::Digit;
 impl<const N: usize> BUint<N> {
     #[inline]
     pub const fn carrying_add(self, rhs: Self, carry: bool) -> (Self, bool) {
-		// credit Rust source code
-        let (a, b) = self.overflowing_add(rhs);
-        let (c, d) = a.overflowing_add(Self::from(carry));
-        (c, b || d)
+		let (s1, o1) = self.overflowing_add(rhs);
+		if carry {
+			let (s2, o2) = s1.overflowing_add(Self::ONE);
+			(s2, o1 || o2)
+		} else {
+			(s1, o1)
+		}
     }
 
     #[inline]
     pub const fn borrowing_sub(self, rhs: Self, borrow: bool) -> (Self, bool) {
-		// credit Rust source code
-        let (a, b) = self.overflowing_sub(rhs);
-        let (c, d) = a.overflowing_sub(Self::from(borrow));
-        (c, b || d)
+		let (s1, o1) = self.overflowing_sub(rhs);
+		if borrow {
+			let (s2, o2) = s1.overflowing_sub(Self::ONE);
+			(s2, o1 || o2)
+		} else {
+			(s1, o1)
+		}
     }
 
     #[inline]
@@ -53,14 +59,13 @@ impl<const N: usize> BUint<N> {
 
     #[inline]
     pub const fn carrying_mul(self, rhs: Self, carry: Self) -> (Self, Self) {
-		// credit Rust source code
-        let (low, high) = self.widening_mul(rhs);
-        let (low, overflow) = low.overflowing_add(carry);
-        if overflow {
-            (low, high + BUint::ONE)
-        } else {
-            (low, high)
-        }
+		let (low, high) = self.widening_mul(rhs);
+		let (low, overflow) = low.overflowing_add(carry);
+		if overflow {
+			(low, high + Self::ONE)
+		} else {
+			(low, high)
+		}
     }
 }
 

@@ -1,5 +1,6 @@
 use super::BInt;
 use crate::{ExpType, BUint, doc};
+use crate::int::wrapping::wrapping_method;
 
 #[doc=doc::wrapping::impl_desc!()]
 impl<const N: usize> BInt<N> {
@@ -8,70 +9,42 @@ impl<const N: usize> BInt<N> {
         Self::from_bits(self.bits.wrapping_add(rhs.bits))
     }
 
-    #[inline]
-    pub const fn wrapping_add_unsigned(self, rhs: BUint<N>) -> Self {
-        self.overflowing_add_unsigned(rhs).0
-    }
+	wrapping_method!(wrapping_add_unsigned, overflowing_add_unsigned, BUint<N>);
 
     #[inline]
     pub const fn wrapping_sub(self, rhs: Self) -> Self {
         Self::from_bits(self.bits.wrapping_sub(rhs.bits))
     }
 
-    #[inline]
-    pub const fn wrapping_sub_unsigned(self, rhs: BUint<N>) -> Self {
-        self.overflowing_sub_unsigned(rhs).0
-    }
+	wrapping_method!(wrapping_sub_unsigned, overflowing_sub_unsigned, BUint<N>);
 
     #[inline]
     pub const fn wrapping_mul(self, rhs: Self) -> Self {
         Self::from_bits(self.bits.wrapping_mul(rhs.bits))
     }
 
-    #[inline]
-    pub const fn wrapping_div(self, rhs: Self) -> Self {
-        self.overflowing_div(rhs).0
-    }
+	wrapping_method!(wrapping_div, overflowing_div, Self);
 
-    #[inline]
-    pub const fn wrapping_div_euclid(self, rhs: Self) -> Self {
-        self.overflowing_div_euclid(rhs).0
-    }
+	wrapping_method!(wrapping_div_euclid, overflowing_div_euclid, Self);
 
-    #[inline]
-    pub const fn wrapping_rem(self, rhs: Self) -> Self {
-        self.overflowing_rem(rhs).0
-    }
+	wrapping_method!(wrapping_rem, overflowing_rem, Self);
 
-    #[inline]
-    pub const fn wrapping_rem_euclid(self, rhs: Self) -> Self {
-        self.overflowing_rem_euclid(rhs).0
-    }
+	wrapping_method!(wrapping_rem_euclid, overflowing_rem_euclid, Self);
 
-    #[inline]
-    pub const fn wrapping_neg(self) -> Self {
-        self.overflowing_neg().0
-    }
+	wrapping_method!(wrapping_neg, overflowing_neg);
 
-    #[inline]
-    pub const fn wrapping_shl(self, rhs: ExpType) -> Self {
-        self.overflowing_shl(rhs).0
-    }
+	wrapping_method!(wrapping_shl, overflowing_shl, ExpType);
 
-    #[inline]
-    pub const fn wrapping_shr(self, rhs: ExpType) -> Self {
-        self.overflowing_shr(rhs).0
-    }
+	wrapping_method!(wrapping_shr, overflowing_shr, ExpType);
 
-    crate::macros::wrapping_pow!();
+	#[inline]
+	pub const fn wrapping_pow(self, pow: ExpType) -> Self {
+		// as wrapping_mul for signed and unsigned is the same
+		Self::from_bits(self.bits.wrapping_pow(pow))
+	}
 
-    #[inline]
-    pub const fn wrapping_abs(self) -> Self {
-        self.overflowing_abs().0
-    }
+	wrapping_method!(wrapping_abs, overflowing_abs);
 }
-
-
 
 #[cfg(test)]
 mod tests {
