@@ -1,7 +1,5 @@
 use crate::digit::{Digit, SignedDigit, self};
 use crate::buint::BUint;
-#[allow(unused_imports)]
-use crate::types::I128;
 use crate::macros::option_expect;
 use crate::ExpType;
 use crate::{doc, error};
@@ -97,7 +95,7 @@ macro_rules! log {
         pub const fn $method(self, $($base : $ty),*) -> ExpType {
             if self.is_negative() {
                 #[cfg(debug_assertions)]
-                panic!(crate::error::err_msg!("attempt to calculate log of negative number"));
+                panic!(error::err_msg!("attempt to calculate log of negative number"));
                 #[cfg(not(debug_assertions))]
                 0
             } else {
@@ -316,12 +314,10 @@ impl<const N: usize> BInt<N> {
         let rem = self.rem_euclid(rhs);
 		if rhs.is_negative() {
 			self - rem
+		} else if rem.is_zero() {
+			self
 		} else {
-			if rem.is_zero() {
-				self
-			} else {
-				self + (rhs - rem)
-			}
+			self + (rhs - rem)
 		}
     }
 
@@ -456,7 +452,7 @@ impl<'a, const N: usize> Sum<&'a Self> for BInt<N> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+	use crate::I128;
 	use crate::test::{test_bignum, debug_skip};
 
     crate::int::tests!(i128);

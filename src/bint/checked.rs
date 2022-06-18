@@ -134,12 +134,10 @@ impl<const N: usize> BInt<N> {
 			Some(rem) => {
 				if rhs.is_negative() {
 					self.checked_sub(rem)
+				} else if rem.is_zero() {
+					Some(self)
 				} else {
-					if rem.is_zero() {
-						Some(self)
-					} else {
-						self.checked_add(rhs - rem)
-					}
+					self.checked_add(rhs - rem)
 				}
 			},
 			None => None,

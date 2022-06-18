@@ -358,6 +358,63 @@ impl<const N: usize> BUint<N> {
 		self.checked_mul(y)
 	}
 
+	#[inline]
+	const fn ilog(m: ExpType, b: Self, k: Self) -> (ExpType, Self) {
+		// https://people.csail.mit.edu/jaffer/III/ilog.pdf
+		if b > k {
+			(m, k)
+		} else {
+			let (new, q) = Self::ilog(m << 1, b * b, k.div_rem_unchecked(b).0);
+			if b > q {
+				(new, q)
+			} else {
+				(new + m, q / b)
+			}
+		}
+	}
+
+	/*#[inline]
+	fn ilog2(mut n: ExpType, mut m: ExpType, mut b: Self, mut k: Self) -> ExpType {
+		let mut q;
+		loop {
+			q = k;
+			k = k / b;
+			if b > k {
+				break;
+			}
+			m <<= 1;
+			b = b.wrapping_mul(b);
+		}
+		let mut new = m;
+		while m > 1 {
+			m >>= 1;
+			b = b.sqrt();
+			if b <= q {
+				q = q / b;
+				new += m;
+			}
+		}
+		new
+	}*/
+
+	#[inline]
+	const fn checked_log_small(self, base: Digit) -> Option<ExpType> {
+		// https://people.csail.mit.edu/jaffer/III/ilog.pdf
+		if base == 2 {
+			return self.checked_log2();
+		}
+		if base < 2 {
+            None
+        } else {
+			let base = Self::from_digit(base);
+			Some(if base > self {
+				0
+			} else {
+				Self::ilog(1, base, self / base).0
+			})
+		}
+	}
+
     #[inline]
     pub const fn checked_log2(self) -> Option<ExpType> {
         self.bits().checked_sub(1)
@@ -365,42 +422,43 @@ impl<const N: usize> BUint<N> {
 
     #[inline]
     pub const fn checked_log10(self) -> Option<ExpType> {
-        self.checked_log(Self::TEN)
+		if self.is_zero() {
+			return None;
+		}
+        self.checked_log_small(10)
     }
 
     #[inline]
-    pub const fn checked_log(self, base: Self) -> Option<ExpType> {
-        // TODO: this is SLOW, make faster
-		// credit Rust source code
-        if self.is_zero() || base < Self::TWO {
-            None
-        } else {
-            if base == Self::TWO {
-                return self.checked_log2();
-            }
-            let (mut n, mut r) = if Self::BITS >= 128 {
-                let b = (self.bits() - 1) / base.bits();
-                let r = self.div_rem_unchecked(base.pow(b)).0;
-                (b, r)
-            } else {
-                (0, self)
-            };
-            while r >= base {
-                r = r / base;
-                n += 1;
-            }
-            
-            /*let mut b = base;
-            while b <= r {
-                n += 1;
-                b = match b.checked_mul(base) {
-                    Some(i) => i,
-                    None => break,
-                };
-            }*/
-            Some(n)
-        }
-    }
+    pub const fn log_big(self, base: Self) -> ExpType {
+		// Function adapted from Rust's core library: https://doc.rust-lang.org/core/ used under the MIT license.
+		// The original license file for this project can be found in this project's root at licenses/LICENSE-rust.
+		let (mut n, mut r) = if Self::BITS >= 128 {
+			let b = (self.bits() - 1) / base.bits();
+			let r = self.div_rem_unchecked(base.pow(b)).0;
+			(b, r)
+		} else {
+			(0, self)
+		};
+		while r >= base {
+			r = r / base;
+			n += 1;
+		}
+		n
+	}
+
+	const LOG_THRESHOLD: Self = Self::from_digit(60);
+
+	#[inline]
+	pub const fn checked_log(self, base: Self) -> Option<ExpType> {
+		if self.is_zero() {
+			return None;
+		}
+		if base < Self::LOG_THRESHOLD {
+			self.checked_log_small(base.digits[0])
+		} else {
+			Some(self.log_big(base))
+		}
+	}
 
 	#[inline]
 	pub const fn checked_next_multiple_of(self, rhs: Self) -> Option<Self> {

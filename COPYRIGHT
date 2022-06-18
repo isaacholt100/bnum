@@ -1,0 +1,3 @@
+This project uses some code from third party sources, under the MIT license:
+- rand: Copyright 2018 Developers of the Rand project; Copyright (c) 2014 The Rust Project Developers. The license for this can be found at /licenses/LICENSE-rand.
+- Rust: Copyright retained by contributors to the Rust project. The license for this can be found at /licenses/LICENSE-rust.

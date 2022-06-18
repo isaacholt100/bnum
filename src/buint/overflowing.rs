@@ -21,10 +21,9 @@ impl<const N: usize> BUint<N> {
 
     #[inline]
     pub const fn overflowing_add_signed(self, rhs: BInt<N>) -> (Self, bool) {
-		// credit Rust source code
-        let (out, overflow) = self.overflowing_add(rhs.to_bits());
-        (out, overflow ^ rhs.is_negative())
-    }
+		let (sum, overflow) = self.overflowing_add(rhs.to_bits());
+		(sum, rhs.is_negative() != overflow)
+	}
 
     #[inline]
     pub const fn overflowing_sub(self, rhs: Self) -> (Self, bool) {

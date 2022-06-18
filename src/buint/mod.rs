@@ -443,7 +443,7 @@ impl<const N: usize> BUint<N> {
     #[inline]
     pub const fn log(self, base: Self) -> ExpType {
         #[cfg(debug_assertions)]
-        return option_expect!(self.checked_log(base), error::err_msg!("attempt to calculate log of zero"));
+        return option_expect!(self.checked_log(base), error::err_msg!("attempt to calculate log of zero or log with base < 2"));
         #[cfg(not(debug_assertions))]
         match self.checked_log(base) {
             Some(n) => n,

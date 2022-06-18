@@ -44,12 +44,11 @@ impl<const N: usize> BInt<N> {
     }
 
     #[inline]
-    pub const fn overflowing_add_unsigned(self, rhs: BUint<N>) -> (Self, bool) {
-		// credit Rust source code
-        let rhs = Self::from_bits(rhs);
-        let (out, overflow) = self.overflowing_add(rhs);
-        (out, overflow ^ rhs.is_negative())
-    }
+	pub const fn overflowing_add_unsigned(self, rhs: BUint<N>) -> (Self, bool) {
+		let rhs = Self::from_bits(rhs);
+		let (sum, overflow) = self.overflowing_add(rhs);
+		(sum, rhs.is_negative() != overflow)
+	}
 
     #[inline]
     pub const fn overflowing_sub(self, rhs: Self) -> (Self, bool) {
@@ -77,12 +76,11 @@ impl<const N: usize> BInt<N> {
     }
 
     #[inline]
-    pub const fn overflowing_sub_unsigned(self, rhs: BUint<N>) -> (Self, bool) {
-		// credit Rust source code
-        let rhs = Self::from_bits(rhs);
-        let (out, overflow) = self.overflowing_sub(rhs);
-        (out, overflow ^ rhs.is_negative())
-    }
+	pub const fn overflowing_sub_unsigned(self, rhs: BUint<N>) -> (Self, bool) {
+		let rhs = Self::from_bits(rhs);
+		let (sum, overflow) = self.overflowing_sub(rhs);
+		(sum, rhs.is_negative() != overflow)
+	}
     
     #[inline]
     pub const fn overflowing_mul(self, rhs: Self) -> (Self, bool) {
