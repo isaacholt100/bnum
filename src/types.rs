@@ -33,7 +33,7 @@ int_types! {
 pub(crate) type U64 = BUint::<{64 / digit::BITS as usize}>;
 
 #[allow(unused)]
-pub(crate) type U128 = BUint::<{128 / digit::BITS as usize}>;
+pub type U128 = BUint::<{128 / digit::BITS as usize}>;
 
 #[allow(unused)]
 pub(crate) type I64 = BInt::<{64 / digit::BITS as usize}>;

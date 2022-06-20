@@ -1,6 +1,6 @@
 use super::BUint;
 use crate::digit::Digit;
-use crate::macros::div_zero;
+use crate::errors::div_zero;
 use crate::{ExpType, BInt};
 use crate::doc;
 use crate::int::checked::tuple_to_option;
@@ -359,7 +359,7 @@ impl<const N: usize> BUint<N> {
 	}
 
 	#[inline]
-	const fn ilog(m: ExpType, b: Self, k: Self) -> (ExpType, Self) {
+	fn ilog(m: ExpType, b: Self, k: Self) -> (ExpType, Self) {
 		// https://people.csail.mit.edu/jaffer/III/ilog.pdf
 		if b > k {
 			(m, k)
@@ -398,7 +398,7 @@ impl<const N: usize> BUint<N> {
 	}*/
 
 	#[inline]
-	const fn checked_log_small(self, base: Digit) -> Option<ExpType> {
+	fn checked_log_small(self, base: Digit) -> Option<ExpType> {
 		// https://people.csail.mit.edu/jaffer/III/ilog.pdf
 		if base == 2 {
 			return self.checked_log2();
@@ -421,7 +421,7 @@ impl<const N: usize> BUint<N> {
     }
 
     #[inline]
-    pub const fn checked_log10(self) -> Option<ExpType> {
+    pub fn checked_log10(self) -> Option<ExpType> {
 		if self.is_zero() {
 			return None;
 		}
@@ -449,7 +449,7 @@ impl<const N: usize> BUint<N> {
 	const LOG_THRESHOLD: Self = Self::from_digit(60);
 
 	#[inline]
-	pub const fn checked_log(self, base: Self) -> Option<ExpType> {
+	pub fn checked_log(self, base: Self) -> Option<ExpType> {
 		if self.is_zero() {
 			return None;
 		}
@@ -502,7 +502,9 @@ mod tests {
         cases: [
             (234233453453454563453453423u128, 34534597u128),
             (95873492093487528930479456874985769879u128, 33219654565456456453434545697u128),
-            (34564564564u128, 33219654565456456453434545697u128)
+            (34564564564u128, 33219654565456456453434545697u128),
+			(328622u128, 10000u128), // tests the unlikely condition
+			(2074086u128, 76819u128) // tests the unlikely condition
         ]
     }
     test_bignum! {

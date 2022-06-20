@@ -77,7 +77,7 @@ macro_rules! try_shift_impl {
                 fn $method(self, rhs: $rhs) -> Self {
                     use crate::ExpType;
                     #[cfg(debug_assertions)]
-                    let rhs: ExpType = crate::macros::option_expect!(rhs.try_into().ok(), crate::error::err_msg!($err));
+                    let rhs: ExpType = crate::errors::option_expect!(rhs.try_into().ok(), crate::errors::err_msg!($err));
 
                     #[cfg(not(debug_assertions))]
                     let rhs = rhs as ExpType;
@@ -97,7 +97,7 @@ macro_rules! shift_self_impl {
             #[inline]
             fn $method(self, rhs: $rhs<M>) -> Self {
                 use crate::ExpType;
-                let rhs: ExpType = crate::macros::option_expect!(rhs.try_into().ok(), crate::error::err_msg!($err));
+                let rhs: ExpType = crate::errors::option_expect!(rhs.try_into().ok(), crate::errors::err_msg!($err));
                 self.$method(rhs)
             }
         }
@@ -200,7 +200,7 @@ macro_rules! impls {
             #[inline]
             fn add(self, rhs: Self) -> Self {
                 #[cfg(debug_assertions)]
-                return crate::macros::option_expect!(self.checked_add(rhs), "attempt to add with overflow");
+                return crate::errors::option_expect!(self.checked_add(rhs), "attempt to add with overflow");
         
                 #[cfg(not(debug_assertions))]
                 self.wrapping_add(rhs)
@@ -213,7 +213,7 @@ macro_rules! impls {
             #[inline]
             fn mul(self, rhs: Self) -> Self {
                 #[cfg(debug_assertions)]
-                return crate::macros::option_expect!(self.checked_mul(rhs), "attempt to multiply with overflow");
+                return crate::errors::option_expect!(self.checked_mul(rhs), "attempt to multiply with overflow");
         
                 #[cfg(not(debug_assertions))]
                 self.wrapping_mul(rhs)
@@ -235,7 +235,7 @@ macro_rules! impls {
             #[inline]
             fn shl(self, rhs: ExpType) -> Self {
                 #[cfg(debug_assertions)]
-                return crate::macros::option_expect!(self.checked_shl(rhs), "attempt to shift left with overflow");
+                return crate::errors::option_expect!(self.checked_shl(rhs), "attempt to shift left with overflow");
         
                 #[cfg(not(debug_assertions))]
                 self.wrapping_shl(rhs)
@@ -248,7 +248,7 @@ macro_rules! impls {
             #[inline]
             fn shr(self, rhs: ExpType) -> Self {
                 #[cfg(debug_assertions)]
-                return crate::macros::option_expect!(self.checked_shr(rhs), "attempt to shift left with overflow");
+                return crate::errors::option_expect!(self.checked_shr(rhs), "attempt to shift left with overflow");
         
                 #[cfg(not(debug_assertions))]
                 self.wrapping_shr(rhs)
@@ -263,7 +263,7 @@ macro_rules! impls {
             #[inline]
             fn sub(self, rhs: Self) -> Self {
                 #[cfg(debug_assertions)]
-                return crate::macros::option_expect!(self.checked_sub(rhs), "attempt to subtract with overflow");
+                return crate::errors::option_expect!(self.checked_sub(rhs), "attempt to subtract with overflow");
         
                 #[cfg(not(debug_assertions))]
                 self.wrapping_sub(rhs)

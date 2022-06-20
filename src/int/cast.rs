@@ -4,6 +4,8 @@ macro_rules! tests {
 		mod tests {
 			use crate::types::{I128, U128, I64, U64};
 			use crate::test;
+			#[allow(unused_imports)]
+			use crate::test::types::*;
 			use crate::cast::{CastTo, CastFrom};
 			
 			$(

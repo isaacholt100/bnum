@@ -9,6 +9,7 @@ Copyright 2018-2020 Developers of the Rand project.
 Copyright 2017 The Rust Project Developers.
 */
 
+use core::ops::{Deref, DerefMut};
 use rand::distributions::uniform::{SampleUniform, UniformSampler, SampleBorrow};
 use rand::distributions::{Distribution, Standard};
 use rand::{Rng, Fill, Error};
@@ -41,9 +42,36 @@ pub struct RandomUniformInt<X> {
 
 pub struct Slice<T>(pub [T]);
 
+impl<T> AsRef<[T]> for Slice<T> {
+	fn as_ref(&self) -> &[T] {
+		&self.0
+	}
+}
+
+impl<T> AsMut<[T]> for Slice<T> {
+	fn as_mut(&mut self) -> &mut [T] {
+		&mut self.0
+	}
+}
+
+impl<T> Deref for Slice<T> {
+	type Target = [T];
+
+	fn deref(&self) -> &Self::Target {
+		self.as_ref()
+	}
+}
+
+impl<T> DerefMut for Slice<T> {
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		self.as_mut()
+	}
+}
+
 macro_rules! fill_impl {
     ($ty: ty) => {
         impl<const N: usize> Fill for Slice<$ty> {
+			#[inline(never)]
             fn try_fill<R: Rng + ?Sized>(&mut self, rng: &mut R) -> Result<(), Error> {
                 if self.0.len() > 0 {
                     rng.try_fill_bytes(unsafe {
@@ -64,6 +92,13 @@ macro_rules! fill_impl {
 
 fill_impl!(BUint<N>);
 fill_impl!(BInt<N>);
+
+pub fn fill_slice<T, R: Rng + ?Sized>(slice: &mut [T], rng: &mut R) -> Result<(), Error> where Slice<T>: Fill {
+	let slice = unsafe {
+		&mut *(slice as *mut _ as *mut Slice<T>)
+	};
+	Fill::try_fill(slice, rng)
+}
 
 macro_rules! uniform_int_impl {
     ($ty:ty, $u_large:ty $(, $as_unsigned: ident, $as_signed: ident)?) => {

@@ -6,7 +6,7 @@ use crate::int::checked::tuple_to_option;
 macro_rules! checked_log {
     ($method: ident $(, $base: ident: $ty: ty)?) => {
         #[inline]
-        pub const fn $method(self $(, $base: $ty)?) -> Option<ExpType> {
+        pub fn $method(self $(, $base: $ty)?) -> Option<ExpType> {
             if self.is_negative() {
                 None
             } else {
@@ -176,43 +176,32 @@ mod tests {
     test_bignum! {
         function: <i128>::checked_div(a: i128, b: i128),
         cases: [
-            (2249495769845768947598254i128, -497495769i128),
-            (-20907564975789647596748956456i128, -4096579405794756974586i128),
             (-34564564564i128, -33219654565456456453434545697i128),
-			(i128::MIN, -1i128)
+			(i128::MIN, -1i128),
+			(8388600, 68201) // tests the unlikely condition
         ]
     }
     test_bignum! {
         function: <i128>::checked_div_euclid(a: i128, b: i128),
         cases: [
-            (203967405967394576984756897i128, 20495876945762097956546i128),
-            (-203597649576948756456453345i128, 820459674957689i128),
 			(i128::MIN, -1i128)
         ]
     }
     test_bignum! {
         function: <i128>::checked_rem(a: i128, b: i128),
         cases: [
-            (20459671029456874957698457698i128, 819475697456465656i128),
-            (-2045967240596724598645645i128, -3479475689457i128),
-            (-45679029357694576987245896765i128, -309768972045967498576i128),
 			(i128::MIN, -1i128)
         ]
     }
     test_bignum! {
         function: <i128>::checked_rem_euclid(a: i128, b: i128),
         cases: [
-            (10349724596745674589647567456i128, 4697230968746597i128),
-            (-10349724596745674589647567456i128, -4697230968746597i128),
-            (-409725978957694794454865i128, 2045967495769859645i128),
 			(i128::MIN, -1i128)
         ]
     }
     test_bignum! {
         function: <i128>::checked_neg(a: i128),
         cases: [
-            (-239794576947569847566236i128),
-            (-872340961370495749576895i128),
             (i128::MIN)
         ]
     }

@@ -179,14 +179,16 @@ impl<const N: usize> BUint<N> {
 		bytes
 	}
 
-	#[doc=doc::to_le_bytes!(U256, "u")]
 	#[inline]
 	pub const fn to_le_bytes(self) -> [u8; N * digit::BYTES as usize] {
+		// Strangely, this is slightly faster than direct transmutation by either `mem::transmute_copy` or `ptr::read`.
+		// Also, initialising the bytes with zeros is faster than using MaybeUninit.
+		// The Rust compiler is probably being very smart and optimizing this code.
+		// The same goes for `to_be_bytes`.
 		let mut bytes = [0; N * digit::BYTES as usize];
 		let mut i = 0;
 		while i < N {
 			let digit_bytes = self.digits[i].to_le_bytes();
-			// TODO: make this faster by using MaybeUninit
 			let mut j = 0;
 			while j < digit::BYTES as usize {
 				bytes[(i << digit::BYTE_SHIFT) + j] = digit_bytes[j];

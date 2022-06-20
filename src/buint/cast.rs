@@ -239,4 +239,4 @@ impl<const N: usize> CastFrom<f64> for BUint<N> {
     cast_from_float!(f64, u32, decode_f64, u64_bits);
 }
 
-crate::int::cast::tests!(u64, u128);
+crate::int::cast::tests!(utest);

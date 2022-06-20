@@ -9,7 +9,7 @@ macro_rules! try_int_impl {
     ($Struct: tt, [$($int: ty), *]) => {
         $(
 			impl<const N: usize> TryFrom<$Struct<N>> for $int {
-				type Error = crate::TryFromIntError;
+				type Error = crate::errors::TryFromIntError;
 			
 				#[inline]
 				fn try_from(from: $Struct<N>) -> Result<Self, Self::Error> {
@@ -22,20 +22,20 @@ macro_rules! try_int_impl {
 					}
 					while i < N {
 						if digits[i] != 0 {
-							return Err(crate::TryFromIntError {
+							return Err(crate::errors::TryFromIntError {
 								from: stringify!($Struct),
 								to: stringify!($int),
-								reason: crate::error::TryFromErrorReason::TooLarge,
+								reason: crate::errors::TryFromErrorReason::TooLarge,
 							});
 						}
 						i += 1;
 					}
 					#[allow(unused_comparisons)]
 					if (out < 0) ^ from.is_negative() {
-						return Err(crate::TryFromIntError {
+						return Err(crate::errors::TryFromIntError {
 							from: stringify!($Struct),
 							to: stringify!($int),
-							reason: crate::error::TryFromErrorReason::TooLarge,
+							reason: crate::errors::TryFromErrorReason::TooLarge,
 						});
 					}
 					Ok(out)

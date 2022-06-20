@@ -16,7 +16,7 @@
 	mixed_integer_ops,
 ))]
 #![doc = include_str!("../README.md")]
-//#![no_std]
+#![no_std]
 
 // TODO: sort out license
 // TODO: credit all necessary bits of code/rewrite myself. have already commented where all bits which need crediting, just need to actually credit them properly
@@ -30,7 +30,7 @@ extern crate quickcheck;
 mod cast;
 mod digit;
 mod doc;
-mod error;
+pub mod errors;
 mod bint;
 mod int;
 pub mod prelude;
@@ -39,20 +39,19 @@ pub mod prelude;
 mod random;
 
 mod buint;
-mod macros;
 mod radix_bases;
 mod types;
 
 #[cfg(test)]
 mod test;
 
+#[cfg(test)]
+use test::types::*;
+
 pub use cast::As;
 
 #[cfg(feature = "rand")]
 pub use random::RandomUniformInt;
-
-//#[cfg(test)]
-//mod benches;
 
 #[cfg(feature = "usize_exptype")]
 type ExpType = usize;
@@ -61,7 +60,6 @@ type ExpType = u32;
 
 pub use buint::BUint;
 pub use bint::BInt;
-pub use error::*;
 pub use digit::Digit;
 
 pub use types::*;

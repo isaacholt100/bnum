@@ -1,6 +1,6 @@
 use super::BUint;
-use crate::{TryFromIntError, As};
-use crate::error::TryFromErrorReason::*;
+use crate::As;
+use crate::errors::{TryFromErrorReason::*, TryFromIntError};
 use crate::digit::{self, Digit};
 use crate::ExpType;
 use core::{f32, f64};

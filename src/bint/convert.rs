@@ -1,9 +1,10 @@
 use super::BInt;
 use core::str::FromStr;
-use crate::{TryFromIntError, ParseIntError, As};
+use crate::errors::{TryFromIntError, ParseIntError};
+use crate::As;
 use crate::digit::{Digit, self};
 use crate::buint::BUint;
-use crate::error::TryFromErrorReason::*;
+use crate::errors::TryFromErrorReason::*;
 
 impl<const N: usize> FromStr for BInt<N> {
     type Err = ParseIntError;

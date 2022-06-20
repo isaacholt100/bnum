@@ -1,8 +1,8 @@
 use crate::digit::{Digit, SignedDigit, self};
 use crate::buint::BUint;
-use crate::macros::option_expect;
+use crate::errors::option_expect;
 use crate::ExpType;
-use crate::{doc, error};
+use crate::{doc, errors};
 
 mod cast;
 mod checked;
@@ -92,10 +92,10 @@ impl<const N: usize> BInt<N> {
 macro_rules! log {
     ($method: ident $(, $base: ident : $ty: ty)?) => {
         #[inline]
-        pub const fn $method(self, $($base : $ty),*) -> ExpType {
+        pub fn $method(self, $($base : $ty),*) -> ExpType {
             if self.is_negative() {
                 #[cfg(debug_assertions)]
-                panic!(error::err_msg!("attempt to calculate log of negative number"));
+                panic!(errors::err_msg!("attempt to calculate log of negative number"));
                 #[cfg(not(debug_assertions))]
                 0
             } else {
@@ -185,7 +185,7 @@ impl<const N: usize> BInt<N> {
     #[inline]
     pub const fn pow(self, exp: ExpType) -> Self {
         #[cfg(debug_assertions)]
-        return option_expect!(self.checked_pow(exp), error::err_msg!("attempt to calculate power with overflow"));
+        return option_expect!(self.checked_pow(exp), errors::err_msg!("attempt to calculate power with overflow"));
 
         #[cfg(not(debug_assertions))]
         self.wrapping_pow(exp)
@@ -193,20 +193,20 @@ impl<const N: usize> BInt<N> {
 
     #[inline]
     pub const fn div_euclid(self, rhs: Self) -> Self {
-        assert!(self != Self::MIN || rhs != Self::NEG_ONE, error::err_msg!("attempt to divide with overflow"));
+        assert!(self != Self::MIN || rhs != Self::NEG_ONE, errors::err_msg!("attempt to divide with overflow"));
         self.wrapping_div_euclid(rhs)
     }
 
     #[inline]
     pub const fn rem_euclid(self, rhs: Self) -> Self {
-        assert!(self != Self::MIN || rhs != Self::NEG_ONE, error::err_msg!("attempt to calculate remainder with overflow"));
+        assert!(self != Self::MIN || rhs != Self::NEG_ONE, errors::err_msg!("attempt to calculate remainder with overflow"));
         self.wrapping_rem_euclid(rhs)
     }
 
     #[inline]
     pub const fn abs(self) -> Self {
         #[cfg(debug_assertions)]
-        return option_expect!(self.checked_abs(), error::err_msg!("attempt to negate with overflow"));
+        return option_expect!(self.checked_abs(), errors::err_msg!("attempt to negate with overflow"));
 
         #[cfg(not(debug_assertions))]
         match self.checked_abs() {
@@ -261,7 +261,7 @@ impl<const N: usize> BInt<N> {
     #[inline]
     pub const fn next_power_of_two(self) -> Self {
         #[cfg(debug_assertions)]
-        return option_expect!(self.checked_next_power_of_two(), error::err_msg!("attempt to calculate next power of two with overflow"));
+        return option_expect!(self.checked_next_power_of_two(), errors::err_msg!("attempt to calculate next power of two with overflow"));
 
         #[cfg(not(debug_assertions))]
         self.wrapping_next_power_of_two()
@@ -324,7 +324,7 @@ impl<const N: usize> BInt<N> {
     #[inline]
 	pub const fn div_floor(self, rhs: Self) -> Self {
 		if rhs.is_zero() {
-			crate::macros::div_zero!();
+			crate::errors::div_zero!();
 		}
 		let (div, rem) = self.div_rem_unchecked(rhs);
 		if rem.is_zero() || self.is_negative() == rhs.is_negative() {
@@ -337,7 +337,7 @@ impl<const N: usize> BInt<N> {
     #[inline]
 	pub const fn div_ceil(self, rhs: Self) -> Self {
 		if rhs.is_zero() {
-			crate::macros::div_zero!();
+			crate::errors::div_zero!();
 		}
 		let (div, rem) = self.div_rem_unchecked(rhs);
 		if rem.is_zero() || self.is_negative() != rhs.is_negative() {

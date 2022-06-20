@@ -71,21 +71,21 @@ impl<const N: usize> BUint<N> {
 
 #[cfg(test)]
 mod tests {
-    use crate::test::test_bignum;
+    use crate::test::{test_bignum, types::*};
 
 	test_bignum! {
-		function: <u128>::carrying_add(a: u128, rhs: u128, carry: bool),
+		function: <utest>::carrying_add(a: utest, rhs: utest, carry: bool),
 		cases: [
-            (u128::MAX, 1u128, true),
-            (u128::MAX, 1u128, false)
+            (utest::MAX, 1u8, true),
+            (utest::MAX, 1u8, false)
         ]
 	}
 
     test_bignum! {
-		function: <u128>::borrowing_sub(a: u128, rhs: u128, carry: bool),
+		function: <utest>::borrowing_sub(a: utest, rhs: utest, carry: bool),
         cases: [
-            (0u128, 1u128, false),
-            (0u128, 1u128, true)
+            (0u8, 1u8, false),
+            (0u8, 1u8, true)
         ]
     }
 

@@ -303,7 +303,7 @@ impl<const N: usize> Roots for BUint<N> {
     fn nth_root(&self, n: u32) -> Self {
 		// credit num_bigint source code
         match n {
-            0 => panic!(crate::error::err_msg!("attempt to calculate zeroth root")),
+            0 => panic!(crate::errors::err_msg!("attempt to calculate zeroth root")),
             1 => *self,
             2 => self.sqrt(),
             3 => self.cbrt(),

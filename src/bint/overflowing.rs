@@ -1,8 +1,8 @@
 use super::BInt;
 use crate::digit::{SignedDigit, Digit, SignedDoubleDigit};
-use crate::macros::{div_zero, rem_zero};
+use crate::errors::{div_zero, rem_zero};
 use crate::{ExpType, BUint, doc};
-use crate::{digit, error};
+use crate::{digit, errors};
 
 #[inline]
 const fn carrying_add_signed(a: SignedDigit, b: SignedDigit, carry: bool) -> (SignedDigit, bool) {
@@ -269,7 +269,7 @@ impl<const N: usize> const Div for BInt<N> {
 
     fn div(self, rhs: Self) -> Self {
         if self.eq(&Self::MIN) && rhs.eq(&Self::NEG_ONE) {
-            panic!(error::err_msg!("attempt to divide with overflow"))
+            panic!(errors::err_msg!("attempt to divide with overflow"))
         } else {
             if rhs.is_zero() {
                 div_zero!()
@@ -284,7 +284,7 @@ impl<const N: usize> const Rem for BInt<N> {
 
     fn rem(self, rhs: Self) -> Self {
         if self.eq(&Self::MIN) && rhs.eq(&Self::NEG_ONE) {
-            panic!(error::err_msg!("attempt to calculate remainder with overflow"))
+            panic!(errors::err_msg!("attempt to calculate remainder with overflow"))
         } else {
             if rhs.is_zero() {
                 rem_zero!()

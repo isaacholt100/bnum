@@ -184,7 +184,7 @@ macro_rules! impls {
 			}
 		}
 		
-		use crate::ParseIntError;
+		use crate::errors::ParseIntError;
 		
 		impl<const N: usize> Num for $Int<N> {
 			type FromStrRadixErr = ParseIntError;

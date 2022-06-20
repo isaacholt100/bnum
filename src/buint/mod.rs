@@ -1,8 +1,8 @@
 use crate::digit::{Digit, DoubleDigit, self};
-use crate::macros::option_expect;
+use crate::errors::option_expect;
 use crate::ExpType;
 use core::mem::MaybeUninit;
-use crate::{doc, error};
+use crate::{doc, errors};
 
 #[inline]
 pub const fn carrying_mul(a: Digit, b: Digit, carry: Digit, current: Digit) -> (Digit, Digit) {
@@ -315,7 +315,7 @@ impl<const N: usize> BUint<N> {
     #[inline]
     pub const fn pow(self, exp: ExpType) -> Self {
         #[cfg(debug_assertions)]
-        return option_expect!(self.checked_pow(exp), error::err_msg!("attempt to calculate power with overflow"));
+        return option_expect!(self.checked_pow(exp), errors::err_msg!("attempt to calculate power with overflow"));
         #[cfg(not(debug_assertions))]
         self.wrapping_pow(exp)
     }
@@ -391,7 +391,7 @@ impl<const N: usize> BUint<N> {
     #[inline]
     pub const fn next_power_of_two(self) -> Self {
         #[cfg(debug_assertions)]
-        return option_expect!(self.checked_next_power_of_two(), error::err_msg!("attempt to calculate next power of two with overflow"));
+        return option_expect!(self.checked_next_power_of_two(), errors::err_msg!("attempt to calculate next power of two with overflow"));
         #[cfg(not(debug_assertions))]
         self.wrapping_next_power_of_two()
     }
@@ -421,7 +421,7 @@ impl<const N: usize> BUint<N> {
     #[inline]
     pub const fn log2(self) -> ExpType {
         #[cfg(debug_assertions)]
-        return option_expect!(self.checked_log2(), error::err_msg!("attempt to calculate log2 of zero"));
+        return option_expect!(self.checked_log2(), errors::err_msg!("attempt to calculate log2 of zero"));
         #[cfg(not(debug_assertions))]
         match self.checked_log2() {
             Some(n) => n,
@@ -430,9 +430,9 @@ impl<const N: usize> BUint<N> {
     }
 
     #[inline]
-    pub const fn log10(self) -> ExpType {
+    pub fn log10(self) -> ExpType {
         #[cfg(debug_assertions)]
-        return option_expect!(self.checked_log10(), error::err_msg!("attempt to calculate log10 of zero"));
+        return option_expect!(self.checked_log10(), errors::err_msg!("attempt to calculate log10 of zero"));
         #[cfg(not(debug_assertions))]
         match self.checked_log10() {
             Some(n) => n,
@@ -441,9 +441,9 @@ impl<const N: usize> BUint<N> {
     }
 
     #[inline]
-    pub const fn log(self, base: Self) -> ExpType {
+    pub fn log(self, base: Self) -> ExpType {
         #[cfg(debug_assertions)]
-        return option_expect!(self.checked_log(base), error::err_msg!("attempt to calculate log of zero or log with base < 2"));
+        return option_expect!(self.checked_log(base), errors::err_msg!("attempt to calculate log of zero or log with base < 2"));
         #[cfg(not(debug_assertions))]
         match self.checked_log(base) {
             Some(n) => n,

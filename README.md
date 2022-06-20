@@ -18,7 +18,7 @@ This crate uses Rust's const generics to creation allow integers of any size tha
 
 ### Random Number Generation
 
-Random `BInt`s and `BUint`s can be created via the `rand` crate when the [`rand`](https://docs.rs/rand/latest/rand/) feature is enabled.
+Random `BInt`s and `BUint`s can be created via the [`rand`](https://docs.rs/rand/latest/rand/) crate when the `rand` feature is enabled.
 
 ### Serialization and Deserialization
 
@@ -40,6 +40,8 @@ This crate is tested with the [`quickcheck`](https://docs.rs/quickcheck/latest/q
 
 This library aims to provide arbitrary precision equivalents of Rust's 3 built-in number types: signed integers (`BInt`), unsigned integers (`BUint`) and floats. Signed and unsigned integers have been implemented and nearly fully tested, and will keep up to date with Rust's integer interface (e.g. when a new method is implemented on a Rust primitive integer, this library will be updated to include that method as well).
 
-Currently, arbitrary precision fixed size floats are being worked on but are incomplete. Most of the basic methods have been implemented but are not fully tested, and there is no implementation of the transcendental floating point methods such as `sin`, `exp`, `log`, etc.
+Currently, arbitrary precision fixed size floats are being worked on but are incomplete. Most of the basic methods have been implemented but are not fully tested, and at the moment    there is no implementation of the transcendental floating point methods such as `sin`, `exp`, `log`, etc.
 
 Obviously, the documentation needs to be completed, and benchmarks need to be written as well. This will take priority over the implementation of floats.
+
+Additionally, a proc macro for parsing is being developed, which will allow easier creation of large constant values for `BInt` and `BUint`.

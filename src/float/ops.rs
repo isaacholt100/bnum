@@ -115,7 +115,7 @@ impl<const W: usize, const MB: usize> Add for Float<W, MB> {
     }
 }
 
-crate::macros::op_ref_impl!(Add<Float<N, MB>> for Float<N, MB>, add);
+crate::errors::op_ref_impl!(Add<Float<N, MB>> for Float<N, MB>, add);
 
 impl<const W: usize, const MB: usize> Sum for Float<W, MB> {
     #[inline]
@@ -258,7 +258,7 @@ impl<const W: usize, const MB: usize> Sub for Float<W, MB> {
     }
 }
 
-crate::macros::op_ref_impl!(Sub<Float<N, MB>> for Float<N, MB>, sub);
+crate::errors::op_ref_impl!(Sub<Float<N, MB>> for Float<N, MB>, sub);
 
 impl<const W: usize, const MB: usize> Float<W, MB> {
     #[inline]

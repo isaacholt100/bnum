@@ -4,7 +4,7 @@ use num_integer::{Integer, Roots};
 use core::convert::TryFrom;
 use crate::{ExpType, BUint};
 use crate::digit::{self, Digit};
-use crate::error;
+use crate::errors;
 
 crate::int::numtraits::impls!(BInt);
 
@@ -104,7 +104,7 @@ impl<const N: usize> Integer for BInt<N> {
         let gcd = self.unsigned_abs().gcd(&other.unsigned_abs());
 		let out = Self::from_bits(gcd);
 		if out == Self::MIN {
-			panic!("got Self::MIN {:0b} and {:0b}", &self, &other)
+			panic!("{} gcd of {} and {} is too large", errors::err_prefix!(), &self, &other);
 		}
 		out.abs()
     }
@@ -144,7 +144,7 @@ impl<const N: usize> Roots for BInt<N> {
     #[inline]
     fn sqrt(&self) -> Self {
         if self.is_negative() {
-            panic!(error::err_msg!("imaginary square root"))
+            panic!(errors::err_msg!("imaginary square root"))
         } else {
             Self::from_bits(self.bits.sqrt())
         }
@@ -164,13 +164,13 @@ impl<const N: usize> Roots for BInt<N> {
     fn nth_root(&self, n: u32) -> Self {
         if self.is_negative() {
 			if n == 0 {
-				panic!(crate::error::err_msg!("attempt to calculate zeroth root"));
+				panic!(crate::errors::err_msg!("attempt to calculate zeroth root"));
 			}
 			if n == 1 {
 				return *self;
 			}
             if n.is_even() {
-                panic!("{} imaginary root degree of {}", error::err_prefix!(), n)
+                panic!("{} imaginary root degree of {}", errors::err_prefix!(), n)
             } else {
                 let out = Self::from_bits(self.unsigned_abs().nth_root(n));
                 out.wrapping_neg()

@@ -3,9 +3,9 @@ use crate::doc;
 use crate::buint::BUint;
 use alloc::string::String;
 use alloc::vec::Vec;
-use crate::error::ParseIntError;
+use crate::errors::ParseIntError;
 use core::num::IntErrorKind;
-use crate::macros::assert_radix_range;
+use crate::int::radix::assert_range;
 
 #[doc=doc::radix::impl_desc!(BInt)]
 impl<const N: usize> BInt<N> {
@@ -28,7 +28,7 @@ impl<const N: usize> BInt<N> {
     #[inline]
     pub fn from_str_radix(mut src: &str, radix: u32) -> Result<Self, ParseIntError> {
 		// credit num_bigint source code
-        assert_radix_range!(radix, 36);
+        assert_range!(radix, 36);
 
         let mut negative = false;
         if src.starts_with('-') {

@@ -1,13 +1,14 @@
 use super::BUint;
 use crate::doc;
-use crate::{ParseIntError, ExpType};
+use crate::ExpType;
+use crate::errors::ParseIntError;
 use crate::digit::{self, Digit, DoubleDigit};
 use core::iter::Iterator;
 use alloc::string::String;
 use alloc::vec::Vec;
 use crate::radix_bases;
 use core::num::IntErrorKind;
-use crate::macros::assert_radix_range;
+use crate::int::radix::assert_range;
 
 const BITS_U8: u8 = digit::BITS as u8;
 
@@ -147,7 +148,7 @@ impl<const N: usize> BUint<N> {
     /// ```
     pub fn from_radix_be(buf: &[u8], radix: u32) -> Option<Self> {
 		// credit num_bigint source code
-        assert_radix_range!(radix, 256);
+        assert_range!(radix, 256);
         if buf.is_empty() {
             return Some(Self::ZERO);
         }
@@ -212,7 +213,7 @@ impl<const N: usize> BUint<N> {
     /// ```
     pub fn from_radix_le(buf: &[u8], radix: u32) -> Option<Self> {
 		// credit num_bigint source code
-        assert_radix_range!(radix, 256);
+        assert_range!(radix, 256);
         if buf.is_empty() {
             return Some(Self::ZERO);
         }
@@ -291,7 +292,7 @@ impl<const N: usize> BUint<N> {
     /// ```
     pub fn from_str_radix(src: &str, radix: u32) -> Result<Self, ParseIntError> {
 		// credit num_bigint source code
-        assert_radix_range!(radix, 36);
+        assert_range!(radix, 36);
         let mut src = src;
         if src.starts_with('+') {
             src = &src[1..];
