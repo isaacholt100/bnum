@@ -114,4 +114,4 @@ impl<const N: usize> CastFrom<f64> for BInt<N> {
     cast_from_float!(f64);
 }
 
-crate::int::cast::tests!(i64, i128);
+crate::int::cast::tests!(itest);

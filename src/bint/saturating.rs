@@ -94,60 +94,36 @@ impl<const N: usize> BInt<N> {
 
 #[cfg(test)]
 mod tests {
-	use crate::test::test_bignum;
+	use crate::test::{test_bignum, types::*};
 
     test_bignum! {
-        function: <i128>::saturating_add(a: i128, b: i128),
+        function: <itest>::saturating_add(a: itest, b: itest)
+    }
+    test_bignum! {
+		function: <itest>::saturating_add_unsigned(a: itest, b: utest)
+    }
+    test_bignum! {
+        function: <itest>::saturating_sub(a: itest, b: itest)
+    }
+    test_bignum! {
+		function: <itest>::saturating_sub_unsigned(a: itest, b: utest)
+    }
+    test_bignum! {
+        function: <itest>::saturating_neg(a: itest),
         cases: [
-            (i128::MAX, 2),
-            (i128::MIN, -1),
-            (275869749506754546i128, 4275689745096754896785i128)
+            (itest::MIN)
         ]
     }
     test_bignum! {
-		function: <i128>::saturating_add_unsigned(a: i128, b: u128)
-    }
-    test_bignum! {
-        function: <i128>::saturating_sub(a: i128, b: i128),
+        function: <itest>::saturating_abs(a: itest),
         cases: [
-            (i128::MAX, -5),
-            (i128::MIN, i128::MAX),
-            (27456873894567457667567i128, 784569026784526789475698i128)
+            (itest::MIN)
         ]
     }
     test_bignum! {
-		function: <i128>::saturating_sub_unsigned(a: i128, b: u128)
+        function: <itest>::saturating_mul(a: itest, b: itest)
     }
     test_bignum! {
-        function: <i128>::saturating_neg(a: i128),
-        cases: [
-            (i128::MAX),
-            (i128::MIN),
-            (-2568974589675445698456i128)
-        ]
-    }
-    test_bignum! {
-        function: <i128>::saturating_abs(a: i128),
-        cases: [
-            (i128::MAX),
-            (i128::MIN),
-            (-7635479863709875678056409486i128)
-        ]
-    }
-    test_bignum! {
-        function: <i128>::saturating_mul(a: i128, b: i128),
-        cases: [
-            (i128::MAX, -5),
-            (i128::MAX, -1),
-            (i128::MIN, -1)
-        ]
-    }
-    test_bignum! {
-        function: <i128>::saturating_pow(a: i128, b: u16),
-        cases: [
-            (55i128, 12 as u16),
-            (3678i128, 123 as u16),
-            (i128::MIN, 5 as u16)
-        ]
+        function: <itest>::saturating_pow(a: itest, b: u16)
     }
 }

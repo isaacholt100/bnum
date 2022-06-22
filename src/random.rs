@@ -93,6 +93,7 @@ macro_rules! fill_impl {
 fill_impl!(BUint<N>);
 fill_impl!(BInt<N>);
 
+#[allow(unused)]
 pub fn fill_slice<T, R: Rng + ?Sized>(slice: &mut [T], rng: &mut R) -> Result<(), Error> where Slice<T>: Fill {
 	let slice = unsafe {
 		&mut *(slice as *mut _ as *mut Slice<T>)

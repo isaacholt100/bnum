@@ -452,30 +452,29 @@ impl<'a, const N: usize> Sum<&'a Self> for BInt<N> {
 
 #[cfg(test)]
 mod tests {
-	use crate::I128;
-	use crate::test::{test_bignum, debug_skip};
+	use crate::test::{test_bignum, debug_skip, types::{itest, I128}};
 
-    crate::int::tests!(i128);
+    crate::int::tests!(itest);
 
     test_bignum! {
-        function: <i128>::unsigned_abs(a: i128),
+        function: <itest>::unsigned_abs(a: itest),
         cases: [
-            (i128::MIN),
-            (0)
+            (itest::MIN),
+            (0 as itest)
         ]
     }
     test_bignum! {
-        function: <i128>::abs(a: i128),
-        skip: debug_skip!(a == i128::MIN)
+        function: <itest>::abs(a: itest),
+        skip: debug_skip!(a == itest::MIN)
     }
     test_bignum! {
-        function: <i128>::signum(a: i128)
+        function: <itest>::signum(a: itest)
     }
     test_bignum! {
-        function: <i128>::is_positive(a: i128)
+        function: <itest>::is_positive(a: itest)
     }
     test_bignum! {
-        function: <i128>::is_negative(a: i128)
+        function: <itest>::is_negative(a: itest)
     }
     
     #[test]

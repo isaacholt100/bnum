@@ -28,7 +28,7 @@ impl<const N: usize> BInt<N> {
 
         let mut i = 0;
         while i < Self::N_MINUS_1 {
-            let (sum, c) = self_digits[i].carrying_add(rhs_digits[i], carry);
+            let (sum, c) = digit::carrying_add(self_digits[i], rhs_digits[i], carry);
             digits[i] = sum;
             carry = c;
             i += 1;
@@ -60,7 +60,7 @@ impl<const N: usize> BInt<N> {
 
         let mut i = 0;
         while i < Self::N_MINUS_1 {
-            let (sub, b) = self_digits[i].borrowing_sub(rhs_digits[i], borrow);
+            let (sub, b) = digit::borrowing_sub(self_digits[i], rhs_digits[i], borrow);
             digits[i] = sub;
             borrow = b;
             i += 1;
@@ -296,100 +296,66 @@ impl<const N: usize> const Rem for BInt<N> {
 
 #[cfg(test)]
 mod tests {
-	use crate::test::test_bignum;
+	use crate::test::{test_bignum, types::itest};
 
     test_bignum! {
-        function: <i128>::overflowing_add(a: i128, b: i128),
-        cases: [
-            (-i128::MAX, i128::MIN),
-            (i128::MAX, i128::MAX)
-        ]
+        function: <itest>::overflowing_add(a: itest, b: itest)
     }
     test_bignum! {
-        function: <i128>::overflowing_sub(a: i128, b: i128),
-        cases: [
-            (i128::MIN, 13i128),
-            (i128::MAX, -1i128),
-            (i128::MAX, i128::MIN)
-        ]
+        function: <itest>::overflowing_sub(a: itest, b: itest)
     }
     test_bignum! {
-        function: <i128>::overflowing_mul(a: i128, b: i128),
-        cases: [
-            (1i128 << 64, 1i128 << 63),
-            (-(1i128 << 100), 1i128 << 27)
-        ]
+        function: <itest>::overflowing_mul(a: itest, b: itest)
     }
     test_bignum! {
-        function: <i128>::overflowing_div(a: i128, b: i128),
+        function: <itest>::overflowing_div(a: itest, b: itest),
         skip: b == 0,
         cases: [
-            (-1i128, 2i128),
-            (i128::MIN, -1i128)
+            (itest::MIN, -1i8)
         ]
     }
     test_bignum! {
-        function: <i128>::overflowing_div_euclid(a: i128, b: i128),
+        function: <itest>::overflowing_div_euclid(a: itest, b: itest),
         skip: b == 0,
         cases: [
-            (-1i128, 2i128),
-            (i128::MIN, -1i128)
+            (itest::MIN, -1i8)
         ]
     }
     test_bignum! {
-        function: <i128>::overflowing_rem(a: i128, b: i128),
+        function: <itest>::overflowing_rem(a: itest, b: itest),
         skip: b == 0,
         cases: [
-            (-577i128 * 80456498576, 577i128),
-            (i128::MIN, -1i128)
+            (itest::MIN, -1i8)
         ]
     }
     test_bignum! {
-        function: <i128>::overflowing_rem_euclid(a: i128, b: i128),
+        function: <itest>::overflowing_rem_euclid(a: itest, b: itest),
         skip: b == 0,
         cases: [
-            (0i128, -79872976456456i128),
-            (i128::MIN, -1i128),
-            (-1i128, 2i128)
+            (itest::MIN, -1i8)
         ]
     }
     test_bignum! {
-        function: <i128>::overflowing_neg(a: i128),
+        function: <itest>::overflowing_neg(a: itest),
         cases: [
-            (0i128),
-            (i128::MIN),
-            (997340597745960395879i128)
+            (0i8),
+            (itest::MIN)
         ]
     }
     test_bignum! {
-        function: <i128>::overflowing_shl(a: i128, b: u16),
+        function: <itest>::overflowing_shl(a: itest, b: u16)
+    }
+    test_bignum! {
+        function: <itest>::overflowing_shr(a: itest, b: u16)
+    }
+    test_bignum! {
+        function: <itest>::overflowing_abs(a: itest),
         cases: [
-            (i128::MAX - 3453475, 8 as u16),
-            (77948798i128, 58743 as u16),
-            (-9797456456456i128, 27 as u16)
+            (0i8),
+            (itest::MIN)
         ]
     }
     test_bignum! {
-        function: <i128>::overflowing_shr(a: i128, b: u16),
-        cases: [
-            (i128::MIN, 11 as u16),
-            (-1i128, 85 as u16)
-        ]
-    }
-    test_bignum! {
-        function: <i128>::overflowing_abs(a: i128),
-        cases: [
-            (0i128),
-            (i128::MIN)
-        ]
-    }
-    test_bignum! {
-        function: <i128>::overflowing_pow(a: i128, b: u16),
-        cases: [
-            (97465984i128, 2555 as u16),
-            (-19i128, 11 as u16),
-            (-277i128, 14 as u16),
-			(-3i128, 81u16)
-        ]
+        function: <itest>::overflowing_pow(a: itest, b: u16)
     }
 }

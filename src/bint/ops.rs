@@ -67,12 +67,12 @@ crate::int::ops::impls!(BInt);
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::test::{test_bignum, debug_skip};
+	use crate::test::{test_bignum, debug_skip, types::itest};
 
-	crate::int::ops::tests!(i128);
+	crate::int::ops::tests!(itest);
 
 	test_bignum! {
-		function: <i128>::neg(a: i128),
-		skip: debug_skip!(a == i128::MIN)
+		function: <itest>::neg(a: itest),
+		skip: debug_skip!(a == itest::MIN)
 	}
 }

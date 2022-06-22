@@ -260,7 +260,7 @@ macro_rules! tests {
 		#[cfg(test)]
 		mod tests {
 			use super::{Roots, ToPrimitive, FromPrimitive, Integer};
-			use crate::test::test_bignum;
+			use crate::test::{test_bignum, types::*};
 
 			test_bignum! {
 				function: <$int>::sqrt(a: ref &$int),

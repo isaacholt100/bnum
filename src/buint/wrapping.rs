@@ -58,51 +58,43 @@ impl<const N: usize> BUint<N> {
 
 #[cfg(test)]
 mod tests {
-	use crate::test::test_bignum;
+	use crate::test::{test_bignum, types::utest};
 
     test_bignum! {
-		function: <u128>::wrapping_add(a: u128, b: u128)
+		function: <utest>::wrapping_add(a: utest, b: utest)
     }
     test_bignum! {
-		function: <u128>::wrapping_sub(a: u128, b: u128)
+		function: <utest>::wrapping_sub(a: utest, b: utest)
     }
     test_bignum! {
-		function: <u128>::wrapping_mul(a: u128, b: u128)
+		function: <utest>::wrapping_mul(a: utest, b: utest)
     }
     test_bignum! {
-		function: <u128>::wrapping_div(a: u128, b: u128),
-        skip: b == 0,
-        cases: [
-            (908940869048689045869048680405869009u128, 9347539457839475893475959u128),
-            (9476485690845684567394573544345543u128, 349587458697u128)
-        ]
-    }
-    test_bignum! {
-		function: <u128>::wrapping_div_euclid(a: u128, b: u128),
-        skip: b == 0,
-        cases: [
-            (495769576475698737689374598674899857u128, 856894756457986456u128),
-            (13495893475u128, 349583453457458697u128)
-        ]
-    }
-    test_bignum! {
-		function: <u128>::wrapping_rem(a: u128, b: u128),
+		function: <utest>::wrapping_div(a: utest, b: utest),
         skip: b == 0
     }
     test_bignum! {
-		function: <u128>::wrapping_rem_euclid(a: u128, b: u128),
+		function: <utest>::wrapping_div_euclid(a: utest, b: utest),
         skip: b == 0
     }
     test_bignum! {
-		function: <u128>::wrapping_neg(a: u128)
+		function: <utest>::wrapping_rem(a: utest, b: utest),
+        skip: b == 0
     }
     test_bignum! {
-		function: <u128>::wrapping_shl(a: u128, b: u16)
+		function: <utest>::wrapping_rem_euclid(a: utest, b: utest),
+        skip: b == 0
     }
     test_bignum! {
-		function: <u128>::wrapping_shr(a: u128, b: u16)
+		function: <utest>::wrapping_neg(a: utest)
     }
     test_bignum! {
-		function: <u128>::wrapping_pow(a: u128, b: u16)
+		function: <utest>::wrapping_shl(a: utest, b: u16)
+    }
+    test_bignum! {
+		function: <utest>::wrapping_shr(a: utest, b: u16)
+    }
+    test_bignum! {
+		function: <utest>::wrapping_pow(a: utest, b: u16)
     }
 }

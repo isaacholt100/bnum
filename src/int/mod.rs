@@ -3,6 +3,7 @@ pub mod checked;
 pub mod cmp;
 pub mod convert;
 pub mod endian;
+pub mod fmt;
 pub mod numtraits;
 pub mod ops;
 pub mod radix;

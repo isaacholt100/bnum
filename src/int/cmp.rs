@@ -2,7 +2,8 @@ macro_rules! tests {
 	($int: ty) => {
 		#[cfg(test)]
 		mod tests {
-			use crate::test::test_bignum;
+			#[allow(unused_imports)]
+			use crate::test::{test_bignum, types::*};
 		
 			test_bignum! {
 				function: <$int>::eq(a: ref &$int, b: ref &$int)

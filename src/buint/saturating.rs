@@ -53,21 +53,21 @@ impl<const N: usize> BUint<N> {
 
 #[cfg(test)]
 mod tests {
-	use crate::test::test_bignum;
+	use crate::test::{test_bignum, types::*};
 
     test_bignum! {
-		function: <u128>::saturating_add(a: u128, b: u128)
+		function: <utest>::saturating_add(a: utest, b: utest)
     }
     test_bignum! {
-		function: <u128>::saturating_add_signed(a: u128, b: i128)
+		function: <utest>::saturating_add_signed(a: utest, b: itest)
     }
     test_bignum! {
-		function: <u128>::saturating_sub(a: u128, b: u128)
+		function: <utest>::saturating_sub(a: utest, b: utest)
     }
     test_bignum! {
-		function: <u128>::saturating_mul(a: u128, b: u128)
+		function: <utest>::saturating_mul(a: utest, b: utest)
     }
     test_bignum! {
-		function: <u128>::saturating_pow(a: u128, b: u16)
+		function: <utest>::saturating_pow(a: utest, b: u16)
     }
 }

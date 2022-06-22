@@ -573,11 +573,6 @@ impl<const N: usize> BUint<N> {
     }
 
     #[inline]
-    fn is_even(&self) -> bool {
-        N == 0 || self.digits[0] & 1 == 0
-    }
-
-    #[inline]
     const fn last_digit_index(&self) -> usize {
         let mut index = 0;
         let mut i = 1;
@@ -675,23 +670,25 @@ impl<'a, const N: usize> Sum<&'a Self> for BUint<N> {
 #[cfg(test)]
 mod tests {
     use crate::types::U128;
-	use crate::test::{test_bignum, debug_skip};
+	use crate::test::{test_bignum, debug_skip, types::utest};
 
-    crate::int::tests!(u128);
+    crate::int::tests!(utest);
 
     test_bignum! {
-		function: <u128>::checked_next_power_of_two(a: u128),
+		function: <utest>::checked_next_power_of_two(a: utest),
         cases: [
-            (u128::MAX)
+            (utest::MAX)
         ]
     }
     test_bignum! {
-		function: <u128>::next_power_of_two(a: u128),
+		function: <utest>::next_power_of_two(a: utest),
         skip: debug_skip!(a.checked_next_power_of_two().is_none())
     }
     test_bignum! {
-		function: <u128>::wrapping_next_power_of_two(a: u128),
-        cases: [(u128::MAX)]
+		function: <utest>::wrapping_next_power_of_two(a: utest),
+        cases: [
+			(utest::MAX)
+		]
     }
 
     #[test]

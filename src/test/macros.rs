@@ -60,10 +60,11 @@ macro_rules! results {
 	(<$primitive: ty $(as $Trait: ty)?> :: $function: ident ($($arg: expr), *)) => {
 		paste::paste! {
 			{
-				let big_result = <crate::[<$primitive:upper>] $(as $Trait)?>::$function(
+				use crate::test::types;
+				let big_result = <types::[<$primitive:upper>] $(as $Trait)?>::$function(
 					$($arg), *
 				);
-				let prim_result = <$primitive $(as $Trait)?>::$function(
+				let prim_result = <types::$primitive $(as $Trait)?>::$function(
 					$($arg), *
 				);
 
@@ -112,7 +113,7 @@ macro_rules! quickcheck_from_to_radix {
     ($primitive: ty, $name: ident, $max: expr) => {
         paste::paste! {
             quickcheck::quickcheck! {
-                fn [<quickcheck_from_to_ $name>](u: $primitive, radix: u8) -> quickcheck::TestResult {
+                fn [<quickcheck_from_to_ $name>](u: crate::test::types::$primitive, radix: u8) -> quickcheck::TestResult {
                     #[allow(unused_comparisons)]
                     if !((2..=$max).contains(&radix)) {
                         return quickcheck::TestResult::discard();
@@ -128,37 +129,6 @@ macro_rules! quickcheck_from_to_radix {
 }
 
 pub(crate) use quickcheck_from_to_radix;
-
-macro_rules! test_fmt {
-    {
-        int: $int: ty,
-        name: $name: ident,
-        format: $format: expr,
-        numbers: {
-            $($number: expr), *
-        }
-    } => {
-        paste::paste! {
-            #[test]
-            fn [<$name _format>]() {
-                $(
-                    let big = <$int>::from($number);
-                    assert_eq!(format!(concat!("{:", $format, "}"), big), format!(concat!("{:", $format, "}"), $number));
-                    assert_eq!(format!(concat!("{:#", $format, "}"), big), format!(concat!("{:#", $format, "}"), $number));
-                )*
-            }
-            
-            quickcheck::quickcheck! {
-                fn [<quickcheck_ $name _format>](i: [<$int:lower>]) -> bool {
-                    let big = <$int>::from(i);
-                    format!(concat!("{:#", $format, "}"), big) == format!(concat!("{:#", $format, "}"), i)
-                }
-            }
-        }
-    }
-}
-
-pub(crate) use test_fmt;
 
 macro_rules! debug_skip {
 	($skip: expr) => {

@@ -1,4 +1,5 @@
-use crate::types::{U128, I128, U64, I64/*, F64*/};
+use crate::test::types::*;
+use crate::As;
 
 pub trait TestConvert {
     type Output;
@@ -6,76 +7,34 @@ pub trait TestConvert {
     fn into(self) -> Self::Output;
 }
 
-impl TestConvert for u128 {
-    type Output = u128;
-
-    #[inline]
-    fn into(self) -> Self::Output {
-        self.to_le()
-    }
+macro_rules! test_convert_big {
+	($big: ty, $output: ty) => {
+		impl TestConvert for $big {
+			type Output = $output;
+		
+			#[inline]
+			fn into(self) -> Self::Output {
+				self.as_()
+			}
+		}
+	};
 }
 
-impl TestConvert for U128 {
-    type Output = u128;
-
-    #[inline]
-    fn into(self) -> Self::Output {
-        unsafe {
-            core::mem::transmute(self)
-        }
-    }
+macro_rules! test_convert_bigints {
+	($($bits: literal), *) => {
+		paste::paste! {
+			$(
+				test_convert_big!([<U $bits>], [<u $bits>]);
+				test_convert_big!([<I $bits>], [<i $bits>]);
+			)*
+		}
+	};
 }
 
-impl TestConvert for u64 {
-    type Output = u64;
+test_convert_bigints!(64, 128);
 
-    #[inline]
-    fn into(self) -> Self::Output {
-        self.to_le()
-    }
-}
-
-impl TestConvert for U64 {
-    type Output = u64;
-
-    #[inline]
-    fn into(self) -> Self::Output {
-        unsafe {
-            core::mem::transmute(self)
-        }
-    }
-}
-
-impl TestConvert for I64 {
-    type Output = i64;
-
-    #[inline]
-    fn into(self) -> Self::Output {
-        unsafe {
-            core::mem::transmute(self)
-        }
-    }
-}
-
-impl TestConvert for i128 {
-    type Output = i128;
-
-    #[inline]
-    fn into(self) -> Self::Output {
-        self.to_le()
-    }
-}
-
-impl TestConvert for I128 {
-    type Output = i128;
-
-    #[inline]
-    fn into(self) -> Self::Output {
-        unsafe {
-            core::mem::transmute(self)
-        }
-    }
-}
+#[cfg(feature = "u8_digit")]
+test_convert_bigints!(8, 16, 32);
 
 impl<T: TestConvert> TestConvert for Option<T> {
     type Output = Option<<T as TestConvert>::Output>;
@@ -91,7 +50,7 @@ impl TestConvert for f64 {
 
     #[inline]
     fn into(self) -> Self::Output {
-        self.to_bits().to_le()
+        self.to_bits()
     }
 }
 
@@ -100,7 +59,7 @@ impl TestConvert for f32 {
 
     #[inline]
     fn into(self) -> Self::Output {
-        self.to_bits().to_le()
+        self.to_bits()
     }
 }
 
@@ -110,7 +69,7 @@ impl TestConvert for f32 {
     #[inline]
     fn into(self) -> Self::Output {
         unsafe {
-            core::mem::transmute(self.to_bits())
+            self.to_bits().as_()
         }
     }
 }*/
@@ -128,14 +87,6 @@ impl<T, const N: usize> TestConvert for [T; N] {
     type Output = Self;
     
     #[inline]
-    fn into(self) -> Self::Output {
-        self
-    }
-}
-
-impl TestConvert for u32 {
-    type Output = u32;
-    
     fn into(self) -> Self::Output {
         self
     }
@@ -213,4 +164,4 @@ macro_rules! test_convert_to_self {
     };
 }
 
-test_convert_to_self!(core::num::FpCategory, bool, core::cmp::Ordering, u8, u16, usize, i8, i16, i32, i64, isize);
+test_convert_to_self!(core::num::FpCategory, core::cmp::Ordering, bool, u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, alloc::string::String);

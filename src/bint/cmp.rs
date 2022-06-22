@@ -64,4 +64,4 @@ impl<const N: usize> const Ord for BInt<N> {
     }
 }
 
-crate::int::cmp::tests!(i128);
+crate::int::cmp::tests!(itest);

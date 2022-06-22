@@ -73,4 +73,4 @@ impl<const N: usize> const Ord for BUint<N> {
     }
 }
 
-crate::int::cmp::tests!(u128);
+crate::int::cmp::tests!(utest);

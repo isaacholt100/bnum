@@ -10,10 +10,10 @@ documentation = "https://docs.rs/bnum/latest/bnum"
 repository = "https://github.com/isaacholt100/bnum"
 readme = "README.md"
 keywords = ["uint", "int", "bignum", "maths", "arbitrary"]
-categories = ["numbers", "algorithms", "mathematics"]
+categories = ["numbers", "algorithms", "mathematics", "big number"]
 
 [features]
-default = ["u8_digit", "numtraits", "rand"]
+default = ["numtraits", "rand"]
 u8_digit = []
 serde = ["dep:serde", "serde-big-array"]
 numtraits = ["num-integer", "num-traits"]
@@ -28,19 +28,7 @@ rand = { version = "0.8.5", features = ["min_const_gen"], optional = true }
 [dev-dependencies]
 quickcheck = "1.0.3"
 paste = "1.0.6"
-criterion = "0.3"
-rand = { version = "0.8.5", features = ["min_const_gen"] }
-
-[[bench]]
-name = "mul"
-harness = false
 
 [profile.release]
-lto = true
-codegen-units = 1
-opt-level = 3
-
-[profile.bench]
-lto = true
-codegen-units = 1
-opt-level = 3
+lto = true # enable link-time optimisation for faster runtime, but slower compile time
+opt-level = 3 # maximum optimisation level for faster runtime, but slower compile time

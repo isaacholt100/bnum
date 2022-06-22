@@ -4,11 +4,9 @@
     const_mut_refs,
     const_maybe_uninit_as_mut_ptr,
     const_trait_impl,
-    bigint_helper_methods, // not necessary TODO: change code so doesn't need this, otherwise include in README, same for others
-    const_bigint_helper_methods, // not necessary
 )]
 #![cfg_attr(test, feature(
-	test,
+	bigint_helper_methods,
     int_log,
 	int_roundings,
     float_minimum_maximum,
@@ -16,16 +14,12 @@
 	mixed_integer_ops,
 ))]
 #![doc = include_str!("../README.md")]
-#![no_std]
+//#![no_std]
 
-// TODO: sort out license
 // TODO: credit all necessary bits of code/rewrite myself. have already commented where all bits which need crediting, just need to actually credit them properly
 
 #[macro_use]
 extern crate alloc;
-
-#[cfg(test)]
-extern crate quickcheck;
 
 mod cast;
 mod digit;

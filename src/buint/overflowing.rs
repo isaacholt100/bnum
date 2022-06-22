@@ -1,7 +1,9 @@
 use super::BUint;
 use crate::ExpType;
-use crate::digit::Digit;
+use crate::digit::{Digit, self};
 use crate::{BInt, doc};
+
+// TODO: these will no longer be necessary once const_bigint_helper_methods is stabilised: https://github.com/rust-lang/rust/issues/85532
 
 #[doc=doc::overflowing::impl_desc!()]
 impl<const N: usize> BUint<N> {
@@ -11,7 +13,7 @@ impl<const N: usize> BUint<N> {
         let mut carry = false;
         let mut i = 0;
         while i < N {
-            let result = self.digits[i].carrying_add(rhs.digits[i], carry);
+            let result = digit::carrying_add(self.digits[i], rhs.digits[i], carry);
             out.digits[i] = result.0;
             carry = result.1;
             i += 1;
@@ -31,7 +33,7 @@ impl<const N: usize> BUint<N> {
         let mut borrow = false;
         let mut i = 0;
         while i < N {
-            let result = self.digits[i].borrowing_sub(rhs.digits[i], borrow);
+            let result = digit::borrowing_sub(self.digits[i], rhs.digits[i], borrow);
             out.digits[i] = result.0;
             borrow = result.1;
             i += 1;
@@ -44,6 +46,7 @@ impl<const N: usize> BUint<N> {
         let mut overflow = false;
         let mut out = Self::ZERO;
         let mut carry: Digit;
+
         let mut i = 0;
         while i < N {
             carry = 0;
@@ -54,12 +57,15 @@ impl<const N: usize> BUint<N> {
                     let (prod, c) = super::carrying_mul(self.digits[i], rhs.digits[j], carry, out.digits[index]);
                     out.digits[index] = prod;
                     carry = c;
-                } else if (self.digits[i] != 0 && rhs.digits[j] != 0) || carry != 0 {
+                } else if self.digits[i] != 0 && rhs.digits[j] != 0 {
                     overflow = true;
                     break;
                 }
                 j += 1;
             }
+			if carry != 0 {
+				overflow = true;
+			}
             i += 1;
         }
         (out, overflow)
@@ -70,18 +76,7 @@ impl<const N: usize> BUint<N> {
 		// TODO: implement a faster multiplication algorithm for large values of `N`
         self.long_mul(rhs)
     }
-    /*const fn overflowing_mul_digit(self, rhs: Digit) -> (Self, Digit) {
-        let mut out = Self::ZERO;
-        let mut carry: Digit = 0;
-        let mut i = 0;
-        while i < N {
-            let (prod, c) = arch::mul_carry_unsigned(carry, 0, self.digits[i], rhs);
-            out.digits[i] = prod;
-            carry = c;
-            i += 1;
-        }
-        (out, carry)
-    }*/
+	
     #[inline]
     pub const fn overflowing_div(self, rhs: Self) -> (Self, bool) {
         (self.wrapping_div(rhs), false)
@@ -151,59 +146,43 @@ impl<const N: usize> BUint<N> {
 
 #[cfg(test)]
 mod tests {
-	use crate::test::test_bignum;
+	use crate::test::{test_bignum, types::utest};
 
     test_bignum! {
-		function: <u128>::overflowing_add(a: u128, b: u128)
+		function: <utest>::overflowing_add(a: utest, b: utest)
     }
     test_bignum! {
-		function: <u128>::overflowing_sub(a: u128, b: u128)
+		function: <utest>::overflowing_sub(a: utest, b: utest)
     }
     test_bignum! {
-		function: <u128>::overflowing_mul(a: u128, b: u128)
+		function: <utest>::overflowing_mul(a: utest, b: utest)
     }
     test_bignum! {
-		function: <u128>::overflowing_div(a: u128, b: u128),
-        skip: b == 0,
-        cases: [
-            (103573984758937498573594857389345u128, 3453454545345345345987u128),
-            (193679457916593485358497389457u128, 684u128)
-        ]
+		function: <utest>::overflowing_div(a: utest, b: utest),
+        skip: b == 0
     }
     test_bignum! {
-		function: <u128>::overflowing_div_euclid(a: u128, b: u128),
-        skip: b == 0,
-        cases: [
-            (349573947593745898375u128, 349573947593745898375u128),
-            (0u128, 3459745734895734957984579u128)
-        ]
+		function: <utest>::overflowing_div_euclid(a: utest, b: utest),
+        skip: b == 0
     }
     test_bignum! {
-		function: <u128>::overflowing_rem(a: u128, b: u128),
-        skip: b == 0,
-        cases: [
-            (2973459793475897343495439857u128, 56u128),
-            (1u128 << 64, 2u128)
-        ]
+		function: <utest>::overflowing_rem(a: utest, b: utest),
+        skip: b == 0
     }
     test_bignum! {
-		function: <u128>::overflowing_rem_euclid(a: u128, b: u128),
-        skip: b == 0,
-        cases: [
-            (27943758345638459034898756847983745u128, 37589734758937458973459u128),
-            (0u128, 93745934953894u128)
-        ]
+		function: <utest>::overflowing_rem_euclid(a: utest, b: utest),
+        skip: b == 0
     }
     test_bignum! {
-		function: <u128>::overflowing_neg(a: u128)
+		function: <utest>::overflowing_neg(a: utest)
     }
     test_bignum! {
-		function: <u128>::overflowing_shl(a: u128, b: u16)
+		function: <utest>::overflowing_shl(a: utest, b: u16)
     }
     test_bignum! {
-		function: <u128>::overflowing_shr(a: u128, b: u16)
+		function: <utest>::overflowing_shr(a: utest, b: u16)
     }
     test_bignum! {
-		function: <u128>::overflowing_pow(a: u128, b: u16)
+		function: <utest>::overflowing_pow(a: utest, b: u16)
     }
 }

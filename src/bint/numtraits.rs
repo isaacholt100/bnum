@@ -181,52 +181,93 @@ impl<const N: usize> Roots for BInt<N> {
     }
 }
 
+macro_rules! to_uint {
+	{ $($name: ident -> $uint: ty), * } => {
+		$(
+			#[inline]
+			fn $name(&self) -> Option<$uint> {
+				if self.is_negative() {
+					None
+				} else {
+					self.bits.$name()
+				}
+			}
+		)*
+	};
+}
+
+macro_rules! to_int {
+	{ $($name: ident -> $int: ty), * }  => {
+		$(
+			fn $name(&self) -> Option<$int> {
+				let neg = self.is_negative();
+				let (mut out, padding) = if neg {
+					(-1, Digit::MAX)
+				} else {
+					(0, Digit::MIN)
+				};
+				let mut i = 0;
+				if digit::BITS > <$int>::BITS {
+					let small = self.bits.digits[i] as $int;
+					let trunc = small as digit::Digit;
+					if self.bits.digits[i] != trunc {
+						return None;
+					}
+					out = small;
+					i = 1;
+				} else {
+					if neg {
+						loop {
+							let shift = i << digit::BIT_SHIFT;
+							if i >= N || shift >= <$int>::BITS as usize {
+								break;
+							}
+							out &= !((!self.bits.digits[i]) as $int << shift);
+							i += 1;
+						}
+					} else {
+						loop {
+							let shift = i << digit::BIT_SHIFT;
+							if i >= N || shift >= <$int>::BITS as usize {
+								break;
+							}
+							out |= self.bits.digits[i] as $int << shift;
+							i += 1;
+						}
+					}
+				}
+
+				while i < N {
+					if self.bits.digits[i] != padding {
+						return None;
+					}
+					i += 1;
+				}
+
+				Some(out)
+			}
+		)*
+	};
+}
+
 impl<const N: usize> ToPrimitive for BInt<N> {
-    #[inline]
-    fn to_i64(&self) -> Option<i64> {
-        if self.is_negative() {
-            let ones = Self::BITS - 64 + 1;
-            if self.leading_ones() < ones {
-                None
-            } else {
-                Some(self.as_())
-            }
-        } else {
-            self.bits.to_i64()
-        }
-    }
+	to_uint! {
+		to_u8 -> u8,
+		to_u16 -> u16,
+		to_u32 -> u32,
+		to_u64 -> u64,
+		to_u128 -> u128,
+		to_usize -> usize
+	}
 
-    #[inline]
-    fn to_i128(&self) -> Option<i128> {
-        if self.is_negative() {
-            let ones = Self::BITS - 128 + 1;
-            if self.leading_ones() < ones {
-                None
-            } else {
-                Some(self.as_())
-            }
-        } else {
-            self.bits.to_i128()
-        }
-    }
-
-    #[inline]
-    fn to_u64(&self) -> Option<u64> {
-        if self.is_negative() {
-            None
-        } else {
-            self.bits.to_u64()
-        }
-    }
-
-    #[inline]
-    fn to_u128(&self) -> Option<u128> {
-        if self.is_negative() {
-            None
-        } else {
-            self.bits.to_u128()
-        }
-    }
+	to_int! {
+		to_i8 -> i8,
+		to_i16 -> i16,
+		to_i32 -> i32,
+		to_i64 -> i64,
+		to_i128 -> i128,
+		to_isize -> isize
+	}
 
     #[inline]
     fn to_f32(&self) -> Option<f32> {
@@ -270,4 +311,11 @@ impl<const N: usize> Signed for BInt<N> {
     }
 }
 
-crate::int::numtraits::tests!(i128);
+crate::int::numtraits::tests!(itest);
+
+#[test]
+fn test_to_i128() {
+	let a = -1i64;
+	let b = crate::types::I64::from(a);
+	assert_eq!(a.to_i128(), b.to_i128());
+}

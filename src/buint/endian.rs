@@ -169,7 +169,6 @@ impl<const N: usize> BUint<N> {
 		while i > 0 {
 			let digit_bytes = self.digits[N - i].to_be_bytes();
 			i -= 1;
-			// TODO: make this faster by using MaybeUninit
 			let mut j = 0;
 			while j < digit::BYTES as usize {
 				bytes[(i << digit::BYTE_SHIFT) + j] = digit_bytes[j];
@@ -261,9 +260,9 @@ impl<const N: usize> BUint<N> {
 mod tests {
     use crate::types::U128;
     use crate::test::U8ArrayWrapper;
-	use crate::test::test_bignum;
+	use crate::test::{test_bignum, types::utest};
 
-	crate::int::endian::tests!(u128);
+	crate::int::endian::tests!(utest);
 
     #[test]
     fn from_be_slice() {

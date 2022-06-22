@@ -621,7 +621,7 @@ mod tests {
     use core::str::FromStr;
 
 	test_bignum! {
-		function: <u128>::from_str,
+		function: <utest>::from_str,
 		cases: [
             ("398475394875230495745"),
             ("3984753948752304957423490785029749572977970985")
@@ -629,7 +629,7 @@ mod tests {
 	}
 
 	test_bignum! {
-		function: <u128>::from_str_radix,
+		function: <utest>::from_str_radix,
 		cases: [
             ("af7345asdofiuweor", 35u32),
             ("945hhdgi73945hjdfj", 32u32),
@@ -639,9 +639,9 @@ mod tests {
         ]
 	}
 
-    quickcheck_from_to_radix!(u128, radix_be, 255);
-    quickcheck_from_to_radix!(u128, radix_le, 255);
-    quickcheck_from_to_radix!(u128, str_radix, 36);
+    quickcheck_from_to_radix!(utest, radix_be, 255);
+    quickcheck_from_to_radix!(utest, radix_le, 255);
+    quickcheck_from_to_radix!(utest, str_radix, 36);
 
     #[test]
     fn from_to_radix_le() {

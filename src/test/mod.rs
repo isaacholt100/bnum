@@ -5,30 +5,7 @@ mod macros;
 #[allow(unused_imports)]
 pub use macros::*;
 
-macro_rules! test_type {
-	($prefix: ident, $suffix: ident, $bits: literal) => {
-		paste::paste! {
-			#[allow(non_camel_case_types, unused)]
-			pub type [<$prefix $suffix>] = [<$prefix $bits>];
-	
-			#[allow(unused)]
-			pub type [<$prefix:upper $suffix:upper>] = crate::types::[<$prefix:upper $bits>];
-		}
-	};
-}
-
-macro_rules! test_types {
-	($suffix: ident, $bits: literal) => {
-		pub mod types {
-			paste::paste! {
-				test_type!(u, $suffix, $bits);
-				test_type!(i, $suffix, $bits);
-			}
-		}
-	};
-}
-
-test_types!(test, 128);
+pub mod types;
 
 #[derive(Clone, Copy)]
 pub struct U8ArrayWrapper<const N: usize>([u8; N]);

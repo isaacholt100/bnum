@@ -30,7 +30,7 @@ int_types! {
 // The below types are for testing purposes only and are not publicly exposed
 
 #[allow(unused)]
-pub(crate) type U64 = BUint::<{64 / digit::BITS as usize}>;
+pub type U64 = BUint::<{64 / digit::BITS as usize}>;
 
 #[allow(unused)]
 pub type U128 = BUint::<{128 / digit::BITS as usize}>;

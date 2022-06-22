@@ -9,15 +9,15 @@ use crate::digit::{self, DoubleDigit};
 #[doc=doc::checked::impl_desc!()]
 impl<const N: usize> BUint<N> {
     #[inline]
-    pub const fn checked_add_signed(self, rhs: BInt<N>) -> Option<Self> {
-        tuple_to_option(self.overflowing_add_signed(rhs))
-    }
-    #[inline]
     #[doc=doc::checked_add!(U256)]
     pub const fn checked_add(self, rhs: Self) -> Option<Self> {
         tuple_to_option(self.overflowing_add(rhs))
     }
 
+    #[inline]
+    pub const fn checked_add_signed(self, rhs: BInt<N>) -> Option<Self> {
+        tuple_to_option(self.overflowing_add_signed(rhs))
+    }
 
     #[inline]
     pub const fn checked_sub(self, rhs: Self) -> Option<Self> {
@@ -170,7 +170,7 @@ impl<const N: usize> BUint<N> {
                 let mut carry: Digit = 0;
                 let mut i = 0;
                 while i < M {
-                    let (prod, c) = uint.digits[i].carrying_mul(rhs, carry);
+                    let (prod, c) = digit::carrying_mul(uint.digits[i], rhs, carry);
                     carry = c;
                     rest[i] = prod;
                     i += 1;
@@ -479,90 +479,58 @@ impl<const N: usize> BUint<N> {
 
 #[cfg(test)]
 mod tests {
-	use crate::test::test_bignum;
+	use crate::test::{test_bignum, types::*};
 
     test_bignum! {
-		function: <u128>::checked_add(a: u128, b: u128),
+		function: <utest>::checked_add(a: utest, b: utest),
         cases: [
-            (238732748937u128, 23583048508u128),
-            (u128::MAX, 1u128)
+            (utest::MAX, 1u8)
         ]
     }
     test_bignum! {
-        function: <u128>::checked_add_signed(a: u128, b: i128)
+        function: <utest>::checked_add_signed(a: utest, b: itest)
     }
     test_bignum! {
-		function: <u128>::checked_sub(a: u128, b: u128)
+		function: <utest>::checked_sub(a: utest, b: utest)
     }
     test_bignum! {
-		function: <u128>::checked_mul(a: u128, b: u128)
+		function: <utest>::checked_mul(a: utest, b: utest)
     }
     test_bignum! {
-		function: <u128>::checked_div(a: u128, b: u128),
+		function: <utest>::checked_div(a: utest, b: utest),
         cases: [
-            (234233453453454563453453423u128, 34534597u128),
-            (95873492093487528930479456874985769879u128, 33219654565456456453434545697u128),
-            (34564564564u128, 33219654565456456453434545697u128),
-			(328622u128, 10000u128), // tests the unlikely condition
-			(2074086u128, 76819u128) // tests the unlikely condition
+			(328622u32 as utest, 10000u32 as utest), // tests the unlikely condition
+			(2074086u32 as utest, 76819u32 as utest) // tests the unlikely condition
         ]
     }
     test_bignum! {
-		function: <u128>::checked_div_euclid(a: u128, b: u128),
-        cases: [
-            (3058689475456456908345374598734535u128, 973457035343453453454338408u128),
-            (1734857456846783458346458640586098u128, 98474869054698745u128)
-        ]
+		function: <utest>::checked_div_euclid(a: utest, b: utest)
     }
     test_bignum! {
-		function: <u128>::checked_rem(a: u128, b: u128),
-        cases: [
-            (9845764759879745698u128, 948745860945769845645986745986u128),
-            (3450457689456094859604589684905698u128, 34985734895793u128),
-            (4987569457756984789756745677957698476u128, 49857498576947593595548u128)
-        ]
+		function: <utest>::checked_rem(a: utest, b: utest)
     }
     test_bignum! {
-		function: <u128>::checked_rem_euclid(a: u128, b: u128),
-        cases: [
-            (45645609485069840574594565646456u128, 984756897456799u128),
-            (9827986748560745645867456456456456u128, 98474869054698456456456456456745u128)
-        ]
+		function: <utest>::checked_rem_euclid(a: utest, b: utest)
     }
     test_bignum! {
-		function: <u128>::checked_neg(a: u128),
-        cases: [
-            (0u128)
-        ]
+		function: <utest>::checked_neg(a: utest)
     }
     test_bignum! {
-		function: <u128>::checked_shl(a: u128, b: u16),
-        cases: [
-            (45645643454354563634554698756u128, 22 as u16),
-            (4598745697987927893475u128, 5873 as u16)
-        ]
+		function: <utest>::checked_shl(a: utest, b: u16)
     }
     test_bignum! {
-		function: <u128>::checked_shr(a: u128, b: u16),
-        cases: [
-            (8098459098745896789454976498u128, 100 as u16),
-            (9719834759874986456456465u128, 128 as u16)
-        ]
+		function: <utest>::checked_shr(a: utest, b: u16)
     }
     test_bignum! {
-		function: <u128>::checked_pow(a: u128, b: u16)
+		function: <utest>::checked_pow(a: utest, b: u16)
     }
     test_bignum! {
-		function: <u128>::checked_log(a: u128, b: u128)
+		function: <utest>::checked_log(a: utest, b: utest)
     }
     test_bignum! {
-		function: <u128>::checked_log2(a: u128)
+		function: <utest>::checked_log2(a: utest)
     }
     test_bignum! {
-		function: <u128>::checked_log10(a: u128),
-        cases: [
-            (10000000000000000u128),
-            (10000u128)
-        ]
+		function: <utest>::checked_log10(a: utest)
     }
 }

@@ -186,8 +186,8 @@ impl<const N: usize> BInt<N> {
 
 #[cfg(test)]
 mod tests {
-    use crate::test::{U8ArrayWrapper, test_bignum};
+    use crate::test::{U8ArrayWrapper, test_bignum, types::itest};
 
-	crate::int::endian::tests!(i128);
+	crate::int::endian::tests!(itest);
     // TODO: test from_be_slice and from_le_slice
 }

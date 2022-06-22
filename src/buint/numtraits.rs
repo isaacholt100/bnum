@@ -336,27 +336,65 @@ impl<const N: usize> Roots for BUint<N> {
 }
 
 macro_rules! to_int {
-	($int: ty, $method: ident) => {
-		#[inline]
-		fn $method(&self) -> Option<$int> {
-			<$int>::try_from(*self).ok()
-		}
-	}
+	{ $($name: ident -> $int: ty), * }  => {
+		$(
+			#[inline]
+			fn $name(&self) -> Option<$int> {
+				let mut out = 0;
+				let mut i = 0;
+				if digit::BITS > <$int>::BITS {
+					let small = self.digits[i] as $int;
+					let trunc = small as digit::Digit;
+					if self.digits[i] != trunc {
+						return None;
+					}
+					out = small;
+					i = 1;
+				} else {
+					loop {
+						let shift = i << digit::BIT_SHIFT;
+						if i >= N || shift >= <$int>::BITS as usize {
+							break;
+						}
+						out |= self.digits[i] as $int << shift;
+						i += 1;
+					}
+				}
+
+				#[allow(unused_comparisons)]
+				if out < 0 {
+					return None;
+				}
+
+				while i < N {
+					if self.digits[i] != 0 {
+						return None;
+					}
+					i += 1;
+				}
+
+				Some(out)
+			}
+		)*
+	};
 }
 
 impl<const N: usize> ToPrimitive for BUint<N> {
-    to_int!(i8, to_i8);
-    to_int!(i16, to_i16);
-    to_int!(i32, to_i32);
-    to_int!(i64, to_i64);
-    to_int!(i128, to_i128);
-    to_int!(isize, to_isize);
-    to_int!(u8, to_u8);
-    to_int!(u16, to_u16);
-    to_int!(u32, to_u32);
-    to_int!(u64, to_u64);
-    to_int!(u128, to_u128);
-    to_int!(usize, to_usize);
+	to_int! {
+		to_u8 -> u8,
+		to_u16 -> u16,
+		to_u32 -> u32,
+		to_u64 -> u64,
+		to_u128 -> u128,
+		to_usize -> usize,
+
+		to_i8 -> i8,
+		to_i16 -> i16,
+		to_i32 -> i32,
+		to_i64 -> i64,
+		to_i128 -> i128,
+		to_isize -> isize
+	}
 
     #[inline]
     fn to_f32(&self) -> Option<f32> {
@@ -371,4 +409,4 @@ impl<const N: usize> ToPrimitive for BUint<N> {
 
 impl<const N: usize> Unsigned for BUint<N> {}
 
-crate::int::numtraits::tests!(u128);
+crate::int::numtraits::tests!(utest);

@@ -54,6 +54,8 @@ macro_rules! buint_as {
 
 buint_as!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
 
+// TODO: combine these impls for f32 and f64 into a macro for both
+
 impl<const N: usize> CastFrom<BUint<N>> for f32 {
     #[inline]
     fn cast_from(from: BUint<N>) -> Self {
@@ -61,19 +63,27 @@ impl<const N: usize> CastFrom<BUint<N>> for f32 {
             return 0.0;
         }
         let bits = from.bits();
-        let mut mant = if bits <= 24 {
-            from << (24 - bits)
-        } else {
-            from >> (bits - 24)
-        };
+        let mut mant = if BUint::<N>::BITS > u32::BITS {
+			if bits < 24 {
+				from.as_::<u32>() << (24 - bits)
+			} else {
+				(from >> (bits - 24)).as_::<u32>()
+			}
+		} else {
+			if bits < 24 {
+				from.as_::<u32>() << (24 - bits)
+			} else {
+				from.as_::<u32>() >> (bits - 24)
+			}
+		};
         let mut round_up = true;
-        if bits <= 24 || !from.bit(bits - 25) || (mant.is_even() && from.trailing_zeros() == bits - 25) {
+        if bits <= 24 || !from.bit(bits - 25) || (mant & 1 == 0 && from.trailing_zeros() == bits - 25) {
             round_up = false;
         }
         let mut exp = bits as u32 + 127 - 1;
         if round_up {
-            mant += BUint::ONE;
-            if mant.bits() == 25 {
+            mant += 1;
+            if mant.leading_zeros() == 32 - 25 {
                 exp += 1;
             }
         }
@@ -92,19 +102,27 @@ impl<const N: usize> CastFrom<BUint<N>> for f64 {
             return 0.0;
         }
         let bits = from.bits();
-        let mut mant = if bits <= 53 {
-            from << (53 - bits)
-        } else {
-            from >> (bits - 53)
-        };
+		let mut mant = if BUint::<N>::BITS > u64::BITS {
+			if bits < 53 {
+				from.as_::<u64>() << (53 - bits)
+			} else {
+				(from >> (bits - 53)).as_::<u64>()
+			}
+		} else {
+			if bits < 53 {
+				from.as_::<u64>() << (53 - bits)
+			} else {
+				from.as_::<u64>() >> (bits - 53)
+			}
+		};
         let mut round_up = true;
-        if bits <= 53 || !from.bit(bits - 54) || (mant.is_even() && from.trailing_zeros() == bits - 54) {
+        if bits <= 53 || !from.bit(bits - 54) || (mant & 1 == 0 && from.trailing_zeros() == bits - 54) {
             round_up = false;
         }
         let mut exp = bits as u64 + 1023 - 1;
         if round_up {
-            mant += BUint::ONE;
-            if mant.bits() == 54 {
+            mant += 1;
+            if mant.leading_zeros() == 64 - 54 {
                 exp += 1;
             }
         }

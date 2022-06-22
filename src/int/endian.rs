@@ -27,15 +27,15 @@ macro_rules! tests {
 		}
 	
 		test_bignum! {
-			function: <$int>::from_be_bytes(a: U8ArrayWrapper<16>)
+			function: <$int>::from_be_bytes(a: U8ArrayWrapper<{<$int>::BITS as usize / 8}>)
 		}
 	
 		test_bignum! {
-			function: <$int>::from_le_bytes(a: U8ArrayWrapper<16>)
+			function: <$int>::from_le_bytes(a: U8ArrayWrapper<{<$int>::BITS as usize / 8}>)
 		}
 		
 		test_bignum! {
-			function: <$int>::from_ne_bytes(a: U8ArrayWrapper<16>)
+			function: <$int>::from_ne_bytes(a: U8ArrayWrapper<{<$int>::BITS as usize / 8}>)
 		}
 	};
 }

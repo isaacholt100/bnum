@@ -147,85 +147,71 @@ impl<const N: usize> BInt<N> {
 
 #[cfg(test)]
 mod tests {
-	use crate::test::test_bignum;
+	use crate::test::{test_bignum, types::*};
 
     test_bignum! {
-        function: <i128>::checked_add(a: i128, b: i128),
+        function: <itest>::checked_add(a: itest, b: itest),
         cases: [
-            (i128::MAX, 1i128)
+            (itest::MAX, -1i8)
         ]
     }
     test_bignum! {
-        function: <i128>::checked_add_unsigned(a: i128, b: u128)
+        function: <itest>::checked_add_unsigned(a: itest, b: utest)
     }
     test_bignum! {
-        function: <i128>::checked_sub(a: i128, b: i128),
+        function: <itest>::checked_sub(a: itest, b: itest),
         cases: [
-            (i128::MIN, -1i128)
+            (itest::MIN, -1i8)
         ]
     }
     test_bignum! {
-        function: <i128>::checked_sub_unsigned(a: i128, b: u128)
+        function: <itest>::checked_sub_unsigned(a: itest, b: utest)
     }
     test_bignum! {
-        function: <i128>::checked_mul(a: i128, b: i128),
+        function: <itest>::checked_mul(a: itest, b: itest),
         cases: [
-            (i128::MIN, -1i128)
+            (itest::MIN, -1i8)
         ]
     }
     test_bignum! {
-        function: <i128>::checked_div(a: i128, b: i128),
+        function: <itest>::checked_div(a: itest, b: itest),
         cases: [
-            (-34564564564i128, -33219654565456456453434545697i128),
-			(i128::MIN, -1i128),
-			(8388600, 68201) // tests the unlikely condition
+			(23098403i32 as itest, 0i8),
+			(itest::MIN, -1i8),
+			(8388600i32 as itest, 68201i32 as itest) // tests the unlikely condition
         ]
     }
     test_bignum! {
-        function: <i128>::checked_div_euclid(a: i128, b: i128),
+        function: <itest>::checked_div_euclid(a: itest, b: itest),
         cases: [
-			(i128::MIN, -1i128)
+			(itest::MIN, -1i8)
         ]
     }
     test_bignum! {
-        function: <i128>::checked_rem(a: i128, b: i128),
+        function: <itest>::checked_rem(a: itest, b: itest),
         cases: [
-			(i128::MIN, -1i128)
+			(itest::MIN, -1i8)
         ]
     }
     test_bignum! {
-        function: <i128>::checked_rem_euclid(a: i128, b: i128),
+        function: <itest>::checked_rem_euclid(a: itest, b: itest),
         cases: [
-			(i128::MIN, -1i128)
+			(itest::MIN, -1i8)
         ]
     }
     test_bignum! {
-        function: <i128>::checked_neg(a: i128),
+        function: <itest>::checked_neg(a: itest),
         cases: [
-            (i128::MIN)
+            (itest::MIN)
         ]
     }
     test_bignum! {
-        function: <i128>::checked_shl(a: i128, b: u16),
-        cases: [
-            (1907304597249567965987i128, 21 as u16),
-            (-2023973209458764967589i128, 15 as u16),
-            (2845197495679875698546i128, 8457 as u16)
-        ]
+        function: <itest>::checked_shl(a: itest, b: u16)
     }
     test_bignum! {
-        function: <i128>::checked_shr(a: i128, b: u16),
-        cases: [
-            (61354072459679717429576097i128, 120 as u16),
-            (-23045692977456978956795i128, 18 as u16),
-            (203967947569745986748956i128, 128 as u16)
-        ]
+        function: <itest>::checked_shr(a: itest, b: u16)
     }
     test_bignum! {
-        function: <i128>::checked_pow(a: i128, b: u16),
-        cases: [
-            (-13i128, 22 as u16),
-            (7i128, 29 as u16)
-        ]
+        function: <itest>::checked_pow(a: itest, b: u16)
     }
 }

@@ -1,6 +1,6 @@
 use super::{BUint, ExpType};
 use core::ops::{Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Div, DivAssign, Mul, MulAssign, Not, Rem, RemAssign, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign};
-use crate::digit::Digit;
+use crate::digit::{Digit, self};
 
 impl<const N: usize> const Add<Digit> for BUint<N> {
     type Output = Self;
@@ -8,12 +8,12 @@ impl<const N: usize> const Add<Digit> for BUint<N> {
     #[inline]
     fn add(self, rhs: Digit) -> Self {
         let mut out = Self::ZERO;
-        let result = self.digits[0].carrying_add(rhs, false);
+        let result = digit::carrying_add(self.digits[0], rhs, false);
         out.digits[0] = result.0;
         let mut carry = result.1;
         let mut i = 1;
         while i < N {
-            let result = self.digits[0].carrying_add(0, carry);
+            let result = digit::carrying_add(self.digits[0], 0, carry);
             out.digits[i] = result.0;
             carry = result.1;
             i += 1;
@@ -123,7 +123,7 @@ crate::int::ops::impls!(BUint);
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use crate::test::test_bignum;
+	use crate::test::{test_bignum, types::utest};
 
-	crate::int::ops::tests!(u128);
+	crate::int::ops::tests!(utest);
 }
