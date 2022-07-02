@@ -1,3 +1,8 @@
+/*
+Most of the code in this file is adapted from the Rust `num_bigint` library: https://docs.rs/num-bigint/latest/num_bigint/ used under the MIT license.
+The original license file and copyright notice for this project can be found in this project's root at licenses/LICENSE-num-bigint.
+*/
+
 use super::BUint;
 use crate::doc;
 use crate::ExpType;
@@ -19,7 +24,6 @@ impl<const N: usize> BUint<N> {
         InnerIter: Iterator<Item = u8>,
         OuterIter: Iterator<Item = InnerIter>,
     {
-		// credit num_bigint source code
         let mut out = Self::ZERO;
 
         let iter = iter.map(|inner_iter| {
@@ -40,7 +44,6 @@ impl<const N: usize> BUint<N> {
     where
         I: Iterator<Item = u8>
     {
-		// credit num_bigint source code
         let mut out = Self::ZERO;
         let mut digit = 0;
         let mut dbits = 0;
@@ -70,7 +73,6 @@ impl<const N: usize> BUint<N> {
         Some(out)
     }
     const fn mac_with_carry(a: Digit, b: Digit, acc: &mut DoubleDigit) -> Digit {
-		// credit num_bigint source code
         *acc += a as DoubleDigit * b as DoubleDigit;
         let lo = *acc as Digit;
         *acc >>= BITS_U8;
@@ -82,7 +84,6 @@ impl<const N: usize> BUint<N> {
         TailInner: Iterator<Item = u8>,
         Tail: Iterator<Item = TailInner>,
     {
-		// credit num_bigint source code
         let mut out = Self::ZERO;
 
         let radix = radix as Digit;
@@ -126,7 +127,6 @@ impl<const N: usize> BUint<N> {
     /// assert_eq!(BUint::<4>::from_str_radix(src, 32).ok(), BUint::parse_bytes(src.as_bytes(), 32));
     /// ```
     pub fn parse_bytes(buf: &[u8], radix: u32) -> Option<Self> {
-		// credit num_bigint source code
         let s = core::str::from_utf8(buf).ok()?;
         Self::from_str_radix(s, radix).ok()
     }
@@ -147,7 +147,6 @@ impl<const N: usize> BUint<N> {
     /// assert_eq!(Some(n), BUint::from_radix_be(&digits, 12));
     /// ```
     pub fn from_radix_be(buf: &[u8], radix: u32) -> Option<Self> {
-		// credit num_bigint source code
         assert_range!(radix, 256);
         if buf.is_empty() {
             return Some(Self::ZERO);
@@ -212,7 +211,6 @@ impl<const N: usize> BUint<N> {
     /// assert_eq!(Some(n), BUint::from_radix_le(&digits, 15));
     /// ```
     pub fn from_radix_le(buf: &[u8], radix: u32) -> Option<Self> {
-		// credit num_bigint source code
         assert_range!(radix, 256);
         if buf.is_empty() {
             return Some(Self::ZERO);
@@ -263,7 +261,6 @@ impl<const N: usize> BUint<N> {
         out
     }
     const fn byte_to_digit(byte: u8) -> u8 {
-		// credit num_bigint source code
         match byte {
             b'0' ..= b'9' => byte - b'0',
             b'a' ..= b'z' => byte - b'a' + 10,
@@ -291,7 +288,6 @@ impl<const N: usize> BUint<N> {
     /// assert_eq!(BUint::<2>::from_str_radix("A", 16), Ok(BUint::from(10u128)));
     /// ```
     pub fn from_str_radix(src: &str, radix: u32) -> Result<Self, ParseIntError> {
-		// credit num_bigint source code
         assert_range!(radix, 36);
         let mut src = src;
         if src.starts_with('+') {
@@ -320,7 +316,6 @@ impl<const N: usize> BUint<N> {
                 let bits = ilog2(radix);
                 let iter = buf
                     .rchunks((BITS_U8 / bits) as usize)
-                    //.rev()
                     .map(|chunk| {
                         chunk
                             .iter()
@@ -384,7 +379,6 @@ impl<const N: usize> BUint<N> {
     /// assert_eq!(n.to_str_radix(36), src);
     /// ```
     pub fn to_str_radix(&self, radix: u32) -> String {
-		// credit num_bigint source code
         let mut out = Self::to_radix_be(self, radix);
 
         for byte in out.iter_mut() {
@@ -413,7 +407,6 @@ impl<const N: usize> BUint<N> {
     /// assert_eq!(n.to_radix_be(120), digits);
     /// ```
     pub fn to_radix_be(&self, radix: u32) -> Vec<u8> {
-		// credit num_bigint source code
         let mut v = self.to_radix_le(radix);
         v.reverse();
         v
@@ -433,7 +426,6 @@ impl<const N: usize> BUint<N> {
     /// assert_eq!(n.to_radix_le(250), digits);
     /// ```
     pub fn to_radix_le(&self, radix: u32) -> Vec<u8> {
-		// credit num_bigint source code
         if self.is_zero() {
             vec![0]
         } else if radix.is_power_of_two() {
@@ -456,7 +448,6 @@ impl<const N: usize> BUint<N> {
     }
 
     fn to_bitwise_digits_le(self, bits: u8) -> Vec<u8> {
-		// credit num_bigint source code
         let last_digit_index = self.last_digit_index();
         let mask: Digit = (1 << bits) - 1;
         let digits_per_big_digit = BITS_U8 / bits;
@@ -479,7 +470,6 @@ impl<const N: usize> BUint<N> {
     }
 
     fn to_inexact_bitwise_digits_le(self, bits: u8) -> Vec<u8> {
-		// credit num_bigint source code
         let mask: Digit = (1 << bits) - 1;
         let digits = div_ceil(self.bits(), bits as ExpType);
         let mut out = Vec::with_capacity(digits as usize);
@@ -509,7 +499,6 @@ impl<const N: usize> BUint<N> {
     }
 
     fn to_radix_digits_le(self, radix: u32) -> Vec<u8> {
-		// credit num_bigint source code
         let radix_digits = div_ceil(self.bits(), ilog2(radix) as ExpType);
         let mut out = Vec::with_capacity(radix_digits as usize);
         let (base, power) = radix_bases::get_radix_base::<true>(radix);
@@ -552,7 +541,6 @@ impl<const N: usize> const FromStr for BUint<N> {
     type Err = ParseIntError;
 
     fn from_str(src: &str) -> Result<Self, Self::Err> {
-		// credit num_bigint source code
         let (base, power) = radix_bases::RADIX_BASE_10;
         let buf = src.as_bytes();
         let mut i = 0;

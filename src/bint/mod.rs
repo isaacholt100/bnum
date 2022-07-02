@@ -92,7 +92,7 @@ impl<const N: usize> BInt<N> {
 macro_rules! log {
     ($method: ident $(, $base: ident : $ty: ty)?) => {
         #[inline]
-        pub fn $method(self, $($base : $ty),*) -> ExpType {
+        pub const fn $method(self, $($base : $ty),*) -> ExpType {
             if self.is_negative() {
                 #[cfg(debug_assertions)]
                 panic!(errors::err_msg!("attempt to calculate log of negative number"));

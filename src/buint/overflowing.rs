@@ -105,20 +105,24 @@ impl<const N: usize> BUint<N> {
 
     #[inline]
     pub const fn overflowing_shl(self, rhs: ExpType) -> (Self, bool) {
-        if rhs >= Self::BITS {
-            (super::unchecked_shl(self, rhs & Self::BITS_MINUS_1), true)
-        } else {
-            (super::unchecked_shl(self, rhs), false)
-        }
+		unsafe {
+			if rhs >= Self::BITS {
+				(super::unchecked_shl(self, rhs & Self::BITS_MINUS_1), true)
+			} else {
+				(super::unchecked_shl(self, rhs), false)
+			}
+		}
     }
 
     #[inline]
     pub const fn overflowing_shr(self, rhs: ExpType) -> (Self, bool) {
-        if rhs >= Self::BITS {
-            (super::unchecked_shr(self, rhs & Self::BITS_MINUS_1), true)
-        } else {
-            (super::unchecked_shr(self, rhs), false)
-        }
+        unsafe {
+			if rhs >= Self::BITS {
+				(super::unchecked_shr(self, rhs & Self::BITS_MINUS_1), true)
+			} else {
+				(super::unchecked_shr(self, rhs), false)
+			}
+		}
     }
 
 	#[inline]

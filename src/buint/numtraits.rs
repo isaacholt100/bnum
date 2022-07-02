@@ -97,8 +97,10 @@ impl<const N: usize> Integer for BUint<N> {
 		let mut a_tz = a.trailing_zeros();
 		let mut b_tz = b.trailing_zeros();
 		// Normalise `a` and `b` so that both of them has no leading zeros, so both must be odd.
-		a = super::unchecked_shr(a, a_tz);
-		b = super::unchecked_shr(b, b_tz);
+		unsafe {
+			a = super::unchecked_shr(a, a_tz);
+			b = super::unchecked_shr(b, b_tz);
+		}
 
 		if b_tz > a_tz {
 			// Ensure `a_tz >= b_tz`
@@ -111,9 +113,13 @@ impl<const N: usize> Integer for BUint<N> {
 			}
 			a -= b;
 			if a.is_zero() {
-				return super::unchecked_shl(b, b_tz);
+				return unsafe {
+					super::unchecked_shl(b, b_tz)
+				};
 			}
-			a = super::unchecked_shr(a, a.trailing_zeros());
+			unsafe {
+				a = super::unchecked_shr(a, a.trailing_zeros());
+			}
 		}
     }
 
@@ -219,11 +225,15 @@ macro_rules! check_zero_or_one {
     }
 }
 
+/*
+The `fixpoint` function and the implementation of `Roots` below are adapted from the Rust `num_bigint` library: https://docs.rs/num-bigint/latest/num_bigint/ used under the MIT license.
+The original license file and copyright notice for this project can be found in this project's root at licenses/LICENSE-num-bigint.
+*/
+
 impl<const N: usize> BUint<N> {
     #[inline]
     fn fixpoint<F>(mut self, max_bits: ExpType, f: F) -> Self
     where F: Fn(Self) -> Self {
-		// credit num_bigint source code
         let mut xn = f(self);
         while self < xn {
             self = if xn.bits() > max_bits {
@@ -244,28 +254,9 @@ impl<const N: usize> BUint<N> {
 impl<const N: usize> Roots for BUint<N> {
     #[inline]
     fn sqrt(&self) -> Self {
-		/*if self.is_zero() {
-			return Self::ZERO;
-		}
-		let m = *self;
-		let mut u = m;
-		let mut s: Self;
-		let mut t: Self;
-
-		loop {
-			s = u;
-			let d = m / s;
-			u = super::unchecked_shr(s, 1) + super::unchecked_shr(d, 1);
-			if s.is_odd() && d.is_odd() {
-				u += Self::ONE;
-			}
-			if u >= s {
-				return s;
-			}
-		}*/
-		// credit num_bigint source code
         check_zero_or_one!(self);
 
+		#[cfg(not(test))] // disable this when testing as this condition will always be true when testing against primitives, so the rest of the algorithm wouldn't be tested
         if let Some(n) = self.to_u128() {
             return n.sqrt().into();
         }
@@ -282,9 +273,10 @@ impl<const N: usize> Roots for BUint<N> {
 
     #[inline]
     fn cbrt(&self) -> Self {
-		// credit num_bigint source code
         check_zero_or_one!(self);
 
+
+		#[cfg(not(test))] // disable this when testing as this condition will always be true when testing against primitives, so the rest of the algorithm wouldn't be tested
         if let Some(n) = self.to_u128() {
             return n.cbrt().into();
         }
@@ -301,7 +293,6 @@ impl<const N: usize> Roots for BUint<N> {
 
     #[inline]
     fn nth_root(&self, n: u32) -> Self {
-		// credit num_bigint source code
         match n {
             0 => panic!(crate::errors::err_msg!("attempt to calculate zeroth root")),
             1 => *self,
@@ -310,6 +301,7 @@ impl<const N: usize> Roots for BUint<N> {
             _ => {
                 check_zero_or_one!(self);
 
+				#[cfg(not(test))] // disable this when testing as this condition will always be true when testing against primitives, so the rest of the algorithm wouldn't be tested
                 if let Some(x) = self.to_u128() {
                     return x.nth_root(n).into();
                 }

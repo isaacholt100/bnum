@@ -27,7 +27,6 @@ impl<const N: usize> BInt<N> {
 
     #[inline]
     pub fn from_str_radix(mut src: &str, radix: u32) -> Result<Self, ParseIntError> {
-		// credit num_bigint source code
         assert_range!(radix, 36);
 
         let mut negative = false;

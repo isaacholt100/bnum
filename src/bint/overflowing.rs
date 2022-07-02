@@ -187,55 +187,24 @@ impl<const N: usize> BInt<N> {
         (Self::from_bits(uint), overflow)
     }
 
-    #[inline]
-    const fn shr_internal(self, rhs: ExpType) -> Self {
-		// credit num_bigint source code
-        if rhs == 0 {
-            self
-        } else {
-            let digit_shift = (rhs >> digit::BIT_SHIFT) as usize;
-            let shift = (rhs & digit::BITS_MINUS_1) as u8;
-    
-            let mut out_digits = [Digit::MAX; N];
-            let digits_ptr = self.bits.digits.as_ptr();
-            let out_ptr = out_digits.as_mut_ptr() as *mut Digit;
-            unsafe {
-                digits_ptr.add(digit_shift).copy_to_nonoverlapping(out_ptr, N - digit_shift);
-            }
-    
-            if shift > 0 {
-                let mut borrow = 0;
-                let borrow_shift = Digit::BITS as u8 - shift;
-
-                let mut i = digit_shift;
-                while i < N {
-                    let digit = out_digits[Self::N_MINUS_1 - i];
-                    let new_borrow = digit << borrow_shift;
-                    let new_digit = (digit >> shift) | borrow;
-                    out_digits[Self::N_MINUS_1 - i] = new_digit;
-                    borrow = new_borrow;
-                    i += 1;
-                }
-                out_digits[Self::N_MINUS_1 - digit_shift] |= (Digit::MAX >> (digit::BITS as u8 - shift)) << (digit::BITS as u8 - shift);
-            }
-    
-            Self::from_digits(out_digits)
-        }
-    }
     const BITS_MINUS_1: ExpType = (Self::BITS - 1) as ExpType;
 
     #[inline]
     pub const fn overflowing_shr(self, rhs: ExpType) -> (Self, bool) {
-        if self.is_negative() {
-            if rhs >= Self::BITS {
-                (self.shr_internal(rhs & Self::BITS_MINUS_1), true)
-            } else {
-                (self.shr_internal(rhs), false)
-            }
-        } else {
-            let (uint, overflow) = self.bits.overflowing_shr(rhs);
-            (Self::from_bits(uint), overflow)
-        }
+		let bits = self.to_bits();
+		let (overflow, shift) = if rhs >= Self::BITS {
+			(true, rhs & Self::BITS_MINUS_1)
+		} else {
+			(false, rhs)
+		};
+        let u = unsafe {
+			if self.is_negative() {
+				crate::buint::unchecked_shr_pad::<N, {Digit::MAX}>(bits, shift)
+			} else {
+				crate::buint::unchecked_shr_pad::<N, {Digit::MIN}>(bits, shift)
+			}
+		};
+		(Self::from_bits(u), overflow)
     }
 
     #[inline]

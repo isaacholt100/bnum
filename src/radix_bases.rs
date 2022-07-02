@@ -1,4 +1,8 @@
-// credit num_bigint source code
+/*
+Code adapted from the Rust `num_bigint` library: https://docs.rs/num-bigint/latest/num_bigint/ used under the MIT license.
+The original license file and copyright notice for this project can be found in this project's root at licenses/LICENSE-num-bigint.
+*/
+
 use crate::Digit;
 
 #[cfg(feature = "u8_digit")]

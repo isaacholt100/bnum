@@ -6,6 +6,10 @@ use crate::doc;
 use crate::int::checked::tuple_to_option;
 use crate::digit::{self, DoubleDigit};
 
+const fn div_rem_double(a: DoubleDigit, b: DoubleDigit) -> (DoubleDigit, DoubleDigit) {
+	(a / b, a % b)
+}
+
 #[doc=doc::checked::impl_desc!()]
 impl<const N: usize> BUint<N> {
     #[inline]
@@ -28,69 +32,20 @@ impl<const N: usize> BUint<N> {
     pub const fn checked_mul(self, rhs: Self) -> Option<Self> {
         tuple_to_option(self.overflowing_mul(rhs))
     }
-    
-    #[inline]
-    const fn div_wide(high: Digit, low: Digit, rhs: Digit) -> (Digit, Digit) {
-		// credit uint source code
-        let lhs = digit::to_double_digit(high, low);
-        let rhs = rhs as DoubleDigit;
 
-        ((lhs / rhs) as Digit, (lhs % rhs) as Digit)
-    }
-    
-    #[inline]
-    const fn div_half(rem: Digit, digit: Digit, rhs: Digit) -> (Digit, Digit) {
-		// credit uint source code
-        const fn div_rem(a: Digit, b: Digit) -> (Digit, Digit) {
-            (a / b, a % b)
-        }
-        let (hi, rem) = div_rem((rem << digit::HALF_BITS) | (digit >> digit::HALF_BITS), rhs);
-        let (lo, rem) = div_rem((rem << digit::HALF_BITS) | (digit & digit::HALF), rhs);
+	const fn basecase_div_rem(self, mut v: Self) -> (Self, Self) {
+		// Division algorithm from The Art of Computer Programming Volume 2 by Donald Knuth, Section 4.3.1, Algorithm D
 
-        ((hi << digit::HALF_BITS) | lo, rem)
-    }
+		let mut q = Self::ZERO;
+		let n = v.last_digit_index() + 1;
+		let m = self.last_digit_index() + 1 - n;
+		let shift = v.digits[n - 1].leading_zeros() as ExpType;
 
-    #[inline]
-    const fn div_rem_small(self, rhs: Digit) -> (Self, Self) {
-		// credit uint source code
-        let (div, rem) = self.div_rem_digit(rhs);
-        (div, Self::from_digit(rem))
-    }
+		v = unsafe {
+			super::unchecked_shl(v, shift)
+		}; // D1
 
-    #[inline]
-    pub const fn div_rem_digit(self, rhs: Digit) -> (Self, Digit) {
-		// credit uint source code
-        let mut rem: Digit = 0;
-        let mut out = Self::ZERO;
-        if rhs > digit::HALF {
-            let mut i = N;
-            while i > 0 {
-                i -= 1;
-                let (q, r) = Self::div_wide(rem, self.digits[i], rhs);
-                out.digits[i] = q;
-                rem = r;
-            }
-        } else {
-            let mut i = N;
-            while i > 0 {
-                i -= 1;
-                let (q, r) = Self::div_half(rem, self.digits[i], rhs);
-                out.digits[i] = q;
-                rem = r;
-            }
-        }
-        (out, rem)
-    }
-    
-    const fn div_rem_core(self, v: Self, n: usize, m: usize) -> (Self, Self) {
-		// credit uint source code
-        let shift = v.digits[n - 1].leading_zeros() as ExpType;
-        let v = super::unchecked_shl(v, shift);
-
-        //debug_assert!(v.bit(N as ExpType * digit::BITS - 1));
-        debug_assert!(n + m <= N);
-
-        struct Remainder<const M: usize> {
+		struct Remainder<const M: usize> {
             first: Digit,
             rest: [Digit; M],
         }
@@ -103,7 +58,7 @@ impl<const N: usize> BUint<N> {
                     rest: rest.digits,
                 }
             }
-            const fn index(&self, index: usize) -> Digit {
+            const fn digit(&self, index: usize) -> Digit {
                 if index == 0 {
                     self.first
                 } else {
@@ -117,15 +72,15 @@ impl<const N: usize> BUint<N> {
                     self.rest[index - 1] = digit;
                 }
             }
-            const fn into_uint(self, shift: ExpType) -> BUint<M> {
+            const fn shr(self, shift: ExpType) -> BUint<M> {
                 let mut out = BUint::ZERO;
                 let mut i = 0;
                 while i < M {
-                    out.digits[i] = self.index(i) >> shift;
+                    out.digits[i] = self.digit(i) >> shift;
                     i += 1;
                 }
                 if shift > 0 {
-                    let mut i = 0;
+                    i = 0;
                     while i < M {
                         out.digits[i] |= self.rest[i] << (digit::BITS as ExpType - shift);
                         i += 1;
@@ -133,29 +88,31 @@ impl<const N: usize> BUint<N> {
                 }
                 out
             }
-            const fn sub(&mut self, start: usize, rhs: Mul<M>, end: usize) -> bool {
+            const fn sub(&mut self, rhs: Mul<M>, start: usize, range: usize) -> bool {
                 let mut carry = false;
                 let mut i = 0;
-                while i < end {
-                    let (sum, overflow1) = rhs.index(i).overflowing_add(carry as Digit);
-                    let (sub, overflow2) = self.index(i + start).overflowing_sub(sum);
+                while i < range {
+                    let (sum, overflow1) = rhs.digit(i).overflowing_add(carry as Digit);
+                    let (sub, overflow2) = self.digit(i + start).overflowing_sub(sum);
                     self.set_digit(i + start, sub);
                     carry = overflow1 || overflow2;
                     i += 1;
                 }
                 carry
             }
-            const fn add(&mut self, start: usize, rhs: [Digit; M], end: usize) -> bool {
+            const fn add(&mut self, rhs: BUint<M>, start: usize, range: usize) {
                 let mut carry = false;
                 let mut i = 0;
-                while i < end {
-                    let (sum, overflow1) = rhs[i].overflowing_add(carry as Digit);
-                    let (sum, overflow2) = self.index(i + start).overflowing_add(sum);
+                while i < range {
+                    let (sum, overflow1) = rhs.digits[i].overflowing_add(carry as Digit);
+                    let (sum, overflow2) = self.digit(i + start).overflowing_add(sum);
                     self.set_digit(i + start, sum);
                     carry = overflow1 || overflow2;
                     i += 1;
                 }
-                carry
+				if carry {
+					self.set_digit(range + start, self.digit(range + start).wrapping_add(1)); // we use wrapping_add here, not regular addition as a carry will always occur to the left of self.digit(range + start)
+				}
             }
         }
 
@@ -180,7 +137,7 @@ impl<const N: usize> BUint<N> {
                     rest,
                 }
             }
-            const fn index(&self, index: usize) -> Digit {
+            const fn digit(&self, index: usize) -> Digit {
                 if index == M {
                     self.last
                 } else {
@@ -188,87 +145,70 @@ impl<const N: usize> BUint<N> {
                 }
             }
         }
-        
-        let mut u = Remainder::new(self, shift);
-        let mut q = Self::ZERO;
-        let v_n_1 = v.digits[n - 1];
-        let v_n_2 = v.digits[n - 2];
-        let gt_half = v_n_1 > digit::HALF;
 
-        let mut j = m + 1;
-        while j > 0 {
-            j -= 1;
-            let u_jn = u.index(j + n);
-            let mut q_hat = if u_jn < v_n_1 {
-                let (mut q_hat, mut r_hat) = if gt_half {
-                    Self::div_wide(u_jn, u.index(j + n - 1), v_n_1)
-                } else {
-                    Self::div_half(u_jn, u.index(j + n - 1), v_n_1)
-                };
-                loop {
-                    //let (hi, lo) = digit::from_double_digit(q_hat as DoubleDigit * v_n_2 as DoubleDigit);
-                    let a = ((r_hat as DoubleDigit) << digit::BITS) | u.index(j + n - 2) as DoubleDigit;
-                    let b = q_hat as DoubleDigit * v_n_2 as DoubleDigit;
-                    if b <= a {
-                        break;
-                    }
-                    /*let (hi, lo) = digit::from_double_digit(q_hat as DoubleDigit * v_n_2 as DoubleDigit);*/
-                    /*if hi < r_hat {
-                        break;
-                    } else if hi == r_hat && lo <= u.index(j + n - 2) {
-                        break;
-                    }*/
-                    q_hat -= 1;
-                    let (new_r_hat, overflow) = r_hat.overflowing_add(v_n_1);
-                    r_hat = new_r_hat;
-                    if overflow {
-                        break;
-                    }
-                }
-                q_hat
-            } else {
-                Digit::MAX
-            };
-            let q_hat_v = Mul::new(v, q_hat);
-            let carry = u.sub(j, q_hat_v, n + 1);
-            if carry {
-                q_hat -= 1;
-                let carry = u.add(j, v.digits, n);
-                u.set_digit(j + n, u.index(j + n).wrapping_add(carry as Digit));
-            }
+		let mut u = Remainder::new(self, shift);
 
-            q.digits[j] = q_hat;
-        }
+		let mut j = m + 1; // D2
+		while j > 0 {
+			j -= 1; // D7
 
-        let remainder = u.into_uint(shift);
-        (q, remainder)
-    }
+			let (mut q_hat, mut r_hat) = div_rem_double(digit::to_double_digit(u.digit(j + n - 1), u.digit(j + n)), v.digits[n - 1] as DoubleDigit); // D3
+			if q_hat == Digit::MAX as DoubleDigit + 1 || q_hat * v.digits[n - 2] as DoubleDigit > digit::to_double_digit(u.digit(j + n - 2), r_hat as Digit) {
+				q_hat -= 1;
+				r_hat += v.digits[n - 1] as DoubleDigit;
+			}
+			if r_hat < Digit::MAX as DoubleDigit + 1 {
+				if q_hat == Digit::MAX as DoubleDigit + 1 || q_hat * v.digits[n - 2] as DoubleDigit > digit::to_double_digit(u.digit(j + n - 2), r_hat as Digit) {
+					q_hat -= 1;
+				}
+			}
+			let mut q_hat = q_hat as Digit;
+			let overflow = u.sub(Mul::new(v, q_hat), j, n + 1); // D4
+			
+			if overflow { // D5
+				q_hat -= 1;
+				u.add(v, j, n);
+			}
+			q.digits[j] = q_hat;
+		}
+		(q, u.shr(shift))
+	}
+
+	pub const fn div_rem_digit(self, rhs: Digit) -> (Self, Digit) {
+		let mut out = Self::ZERO;
+		let mut rem: Digit = 0;
+		let mut i = N;
+		while i > 0 {
+			i -= 1;
+			let double = digit::to_double_digit(self.digits[i], rem);
+			let (q, r) = div_rem_double(double, rhs as DoubleDigit);
+			rem = r as Digit;
+			out.digits[i] = q as Digit;
+		}
+		(out, rem)
+	}
 
     #[inline]
     pub const fn div_rem_unchecked(self, rhs: Self) -> (Self, Self) {
-		// credit uint source code
-        if self.is_zero() {
-            return (Self::ZERO, Self::ZERO);
-        }
+		use core::cmp::Ordering;
 
-        use core::cmp::Ordering;
+		if self.is_zero() {
+			return (Self::ZERO, Self::ZERO);
+		}
 
-        match self.cmp(&rhs) {
-            Ordering::Less => (Self::ZERO, self),
-            Ordering::Equal => (Self::ONE, Self::ZERO),
-            Ordering::Greater => {
-                let self_last_digit_index = self.last_digit_index();
-                let rhs_last_digit_index = rhs.last_digit_index();
-                if rhs_last_digit_index == 0 {
-                    let first_digit = rhs.digits[0];
-                    if first_digit == 1 {
-                        return (self, Self::ZERO);
-                    }
-                    return self.div_rem_small(first_digit);
-                }
-                self.div_rem_core(rhs, rhs_last_digit_index + 1, self_last_digit_index - rhs_last_digit_index)
-            }
-        }
+		match self.cmp(&rhs) {
+			Ordering::Less => (Self::ZERO, self),
+			Ordering::Equal => (Self::ONE, Self::ZERO),
+			Ordering::Greater => {
+				let ldi = rhs.last_digit_index();
+				if ldi == 0 {
+					let (div, rem) = self.div_rem_digit(rhs.digits[0]);
+					(div, Self::from_digit(rem))
+				} else {
+					self.basecase_div_rem(rhs)
+				}
+			}
+		}
     }
 
     #[inline]
@@ -322,7 +262,9 @@ impl<const N: usize> BUint<N> {
         if rhs >= Self::BITS {
             None
         } else {
-            Some(super::unchecked_shl(self, rhs))
+            unsafe {
+				Some(super::unchecked_shl(self, rhs))
+			}
         }
     }
 
@@ -331,7 +273,9 @@ impl<const N: usize> BUint<N> {
         if rhs >= Self::BITS {
             None
         } else {
-            Some(super::unchecked_shr(self, rhs))
+            unsafe {
+				Some(super::unchecked_shr(self, rhs))
+			}
         }
     }
 
@@ -359,7 +303,7 @@ impl<const N: usize> BUint<N> {
 	}
 
 	#[inline]
-	fn ilog(m: ExpType, b: Self, k: Self) -> (ExpType, Self) {
+	const fn ilog(m: ExpType, b: Self, k: Self) -> (ExpType, Self) {
 		// https://people.csail.mit.edu/jaffer/III/ilog.pdf
 		if b > k {
 			(m, k)
@@ -373,32 +317,8 @@ impl<const N: usize> BUint<N> {
 		}
 	}
 
-	/*#[inline]
-	fn ilog2(mut n: ExpType, mut m: ExpType, mut b: Self, mut k: Self) -> ExpType {
-		let mut q;
-		loop {
-			q = k;
-			k = k / b;
-			if b > k {
-				break;
-			}
-			m <<= 1;
-			b = b.wrapping_mul(b);
-		}
-		let mut new = m;
-		while m > 1 {
-			m >>= 1;
-			b = b.sqrt();
-			if b <= q {
-				q = q / b;
-				new += m;
-			}
-		}
-		new
-	}*/
-
 	#[inline]
-	fn checked_log_small(self, base: Digit) -> Option<ExpType> {
+	const fn checked_log_small(self, base: Digit) -> Option<ExpType> {
 		// https://people.csail.mit.edu/jaffer/III/ilog.pdf
 		if base == 2 {
 			return self.checked_log2();
@@ -421,7 +341,7 @@ impl<const N: usize> BUint<N> {
     }
 
     #[inline]
-    pub fn checked_log10(self) -> Option<ExpType> {
+    pub const fn checked_log10(self) -> Option<ExpType> {
 		if self.is_zero() {
 			return None;
 		}
@@ -431,7 +351,7 @@ impl<const N: usize> BUint<N> {
     #[inline]
     pub const fn log_big(self, base: Self) -> ExpType {
 		// Function adapted from Rust's core library: https://doc.rust-lang.org/core/ used under the MIT license.
-		// The original license file for this project can be found in this project's root at licenses/LICENSE-rust.
+		// The original license file and copyright notice for this project can be found in this project's root at licenses/LICENSE-rust.
 		let (mut n, mut r) = if Self::BITS >= 128 {
 			let b = (self.bits() - 1) / base.bits();
 			let r = self.div_rem_unchecked(base.pow(b)).0;
@@ -449,7 +369,7 @@ impl<const N: usize> BUint<N> {
 	const LOG_THRESHOLD: Self = Self::from_digit(60);
 
 	#[inline]
-	pub fn checked_log(self, base: Self) -> Option<ExpType> {
+	pub const fn checked_log(self, base: Self) -> Option<ExpType> {
 		if self.is_zero() {
 			return None;
 		}

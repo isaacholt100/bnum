@@ -10,9 +10,8 @@ function test_integer_info() {
 }
 
 function run_test() {
-	export BNUM_TEST_INT_BITS=$1
 	test_integer_info "$1"
-	cargo test int --lib --quiet --features "$2"
+	RUSTFLAGS="--cfg test_int_bits=\"$1\"" cargo test int --lib --quiet --features "$2"
 	if [ $? -ne 0 ]
 	then
 		exit 1

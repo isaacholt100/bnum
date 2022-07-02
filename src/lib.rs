@@ -14,9 +14,7 @@
 	mixed_integer_ops,
 ))]
 #![doc = include_str!("../README.md")]
-//#![no_std]
-
-// TODO: credit all necessary bits of code/rewrite myself. have already commented where all bits which need crediting, just need to actually credit them properly
+#![no_std]
 
 #[macro_use]
 extern crate alloc;

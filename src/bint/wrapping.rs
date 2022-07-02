@@ -71,7 +71,8 @@ mod tests {
         function: <itest>::wrapping_rem(a: itest, b: itest),
         skip: b == 0,
         cases: [
-            (itest::MIN, -1i8)
+            (itest::MIN, -1i8),
+			(185892231884832768i64 as itest, 92946115942416385i64 as itest)
         ]
     }
     test_bignum! {

@@ -6,93 +6,68 @@ use crate::{doc, errors};
 
 #[inline]
 pub const fn carrying_mul(a: Digit, b: Digit, carry: Digit, current: Digit) -> (Digit, Digit) {
-	// credit num_bigint source code
     let prod = carry as DoubleDigit + current as DoubleDigit + (a as DoubleDigit) * (b as DoubleDigit);
     (prod as Digit, (prod >> Digit::BITS) as Digit)
 }
 
 #[inline]
-pub const fn unchecked_shl<const N: usize>(u: BUint<N>, rhs: ExpType) -> BUint<N> {
-	// credit num_bigint source code
-    debug_assert!(BUint::<N>::BITS <= usize::MAX as ExpType);
-    if rhs == 0 {
-        u
-    } else {
-        let digit_shift = (rhs >> digit::BIT_SHIFT) as usize;
-        let shift = (rhs & digit::BITS_MINUS_1) as u8;
-        
-        let mut out = BUint::ZERO;
-        let digits_ptr = u.digits.as_ptr();
-        let out_ptr = out.digits.as_mut_ptr() as *mut Digit;
-        unsafe {
-            digits_ptr.copy_to_nonoverlapping(out_ptr.add(digit_shift), N - digit_shift);
-        }
+pub const unsafe fn unchecked_shl<const N: usize>(u: BUint<N>, rhs: ExpType) -> BUint<N> {
+	let mut out = BUint::ZERO;
+	let digit_shift = (rhs >> digit::BIT_SHIFT) as usize;
+	let bit_shift = rhs & digit::BITS_MINUS_1;
 
-        if shift > 0 {
-            let mut carry = 0;
-            let carry_shift = Digit::BITS as u8 - shift;
-            let mut last_index = digit_shift;
+	let num_copies = N - digit_shift;
 
-            let mut i = digit_shift;
-            while i < N {
-                let digit = out.digits[i];
-                let new_carry = digit >> carry_shift;
-                let new_digit = (digit << shift) | carry;
-                if digit != 0 {
-                    last_index = i;
-                }
-                out.digits[i] = new_digit;
-                carry = new_carry;
-                i += 1;
-            }
+	u.digits.as_ptr().copy_to_nonoverlapping(out.digits.as_mut_ptr().add(digit_shift), num_copies);
 
-            if carry != 0 {
-                last_index += 1;
-                if last_index < N {
-                    out.digits[last_index] = carry;
-                }
-            }
-        }
+	if bit_shift != 0 {
+		let carry_shift = digit::BITS - bit_shift;
+		let mut carry = 0;
 
-        out
-    }
+		let mut i = digit_shift;
+		while i < N {
+			let current_digit = out.digits[i];
+			out.digits[i] = (current_digit << bit_shift) | carry;
+			carry = current_digit >> carry_shift;
+			i += 1;
+		}
+	}
+
+	out
 }
 
 #[inline]
-pub const fn unchecked_shr<const N: usize>(u: BUint<N>, rhs: ExpType) -> BUint<N> {
-	// credit num_bigint source code
-    // This is to make sure that the number of bits in `u` doesn't overflow a usize, which would cause unexpected behaviour for shifting
-    debug_assert!(BUint::<N>::BITS <= usize::MAX as ExpType);
-    if rhs == 0 {
-        u
-    } else {
-        let digit_shift = (rhs >> digit::BIT_SHIFT) as usize;
-        let shift = (rhs & digit::BITS_MINUS_1) as u8;
+pub const unsafe fn unchecked_shr_pad<const N: usize, const PAD: Digit>(u: BUint<N>, rhs: ExpType) -> BUint<N> {
+	let mut out = BUint::from_digits([PAD; N]);
+	let digit_shift = (rhs >> digit::BIT_SHIFT) as usize;
+	let bit_shift = rhs & digit::BITS_MINUS_1;
 
-        let mut out = BUint::ZERO;
-        let digits_ptr = u.digits.as_ptr();
-        let out_ptr = out.digits.as_mut_ptr() as *mut Digit;
-        unsafe {
-            digits_ptr.add(digit_shift).copy_to_nonoverlapping(out_ptr, N - digit_shift);
-        }
+	let num_copies = N - digit_shift;
 
-        if shift > 0 {
-            let mut borrow = 0;
-            let borrow_shift = Digit::BITS as u8 - shift;
+	u.digits.as_ptr().add(digit_shift).copy_to_nonoverlapping(out.digits.as_mut_ptr(), num_copies);
 
-            let mut i = digit_shift;
-            while i < N {
-                let digit = out.digits[BUint::<N>::N_MINUS_1 - i];
-                let new_borrow = digit << borrow_shift;
-                let new_digit = (digit >> shift) | borrow;
-                out.digits[BUint::<N>::N_MINUS_1 - i] = new_digit;
-                borrow = new_borrow;
-                i += 1;
-            }
-        }
+	if bit_shift != 0 {
+		let carry_shift = digit::BITS - bit_shift;
+		let mut carry = 0;
 
-        out
-    }
+		let mut i = num_copies;
+		while i > 0 {
+			i -= 1;
+			let current_digit = out.digits[i];
+			out.digits[i] = (current_digit >> bit_shift) | carry;
+			carry = current_digit << carry_shift;
+		}
+
+		if PAD == Digit::MAX {
+			out.digits[num_copies - 1] |= Digit::MAX << carry_shift;
+		}
+	}
+
+	out
+}
+
+pub const unsafe fn unchecked_shr<const N: usize>(u: BUint<N>, rhs: ExpType) -> BUint<N> {
+	unchecked_shr_pad::<N, {Digit::MIN}>(u, rhs)
 }
 
 #[cfg(feature = "serde")]
@@ -228,61 +203,56 @@ impl<const N: usize> BUint<N> {
     }
 
     #[inline]
-    const fn rotate_digits_left(self, n: usize) -> Self {
+    const unsafe fn rotate_digits_left(self, n: usize) -> Self {
         let mut uninit = MaybeUninit::<[Digit; N]>::uninit();
         let digits_ptr = self.digits.as_ptr();
         let uninit_ptr = uninit.as_mut_ptr() as *mut Digit;
-        unsafe {
-            digits_ptr.copy_to_nonoverlapping(uninit_ptr.add(n), N - n);
-            digits_ptr.add(N - n).copy_to_nonoverlapping(uninit_ptr, n);
-            Self::from_digits(uninit.assume_init())
-        }
+
+		digits_ptr.copy_to_nonoverlapping(uninit_ptr.add(n), N - n);
+		digits_ptr.add(N - n).copy_to_nonoverlapping(uninit_ptr, n);
+		Self::from_digits(uninit.assume_init())
     }
 
     #[inline]
-    const fn unchecked_rotate_left(self, n: ExpType) -> Self {
-		// credit num_bigint source code
-        if n == 0 {
-            self
-        } else {
-            let digit_shift = (n >> digit::BIT_SHIFT) as usize % N;
-            let shift = (n % digit::BITS) as u8;
+    const unsafe fn unchecked_rotate_left(self, rhs: ExpType) -> Self {
+		let digit_shift = (rhs >> digit::BIT_SHIFT) as usize;
+		let bit_shift = rhs & digit::BITS_MINUS_1;
+		
+		let mut out = self.rotate_digits_left(digit_shift);
 
-            let carry_shift = Digit::BITS as u8 - shift;
+		if bit_shift != 0 {
+			let carry_shift = digit::BITS - bit_shift;
+			let mut carry = 0;
 
-            let mut out = self.rotate_digits_left(digit_shift);
+			let mut i = 0;
+			while i < N {
+				let current_digit = out.digits[i];
+				out.digits[i] = (current_digit << bit_shift) | carry;
+				carry = current_digit >> carry_shift;
+				i += 1;
+			}
+			out.digits[0] |= carry;
+		}
 
-            if shift > 0 {
-                let mut carry = 0;
-
-                let mut i = 0;
-                while i < N {
-                    let digit = out.digits[i];
-                    let new_carry = digit >> carry_shift;
-                    out.digits[i] = (digit << shift) | carry;
-                    carry = new_carry;
-                    i += 1;
-                }
-    
-                out.digits[0] |= carry;
-            }
-
-            out
-        }
+		out
     }
     const BITS_MINUS_1: ExpType = (Self::BITS - 1) as ExpType;
 
     #[doc=doc::rotate_left!(U256, "u")]
     #[inline]
     pub const fn rotate_left(self, n: ExpType) -> Self {
-        self.unchecked_rotate_left(n & Self::BITS_MINUS_1)
+        unsafe {
+			self.unchecked_rotate_left(n & Self::BITS_MINUS_1)
+		}
     }
 
     #[doc=doc::rotate_right!(U256, "u")]
     #[inline]
     pub const fn rotate_right(self, n: ExpType) -> Self {
         let n = n & Self::BITS_MINUS_1;
-        self.unchecked_rotate_left(Self::BITS as ExpType - n)
+        unsafe {
+			self.unchecked_rotate_left(Self::BITS as ExpType - n)
+		}
     }
 
     const N_MINUS_1: usize = N - 1;
@@ -430,7 +400,7 @@ impl<const N: usize> BUint<N> {
     }
 
     #[inline]
-    pub fn log10(self) -> ExpType {
+    pub const fn log10(self) -> ExpType {
         #[cfg(debug_assertions)]
         return option_expect!(self.checked_log10(), errors::err_msg!("attempt to calculate log10 of zero"));
         #[cfg(not(debug_assertions))]
@@ -441,7 +411,7 @@ impl<const N: usize> BUint<N> {
     }
 
     #[inline]
-    pub fn log(self, base: Self) -> ExpType {
+    pub const fn log(self, base: Self) -> ExpType {
         #[cfg(debug_assertions)]
         return option_expect!(self.checked_log(base), errors::err_msg!("attempt to calculate log of zero or log with base < 2"));
         #[cfg(not(debug_assertions))]

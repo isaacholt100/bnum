@@ -6,7 +6,7 @@ use crate::int::checked::tuple_to_option;
 macro_rules! checked_log {
     ($method: ident $(, $base: ident: $ty: ty)?) => {
         #[inline]
-        pub fn $method(self $(, $base: $ty)?) -> Option<ExpType> {
+        pub const fn $method(self $(, $base: $ty)?) -> Option<ExpType> {
             if self.is_negative() {
                 None
             } else {

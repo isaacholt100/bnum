@@ -244,6 +244,10 @@ macro_rules! to_int {
 					i += 1;
 				}
 
+				if out.is_negative() && !neg {
+					return None;
+				}
+
 				Some(out)
 			}
 		)*
@@ -312,10 +316,3 @@ impl<const N: usize> Signed for BInt<N> {
 }
 
 crate::int::numtraits::tests!(itest);
-
-#[test]
-fn test_to_i128() {
-	let a = -1i64;
-	let b = crate::types::I64::from(a);
-	assert_eq!(a.to_i128(), b.to_i128());
-}

@@ -34,12 +34,8 @@ pub const BYTE_SHIFT: ExpType = BYTES.trailing_zeros() as ExpType;
 
 pub const BIT_SHIFT: ExpType = BITS.trailing_zeros() as ExpType;
 
-pub const HALF_BITS: ExpType = BITS / 2;
-
-pub const HALF: Digit = (1 << HALF_BITS) - 1;
-
 #[inline]
-pub const fn to_double_digit(high: Digit, low: Digit) -> DoubleDigit {
+pub const fn to_double_digit(low: Digit, high: Digit) -> DoubleDigit {
     ((high as DoubleDigit) << BITS) | low as DoubleDigit
 }
 
