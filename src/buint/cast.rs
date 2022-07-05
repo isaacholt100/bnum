@@ -6,8 +6,6 @@ use core::mem::MaybeUninit;
 use crate::cast::As;
 use super::convert::{decode_f32, decode_f64};
 
-// TODO: implement as_float (cast to big float type), implement primitive types as_float
-
 impl<const N: usize> BUint<N> {
     #[inline]
     const fn cast_up<const M: usize>(self, digit: Digit) -> BUint<M> {

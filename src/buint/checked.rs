@@ -13,28 +13,31 @@ const fn div_rem_double(a: DoubleDigit, b: DoubleDigit) -> (DoubleDigit, DoubleD
 #[doc=doc::checked::impl_desc!()]
 impl<const N: usize> BUint<N> {
     #[inline]
-    #[doc=doc::checked_add!(U256)]
+    #[doc=doc::checked::checked_add!(U)]
     pub const fn checked_add(self, rhs: Self) -> Option<Self> {
         tuple_to_option(self.overflowing_add(rhs))
     }
 
     #[inline]
+    #[doc=doc::checked::checked_add_signed!(U)]
     pub const fn checked_add_signed(self, rhs: BInt<N>) -> Option<Self> {
         tuple_to_option(self.overflowing_add_signed(rhs))
     }
 
     #[inline]
+    #[doc=doc::checked::checked_sub!(U)]
     pub const fn checked_sub(self, rhs: Self) -> Option<Self> {
         tuple_to_option(self.overflowing_sub(rhs))
     }
     
     #[inline]
+    #[doc=doc::checked::checked_mul!(U)]
     pub const fn checked_mul(self, rhs: Self) -> Option<Self> {
         tuple_to_option(self.overflowing_mul(rhs))
     }
 
 	const fn basecase_div_rem(self, mut v: Self) -> (Self, Self) {
-		// Division algorithm from The Art of Computer Programming Volume 2 by Donald Knuth, Section 4.3.1, Algorithm D
+		// The Art of Computer Programming Volume 2 by Donald Knuth, Section 4.3.1, Algorithm D
 
 		let mut q = Self::ZERO;
 		let n = v.last_digit_index() + 1;
@@ -89,25 +92,23 @@ impl<const N: usize> BUint<N> {
                 out
             }
             const fn sub(&mut self, rhs: Mul<M>, start: usize, range: usize) -> bool {
-                let mut carry = false;
+                let mut borrow = false;
                 let mut i = 0;
-                while i < range {
-                    let (sum, overflow1) = rhs.digit(i).overflowing_add(carry as Digit);
-                    let (sub, overflow2) = self.digit(i + start).overflowing_sub(sum);
+                while i <= range {
+					let (sub, overflow) = digit::borrowing_sub(self.digit(i + start), rhs.digit(i), borrow);
                     self.set_digit(i + start, sub);
-                    carry = overflow1 || overflow2;
+                    borrow = overflow;
                     i += 1;
                 }
-                carry
+                borrow
             }
             const fn add(&mut self, rhs: BUint<M>, start: usize, range: usize) {
                 let mut carry = false;
                 let mut i = 0;
                 while i < range {
-                    let (sum, overflow1) = rhs.digits[i].overflowing_add(carry as Digit);
-                    let (sum, overflow2) = self.digit(i + start).overflowing_add(sum);
+                    let (sum, overflow) = digit::carrying_add(self.digit(i + start), rhs.digits[i], carry);
                     self.set_digit(i + start, sum);
-                    carry = overflow1 || overflow2;
+                    carry = overflow;
                     i += 1;
                 }
 				if carry {
@@ -163,9 +164,9 @@ impl<const N: usize> BUint<N> {
 				}
 			}
 			let mut q_hat = q_hat as Digit;
-			let overflow = u.sub(Mul::new(v, q_hat), j, n + 1); // D4
+			let overflow = u.sub(Mul::new(v, q_hat), j, n); // D4
 			
-			if overflow { // D5
+			if overflow { // D5 - unlikely, probability of this being true is ~ 2 / b where b is the digit base
 				q_hat -= 1;
 				u.add(v, j, n);
 			}
@@ -174,7 +175,7 @@ impl<const N: usize> BUint<N> {
 		(q, u.shr(shift))
 	}
 
-	pub const fn div_rem_digit(self, rhs: Digit) -> (Self, Digit) {
+	pub(crate) const fn div_rem_digit(self, rhs: Digit) -> (Self, Digit) {
 		let mut out = Self::ZERO;
 		let mut rem: Digit = 0;
 		let mut i = N;
@@ -189,7 +190,7 @@ impl<const N: usize> BUint<N> {
 	}
 
     #[inline]
-    pub const fn div_rem_unchecked(self, rhs: Self) -> (Self, Self) {
+    pub(crate) const fn div_rem_unchecked(self, rhs: Self) -> (Self, Self) {
 		use core::cmp::Ordering;
 
 		if self.is_zero() {
@@ -212,7 +213,7 @@ impl<const N: usize> BUint<N> {
     }
 
     #[inline]
-    pub const fn div_rem(self, rhs: Self) -> (Self, Self) {
+    pub(crate) const fn div_rem(self, rhs: Self) -> (Self, Self) {
         if rhs.is_zero() {
             div_zero!()
         } else {
@@ -221,6 +222,7 @@ impl<const N: usize> BUint<N> {
     }
 
     #[inline]
+    #[doc=doc::checked::checked_div!(U)]
     pub const fn checked_div(self, rhs: Self) -> Option<Self> {
         if rhs.is_zero() {
             None
@@ -230,11 +232,13 @@ impl<const N: usize> BUint<N> {
     }
 
     #[inline]
+    #[doc=doc::checked::checked_div_euclid!(U)]
     pub const fn checked_div_euclid(self, rhs: Self) -> Option<Self> {
         self.checked_div(rhs)
     }
 
     #[inline]
+    #[doc=doc::checked::checked_rem!(U)]
     pub const fn checked_rem(self, rhs: Self) -> Option<Self> {
         if rhs.is_zero() {
             None
@@ -244,11 +248,13 @@ impl<const N: usize> BUint<N> {
     }
 
     #[inline]
+    #[doc=doc::checked::checked_rem_euclid!(U)]
     pub const fn checked_rem_euclid(self, rhs: Self) -> Option<Self> {
         self.checked_rem(rhs)
     }
 
     #[inline]
+    #[doc=doc::checked::checked_neg!(U)]
     pub const fn checked_neg(self) -> Option<Self> {
         if self.is_zero() {
             Some(self)
@@ -258,6 +264,7 @@ impl<const N: usize> BUint<N> {
     }
 
     #[inline]
+    #[doc=doc::checked::checked_shl!(U)]
     pub const fn checked_shl(self, rhs: ExpType) -> Option<Self> {
         if rhs >= Self::BITS {
             None
@@ -269,6 +276,7 @@ impl<const N: usize> BUint<N> {
     }
 
     #[inline]
+    #[doc=doc::checked::checked_shr!(U)]
     pub const fn checked_shr(self, rhs: ExpType) -> Option<Self> {
         if rhs >= Self::BITS {
             None
@@ -280,6 +288,7 @@ impl<const N: usize> BUint<N> {
     }
 
 	#[inline]
+    #[doc=doc::checked::checked_pow!(U)]
 	pub const fn checked_pow(mut self, mut pow: ExpType) -> Option<Self> {
 		// https://en.wikipedia.org/wiki/Exponentiation_by_squaring#Basic_method
 		if pow == 0 {
@@ -336,11 +345,13 @@ impl<const N: usize> BUint<N> {
 	}
 
     #[inline]
+    #[doc=doc::checked::checked_log2!(U)]
     pub const fn checked_log2(self) -> Option<ExpType> {
         self.bits().checked_sub(1)
     }
 
     #[inline]
+    #[doc=doc::checked::checked_log10!(U)]
     pub const fn checked_log10(self) -> Option<ExpType> {
 		if self.is_zero() {
 			return None;
@@ -349,7 +360,7 @@ impl<const N: usize> BUint<N> {
     }
 
     #[inline]
-    pub const fn log_big(self, base: Self) -> ExpType {
+    const fn log_big(self, base: Self) -> ExpType {
 		// Function adapted from Rust's core library: https://doc.rust-lang.org/core/ used under the MIT license.
 		// The original license file and copyright notice for this project can be found in this project's root at licenses/LICENSE-rust.
 		let (mut n, mut r) = if Self::BITS >= 128 {
@@ -369,6 +380,7 @@ impl<const N: usize> BUint<N> {
 	const LOG_THRESHOLD: Self = Self::from_digit(60);
 
 	#[inline]
+    #[doc=doc::checked::checked_log!(U)]
 	pub const fn checked_log(self, base: Self) -> Option<ExpType> {
 		if self.is_zero() {
 			return None;
@@ -381,6 +393,7 @@ impl<const N: usize> BUint<N> {
 	}
 
 	#[inline]
+    #[doc=doc::checked::checked_next_multiple_of!(U)]
 	pub const fn checked_next_multiple_of(self, rhs: Self) -> Option<Self> {
 		match self.checked_rem(rhs) {
 			Some(rem) => {
@@ -395,6 +408,19 @@ impl<const N: usize> BUint<N> {
 			None => None,
 		}
 	}
+
+    #[doc=doc::checked::checked_next_power_of_two!(U 256)]
+    #[inline]
+    pub const fn checked_next_power_of_two(self) -> Option<Self> {
+        if self.is_power_of_two() {
+            return Some(self);
+        }
+		let bits = self.bits();
+		if bits == Self::BITS {
+			return None;
+		}
+		Some(Self::power_of_two(bits))
+    }
 }
 
 #[cfg(test)]
@@ -452,5 +478,11 @@ mod tests {
     }
     test_bignum! {
 		function: <utest>::checked_log10(a: utest)
+    }
+    test_bignum! {
+		function: <utest>::checked_next_power_of_two(a: utest),
+        cases: [
+            (utest::MAX)
+        ]
     }
 }

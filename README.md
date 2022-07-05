@@ -34,7 +34,17 @@ By default, each "digit" which is stored in a `BUint` (or a `BInt`) is a `u64`. 
 
 ## Testing
 
-This crate is tested with the [`quickcheck`](https://docs.rs/quickcheck/latest/quickcheck/) crate as well as with specific edge cases.
+This crate is tested with the [`quickcheck`](https://docs.rs/quickcheck/latest/quickcheck/) crate as well as with specific edge cases. The outputs of methods are compared to the outputs of the equivalent methods of primitive integers to ensure that the behaviour is identical.
+
+## Documentation
+
+Documentation for this project is currently incomplete and will be completed at a later date. In the meantime, since the API for all undocumented methods is the same as for the equivalent for a signed or unsigned primitive integer, the documentation for these can be referred to instead, e.g. [`u64`](https://doc.rust-lang.org/std/primitive.u64.html) or [`i64`](https://doc.rust-lang.org/std/primitive.i64.html).
+
+## Known Issues
+
+At the moment, the `From` trait is implemented for `BUint` and `BInt`, from all the Rust primitive integers. However, this behaviour is not quite correct. For example, if a 24-bit wide integer were created (with the `u8_digit` feature enabled), this should not implement `From<u32>`, etc. and should implement `TryFrom<u32>` instead. To ensure correct behaviour, the `FromPrimitive` trait from the `num_traits` crate can be used instead.
+
+The `num_traits::NumCast` trait is implemented for `BUint` and `BInt` but will panic if its method is called, as it is not possible to guarantee a correct conversion, due to trait bounds enforced by `NumCast`. This trait should therefore never be used for `BUint` or `BInt`. The implementation exists only to allow implementation of `num_traits::PrimInt` for `BUint` and `BInt`.
 
 ## Future Work
 
@@ -44,4 +54,4 @@ Currently, arbitrary precision fixed size floats are being worked on but are inc
 
 Obviously, the documentation needs to be completed, and benchmarks need to be written as well. This will take priority over the implementation of floats.
 
-Additionally, a proc macro for parsing is being developed, which will allow easier creation of large constant values for `BInt` and `BUint`.
+Additionally, a proc macro for parsing numeric values is being developed, which will allow easier creation of large constant values for `BInt` and `BUint`.

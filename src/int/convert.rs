@@ -1,4 +1,4 @@
-impl<const M: usize> crate::BUint<M> {
+impl<const N: usize> crate::BUint<N> {
 	#[inline]
 	pub(crate) const fn is_negative(&self) -> bool {
 		false

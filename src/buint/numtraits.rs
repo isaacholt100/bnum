@@ -2,6 +2,7 @@ use super::{BUint, ExpType};
 use num_traits::{Bounded, CheckedAdd, CheckedDiv, CheckedMul, CheckedNeg, CheckedRem, CheckedShl, CheckedShr, CheckedSub, FromPrimitive, MulAdd, MulAddAssign, Num, One, SaturatingAdd, SaturatingMul, SaturatingSub, WrappingAdd, WrappingMul, WrappingNeg, WrappingShl, WrappingShr, WrappingSub, ToPrimitive, Unsigned, Zero, Pow, Saturating, AsPrimitive};
 use num_integer::{Integer, Roots};
 use crate::digit::{self, Digit};
+use crate::BInt;
 
 crate::int::numtraits::impls!(BUint);
 
@@ -154,62 +155,29 @@ impl<const N: usize> Integer for BUint<N> {
     }
 }
 
-/*impl<const N: usize> NumCast for BUint<N> {
-    fn from<T: Zero>(n: T) -> Option<Self> {
-        todo!()
-    }
-}*/
+impl<const N: usize> num_traits::PrimInt for BUint<N> {
+	crate::int::numtraits::prim_int_methods!();
 
-/*impl<const N: usize> PrimInt for BUint<N> {
-    fn count_ones(self) -> u32 {
-
-    }
-    fn count_zeros(self) -> u32 {
-        
-    }
-    fn leading_zeros(self) -> u32 {
-
-    }
-    fn trailing_zeros(self) -> u32 {
-
-    }
-    fn rotate_left(self, n: u32) -> Self {
-
-    }
-    fn rotate_right(self, n: u32) -> Self {
-
-    }
+	#[inline]
     fn signed_shl(self, n: u32) -> Self {
-
+		self << n
     }
+
+	#[inline]
     fn signed_shr(self, n: u32) -> Self {
-        
+        (BInt::from_bits(self) >> n).to_bits()
     }
+
+	#[inline]
     fn unsigned_shl(self, n: u32) -> Self {
-
+		self << n
     }
+
+	#[inline]
     fn unsigned_shr(self, n: u32) -> Self {
-        
+        self >> n
     }
-    fn swap_bytes(self) -> Self {
-        Self::swap_bytes(self)
-    }
-    fn from_be(x: Self) -> Self {
-        Self::from_be(x)
-    }
-    fn from_le(x: Self) -> Self {
-        Self::from_le(x)
-    }
-    fn to_be(self) -> Self {
-        Self::to_be(self)
-    }
-    fn to_le(self) -> Self {
-        Self::to_le(self)
-    }
-    fn pow(self, exp: u32) -> Self {
-
-    }
-}*/
+}
 
 macro_rules! check_zero_or_one {
     ($self: ident) => {

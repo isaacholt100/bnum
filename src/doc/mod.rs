@@ -1,10 +1,16 @@
+pub mod bigint_helpers;
 pub mod checked;
+pub mod consts;
 pub mod endian;
 pub mod overflowing;
 pub mod radix;
 pub mod saturating;
 pub mod unchecked;
+
+#[allow(unused)]
 pub mod wrapping;
+
+// TODO: add links to Rust docs for each method
 
 macro_rules! arithmetic_impl_desc {
 	($name: literal, $method: literal, $rest: literal) => {
@@ -14,8 +20,16 @@ macro_rules! arithmetic_impl_desc {
 
 pub(crate) use arithmetic_impl_desc;
 
+macro_rules! type_str {
+	($sign: ident $bits: literal) => {
+		concat!(stringify!($sign), $bits)
+	};
+}
+
+pub(crate) use type_str;
+
 macro_rules! example_header {
-    ($ty: ident) => {
+    ($sign: ident $bits: literal) => {
         concat!(
 "
 
@@ -23,7 +37,7 @@ macro_rules! example_header {
         
 ```
 use bnum::",
-            stringify!($ty),
+            doc::type_str!($sign $bits),
 ";
 
 "
@@ -33,112 +47,60 @@ use bnum::",
 
 pub(crate) use example_header;
 
+macro_rules! small_sign {
+	(U) => {
+		"u"
+	};
+	(I) => {
+		"i"
+	};
+}
+
+pub(crate) use small_sign;
+
 macro_rules! doc_comment {
-    { $ty: ident, $($desc: expr)+, $($code: expr)+ } => {
+    { $(# $method: ident, )? $sign: ident $bits: literal, $($($desc: expr)+)? $(, $($code: expr)+)? } => {
         concat!(
-            $("\n\n", $desc), +,
-            doc::example_header!($ty),
-            $($code), +,
-            "\n```"
+            $($("\n\n", $desc), +,)?
+			$("\n\n", "See also: <https://doc.rust-lang.org/std/primitive.", doc::small_sign!($sign), "64.html#method.", stringify!($method), ">", )?
+            $(
+				doc::example_header!($sign $bits),
+				$($code), +,
+            	"\n```"
+			)?
         )
     }
 }
 
-pub(crate) use doc_comment;
+macro_rules! link_doc_comment {
+	($($name: ident), *) => {
+		$(
+			macro_rules! $name {
+				($sign: ident) => {
+					doc::doc_comment! {
+						#$name,
+						$sign 256,
+					}
+				};
+			}
 
-macro_rules! assoc_consts {
-	() => {
-		"Associated constants for this type."
+			pub(crate) use $name;
+		)*
 	}
 }
 
-pub(crate) use assoc_consts;
+pub(crate) use link_doc_comment;
 
-macro_rules! min_const {
-    ($ty: ident) => {
-        doc::doc_comment! {
-            $ty,
-            "The minimum value that this type can represent.",
-
-            "assert_eq!(!" stringify!($ty) "::MIN, " stringify!($ty) "::MAX);"
-        }
-    };
-}
-
-pub(crate) use min_const;
-
-macro_rules! max_const {
-    ($ty: ident) => {
-        doc::doc_comment! {
-            $ty,
-            "The maximum value that this type can represent.",
-
-            "assert_eq!(" stringify!($ty) "::MAX.wrapping_add(" stringify!($ty) "::ONE), " stringify!($ty) "::MIN);"
-        }
-    };
-}
-
-pub(crate) use max_const;
-
-macro_rules! zero_const {
-    ($ty: ident) => {
-        doc::doc_comment! {
-            $ty,
-            "The value of zero represented by this type.",
-
-            "assert_eq!(" stringify!($ty) "::ZERO, " stringify!($ty) "::from(0u8));"
-        }
-    }
-}
-
-pub(crate) use zero_const;
-
-macro_rules! one_const {
-    ($ty: ident) => {
-        doc::doc_comment! {
-            $ty,
-            "The value of one represented by this type.",
-
-            "assert_eq!(" stringify!($ty) "::ONE, " stringify!($ty) "::from(1u8));"
-        }
-    }
-}
-
-pub(crate) use one_const;
-
-macro_rules! bits_const {
-    ($ty: ident, $digit_bits: literal) => {
-		doc::doc_comment! {
-            $ty,
-            "The total number of bits that this type contains.",
-
-            "assert_eq!(" stringify!($ty) "::BITS, " $digit_bits ");"
-        }
-    }
-}
-
-pub(crate) use bits_const;
-
-macro_rules! bytes_const {
-    ($ty: ident, $digit_bits: literal) => {
-        doc::doc_comment! {
-            $ty,
-            "The total number of bits that this type contains.",
-
-            "assert_eq!(" stringify!($ty) "::BYTES, " $digit_bits " / 8);"
-        }
-    }
-}
-
-pub(crate) use bytes_const;
+pub(crate) use doc_comment;
 
 macro_rules! count_ones {
-    ($ty: ident) => {
+    ($sign: ident $bits: literal) => {
         doc::doc_comment! {
-            $ty,
+			#count_ones,
+            $sign $bits,
             "Returns the number of ones in the binary representation of `self`.",
 
-            "let n = " stringify!($ty) "::from(0b010111101010000u16);\n"
+            "let n = " doc::type_str!($sign $bits) "::from(0b010111101010000u16);\n"
             "assert_eq!(n.count_ones(), 7);"
         }
     }
@@ -147,12 +109,13 @@ macro_rules! count_ones {
 pub(crate) use count_ones;
 
 macro_rules! count_zeros {
-    ($ty: ident) => {
+    ($sign: ident $bits: literal) => {
         doc::doc_comment! {
-            $ty,
+			#count_zeros,
+            $sign $bits,
             "Returns the number of zeros in the binary representation of `self`.",
 
-            "assert_eq!(!" stringify!($ty) "::ZERO.count_zeros(), 0);"
+            "assert_eq!((!" doc::type_str!($sign $bits) "::ZERO).count_zeros(), 0);"
         }
     };
 }
@@ -160,13 +123,14 @@ macro_rules! count_zeros {
 pub(crate) use count_zeros;
 
 macro_rules! leading_zeros {
-    ($ty: ident) => {
+    ($sign: ident $bits: literal) => {
         doc::doc_comment! {
-            $ty,
+			#leading_zeros,
+            $sign $bits,
             "Returns the number of leading zeros in the binary representation of `self`.",
 
-            "let n = !" stringify!($ty) "::ZERO >> 4;\n"
-            "assert_eq!(n.leading_zeros(), 4);"
+            "let n = " doc::type_str!($sign $bits) "::ZERO;\n"
+            "assert_eq!(n.leading_zeros(), " $bits ");"
         }
     };
 }
@@ -174,12 +138,13 @@ macro_rules! leading_zeros {
 pub(crate) use leading_zeros;
 
 macro_rules! trailing_zeros {
-    ($ty: ident) => {
+    ($sign: ident $bits: literal) => {
         doc::doc_comment! {
-            $ty,
+			#trailing_zeros,
+            $sign $bits,
             "Returns the number of trailing zeros in the binary representation of `self`.",
 
-            "let n = !" stringify!($ty) "::ZERO << 6;\n"
+            "let n = (!" doc::type_str!($sign $bits) "::ZERO) << 6u32;\n"
             "assert_eq!(n.trailing_zeros(), 6);"
         }
     };
@@ -188,13 +153,14 @@ macro_rules! trailing_zeros {
 pub(crate) use trailing_zeros;
 
 macro_rules! leading_ones {
-    ($ty: ident, $c: ident) => {
+    ($sign: ident $bits: literal, $c: ident) => {
         doc::doc_comment! {
-            $ty,
+			#leading_ones,
+            $sign $bits,
             "Returns the number of leading ones in the binary representation of `self`.",
 
-            "let n = " stringify!($ty) "::" stringify!($c) " >> 8;\n"
-            "assert_eq!((!n).leading_ones(), 8);"
+            "let n = !" doc::type_str!($sign $bits) "::ZERO;\n"
+            "assert_eq!(n.leading_ones(), " $bits ");"
         }
     };
 }
@@ -202,12 +168,13 @@ macro_rules! leading_ones {
 pub(crate) use leading_ones;
 
 macro_rules! trailing_ones {
-    ($ty: ident) => {
+    ($sign: ident $bits: literal) => {
         doc::doc_comment! {
-            $ty,
+			#trailing_ones,
+            $sign $bits,
             "Returns the number of trailing ones in the binary representation of `self`.",
 
-            "let n = " stringify!($ty) "::from(0b1000101011011u16);\n"
+            "let n = " doc::type_str!($sign $bits) "::from(0b1000101011011u16);\n"
             "assert_eq!(n.trailing_ones(), 2);"
         }
     };
@@ -216,15 +183,12 @@ macro_rules! trailing_ones {
 pub(crate) use trailing_ones;
 
 macro_rules! rotate_left {
-    ($ty: ident, $u: literal) => {
+    ($sign: ident $bits: literal, $u: literal) => {
         doc::doc_comment! {
-            $ty,
+			#rotate_left,
+            $sign $bits,
             "Shifts the bits to the left by a specified amount, `n`, wrapping the truncated bits to the end of the resulting integer."
-            "Please note this isn't the same operation as the `<<` shifting operator!",
-
-            "let n = " stringify!($ty) "::from(0x25e800000000000000000000000039a9" $u "128);\n"
-            "let m = " stringify!($ty) "::from(0x25e839a9" $u "128);\n"
-            "assert_eq!(n.rotate_left(16), m);"
+            "Please note this isn't the same operation as the `<<` shifting operator!"
         }
     }
 }
@@ -232,16 +196,13 @@ macro_rules! rotate_left {
 pub(crate) use rotate_left;
 
 macro_rules! rotate_right {
-    ($ty: ident, $u: literal) => {
+    ($sign: ident $bits: literal, $u: literal) => {
         doc::doc_comment! {
-            $ty,
+			#rotate_right,
+            $sign $bits,
             "Shifts the bits to the left by a specified amount, `n`, wrapping the truncated bits to the end of the resulting integer."
             "Please note this isn't the same operation as the `>>` shifting operator!"
-            "`rotate_right(n)` is equivalent to `rotate_left(BITS - n)` where `BITS` is the size of the type in bits.",
-
-            "let n = " stringify!($ty) "::from(0x25e839a9" $u "128);\n"
-            "let m = " stringify!($ty) "::from(0x25e800000000000000000000000039a9" $u "128);\n"
-            "assert_eq!(n.rotate_right(16), m);"
+            "`rotate_right(n)` is equivalent to `rotate_left(BITS - n)` where `BITS` is the size of the type in bits."
         }
     }
 }
@@ -249,14 +210,14 @@ macro_rules! rotate_right {
 pub(crate) use rotate_right;
 
 macro_rules! swap_bytes {
-    ($ty: ident, $u: literal) => {
+    ($sign: ident $bits: literal, $u: literal) => {
         doc::doc_comment! {
-            $ty,
+			#swap_bytes,
+            $sign $bits,
             "Reverses the byte order of the integer.",
 
-            "let n = " stringify!($ty) "::from(0x12345678901234567890123456789012" $u "128);\n"
-            "let m = " stringify!($ty) "::from(0x12907856341290785634129078563412" $u "128);\n"
-            "assert_eq!(n.swap_bytes(), m);"
+            "let n = " doc::type_str!($sign $bits) "::from(0x12345678901234567890123456789012" $u "128);\n"
+			"assert_eq!(n.swap_bytes().swap_bytes(), n);"
         }
     }
 }
@@ -264,15 +225,14 @@ macro_rules! swap_bytes {
 pub(crate) use swap_bytes;
 
 macro_rules! reverse_bits {
-    ($ty: ident, $u: literal) => {
+    ($sign: ident $bits: literal, $u: literal) => {
         doc::doc_comment! {
-            $ty,
+			#reverse_bits,
+            $sign $bits,
             "Reverses the order of bits in the integer. The least significant bit becomes the most significant bit, second least-significant bit becomes second most-significant bit, etc.",
 
-            "let n = " stringify!($ty) "::from(0x12345678901234567890123456789012" $u "128);\n"
-            "let m = " stringify!($ty) "::from(0x48091e6a2c48091e6a2c48091e6a2c48" $u "128);\n"
-            "assert_eq!(n.reverse_bits(), m);\n"
-            "assert_eq!(" stringify!($ty) ", " stringify!($ty) "::ZERO.reverse_bits());"
+            "let n = " doc::type_str!($sign $bits) "::from(0x12345678901234567890123456789012" $u "128);\n"
+			"assert_eq!(n.reverse_bits().reverse_bits(), n);"
         }
     };
 }
@@ -280,12 +240,13 @@ macro_rules! reverse_bits {
 pub(crate) use reverse_bits;
 
 macro_rules! pow {
-    ($ty: ident) => {
+    ($sign: ident $bits: literal) => {
         doc::doc_comment! {
-            $ty,
+			#pow,
+            $sign $bits,
             "Raises `self` to the power of `exp`, using exponentiation by squaring.",
 
-            "let n = " stringify!($ty) "::from(3u8);\n"
+            "let n = " doc::type_str!($sign $bits) "::from(3u8);\n"
             "assert_eq!(n.pow(5), (243u8).into());"
         }
     };
@@ -294,52 +255,22 @@ macro_rules! pow {
 pub(crate) use pow;
 
 macro_rules! next_power_of_two {
-    ($ty: ident, $wrap: literal, $small: literal) => {
+    ($sign: ident $bits: literal, $wrap: literal, $small: literal) => {
         doc::doc_comment! {
-            $ty,
+			#next_power_of_two,
+            $sign $bits,
             concat!("When return value overflows, it panics in debug mode and the return value is wrapped to", $wrap, "in release mode (the only situation in which method can return ", $wrap, ")."),
             
-            "let n = " stringify!($ty) "::from(2u8);\n"
+            "let n = " doc::type_str!($sign $bits) "::from(2u8);\n"
             "assert_eq!(n.next_power_of_two(), n);\n"
-            "assert_eq!(" stringify!($ty) 
+            "assert_eq!(" doc::type_str!($sign $bits) 
             "::from(3u8).next_power_of_two(), 4u8.into());\n"
-            "assert_eq!(" stringify!($ty) "::" $small ".next_power_of_two(), " stringify!($ty) "::ONE);"
+            "assert_eq!(" doc::type_str!($sign $bits) "::" $small ".next_power_of_two(), " doc::type_str!($sign $bits) "::ONE);"
         }
     }
 }
 
 pub(crate) use next_power_of_two;
-
-macro_rules! checked_next_power_of_two {
-    ($ty: ident) => {
-        doc::doc_comment! {
-            $ty,
-            "Returns the smallest power of two greater than or equal to `self`. If the next power of two is greater than `Self::MAX`, `None` is returned, otherwise the power of two is wrapped in `Some`.",
-
-            "let n = " stringify!($ty) "::from(2u8);\n"
-            "assert_eq!(n.checked_next_power_of_two(), Some(n));\n"
-            "let m = " stringify!($ty) "::from(3u8);\n"
-            "assert_eq!(" stringify!($ty) "::MAX.checked_next_power_of_two(), None);"
-        }
-    };
-}
-
-pub(crate) use checked_next_power_of_two;
-
-macro_rules! wrapping_next_power_of_two {
-    ($ty: ident, $wrap: literal) => {
-        doc::doc_comment! {
-            $ty,
-            concat!("Returns the smallest power of two greater than or equal to `self`. If the next power of two is greater than `Self::MAX`, the return value is wrapped to .", $wrap),
-
-            "let n = " stringify!($ty) "::from(31u8);\n"
-            "assert_eq!(n, 32u8.into());\n"
-            "assert_eq!(" stringify!($ty) "::MAX.wrapping_next_power_of_two(), " stringify!($ty) "::MIN);"
-        }
-    };
-}
-
-pub(crate) use wrapping_next_power_of_two;
 
 macro_rules! default {
     () => {
@@ -350,14 +281,14 @@ macro_rules! default {
 pub(crate) use default;
 
 macro_rules! bits {
-    ($ty: ident) => {
+    ($sign: ident $bits: literal) => {
         doc::doc_comment! {
-            $ty,
+            $sign $bits,
             "Returns the fewest bits necessary to represent `self`."
             "This is equal to the size of the type in bits minus the leading zeros of `self`.",
 
-            "assert_eq!(" stringify!($ty) "::from(0b1111001010100u16).bits(), 13);\n"
-            "assert_eq!(" stringify!($ty) "::ZERO.bits(), 0);"
+            "assert_eq!(" doc::type_str!($sign $bits) "::from(0b1111001010100u16).bits(), 13);\n"
+            "assert_eq!(" doc::type_str!($sign $bits) "::ZERO.bits(), 0);"
         }
     }
 }
@@ -365,15 +296,15 @@ macro_rules! bits {
 pub(crate) use bits;
 
 macro_rules! bit {
-    ($ty: ident) => {
+    ($sign: ident $bits: literal) => {
         doc::doc_comment! {
-            $ty,
+            $sign $bits,
             "Returns a boolean of the bit in the given position (`true` if the bit is set).",
             
-            "let n = " stringify!($ty) "::from(0b001010100101010101u32);\n"
+            "let n = " doc::type_str!($sign $bits) "::from(0b001010100101010101u32);\n"
             "assert!(n.bit(0));\n"
             "assert!(!n.bit(1));\n"
-            "assert!(!n.bit(" stringify!($ty) "::BITS - 1));"
+            "assert!(!n.bit(" doc::type_str!($sign $bits) "::BITS - 1));"
         }
     };
 }
@@ -381,13 +312,13 @@ macro_rules! bit {
 pub(crate) use bit;
 
 macro_rules! is_zero {
-    ($ty: ident) => {
+    ($sign: ident $bits: literal) => {
         doc::doc_comment! {
-            $ty,
+            $sign $bits,
             "Returns whether `self` is zero.",
 
-            "assert!(" stringify!($ty) "::ZERO.is_zero());\n"
-            "assert!(!" stringify!($ty) "::ONE.is_zero());"
+            "assert!(" doc::type_str!($sign $bits) "::ZERO.is_zero());\n"
+            "assert!(!" doc::type_str!($sign $bits) "::ONE.is_zero());"
         }
     }
 }
@@ -395,201 +326,15 @@ macro_rules! is_zero {
 pub(crate) use is_zero;
 
 macro_rules! is_one {
-    ($ty: ident) => {
+    ($sign: ident $bits: literal) => {
         doc::doc_comment! {
-            $ty,
+            $sign $bits,
             "Returns whether `self` is one.",
 
-            "assert!(" stringify!($ty) "::ONE.is_one());\n"
-            "assert!(!" stringify!($ty) "::MAX.is_one());"
+            "assert!(" doc::type_str!($sign $bits) "::ONE.is_one());\n"
+            "assert!(!" doc::type_str!($sign $bits) "::MAX.is_one());"
         }
     }
 }
 
 pub(crate) use is_one;
-
-macro_rules! from_be {
-    ($ty: ident) => {
-        doc::doc_comment! {
-            $ty,
-            "Converts an integer from big endian to the target’s endianness."
-            "On big endian this is a no-op. On little endian the bytes are swapped.",
-
-            "let n = " stringify!($ty) "::from(0x1Au8);\n"
-            "if cfg!(target_endian = \"big\") {\n"
-            "    assert_eq!(" stringify!($ty) "::from_be(n), n);\n"
-            "} else {\n"
-            "    assert_eq!(" stringify!($ty) "::from_be(n), n.swap_bytes());\n"
-            "}"
-        }
-    }
-}
-
-pub(crate) use from_be;
-
-macro_rules! from_le {
-    ($ty: ident) => {
-        doc::doc_comment! {
-            $ty,
-            "Converts an integer from little endian to the target’s endianness."
-            "On little endian this is a no-op. On big endian the bytes are swapped.",
-
-            "let n = " stringify!($ty) "::from(0x1Au8);\n"
-            "if cfg!(target_endian = \"little\") {\n"
-            "    assert_eq!(" stringify!($ty) "::from_le(n), n);\n"
-            "} else {\n"
-            "    assert_eq!(" stringify!($ty) "::from_le(n), n.swap_bytes());\n"
-            "}"
-        }
-    }
-}
-
-pub(crate) use from_le;
-
-macro_rules! to_be {
-    ($ty: ident) => {
-        doc::doc_comment! {
-            $ty,
-            "Converts `self` from big endian to the target’s endianness."
-            "On big endian this is a no-op. On little endian the bytes are swapped.",
-
-            "let n = " stringify!($ty) "::from(0x1Au8);\n"
-            "if cfg!(target_endian = \"big\") {\n"
-            "    assert_eq!(n.to_be(), n);\n"
-            "} else {\n"
-            "    assert_eq!(n.to_be(), n.swap_bytes());\n"
-            "}"
-        }
-    }
-}
-
-pub(crate) use to_be;
-
-macro_rules! to_le {
-    ($ty: ident) => {
-        doc::doc_comment! {
-            $ty,
-            "Converts `self` from little endian to the target’s endianness."
-            "On little endian this is a no-op. On big endian the bytes are swapped.",
-
-            "let n = " stringify!($ty) "::from(0x1Au8);\n"
-            "if cfg!(target_endian = \"little\") {\n"
-            "    assert_eq!(n.to_le(), n);\n"
-            "} else {\n"
-            "    assert_eq!(n.to_le(), n.swap_bytes());\n"
-            "}"
-        }
-    }
-}
-
-pub(crate) use to_le;
-
-macro_rules! to_be_bytes {
-    ($ty: ident, $u: literal) => {
-        doc::doc_comment! {
-            $ty,
-            "Return the memory representation of this integer as a byte array in big-endian byte order.",
-
-            "let bytes = " stringify!($ty) "::from(0x12345678901234567890123456789012" $u "128).to_be_bytes();\n"
-            "assert_eq!(bytes, [0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12]);"
-        }
-    }
-}
-
-pub(crate) use to_be_bytes;
-
-macro_rules! to_le_bytes {
-    ($ty: ident, $u: literal) => {
-        doc::doc_comment! {
-            $ty,
-            "Return the memory representation of this integer as a byte array in little-endian byte order.",
-
-            "let bytes = " stringify!($ty) "::from(0x12345678901234567890123456789012" $u "128).to_le_bytes();\n"
-            "assert_eq!(bytes, [0x12, 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0x34, 0x12]);"
-        }
-    }
-}
-
-pub(crate) use to_le_bytes;
-
-macro_rules! to_ne_bytes {
-    ($ty: ident, $u: literal) => {
-        doc::doc_comment! {
-            $ty,
-            "Return the memory representation of this integer as a byte array in native byte order.",
-
-            "let bytes = " stringify!($ty) "::from(0x12345678901234567890123456789012" $u "128).to_ne_bytes();\n"
-"assert_eq!(
-    bytes,
-    if cfg!(target_endian = \"big\") {
-        [0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12]
-    } else {
-        [0x12, 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0x34, 0x12]
-    }
-);"
-        }
-    }
-}
-
-pub(crate) use to_ne_bytes;
-
-macro_rules! from_be_bytes {
-    ($ty: ident, $u: literal) => {
-        doc::doc_comment! {
-            $ty,
-            "Create an endian integer value from its representation as a byte array in big endian.",
-
-            "let value = " stringify!($ty) "::from_be_bytes([0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x34, 0x56, 0x78, 0x90, 0x34, 0x56, 0x78, 0x90, 0x34, 0x56, 0x78, 0x90]);\n"
-            "assert_eq!(value, 0x1234567890123456789012345678901234567890123456789012345678901232567890" $u "128.into());"
-        }
-    }
-}
-
-pub(crate) use from_be_bytes;
-
-macro_rules! from_le_bytes {
-    ($ty: ident, $u: literal) => {
-        doc::doc_comment! {
-            $ty,
-            "Create an endian integer value from its representation as a byte array in little endian.",
-
-            "let value = " stringify!($ty) "::from_le_bytes([0x12, 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0x34, 0x12]);\n"
-            "assert_eq!(value, 0x12345678901234567890123456789012" $u "128.into());"
-        }
-    }
-}
-
-pub(crate) use from_le_bytes;
-
-macro_rules! from_ne_bytes {
-    ($ty: ident, $u: literal) => {
-        doc::doc_comment! {
-            $ty,
-            "Create an endian integer value from its representation as a byte array in little endian.",
-
-"let bytes = if cfg!(target_endian = \"big\") {
-    [0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12]
-} else {
-    [0x12, 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0x34, 0x12]
-};\n"
-            "let value = " stringify!($ty) "::from_ne_bytes(bytes);\n"
-            "assert_eq!(value, 0x12345678901234567890123456789012" $u "128.into());"
-        }
-    }
-}
-
-pub(crate) use from_ne_bytes;
-
-macro_rules! checked_add {
-    ($ty: ident) => {
-        doc::doc_comment! {
-            $ty,
-            "Checked integer addition. Computes `self + rhs`, returning `None` if overflow occurred.",
-
-            "assert_eq!((" stringify!($ty) "::MAX - " stringify!($ty) "::TWO).checked_add(" stringify!($ty) "::ONE), Some(" stringify!($ty) "::MAX - " stringify!($ty) "::ONE));\n"
-            "assert_eq!((" stringify!($ty) "::MAX - " stringify!($ty) "::TWO).checked_add(" stringify!($ty) "::THREE), None);"
-        }
-    }
-}
-
-pub(crate) use checked_add;

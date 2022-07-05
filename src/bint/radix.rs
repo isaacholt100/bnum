@@ -9,22 +9,42 @@ use crate::int::radix::assert_range;
 
 #[doc=doc::radix::impl_desc!(BInt)]
 impl<const N: usize> BInt<N> {
+	/// Converts a byte slice in a given base to an integer. The input slice must contain ascii/utf8 characters in [0-9a-zA-Z].
+    /// 
+    /// This function is equivalent to the `from_str_radix` function for a string slice equivalent to the byte slice and the same radix.
+    /// 
+    /// Returns `None` if the conversion of the byte slice to string slice fails or if a digit is larger than the given radix, otherwise the integer is wrapped in `Some`.
     #[inline]
     pub fn parse_bytes(buf: &[u8], radix: u32) -> Option<Self> {
         let s = core::str::from_utf8(buf).ok()?;
         Self::from_str_radix(s, radix).ok()
     }
 
+	/// Converts a slice of big-endian digits in the given radix to an integer. The digits are first converted to an unsigned integer, then this is transmuted to a signed integer. Each `u8` of the slice is interpreted as one digit of the number, so this function will return `None` if any digit is greater than or equal to `radix`, otherwise the integer is wrapped in `Some`.
     #[inline]
     pub fn from_radix_be(buf: &[u8], radix: u32) -> Option<Self> {
         BUint::from_radix_be(buf, radix).map(Self::from_bits)
     }
 
+	/// Converts a slice of big-endian digits in the given radix to an integer. The digits are first converted to an unsigned integer, then this is transmuted to a signed integer. Each `u8` of the slice is interpreted as one digit of the number, so this function will return `None` if any digit is greater than or equal to `radix`, otherwise the integer is wrapped in `Some`.
     #[inline]
     pub fn from_radix_le(buf: &[u8], radix: u32) -> Option<Self> {
         BUint::from_radix_le(buf, radix).map(Self::from_bits)
     }
 
+	/// Converts a string slice in a given base to an integer.
+    /// 
+    /// The string is expected to be an optional `+` or `-` sign followed by digits. Leading and trailing whitespace represent an error. Digits are a subset of these characters, depending on `radix`:
+    /// 
+    /// - `0-9`
+    /// - `a-z`
+    /// - `A-Z`
+    /// 
+    /// # Panics
+    /// 
+    /// This function panics if `radix` is not in the range from 2 to 36.
+	/// 
+	/// For examples, see the `from_str_radix` method documentation for `BUint`.
     #[inline]
     pub fn from_str_radix(mut src: &str, radix: u32) -> Result<Self, ParseIntError> {
         assert_range!(radix, 36);
@@ -74,6 +94,13 @@ impl<const N: usize> BInt<N> {
 		}
     }
 
+	/// Returns the integer as a string in the given radix.
+    /// 
+    /// # Panics
+    /// 
+    /// This function panics if `radix` is not in the range from 2 to 36.
+	/// 
+	/// For examples, see the `to_str_radix` method documentation for `BUint`.
     #[inline]
     pub fn to_str_radix(&self, radix: u32) -> String {
         if self.is_negative() {
@@ -83,11 +110,25 @@ impl<const N: usize> BInt<N> {
         }
     }
 
+	/// Returns the integer's underlying representation as an unsigned integer in the given base in big-endian digit order.
+    /// 
+    /// # Panics
+    /// 
+    /// This function panics if `radix` is not in the range from 2 to 256.
+	/// 
+	/// For examples, see the `to_radix_be` method documentation for `BUint`.
     #[inline]
     pub fn to_radix_be(&self, radix: u32) -> Vec<u8> {
         self.bits.to_radix_be(radix)
     }
     
+	/// Returns the integer's underlying representation as an unsigned integer in the given base in little-endian digit order.
+    /// 
+    /// # Panics
+    /// 
+    /// This function panics if `radix` is not in the range from 2 to 256.
+	/// 
+	/// For examples, see the `to_radix_le` method documentation for `BUint`.
     #[inline]
     pub fn to_radix_le(&self, radix: u32) -> Vec<u8> {
         self.bits.to_radix_le(radix)

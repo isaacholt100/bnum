@@ -13,17 +13,18 @@ keywords = ["uint", "int", "bignum", "maths", "arbitrary"]
 categories = ["numbers", "algorithms", "mathematics", "big number"]
 
 [features]
-default = ["numtraits", "rand"]
+default = []
 u8_digit = []
 serde = ["dep:serde", "serde-big-array"]
 numtraits = ["num-integer", "num-traits"]
 
 [dependencies]
 num-integer = { version = "0.1.44", optional = true }
-num-traits = { version = "0.2.14", optional = true }
+num-traits = { version = "0.2.15", optional = true }
 serde = { version = "1.0.126", features = ["derive"], optional = true }
 serde-big-array = { version = "0.3.2", features = ["const-generics"], optional = true }
 rand = { version = "0.8.5", features = ["min_const_gen"], optional = true }
+serde_json = { version = "1.0", optional = true }
 
 [dev-dependencies]
 quickcheck = "1.0.3"

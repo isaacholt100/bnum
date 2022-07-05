@@ -6,6 +6,7 @@ use crate::int::checked::tuple_to_option;
 macro_rules! checked_log {
     ($method: ident $(, $base: ident: $ty: ty)?) => {
         #[inline]
+		#[doc=doc::checked::$method!(I)]
         pub const fn $method(self $(, $base: $ty)?) -> Option<ExpType> {
             if self.is_negative() {
                 None
@@ -19,32 +20,37 @@ macro_rules! checked_log {
 #[doc=doc::checked::impl_desc!()]
 impl<const N: usize> BInt<N> {
     #[inline]
-    #[doc=doc::checked_add!(I256)]
+    #[doc=doc::checked::checked_add!(I)]
     pub const fn checked_add(self, rhs: Self) -> Option<Self> {
         tuple_to_option(self.overflowing_add(rhs))
     }
 
     #[inline]
+    #[doc=doc::checked::checked_add_unsigned!(I)]
     pub const fn checked_add_unsigned(self, rhs: BUint<N>) -> Option<Self> {
         tuple_to_option(self.overflowing_add_unsigned(rhs))
     }
 
     #[inline]
+    #[doc=doc::checked::checked_sub!(I)]
     pub const fn checked_sub(self, rhs: Self) -> Option<Self> {
         tuple_to_option(self.overflowing_sub(rhs))
     }
 
     #[inline]
+    #[doc=doc::checked::checked_sub_unsigned!(I)]
     pub const fn checked_sub_unsigned(self, rhs: BUint<N>) -> Option<Self> {
         tuple_to_option(self.overflowing_sub_unsigned(rhs))
     }
 
     #[inline]
+    #[doc=doc::checked::checked_mul!(I)]
     pub const fn checked_mul(self, rhs: Self) -> Option<Self> {
         tuple_to_option(self.overflowing_mul(rhs))
     }
 
     #[inline]
+    #[doc=doc::checked::checked_div!(I)]
     pub const fn checked_div(self, rhs: Self) -> Option<Self> {
         if rhs.is_zero() {
             None
@@ -54,6 +60,7 @@ impl<const N: usize> BInt<N> {
     }
 
     #[inline]
+    #[doc=doc::checked::checked_div_euclid!(I)]
     pub const fn checked_div_euclid(self, rhs: Self) -> Option<Self> {
         if rhs.is_zero() {
             None
@@ -63,6 +70,7 @@ impl<const N: usize> BInt<N> {
     }
 
     #[inline]
+    #[doc=doc::checked::checked_rem!(I)]
     pub const fn checked_rem(self, rhs: Self) -> Option<Self> {
         if rhs.is_zero() {
             None
@@ -72,6 +80,7 @@ impl<const N: usize> BInt<N> {
     }
 
     #[inline]
+    #[doc=doc::checked::checked_rem_euclid!(I)]
     pub const fn checked_rem_euclid(self, rhs: Self) -> Option<Self> {
         if rhs.is_zero() {
             None
@@ -81,26 +90,31 @@ impl<const N: usize> BInt<N> {
     }
 
     #[inline]
+    #[doc=doc::checked::checked_neg!(I)]
     pub const fn checked_neg(self) -> Option<Self> {
         tuple_to_option(self.overflowing_neg())
     }
 
     #[inline]
+    #[doc=doc::checked::checked_shl!(I)]
     pub const fn checked_shl(self, rhs: ExpType) -> Option<Self> {
         tuple_to_option(self.overflowing_shl(rhs))
     }
 
     #[inline]
+    #[doc=doc::checked::checked_shr!(I)]
     pub const fn checked_shr(self, rhs: ExpType) -> Option<Self> {
         tuple_to_option(self.overflowing_shr(rhs))
     }
 
     #[inline]
+    #[doc=doc::checked::checked_abs!(I)]
     pub const fn checked_abs(self) -> Option<Self> {
         tuple_to_option(self.overflowing_abs())
     }
 
 	#[inline]
+    #[doc=doc::checked::checked_pow!(I)]
 	pub const fn checked_pow(self, pow: ExpType) -> Option<Self> {
 		match self.unsigned_abs().checked_pow(pow) {
 			Some(u) => {
@@ -129,6 +143,17 @@ impl<const N: usize> BInt<N> {
     checked_log!(checked_log10);
 
 	#[inline]
+    #[doc=doc::checked::checked_log!(I)]
+	pub const fn checked_log(self, base: Self) -> Option<ExpType> {
+		if base.is_negative() || self.is_negative() {
+			None
+		} else {
+			self.to_bits().checked_log(base.to_bits())
+		}
+	}
+
+	#[inline]
+    #[doc=doc::checked::checked_next_multiple_of!(I)]
 	pub const fn checked_next_multiple_of(self, rhs: Self) -> Option<Self> {
 		match self.checked_rem_euclid(rhs) {
 			Some(rem) => {
@@ -195,6 +220,7 @@ mod tests {
     }
     test_bignum! {
         function: <itest>::checked_rem_euclid(a: itest, b: itest),
+		skip: b <= u8::MAX as itest,
         cases: [
 			(itest::MIN, -1i8)
         ]

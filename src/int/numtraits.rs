@@ -194,6 +194,12 @@ macro_rules! impls {
 				Self::from_str_radix(string, radix)
 			}
 		}
+
+		impl<const N: usize> num_traits::NumCast for $Int<N> {
+			fn from<T: ToPrimitive>(_n: T) -> Option<Self> {
+				panic!(concat!(crate::errors::err_prefix!(), "`num_traits::NumCast` trait is not supported for ", stringify!($Int)))
+			}
+		}
 		
 		impl<const N: usize> One for $Int<N> {
 			#[inline]
@@ -222,6 +228,58 @@ macro_rules! impls {
 }
 
 pub(crate) use impls;
+
+macro_rules! prim_int_method {
+	{ $(fn $name: ident ($($arg: ident $(: $ty: ty)?), *) -> $ret: ty;) * } => {
+		$(
+			#[inline]
+			fn $name($($arg $(: $ty)?), *) -> $ret {
+				Self::$name($($arg), *)
+			}
+		)*
+	};
+}
+
+pub(crate) use prim_int_method;
+
+macro_rules! prim_int_methods {
+	() => {
+		crate::int::numtraits::prim_int_method! {
+			fn count_ones(self) -> u32;
+			fn count_zeros(self) -> u32;
+			fn leading_zeros(self) -> u32;
+			fn trailing_zeros(self) -> u32;
+			fn rotate_left(self, n: u32) -> Self;
+			fn rotate_right(self, n: u32) -> Self;
+			fn swap_bytes(self) -> Self;
+			fn from_be(x: Self) -> Self;
+			fn from_le(x: Self) -> Self;
+			fn to_be(self) -> Self;
+			fn to_le(self) -> Self;
+			fn pow(self, exp: u32) -> Self;
+		}
+
+		#[cfg(has_leading_trailing_ones)]
+		#[inline]
+		fn leading_ones(self) -> u32 {
+			Self::leading_ones(self)
+		}
+	
+		#[cfg(has_leading_trailing_ones)]
+		#[inline]
+		fn trailing_ones(self) -> u32 {
+			Self::trailing_ones(self)
+		}
+	
+		#[cfg(has_reverse_bits)]
+		#[inline]
+		fn reverse_bits(self) -> Self {
+			Self::reverse_bits(self)
+		}
+	};
+}
+
+pub(crate) use prim_int_methods;
 
 #[allow(unused)]
 macro_rules! test_to_primitive {
@@ -259,7 +317,8 @@ macro_rules! tests {
 	($int: ty) => {
 		#[cfg(test)]
 		mod tests {
-			use super::{Roots, ToPrimitive, FromPrimitive, Integer};
+			use super::*;
+			use num_traits::PrimInt;
 			use crate::test::{test_bignum, types::*};
 
 			test_bignum! {
@@ -307,6 +366,23 @@ macro_rules! tests {
 			}
 			test_bignum! {
 				function: <$int as Integer>::is_odd(a: ref &$int)
+			}
+
+			test_bignum! {
+				function: <$int as PrimInt>::unsigned_shl(a: $int, n: u8),
+				skip: n >= <$int>::BITS as u8
+			}
+			test_bignum! {
+				function: <$int as PrimInt>::unsigned_shr(a: $int, n: u8),
+				skip: n >= <$int>::BITS as u8
+			}
+			test_bignum! {
+				function: <$int as PrimInt>::signed_shl(a: $int, n: u8),
+				skip: n >= <$int>::BITS as u8
+			}
+			test_bignum! {
+				function: <$int as PrimInt>::signed_shr(a: $int, n: u8),
+				skip: n >= <$int>::BITS as u8
 			}
 		}
 	};

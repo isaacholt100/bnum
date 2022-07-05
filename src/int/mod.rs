@@ -8,7 +8,6 @@ pub mod numtraits;
 pub mod ops;
 pub mod radix;
 pub mod unchecked;
-pub mod wrapping;
 
 #[allow(unused)]
 macro_rules! tests {

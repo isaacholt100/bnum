@@ -1,1 +1,1 @@
-crate::int::unchecked::impls!(BUint);
+crate::int::unchecked::impls!(BUint, U);

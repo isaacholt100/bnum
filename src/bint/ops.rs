@@ -1,8 +1,6 @@
 use super::BInt;
 use core::ops::{Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Div, Rem, DivAssign, Mul, MulAssign, Neg, Not, RemAssign, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign};
-use crate::errors::{option_expect};
 use crate::ExpType;
-use crate::errors;
         
 impl<const N: usize> const Neg for BInt<N> {
     type Output = Self;
@@ -10,7 +8,7 @@ impl<const N: usize> const Neg for BInt<N> {
     #[inline]
     fn neg(self) -> Self {
         #[cfg(debug_assertions)]
-        return option_expect!(self.checked_neg(), errors::err_msg!("attempt to negate with overflow"));
+        return crate::errors::option_expect!(self.checked_neg(), crate::errors::err_msg!("attempt to negate with overflow"));
 
         #[cfg(not(debug_assertions))]
         self.wrapping_neg()

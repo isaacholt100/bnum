@@ -31,6 +31,9 @@ macro_rules! from_int {
 				}
 				i += 1;
 			}
+			if n.is_negative() != out.is_negative() {
+				return None;
+			}
 			Some(out)
 		}
 	};
@@ -140,6 +143,30 @@ impl<const N: usize> Integer for BInt<N> {
     }
 }
 
+impl<const N: usize> num_traits::PrimInt for BInt<N> {
+	crate::int::numtraits::prim_int_methods!();
+
+	#[inline]
+    fn signed_shl(self, n: u32) -> Self {
+		self << n
+    }
+
+	#[inline]
+    fn signed_shr(self, n: u32) -> Self {
+        self >> n
+    }
+
+	#[inline]
+    fn unsigned_shl(self, n: u32) -> Self {
+		self << n
+    }
+
+	#[inline]
+    fn unsigned_shr(self, n: u32) -> Self {
+        Self::from_bits(self.to_bits() >> n)
+    }
+}
+
 impl<const N: usize> Roots for BInt<N> {
     #[inline]
     fn sqrt(&self) -> Self {
@@ -244,7 +271,7 @@ macro_rules! to_int {
 					i += 1;
 				}
 
-				if out.is_negative() && !neg {
+				if out.is_negative() != neg {
 					return None;
 				}
 

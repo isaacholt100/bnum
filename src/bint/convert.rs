@@ -45,9 +45,6 @@ macro_rules! from_uint {
             #[inline]
             fn from(int: $from) -> Self {
                 let out = Self::from_bits(int.into());
-                if out.is_negative() {
-                    panic!("too big")// TODO: make clearer
-                }
                 out
             }
         })*

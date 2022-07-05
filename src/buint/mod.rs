@@ -1,8 +1,11 @@
 use crate::digit::{Digit, DoubleDigit, self};
-use crate::errors::option_expect;
+
+#[cfg(debug_assertions)]
+use crate::errors::{option_expect, self};
+
 use crate::ExpType;
 use core::mem::MaybeUninit;
-use crate::{doc, errors};
+use crate::doc;
 
 #[inline]
 pub const fn carrying_mul(a: Digit, b: Digit, carry: Digit, current: Digit) -> (Digit, Digit) {
@@ -84,37 +87,10 @@ pub struct BUint<const N: usize> {
     pub(crate) digits: [Digit; N],
 }
 
-macro_rules! pos_const {
-    ($($name: ident $num: literal), *) => {
-        $(
-            #[doc=concat!("The value of ", $num, " represented by this type.")]
-            pub const $name: Self = Self::from_digit($num);
-        )*
-    }
-}
-
-#[doc=doc::assoc_consts!()]
-impl<const N: usize> BUint<N> {
-    #[doc=doc::min_const!(U512)]
-    pub const MIN: Self = Self::from_digits([Digit::MIN; N]);
-
-    #[doc=doc::max_const!(U512)]
-    pub const MAX: Self = Self::from_digits([Digit::MAX; N]);
-
-    #[doc=doc::bits_const!(U512, 512)]
-    pub const BITS: ExpType = digit::BITS * N as ExpType;
-
-    #[doc=doc::bytes_const!(U512, 512)]
-    pub const BYTES: ExpType = Self::BITS / 8;
-
-	#[doc=doc::zero_const!(U512)]
-	pub const ZERO: Self = Self::MIN;
-
-    pos_const!(ONE 1, TWO 2, THREE 3, FOUR 4, FIVE 5, SIX 6, SEVEN 7, EIGHT 8, NINE 9, TEN 10);
-}
+mod consts;
 
 impl<const N: usize> BUint<N> {
-    #[doc=doc::count_ones!(U1024)]
+    #[doc=doc::count_ones!(U 1024)]
     #[inline]
     pub const fn count_ones(self) -> ExpType {
         let mut ones = 0;
@@ -126,7 +102,7 @@ impl<const N: usize> BUint<N> {
         ones
     }
 
-    #[doc=doc::count_zeros!(U1024)]
+    #[doc=doc::count_zeros!(U 1024)]
     #[inline]
     pub const fn count_zeros(self) -> ExpType {
         let mut zeros = 0;
@@ -138,7 +114,7 @@ impl<const N: usize> BUint<N> {
         zeros
     }
 
-    #[doc=doc::leading_zeros!(U1024)]
+    #[doc=doc::leading_zeros!(U 1024)]
     #[inline]
     pub const fn leading_zeros(self) -> ExpType {
         let mut zeros = 0;
@@ -154,7 +130,7 @@ impl<const N: usize> BUint<N> {
         zeros
     }
 
-    #[doc=doc::trailing_zeros!(U1024)]
+    #[doc=doc::trailing_zeros!(U 1024)]
     #[inline]
     pub const fn trailing_zeros(self) -> ExpType {
         let mut zeros = 0;
@@ -170,7 +146,7 @@ impl<const N: usize> BUint<N> {
         zeros
     }
 
-    #[doc=doc::leading_ones!(U1024, MAX)]
+    #[doc=doc::leading_ones!(U 1024, MAX)]
     #[inline]   
     pub const fn leading_ones(self) -> ExpType {
         let mut ones = 0;
@@ -186,7 +162,7 @@ impl<const N: usize> BUint<N> {
         ones
     }
 
-    #[doc=doc::trailing_ones!(U1024)]
+    #[doc=doc::trailing_ones!(U 1024)]
     #[inline]
     pub const fn trailing_ones(self) -> ExpType {
         let mut ones = 0;
@@ -238,7 +214,7 @@ impl<const N: usize> BUint<N> {
     }
     const BITS_MINUS_1: ExpType = (Self::BITS - 1) as ExpType;
 
-    #[doc=doc::rotate_left!(U256, "u")]
+    #[doc=doc::rotate_left!(U 256, "u")]
     #[inline]
     pub const fn rotate_left(self, n: ExpType) -> Self {
         unsafe {
@@ -246,7 +222,7 @@ impl<const N: usize> BUint<N> {
 		}
     }
 
-    #[doc=doc::rotate_right!(U256, "u")]
+    #[doc=doc::rotate_right!(U 256, "u")]
     #[inline]
     pub const fn rotate_right(self, n: ExpType) -> Self {
         let n = n & Self::BITS_MINUS_1;
@@ -257,7 +233,7 @@ impl<const N: usize> BUint<N> {
 
     const N_MINUS_1: usize = N - 1;
 
-    #[doc=doc::swap_bytes!(U256, "u")]
+    #[doc=doc::swap_bytes!(U 256, "u")]
     #[inline]
     pub const fn swap_bytes(self) -> Self {
         let mut uint = Self::ZERO;
@@ -269,7 +245,7 @@ impl<const N: usize> BUint<N> {
         uint
     }
 
-    #[doc=doc::reverse_bits!(U256, "u")]
+    #[doc=doc::reverse_bits!(U 256, "u")]
     #[inline]
     pub const fn reverse_bits(self) -> Self {
         let mut uint = Self::ZERO;
@@ -281,7 +257,7 @@ impl<const N: usize> BUint<N> {
         uint
     }
 
-    #[doc=doc::pow!(U256)]
+    #[doc=doc::pow!(U 256)]
     #[inline]
     pub const fn pow(self, exp: ExpType) -> Self {
         #[cfg(debug_assertions)]
@@ -335,7 +311,7 @@ impl<const N: usize> BUint<N> {
     }
 
     #[doc=doc::doc_comment! {
-        U256,
+        U 256,
         "Returns `true` if and only if `self == 2^k` for some integer `k`.",
         
         "let n = " stringify!(U256) "::from(1u16 << 14);\n"
@@ -357,35 +333,13 @@ impl<const N: usize> BUint<N> {
         ones == 1
     }
 
-    #[doc=doc::next_power_of_two!(U256, "0", "ZERO")]
+    #[doc=doc::next_power_of_two!(U 256, "0", "ZERO")]
     #[inline]
     pub const fn next_power_of_two(self) -> Self {
         #[cfg(debug_assertions)]
         return option_expect!(self.checked_next_power_of_two(), errors::err_msg!("attempt to calculate next power of two with overflow"));
         #[cfg(not(debug_assertions))]
         self.wrapping_next_power_of_two()
-    }
-
-    #[doc=doc::checked_next_power_of_two!(U256)]
-    #[inline]
-    pub const fn checked_next_power_of_two(self) -> Option<Self> {
-        if self.is_power_of_two() {
-            return Some(self);
-        }
-		let bits = self.bits();
-		if bits == Self::BITS {
-			return None;
-		}
-		Some(Self::power_of_two(bits))
-    }
-
-    #[doc=doc::wrapping_next_power_of_two!(U256, "0")]
-    #[inline]
-    pub const fn wrapping_next_power_of_two(self) -> Self {
-        match self.checked_next_power_of_two() {
-            Some(int) => int,
-            None => Self::ZERO,
-        }
     }
 
     #[inline]
@@ -457,13 +411,13 @@ impl<const N: usize> BUint<N> {
 }
 
 impl<const N: usize> BUint<N> {
-    #[doc=doc::bits!(U256)]
+    #[doc=doc::bits!(U 256)]
     #[inline]
     pub const fn bits(&self) -> ExpType {
         Self::BITS as ExpType - self.leading_zeros()
     }
 
-    #[doc=doc::bit!(U256)]
+    #[doc=doc::bit!(U 256)]
     #[inline]
     pub const fn bit(&self, index: ExpType) -> bool {
         let digit = self.digits[index as usize >> digit::BIT_SHIFT];
@@ -513,7 +467,7 @@ impl<const N: usize> BUint<N> {
         out
     }
 
-    #[doc=doc::is_zero!(U256)]
+    #[doc=doc::is_zero!(U 256)]
     #[inline]
     pub const fn is_zero(&self) -> bool {
         let mut i = 0;
@@ -526,7 +480,7 @@ impl<const N: usize> BUint<N> {
         true
     }
 
-    #[doc=doc::is_one!(U256)]
+    #[doc=doc::is_one!(U 256)]
     #[inline]
     pub const fn is_one(&self) -> bool {
         if N == 0 || self.digits[0] != 1 {
@@ -645,20 +599,8 @@ mod tests {
     crate::int::tests!(utest);
 
     test_bignum! {
-		function: <utest>::checked_next_power_of_two(a: utest),
-        cases: [
-            (utest::MAX)
-        ]
-    }
-    test_bignum! {
 		function: <utest>::next_power_of_two(a: utest),
         skip: debug_skip!(a.checked_next_power_of_two().is_none())
-    }
-    test_bignum! {
-		function: <utest>::wrapping_next_power_of_two(a: utest),
-        cases: [
-			(utest::MAX)
-		]
     }
 
     #[test]
@@ -706,4 +648,12 @@ mod tests {
         assert!(power.is_power_of_two());
         assert!(!non_power.is_power_of_two());
     }
+
+	#[test]
+	fn test_serde() {
+		let a = 103945820349580342u128;
+		let b = crate::test::types::U128::from(a);
+		println!("{:?}", serde_json::to_string(&a));
+		println!("{:?}", serde_json::to_string(&b));
+	}
 }

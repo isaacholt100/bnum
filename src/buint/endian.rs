@@ -5,7 +5,7 @@ use crate::doc;
 
 #[doc=doc::endian::impl_desc!(BUint)]
 impl<const N: usize> BUint<N> {
-    #[doc=doc::from_be!(U256)]
+    #[doc=doc::endian::from_be!(U 256)]
     #[inline]
     pub const fn from_be(x: Self) -> Self {
         #[cfg(target_endian = "big")]
@@ -14,7 +14,7 @@ impl<const N: usize> BUint<N> {
         x.swap_bytes()
     }
 
-    #[doc=doc::from_le!(U256)]
+    #[doc=doc::endian::from_le!(U 256)]
     #[inline]
     pub const fn from_le(x: Self) -> Self {
         #[cfg(target_endian = "little")]
@@ -23,19 +23,19 @@ impl<const N: usize> BUint<N> {
         x.swap_bytes()
     }
 
-    #[doc=doc::to_be!(U256)]
+    #[doc=doc::endian::to_be!(U 256)]
     #[inline]
     pub const fn to_be(self) -> Self {
         Self::from_be(self)
     }
 
-    #[doc=doc::to_be!(U256)]
+    #[doc=doc::endian::to_be!(U 256)]
     #[inline]
     pub const fn to_le(self) -> Self {
         Self::from_le(self)
     }
 
-    /// Create an integer value from a slice of bytes in big endian. The value is wrapped in an `Option` as the integer represented by the slice of bytes may be too large to be represented by the type.
+    /// Create an integer value from a slice of bytes in big endian. The value is wrapped in an `Option` as the integer represented by the slice of bytes may represent an integer large to be represented by the type.
     /// 
     /// If the length of the slice is shorter than `Self::BYTES`, the slice is padded with zeros at the start so that it's length equals `Self::BYTES`.
     /// 
@@ -98,7 +98,7 @@ impl<const N: usize> BUint<N> {
         }
     }
 
-    /// Creates an integer value from a slice of bytes in little endian. The value is wrapped in an `Option` as the bytes may be too large to be represented by the type.
+    /// Creates an integer value from a slice of bytes in little endian. The value is wrapped in an `Option` as the bytes may represent an integer too large to be represented by the type.
     /// 
     /// If the length of the slice is shorter than `Self::BYTES`, the slice is padded with zeros at the end so that it's length equals `Self::BYTES`.
     /// 
@@ -161,7 +161,7 @@ impl<const N: usize> BUint<N> {
         }
     }
 	
-	#[doc=doc::to_be_bytes!(U256, "u")]
+	#[doc=doc::endian::to_be_bytes!(U 256)]
 	#[inline]
 	pub const fn to_be_bytes(self) -> [u8; N * digit::BYTES as usize] {
 		let mut bytes = [0; N * digit::BYTES as usize];
@@ -178,6 +178,7 @@ impl<const N: usize> BUint<N> {
 		bytes
 	}
 
+	#[doc=doc::endian::to_le_bytes!(U 256)]
 	#[inline]
 	pub const fn to_le_bytes(self) -> [u8; N * digit::BYTES as usize] {
 		// Strangely, this is slightly faster than direct transmutation by either `mem::transmute_copy` or `ptr::read`.
@@ -198,7 +199,7 @@ impl<const N: usize> BUint<N> {
 		bytes
 	}
 
-	#[doc=doc::to_ne_bytes!(U256, "u")]
+	#[doc=doc::endian::to_ne_bytes!(U 256)]
 	#[inline]
 	pub const fn to_ne_bytes(self) -> [u8; N * digit::BYTES as usize] {
 		#[cfg(target_endian = "big")]
@@ -207,7 +208,7 @@ impl<const N: usize> BUint<N> {
 		self.to_le_bytes()
 	}
 
-	#[doc=doc::from_be_bytes!(U256, "u")]
+	#[doc=doc::endian::from_be_bytes!(U 256)]
 	#[inline]
 	pub const fn from_be_bytes(bytes: [u8; N * digit::BYTES as usize]) -> Self {
 		let mut out = Self::ZERO;
@@ -226,7 +227,7 @@ impl<const N: usize> BUint<N> {
 		out
 	}
 
-	#[doc=doc::from_le_bytes!(U256, "u")]
+	#[doc=doc::endian::from_le_bytes!(U 256)]
 	#[inline]
 	pub const fn from_le_bytes(bytes: [u8; N * digit::BYTES as usize]) -> Self {
 		let mut out = Self::ZERO;
@@ -245,7 +246,7 @@ impl<const N: usize> BUint<N> {
 		out
 	}
 
-	#[doc=doc::from_ne_bytes!(U256, "u")]
+	#[doc=doc::endian::from_ne_bytes!(U 256)]
 	#[inline]
 	pub const fn from_ne_bytes(bytes: [u8; N * digit::BYTES as usize]) -> Self {
 		#[cfg(target_endian = "big")]

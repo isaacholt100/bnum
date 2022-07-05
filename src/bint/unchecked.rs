@@ -1,1 +1,1 @@
-crate::int::unchecked::impls!(BInt);
+crate::int::unchecked::impls!(BInt, I);

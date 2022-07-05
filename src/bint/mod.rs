@@ -1,23 +1,13 @@
-use crate::digit::{Digit, SignedDigit, self};
+use crate::digit::{Digit, SignedDigit};
 use crate::buint::BUint;
+
+#[cfg(debug_assertions)]
 use crate::errors::option_expect;
+
 use crate::ExpType;
 use crate::{doc, errors};
 
-mod cast;
-mod checked;
-mod cmp;
-mod convert;
-mod endian;
-mod fmt;
-#[cfg(feature = "numtraits")]
-mod numtraits;
-mod ops;
-mod overflowing;
-mod radix;
-mod saturating;
-mod unchecked;
-mod wrapping;
+mod consts;
 
 #[cfg(feature = "serde")]
 use serde::{Serialize, Deserialize};
@@ -30,63 +20,6 @@ use serde::{Serialize, Deserialize};
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct BInt<const N: usize> {
     bits: BUint<N>,
-}
-
-macro_rules! pos_const {
-    ($($name: ident $num: literal), *) => {
-        $(
-            #[doc=concat!("The value of ", $num, " represented by this type.")]
-            pub const $name: Self = Self::from_bits(BUint::$name);
-        )*
-    }
-}
-
-macro_rules! neg_const {
-    ($($name: ident $pos: ident $num: literal), *) => {
-        $(
-            #[doc=concat!("The value of -", $num, " represented by this type.")]
-            pub const $name: Self = Self::$pos.wrapping_neg();
-        )*
-    }
-}
-
-#[doc=doc::assoc_consts!()]
-impl<const N: usize> BInt<N> {
-    #[doc=doc::min_const!(I512)]
-    pub const MIN: Self = {
-        let mut digits = [0; N];
-        digits[N - 1] = 1 << (digit::BITS - 1);
-        Self::from_bits(BUint::from_digits(digits))
-    };
-
-    #[doc=doc::max_const!(I512)]
-    pub const MAX: Self = {
-        let mut digits = [Digit::MAX; N];
-        digits[N - 1] >>= 1;
-        Self::from_bits(BUint::from_digits(digits))
-    };
-
-    #[doc=doc::zero_const!(I512)]
-    pub const ZERO: Self = {
-        Self::from_bits(BUint::ZERO)
-    };
-
-    #[doc=doc::one_const!(I512)]
-    pub const ONE: Self = {
-        Self::from_bits(BUint::ONE)
-    };
-
-    pos_const!(TWO 2, THREE 3, FOUR 4, FIVE 5, SIX 6, SEVEN 7, EIGHT 8, NINE 9, TEN 10);
-
-    neg_const!(NEG_ONE ONE 1, NEG_TWO TWO 2, NEG_THREE THREE 3, NEG_FOUR FOUR 4, NEG_FIVE FIVE 5, NEG_SIX SIX 6, NEG_SEVEN SEVEN 7, NEG_EIGHT EIGHT 8, NEG_NINE NINE 9, NEG_TEN TEN 10);
-
-    #[doc=doc::bits_const!(I512, 512)]
-    pub const BITS: ExpType = BUint::<N>::BITS;
-
-    #[doc=doc::bytes_const!(I512, 512)]
-    pub const BYTES: ExpType = BUint::<N>::BYTES;
-
-    const N_MINUS_1: usize = N - 1;
 }
 
 macro_rules! log {
@@ -106,71 +39,71 @@ macro_rules! log {
 }
 
 impl<const N: usize> BInt<N> {
-    #[doc=doc::count_ones!(I256)]
+    #[doc=doc::count_ones!(I 256)]
     #[inline]
     pub const fn count_ones(self) -> ExpType {
         self.bits.count_ones()
     }
 
-    #[doc=doc::count_zeros!(I256)]
+    #[doc=doc::count_zeros!(I 256)]
     #[inline]
     pub const fn count_zeros(self) -> ExpType {
         self.bits.count_zeros()
     }
 
-    #[doc=doc::leading_zeros!(I256)]
+    #[doc=doc::leading_zeros!(I 256)]
     #[inline]
     pub const fn leading_zeros(self) -> ExpType {
         self.bits.leading_zeros()
     }
 
-    #[doc=doc::trailing_zeros!(I256)]
+    #[doc=doc::trailing_zeros!(I 256)]
     #[inline]
     pub const fn trailing_zeros(self) -> ExpType {
         self.bits.trailing_zeros()
     }
 
-    #[doc=doc::leading_ones!(I256, NEG_ONE)]
+    #[doc=doc::leading_ones!(I 256, NEG_ONE)]
     #[inline]
     pub const fn leading_ones(self) -> ExpType {
         self.bits.leading_ones()
     }
 
-    #[doc=doc::trailing_ones!(I256)]
+    #[doc=doc::trailing_ones!(I 256)]
     #[inline]
     pub const fn trailing_ones(self) -> ExpType {
         self.bits.trailing_ones()
     }
 
-    #[doc=doc::rotate_left!(I256, "i")]
+    #[doc=doc::rotate_left!(I 256, "i")]
     #[inline]
     pub const fn rotate_left(self, n: ExpType) -> Self {
         Self::from_bits(self.bits.rotate_left(n))
     }
 
-    #[doc=doc::rotate_right!(I256, "i")]
+    #[doc=doc::rotate_right!(I 256, "i")]
     #[inline]
     pub const fn rotate_right(self, n: ExpType) -> Self {
         Self::from_bits(self.bits.rotate_right(n))
     }
 
-    #[doc=doc::swap_bytes!(I256, "i")]
+    #[doc=doc::swap_bytes!(I 256, "i")]
     #[inline]
     pub const fn swap_bytes(self) -> Self {
         Self::from_bits(self.bits.swap_bytes())
     }
 
-    #[doc=doc::reverse_bits!(I256, "i")]
+    #[doc=doc::reverse_bits!(I 256, "i")]
     #[inline]
     pub const fn reverse_bits(self) -> Self {
         Self::from_bits(self.bits.reverse_bits())
     }
 
     /// Computes the absolute value of `self` without any wrapping or panicking.
-    #[doc=doc::example_header!(BInt)]
-    /// assert_eq!(BInt::<3>::from(100).unsigned_abs(), BInt::from(100));
-    /// assert_eq!(BInt::<3>::from(-100).unsigned_abs(), BInt::from(100));
-    /// assert_eq!(BInt::<3>::MAX.unsigned_abs(), BInt::MAX.to_bits());
+    #[doc=doc::example_header!(I 256)]
+    /// assert_eq!(I256::from(100).unsigned_abs(), bnum::BUint::from(100u8));
+    /// assert_eq!(I256::from(-100).unsigned_abs(), bnum::BUint::from(100u8));
+    /// assert_eq!(I256::MIN.unsigned_abs(), I256::MIN.to_bits());
     /// ```
     #[inline]
     pub const fn unsigned_abs(self) -> BUint<N> {
@@ -181,7 +114,7 @@ impl<const N: usize> BInt<N> {
         }
     }
 
-    #[doc=doc::pow!(I256)]
+    #[doc=doc::pow!(I 256)]
     #[inline]
     pub const fn pow(self, exp: ExpType) -> Self {
         #[cfg(debug_assertions)]
@@ -239,13 +172,13 @@ impl<const N: usize> BInt<N> {
     }
     
     #[doc=doc::doc_comment! {
-        I256,
+        I 256,
         "Returns `true` if and only if `self == 2^k` for some integer `k`.",
         
         "let n = " stringify!(I256) "::from(1i16 << 12);\n"
         "assert!(n.is_power_of_two());\n"
         "let m = " stringify!(I256) "::from(90i8);\n"
-        "assert!(!m.is_power_of_two());"
+        "assert!(!m.is_power_of_two());\n"
         "assert!(!((-n).is_power_of_two()));"
     }]
     #[inline]
@@ -254,45 +187,6 @@ impl<const N: usize> BInt<N> {
             false
         } else {
             self.bits.is_power_of_two()
-        }
-    }
-
-    #[doc=doc::next_power_of_two!(I256, "`Self::MIN`", "NEG_ONE")]
-    #[inline]
-    pub const fn next_power_of_two(self) -> Self {
-        #[cfg(debug_assertions)]
-        return option_expect!(self.checked_next_power_of_two(), errors::err_msg!("attempt to calculate next power of two with overflow"));
-
-        #[cfg(not(debug_assertions))]
-        self.wrapping_next_power_of_two()
-    }
-
-    #[doc=doc::checked_next_power_of_two!(I256)]
-    #[inline]
-    pub const fn checked_next_power_of_two(self) -> Option<Self> {
-        if self.is_negative() {
-            Some(Self::ONE)
-        } else {
-            match self.bits.checked_next_power_of_two() {
-                Some(uint) => {
-                    let out = Self::from_bits(uint);
-                    if out.is_negative() {
-                        None
-                    } else {
-                        Some(out)
-                    }
-                },
-                None => None,
-            }
-        }
-    }
-
-    #[doc=doc::wrapping_next_power_of_two!(I256, "`Self::MIN`")]
-    #[inline]
-    pub const fn wrapping_next_power_of_two(self) -> Self {
-        match self.checked_next_power_of_two() {
-            Some(int) => int,
-            None => Self::MIN,
         }
     }
 
@@ -349,13 +243,13 @@ impl<const N: usize> BInt<N> {
 }
 
 impl<const N: usize> BInt<N> {
-    #[doc=doc::bits!(I256)]
+    #[doc=doc::bits!(I 256)]
     #[inline]
     pub const fn bits(&self) -> ExpType {
         self.bits.bits()
     }
 
-    #[doc=doc::bit!(I256)]
+    #[doc=doc::bit!(I 256)]
     #[inline]
     pub const fn bit(&self, b: ExpType) -> bool {
         self.bits.bit(b)
@@ -366,28 +260,26 @@ impl<const N: usize> BInt<N> {
         self.bits.digits[N - 1] as SignedDigit
     }
 
-    #[doc=doc::is_zero!(I256)]
+    #[doc=doc::is_zero!(I 256)]
     #[inline]
     pub const fn is_zero(&self) -> bool {
         self.bits.is_zero()
     }
 
-    #[doc=doc::is_one!(I256)]
+    #[doc=doc::is_one!(I 256)]
     #[inline]
     pub const fn is_one(&self) -> bool {
         self.bits.is_one()
     }
 
     #[inline(always)]
-    pub const fn digits(&self) -> &[Digit; N] {
+    pub(crate) const fn digits(&self) -> &[Digit; N] {
         &self.bits.digits
     }
 
-    #[inline(always)]
-    pub const fn from_digits(digits: [Digit; N]) -> Self {
-        Self::from_bits(BUint::from_digits(digits))
-    }
-
+	/// Casts a `BUint<N>` to `BInt<N>`. This creates a `BInt<N>` with `bits` as the underlying representation in two's complement.
+	/// 
+	/// This method is faster for casting between `BInt`s and `BUint`s of the same size than using the `As` trait.
     #[inline(always)]
     pub const fn from_bits(bits: BUint<N>) -> Self {
         Self {
@@ -395,6 +287,10 @@ impl<const N: usize> BInt<N> {
         }
     }
     
+
+	/// Casts a `self` to `BUint<N>`. This simply returns the underlying representation of the integer in two's complement, as a `BUint<N>`.
+	/// 
+	/// This method is faster for casting between `BUint`s and `BInt`s of the same size than using the `As` trait.
     #[inline(always)]
     pub const fn to_bits(self) -> BUint<N> {
         self.bits
@@ -409,6 +305,21 @@ impl<const N: usize> BInt<N> {
         }
     }
 }
+
+mod cast;
+mod checked;
+mod cmp;
+mod convert;
+mod endian;
+mod fmt;
+#[cfg(feature = "numtraits")]
+mod numtraits;
+mod ops;
+mod overflowing;
+mod radix;
+mod saturating;
+mod unchecked;
+mod wrapping;
 
 use core::default::Default;
 
@@ -517,26 +428,5 @@ mod tests {
         assert!(!I128::from(-94956729465i128).is_power_of_two());
         assert!(!I128::from(79458945i128).is_power_of_two());
         assert!(I128::from(1i128 << 17).is_power_of_two());
-    }
-
-    #[test]
-    fn next_power_of_two() {
-        assert_eq!(I128::from(-372979834534345587i128).next_power_of_two(), 1i128.into());
-        assert_eq!(I128::from((1i128 << 88) - 5).next_power_of_two(), (1i128 << 88).into());
-        assert_eq!(I128::from(1i128 << 56).next_power_of_two(), (1i128 << 56).into());
-    }
-
-    #[test]
-    fn checked_next_power_of_two() {
-        assert_eq!(I128::from(-979457698).checked_next_power_of_two(), Some(1i128.into()));
-        assert_eq!(I128::from(5).checked_next_power_of_two(), Some(8i32.into()));
-        assert_eq!(I128::from(i128::MAX - 5).checked_next_power_of_two(), None);
-    }
-
-    #[test]
-    fn wrapping_next_power_of_two() {
-        assert_eq!(I128::from(-89i128).wrapping_next_power_of_two(), 1i128.into());
-        assert_eq!(I128::from((1i128 << 75) + 4).wrapping_next_power_of_two(), (1i128 << 76).into());
-        assert_eq!(I128::from(i128::MAX / 2 + 4).wrapping_next_power_of_two(), I128::MIN);
     }
 }

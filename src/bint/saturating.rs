@@ -3,6 +3,7 @@ use crate::{ExpType, BUint, doc};
 
 #[doc=doc::saturating::impl_desc!()]
 impl<const N: usize> BInt<N> {
+	#[doc=doc::saturating::saturating_add!(I)]
     #[inline]
     pub const fn saturating_add(self, rhs: Self) -> Self {
         match self.checked_add(rhs) {
@@ -17,6 +18,7 @@ impl<const N: usize> BInt<N> {
         }
     }
 
+	#[doc=doc::saturating::saturating_add_unsigned!(I)]
     #[inline]
     pub const fn saturating_add_unsigned(self, rhs: BUint<N>) -> Self {
         match self.checked_add_unsigned(rhs) {
@@ -25,6 +27,7 @@ impl<const N: usize> BInt<N> {
         }
     }
 
+	#[doc=doc::saturating::saturating_sub!(I)]
     #[inline]
     pub const fn saturating_sub(self, rhs: Self) -> Self {
         match self.checked_sub(rhs) {
@@ -39,6 +42,7 @@ impl<const N: usize> BInt<N> {
         }
     }
 
+	#[doc=doc::saturating::saturating_sub_unsigned!(I)]
     #[inline]
     pub const fn saturating_sub_unsigned(self, rhs: BUint<N>) -> Self {
         match self.checked_sub_unsigned(rhs) {
@@ -47,6 +51,7 @@ impl<const N: usize> BInt<N> {
         }
     }
 
+	#[doc=doc::saturating::saturating_neg!(I)]
     #[inline]
     pub const fn saturating_neg(self) -> Self {
         match self.checked_neg() {
@@ -55,6 +60,7 @@ impl<const N: usize> BInt<N> {
         }
     }
 
+	#[doc=doc::saturating::saturating_abs!(I)]
     #[inline]
     pub const fn saturating_abs(self) -> Self {
         match self.checked_abs() {
@@ -63,6 +69,7 @@ impl<const N: usize> BInt<N> {
         }
     }
 
+	#[doc=doc::saturating::saturating_mul!(I)]
     #[inline]
     pub const fn saturating_mul(self, rhs: Self) -> Self {
         match self.checked_mul(rhs) {
@@ -77,6 +84,18 @@ impl<const N: usize> BInt<N> {
         }
     }
 
+	#[doc=doc::saturating::saturating_div!(I)]
+	#[inline]
+	pub const fn saturating_div(self, rhs: Self) -> Self {
+		let (div, overflow) = self.overflowing_div(rhs);
+		if overflow {
+			Self::MAX
+		} else {
+			div
+		}
+	}
+
+	#[doc=doc::saturating::saturating_pow!(I)]
     #[inline]
     pub const fn saturating_pow(self, exp: ExpType) -> Self {
         match self.checked_pow(exp) {

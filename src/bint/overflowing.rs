@@ -18,9 +18,10 @@ const fn borrowing_sub_signed(a: SignedDigit, b: SignedDigit, borrow: bool) -> (
 
 #[doc=doc::overflowing::impl_desc!()]
 impl<const N: usize> BInt<N> {
+	#[doc=doc::overflowing::overflowing_add!(I)]
     #[inline]
     pub const fn overflowing_add(self, rhs: Self) -> (Self, bool) {
-        let mut digits = [0; N];
+        let mut out = Self::ZERO;
         let mut carry = false;
 
         let self_digits = self.bits.digits;
@@ -29,7 +30,7 @@ impl<const N: usize> BInt<N> {
         let mut i = 0;
         while i < Self::N_MINUS_1 {
             let (sum, c) = digit::carrying_add(self_digits[i], rhs_digits[i], carry);
-            digits[i] = sum;
+            out.bits.digits[i] = sum;
             carry = c;
             i += 1;
         }
@@ -38,11 +39,12 @@ impl<const N: usize> BInt<N> {
             rhs_digits[Self::N_MINUS_1] as SignedDigit,
             carry
         );
-        digits[Self::N_MINUS_1] = sum as Digit;
+        out.bits.digits[Self::N_MINUS_1] = sum as Digit;
 
-        (Self::from_digits(digits), carry)
+        (out, carry)
     }
 
+	#[doc=doc::overflowing::overflowing_add_unsigned!(I)]
     #[inline]
 	pub const fn overflowing_add_unsigned(self, rhs: BUint<N>) -> (Self, bool) {
 		let rhs = Self::from_bits(rhs);
@@ -50,9 +52,10 @@ impl<const N: usize> BInt<N> {
 		(sum, rhs.is_negative() != overflow)
 	}
 
+	#[doc=doc::overflowing::overflowing_sub!(I)]
     #[inline]
     pub const fn overflowing_sub(self, rhs: Self) -> (Self, bool) {
-        let mut digits = [0; N];
+        let mut out = Self::ZERO;
         let mut borrow = false;
 
         let self_digits = self.bits.digits;
@@ -61,7 +64,7 @@ impl<const N: usize> BInt<N> {
         let mut i = 0;
         while i < Self::N_MINUS_1 {
             let (sub, b) = digit::borrowing_sub(self_digits[i], rhs_digits[i], borrow);
-            digits[i] = sub;
+            out.bits.digits[i] = sub;
             borrow = b;
             i += 1;
         }
@@ -70,11 +73,12 @@ impl<const N: usize> BInt<N> {
             rhs_digits[Self::N_MINUS_1] as SignedDigit,
             borrow
         );
-        digits[Self::N_MINUS_1] = sub as Digit;
+        out.bits.digits[Self::N_MINUS_1] = sub as Digit;
 
-        (Self::from_digits(digits), borrow)
+        (out, borrow)
     }
 
+	#[doc=doc::overflowing::overflowing_sub_unsigned!(I)]
     #[inline]
 	pub const fn overflowing_sub_unsigned(self, rhs: BUint<N>) -> (Self, bool) {
 		let rhs = Self::from_bits(rhs);
@@ -82,6 +86,7 @@ impl<const N: usize> BInt<N> {
 		(sum, rhs.is_negative() != overflow)
 	}
     
+	#[doc=doc::overflowing::overflowing_mul!(I)]
     #[inline]
     pub const fn overflowing_mul(self, rhs: Self) -> (Self, bool) {
         let (uint, overflow) = self.unsigned_abs().overflowing_mul(rhs.unsigned_abs());
@@ -109,6 +114,7 @@ impl<const N: usize> BInt<N> {
 		}
 	}
 
+	#[doc=doc::overflowing::overflowing_div!(I)]
     #[inline]
     pub const fn overflowing_div(self, rhs: Self) -> (Self, bool) {
 		if rhs.is_zero() {
@@ -121,6 +127,7 @@ impl<const N: usize> BInt<N> {
         }
     }
 
+	#[doc=doc::overflowing::overflowing_div_euclid!(I)]
     #[inline]
     pub const fn overflowing_div_euclid(self, rhs: Self) -> (Self, bool) {
 		if rhs.is_zero() {
@@ -144,6 +151,7 @@ impl<const N: usize> BInt<N> {
         }
     }
 
+	#[doc=doc::overflowing::overflowing_rem!(I)]
     #[inline]
     pub const fn overflowing_rem(self, rhs: Self) -> (Self, bool) {
 		if rhs.is_zero() {
@@ -156,6 +164,7 @@ impl<const N: usize> BInt<N> {
         }
     }
 
+	#[doc=doc::overflowing::overflowing_rem_euclid!(I)]
     #[inline]
     pub const fn overflowing_rem_euclid(self, rhs: Self) -> (Self, bool) {
 		if rhs.is_zero() {
@@ -176,11 +185,13 @@ impl<const N: usize> BInt<N> {
         }
     }
 
+	#[doc=doc::overflowing::overflowing_neg!(I)]
     #[inline]
     pub const fn overflowing_neg(self) -> (Self, bool) {
         (!self).overflowing_add(Self::ONE)
     }
 
+	#[doc=doc::overflowing::overflowing_shl!(I)]
     #[inline]
     pub const fn overflowing_shl(self, rhs: ExpType) -> (Self, bool) {
         let (uint, overflow) = self.bits.overflowing_shl(rhs);
@@ -189,6 +200,7 @@ impl<const N: usize> BInt<N> {
 
     const BITS_MINUS_1: ExpType = (Self::BITS - 1) as ExpType;
 
+	#[doc=doc::overflowing::overflowing_shr!(I)]
     #[inline]
     pub const fn overflowing_shr(self, rhs: ExpType) -> (Self, bool) {
 		let bits = self.to_bits();
@@ -207,6 +219,7 @@ impl<const N: usize> BInt<N> {
 		(Self::from_bits(u), overflow)
     }
 
+	#[doc=doc::overflowing::overflowing_abs!(I)]
     #[inline]
     pub const fn overflowing_abs(self) -> (Self, bool) {
         if self.is_negative() {
@@ -216,6 +229,7 @@ impl<const N: usize> BInt<N> {
         }
     }
 
+	#[doc=doc::overflowing::overflowing_pow!(I)]
 	#[inline]
 	pub const fn overflowing_pow(self, pow: ExpType) -> (Self, bool) {
 		let (u, mut overflow) = self.unsigned_abs().overflowing_pow(pow);
