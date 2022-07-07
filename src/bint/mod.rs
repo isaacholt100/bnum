@@ -1,5 +1,5 @@
-use crate::digit::{Digit, SignedDigit};
 use crate::buint::BUint;
+use crate::digit::{Digit, SignedDigit};
 
 #[cfg(debug_assertions)]
 use crate::errors::option_expect;
@@ -10,7 +10,7 @@ use crate::{doc, errors};
 mod consts;
 
 #[cfg(feature = "serde")]
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 /// Big signed integer type, of fixed size which must be known at compile time. Digits are stored in little endian (least significant digit first). `BInt<N>` aims to exactly replicate the behaviours of Rust's built-in signed integer types: `i8`, `i16`, `i32`, `i64`, `i128` and `isize`. The const generic parameter `N` is the number of digits that are stored in the underlying `BUint`.
 
@@ -24,17 +24,20 @@ pub struct BInt<const N: usize> {
 
 macro_rules! log {
     ($method: ident $(, $base: ident : $ty: ty)?) => {
-        #[inline]
-        pub const fn $method(self, $($base : $ty),*) -> ExpType {
-            if self.is_negative() {
-                #[cfg(debug_assertions)]
-                panic!(errors::err_msg!("attempt to calculate log of negative number"));
-                #[cfg(not(debug_assertions))]
-                0
-            } else {
-                self.bits.$method($($base.bits)?)
-            }
-        }
+		crate::nightly::const_fn! {
+			#[doc=doc::$method!(I)]
+			#[inline]
+			pub const fn $method(self, $($base : $ty),*) -> ExpType {
+				if self.is_negative() {
+					#[cfg(debug_assertions)]
+					panic!(errors::err_msg!("attempt to calculate log of negative number"));
+					#[cfg(not(debug_assertions))]
+					0
+				} else {
+					self.bits.$method($($base.bits)?)
+				}
+			}
+		}
     }
 }
 
@@ -75,16 +78,18 @@ impl<const N: usize> BInt<N> {
         self.bits.trailing_ones()
     }
 
-    #[doc=doc::rotate_left!(I 256, "i")]
-    #[inline]
-    pub const fn rotate_left(self, n: ExpType) -> Self {
-        Self::from_bits(self.bits.rotate_left(n))
-    }
+    crate::nightly::const_fns! {
+        #[doc=doc::rotate_left!(I 256, "i")]
+        #[inline]
+        pub const fn rotate_left(self, n: ExpType) -> Self {
+            Self::from_bits(self.bits.rotate_left(n))
+        }
 
-    #[doc=doc::rotate_right!(I 256, "i")]
-    #[inline]
-    pub const fn rotate_right(self, n: ExpType) -> Self {
-        Self::from_bits(self.bits.rotate_right(n))
+        #[doc=doc::rotate_right!(I 256, "i")]
+        #[inline]
+        pub const fn rotate_right(self, n: ExpType) -> Self {
+            Self::from_bits(self.bits.rotate_right(n))
+        }
     }
 
     #[doc=doc::swap_bytes!(I 256, "i")]
@@ -99,55 +104,56 @@ impl<const N: usize> BInt<N> {
         Self::from_bits(self.bits.reverse_bits())
     }
 
-    /// Computes the absolute value of `self` without any wrapping or panicking.
-    #[doc=doc::example_header!(I 256)]
-    /// assert_eq!(I256::from(100).unsigned_abs(), bnum::BUint::from(100u8));
-    /// assert_eq!(I256::from(-100).unsigned_abs(), bnum::BUint::from(100u8));
-    /// assert_eq!(I256::MIN.unsigned_abs(), I256::MIN.to_bits());
-    /// ```
-    #[inline]
-    pub const fn unsigned_abs(self) -> BUint<N> {
-        if self.is_negative() {
-            self.wrapping_neg().bits
-        } else {
-            self.bits
+    crate::nightly::const_fns! {
+        #[doc=doc::unsigned_abs!(I 256)]
+        #[inline]
+        pub const fn unsigned_abs(self) -> BUint<N> {
+            if self.is_negative() {
+                self.wrapping_neg().bits
+            } else {
+                self.bits
+            }
+        }
+
+        #[doc=doc::pow!(I 256)]
+        #[inline]
+        pub const fn pow(self, exp: ExpType) -> Self {
+            #[cfg(debug_assertions)]
+            return option_expect!(self.checked_pow(exp), errors::err_msg!("attempt to calculate power with overflow"));
+
+            #[cfg(not(debug_assertions))]
+            self.wrapping_pow(exp)
+        }
+
+        #[doc=doc::div_euclid!(I)]
+        #[inline]
+        pub const fn div_euclid(self, rhs: Self) -> Self {
+            assert!(self != Self::MIN || rhs != Self::NEG_ONE, errors::err_msg!("attempt to divide with overflow"));
+            self.wrapping_div_euclid(rhs)
+        }
+
+        #[doc=doc::rem_euclid!(I)]
+        #[inline]
+        pub const fn rem_euclid(self, rhs: Self) -> Self {
+            assert!(self != Self::MIN || rhs != Self::NEG_ONE, errors::err_msg!("attempt to calculate remainder with overflow"));
+            self.wrapping_rem_euclid(rhs)
+        }
+
+        #[doc=doc::abs!(I)]
+        #[inline]
+        pub const fn abs(self) -> Self {
+            #[cfg(debug_assertions)]
+            return option_expect!(self.checked_abs(), errors::err_msg!("attempt to negate with overflow"));
+
+            #[cfg(not(debug_assertions))]
+            match self.checked_abs() {
+                Some(int) => int,
+                None => Self::MIN,
+            }
         }
     }
 
-    #[doc=doc::pow!(I 256)]
-    #[inline]
-    pub const fn pow(self, exp: ExpType) -> Self {
-        #[cfg(debug_assertions)]
-        return option_expect!(self.checked_pow(exp), errors::err_msg!("attempt to calculate power with overflow"));
-
-        #[cfg(not(debug_assertions))]
-        self.wrapping_pow(exp)
-    }
-
-    #[inline]
-    pub const fn div_euclid(self, rhs: Self) -> Self {
-        assert!(self != Self::MIN || rhs != Self::NEG_ONE, errors::err_msg!("attempt to divide with overflow"));
-        self.wrapping_div_euclid(rhs)
-    }
-
-    #[inline]
-    pub const fn rem_euclid(self, rhs: Self) -> Self {
-        assert!(self != Self::MIN || rhs != Self::NEG_ONE, errors::err_msg!("attempt to calculate remainder with overflow"));
-        self.wrapping_rem_euclid(rhs)
-    }
-
-    #[inline]
-    pub const fn abs(self) -> Self {
-        #[cfg(debug_assertions)]
-        return option_expect!(self.checked_abs(), errors::err_msg!("attempt to negate with overflow"));
-
-        #[cfg(not(debug_assertions))]
-        match self.checked_abs() {
-            Some(int) => int,
-            None => Self::MIN,
-        }
-    }
-
+    #[doc=doc::signum!(I)]
     #[inline]
     pub const fn signum(self) -> Self {
         if self.is_negative() {
@@ -159,22 +165,23 @@ impl<const N: usize> BInt<N> {
         }
     }
 
+    #[doc=doc::is_positive!(I)]
     #[inline]
     pub const fn is_positive(self) -> bool {
         let signed_digit = self.signed_digit();
-        signed_digit.is_positive() ||
-        (signed_digit == 0 && !self.bits.is_zero())
+        signed_digit.is_positive() || (signed_digit == 0 && !self.bits.is_zero())
     }
-    
+
+    #[doc=doc::is_negative!(I)]
     #[inline]
     pub const fn is_negative(self) -> bool {
         self.signed_digit().is_negative()
     }
-    
+
     #[doc=doc::doc_comment! {
         I 256,
         "Returns `true` if and only if `self == 2^k` for some integer `k`.",
-        
+
         "let n = " stringify!(I256) "::from(1i16 << 12);\n"
         "assert!(n.is_power_of_two());\n"
         "let m = " stringify!(I256) "::from(90i8);\n"
@@ -194,52 +201,59 @@ impl<const N: usize> BInt<N> {
     log!(log2);
     log!(log10);
 
-    #[inline]
-    pub const fn abs_diff(self, other: Self) -> BUint<N> {
-        if self < other {
-            other.wrapping_sub(self).to_bits()
-        } else {
-            self.wrapping_sub(other).to_bits()
+    crate::nightly::const_fns! {
+        #[doc=doc::abs_diff!(I)]
+        #[inline]
+        pub const fn abs_diff(self, other: Self) -> BUint<N> {
+            if self < other {
+                other.wrapping_sub(self).to_bits()
+            } else {
+                self.wrapping_sub(other).to_bits()
+            }
+        }
+
+        #[doc=doc::next_multiple_of!(I)]
+        #[inline]
+        pub const fn next_multiple_of(self, rhs: Self) -> Self {
+            let rem = self.wrapping_rem_euclid(rhs);
+            if rem.is_zero() {
+                return self;
+            }
+            if rem.is_negative() == rhs.is_negative() {
+                self + rhs.wrapping_sub(rem)
+            } else {
+                self + rem
+            }
+        }
+
+        #[doc=doc::div_floor!(I)]
+        #[inline]
+        pub const fn div_floor(self, rhs: Self) -> Self {
+            if rhs.is_zero() {
+                crate::errors::div_zero!();
+            }
+            let (div, rem) = self.div_rem_unchecked(rhs);
+            if rem.is_zero() || self.is_negative() == rhs.is_negative() {
+                div
+            } else {
+                div - Self::ONE
+            }
+        }
+
+        #[doc=doc::div_ceil!(I)]
+        #[inline]
+        pub const fn div_ceil(self, rhs: Self) -> Self {
+            if rhs.is_zero() {
+                crate::errors::div_zero!();
+            }
+            let (div, rem) = self.div_rem_unchecked(rhs);
+            if rem.is_zero() || self.is_negative() != rhs.is_negative() {
+                div
+            } else {
+                div + Self::ONE
+            }
         }
     }
-
-    #[inline]
-    pub const fn next_multiple_of(self, rhs: Self) -> Self {
-        let rem = self.rem_euclid(rhs);
-		if rhs.is_negative() {
-			self - rem
-		} else if rem.is_zero() {
-			self
-		} else {
-			self + (rhs - rem)
-		}
-    }
-
-    #[inline]
-	pub const fn div_floor(self, rhs: Self) -> Self {
-		if rhs.is_zero() {
-			crate::errors::div_zero!();
-		}
-		let (div, rem) = self.div_rem_unchecked(rhs);
-		if rem.is_zero() || self.is_negative() == rhs.is_negative() {
-			div
-		} else {
-			div - Self::ONE
-		}
-	}
-
-    #[inline]
-	pub const fn div_ceil(self, rhs: Self) -> Self {
-		if rhs.is_zero() {
-			crate::errors::div_zero!();
-		}
-		let (div, rem) = self.div_rem_unchecked(rhs);
-		if rem.is_zero() || self.is_negative() != rhs.is_negative() {
-			div
-		} else {
-			div + Self::ONE
-		}
-	}
 }
 
 impl<const N: usize> BInt<N> {
@@ -277,20 +291,17 @@ impl<const N: usize> BInt<N> {
         &self.bits.digits
     }
 
-	/// Casts a `BUint<N>` to `BInt<N>`. This creates a `BInt<N>` with `bits` as the underlying representation in two's complement.
-	/// 
-	/// This method is faster for casting between `BInt`s and `BUint`s of the same size than using the `As` trait.
+    /// Casts a `BUint<N>` to `BInt<N>`. This creates a `BInt<N>` with `bits` as the underlying representation in two's complement.
+    ///
+    /// This method is faster for casting between `BInt`s and `BUint`s of the same size than using the `As` trait.
     #[inline(always)]
     pub const fn from_bits(bits: BUint<N>) -> Self {
-        Self {
-            bits,
-        }
+        Self { bits }
     }
-    
 
-	/// Casts a `self` to `BUint<N>`. This simply returns the underlying representation of the integer in two's complement, as a `BUint<N>`.
-	/// 
-	/// This method is faster for casting between `BUint`s and `BInt`s of the same size than using the `As` trait.
+    /// Casts a `self` to `BUint<N>`. This simply returns the underlying representation of the integer in two's complement, as a `BUint<N>`.
+    ///
+    /// This method is faster for casting between `BUint`s and `BInt`s of the same size than using the `As` trait.
     #[inline(always)]
     pub const fn to_bits(self) -> BUint<N> {
         self.bits
@@ -363,7 +374,10 @@ impl<'a, const N: usize> Sum<&'a Self> for BInt<N> {
 
 #[cfg(test)]
 mod tests {
-	use crate::test::{test_bignum, debug_skip, types::{itest, I128}};
+    use crate::test::{
+        debug_skip, test_bignum,
+        types::{itest, I128},
+    };
 
     crate::int::tests!(itest);
 
@@ -387,7 +401,7 @@ mod tests {
     test_bignum! {
         function: <itest>::is_negative(a: itest)
     }
-    
+
     #[test]
     fn bit() {
         let i = I128::from(0b1001010100101010101i128);

@@ -8,16 +8,16 @@ pub trait TestConvert {
 }
 
 macro_rules! test_convert_big {
-	($big: ty, $output: ty) => {
-		impl TestConvert for $big {
-			type Output = $output;
-		
-			#[inline]
-			fn into(self) -> Self::Output {
-				self.as_()
-			}
-		}
-	};
+    ($big: ty, $output: ty) => {
+        impl TestConvert for $big {
+            type Output = $output;
+
+            #[inline]
+            fn into(self) -> Self::Output {
+                self.as_()
+            }
+        }
+    };
 }
 
 macro_rules! test_convert_bigints {
@@ -85,7 +85,7 @@ impl<T: TestConvert, U: TestConvert> TestConvert for (T, U) {
 
 impl<T, const N: usize> TestConvert for [T; N] {
     type Output = Self;
-    
+
     #[inline]
     fn into(self) -> Self::Output {
         self
@@ -123,30 +123,30 @@ impl<T: TestConvert, E: TestConvert> TestConvert for Result<T, E> {
 }
 
 impl TestConvert for core::num::TryFromIntError {
-	type Output = ();
+    type Output = ();
 
-	#[inline]
-	fn into(self) -> Self::Output {
-		()
-	}
+    #[inline]
+    fn into(self) -> Self::Output {
+        ()
+    }
 }
 
 impl TestConvert for crate::errors::TryFromIntError {
-	type Output = ();
+    type Output = ();
 
-	#[inline]
-	fn into(self) -> Self::Output {
-		()
-	}
+    #[inline]
+    fn into(self) -> Self::Output {
+        ()
+    }
 }
 
 impl TestConvert for core::convert::Infallible {
-	type Output = ();
+    type Output = ();
 
-	#[inline]
-	fn into(self) -> Self::Output {
-		()
-	}
+    #[inline]
+    fn into(self) -> Self::Output {
+        ()
+    }
 }
 
 macro_rules! test_convert_to_self {
@@ -154,7 +154,7 @@ macro_rules! test_convert_to_self {
         $(
             impl TestConvert for $ty {
                 type Output = Self;
-                
+
                 #[inline]
                 fn into(self) -> Self::Output {
                     self
@@ -164,4 +164,21 @@ macro_rules! test_convert_to_self {
     };
 }
 
-test_convert_to_self!(core::num::FpCategory, core::cmp::Ordering, bool, u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, alloc::string::String);
+test_convert_to_self!(
+    core::num::FpCategory,
+    core::cmp::Ordering,
+    bool,
+    u8,
+    u16,
+    u32,
+    u64,
+    u128,
+    usize,
+    i8,
+    i16,
+    i32,
+    i64,
+    i128,
+    isize,
+    alloc::string::String
+);

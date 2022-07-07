@@ -1,11 +1,18 @@
 use super::{BUint, ExpType};
-use num_traits::{Bounded, CheckedAdd, CheckedDiv, CheckedMul, CheckedNeg, CheckedRem, CheckedShl, CheckedShr, CheckedSub, FromPrimitive, MulAdd, MulAddAssign, Num, One, SaturatingAdd, SaturatingMul, SaturatingSub, WrappingAdd, WrappingMul, WrappingNeg, WrappingShl, WrappingShr, WrappingSub, ToPrimitive, Unsigned, Zero, Pow, Saturating, AsPrimitive};
-use num_integer::{Integer, Roots};
 use crate::digit::{self, Digit};
+use crate::nightly::impl_const;
 use crate::BInt;
+use num_integer::{Integer, Roots};
+use num_traits::{
+    AsPrimitive, Bounded, CheckedAdd, CheckedDiv, CheckedMul, CheckedNeg, CheckedRem, CheckedShl,
+    CheckedShr, CheckedSub, FromPrimitive, MulAdd, MulAddAssign, Num, One, Pow, PrimInt,
+    Saturating, SaturatingAdd, SaturatingMul, SaturatingSub, ToPrimitive, Unsigned, WrappingAdd,
+    WrappingMul, WrappingNeg, WrappingShl, WrappingShr, WrappingSub, Zero,
+};
 
 crate::int::numtraits::impls!(BUint);
 
+//impl_const! {
 impl<const N: usize> FromPrimitive for BUint<N> {
     #[inline]
     fn from_u64(int: u64) -> Option<Self> {
@@ -71,111 +78,116 @@ impl<const N: usize> FromPrimitive for BUint<N> {
         Self::try_from(f).ok()
     }
 }
+//}
 
-impl<const N: usize> Integer for BUint<N> {
-    #[inline]
-    fn div_floor(&self, other: &Self) -> Self {
-        *self / *other
-    }
+impl_const! {
+    impl<const N: usize> const Integer for BUint<N> {
+        #[inline]
+        fn div_floor(&self, other: &Self) -> Self {
+            *self / *other
+        }
 
-    #[inline]
-    fn mod_floor(&self, other: &Self) -> Self {
-        *self % *other
-    }
+        #[inline]
+        fn mod_floor(&self, other: &Self) -> Self {
+            *self % *other
+        }
 
-    #[inline]
-    fn gcd(&self, other: &Self) -> Self {
-		// Paul E. Black, "binary GCD", in Dictionary of Algorithms and Data Structures [online], Paul E. Black, ed. 2 November 2020. (accessed 15th June 2022) Available from: https://www.nist.gov/dads/HTML/binaryGCD.html
-		// https://en.wikipedia.org/wiki/Binary_GCD_algorithm#Implementation
+        #[inline]
+        fn gcd(&self, other: &Self) -> Self {
+            // Paul E. Black, "binary GCD", in Dictionary of Algorithms and Data Structures [online], Paul E. Black, ed. 2 November 2020. (accessed 15th June 2022) Available from: https://www.nist.gov/dads/HTML/binaryGCD.html
+            // https://en.wikipedia.org/wiki/Binary_GCD_algorithm#Implementation
 
-		let (mut a, mut b) = (*self, *other);
-		if a.is_zero() {
-			return b;
-		}
-		if b.is_zero() {
-			return a;
-		}
-		let mut a_tz = a.trailing_zeros();
-		let mut b_tz = b.trailing_zeros();
-		// Normalise `a` and `b` so that both of them has no leading zeros, so both must be odd.
-		unsafe {
-			a = super::unchecked_shr(a, a_tz);
-			b = super::unchecked_shr(b, b_tz);
-		}
+            let (mut a, mut b) = (*self, *other);
+            if a.is_zero() {
+                return b;
+            }
+            if b.is_zero() {
+                return a;
+            }
+            let mut a_tz = a.trailing_zeros();
+            let mut b_tz = b.trailing_zeros();
+            // Normalise `a` and `b` so that both of them has no leading zeros, so both must be odd.
+            unsafe {
+                a = super::unchecked_shr(a, a_tz);
+                b = super::unchecked_shr(b, b_tz);
+            }
 
-		if b_tz > a_tz {
-			// Ensure `a_tz >= b_tz`
-			core::mem::swap(&mut a_tz, &mut b_tz);
-		}
-		loop {
-			if a < b {
-				// Ensure `a >= b`
-				core::mem::swap(&mut a, &mut b);
-			}
-			a -= b;
-			if a.is_zero() {
-				return unsafe {
-					super::unchecked_shl(b, b_tz)
-				};
-			}
-			unsafe {
-				a = super::unchecked_shr(a, a.trailing_zeros());
-			}
-		}
-    }
+            if b_tz > a_tz {
+                // Ensure `a_tz >= b_tz`
+                core::mem::swap(&mut a_tz, &mut b_tz);
+            }
+            loop {
+                if a < b {
+                    // Ensure `a >= b`
+                    core::mem::swap(&mut a, &mut b);
+                }
+                a -= b;
+                if a.is_zero() {
+                    return unsafe {
+                        super::unchecked_shl(b, b_tz)
+                    };
+                }
+                unsafe {
+                    a = super::unchecked_shr(a, a.trailing_zeros());
+                }
+            }
+        }
 
-    #[inline]
-    fn lcm(&self, other: &Self) -> Self {
-        self.div_floor(&self.gcd(other)) * *other
-    }
+        #[inline]
+        fn lcm(&self, other: &Self) -> Self {
+            self.div_floor(&self.gcd(other)) * *other
+        }
 
-    #[inline]
-    fn divides(&self, other: &Self) -> bool {
-        self.is_multiple_of(other)
-    }
+        #[inline]
+        fn divides(&self, other: &Self) -> bool {
+            self.is_multiple_of(other)
+        }
 
-    #[inline]
-    fn is_multiple_of(&self, other: &Self) -> bool {
-        self.mod_floor(other).is_zero()
-    }
+        #[inline]
+        fn is_multiple_of(&self, other: &Self) -> bool {
+            self.mod_floor(other).is_zero()
+        }
 
-    #[inline]
-    fn is_even(&self) -> bool {
-        self.digits[0] & 1 == 0
-    }
+        #[inline]
+        fn is_even(&self) -> bool {
+            self.digits[0] & 1 == 0
+        }
 
-    #[inline]
-    fn is_odd(&self) -> bool {
-        self.digits[0] & 1 == 1
-    }
+        #[inline]
+        fn is_odd(&self) -> bool {
+            self.digits[0] & 1 == 1
+        }
 
-    #[inline]
-    fn div_rem(&self, rhs: &Self) -> (Self, Self) {
-        Self::div_rem(*self, *rhs)
+        #[inline]
+        fn div_rem(&self, rhs: &Self) -> (Self, Self) {
+            Self::div_rem(*self, *rhs)
+        }
     }
 }
 
-impl<const N: usize> num_traits::PrimInt for BUint<N> {
-	crate::int::numtraits::prim_int_methods!();
+impl_const! {
+    impl<const N: usize> const PrimInt for BUint<N> {
+        crate::int::numtraits::prim_int_methods!();
 
-	#[inline]
-    fn signed_shl(self, n: u32) -> Self {
-		self << n
-    }
+        #[inline]
+        fn signed_shl(self, n: u32) -> Self {
+            self << n
+        }
 
-	#[inline]
-    fn signed_shr(self, n: u32) -> Self {
-        (BInt::from_bits(self) >> n).to_bits()
-    }
+        #[inline]
+        fn signed_shr(self, n: u32) -> Self {
+            (BInt::from_bits(self) >> n).to_bits()
+        }
 
-	#[inline]
-    fn unsigned_shl(self, n: u32) -> Self {
-		self << n
-    }
+        #[inline]
+        fn unsigned_shl(self, n: u32) -> Self {
+            self << n
+        }
 
-	#[inline]
-    fn unsigned_shr(self, n: u32) -> Self {
-        self >> n
+        #[inline]
+        fn unsigned_shr(self, n: u32) -> Self {
+            self >> n
+        }
     }
 }
 
@@ -190,7 +202,7 @@ macro_rules! check_zero_or_one {
                 return *$self;
             }
         }
-    }
+    };
 }
 
 /*
@@ -201,7 +213,9 @@ The original license file and copyright notice for this project can be found in 
 impl<const N: usize> BUint<N> {
     #[inline]
     fn fixpoint<F>(mut self, max_bits: ExpType, f: F) -> Self
-    where F: Fn(Self) -> Self {
+    where
+        F: Fn(Self) -> Self,
+    {
         let mut xn = f(self);
         while self < xn {
             self = if xn.bits() > max_bits {
@@ -224,7 +238,8 @@ impl<const N: usize> Roots for BUint<N> {
     fn sqrt(&self) -> Self {
         check_zero_or_one!(self);
 
-		#[cfg(not(test))] // disable this when testing as this condition will always be true when testing against primitives, so the rest of the algorithm wouldn't be tested
+        #[cfg(not(test))]
+        // disable this when testing as this condition will always be true when testing against primitives, so the rest of the algorithm wouldn't be tested
         if let Some(n) = self.to_u128() {
             return n.sqrt().into();
         }
@@ -243,8 +258,8 @@ impl<const N: usize> Roots for BUint<N> {
     fn cbrt(&self) -> Self {
         check_zero_or_one!(self);
 
-
-		#[cfg(not(test))] // disable this when testing as this condition will always be true when testing against primitives, so the rest of the algorithm wouldn't be tested
+        #[cfg(not(test))]
+        // disable this when testing as this condition will always be true when testing against primitives, so the rest of the algorithm wouldn't be tested
         if let Some(n) = self.to_u128() {
             return n.cbrt().into();
         }
@@ -269,7 +284,8 @@ impl<const N: usize> Roots for BUint<N> {
             _ => {
                 check_zero_or_one!(self);
 
-				#[cfg(not(test))] // disable this when testing as this condition will always be true when testing against primitives, so the rest of the algorithm wouldn't be tested
+                #[cfg(not(test))]
+                // disable this when testing as this condition will always be true when testing against primitives, so the rest of the algorithm wouldn't be tested
                 if let Some(x) = self.to_u128() {
                     return x.nth_root(n).into();
                 }
@@ -280,7 +296,7 @@ impl<const N: usize> Roots for BUint<N> {
                 }
 
                 let max_bits = bits / n + 1;
-        
+
                 let guess = Self::power_of_two(max_bits);
                 let n_minus_1 = n - 1;
 
@@ -339,22 +355,23 @@ macro_rules! to_int {
 	};
 }
 
+//impl_const! {
 impl<const N: usize> ToPrimitive for BUint<N> {
-	to_int! {
-		to_u8 -> u8,
-		to_u16 -> u16,
-		to_u32 -> u32,
-		to_u64 -> u64,
-		to_u128 -> u128,
-		to_usize -> usize,
+    to_int! {
+        to_u8 -> u8,
+        to_u16 -> u16,
+        to_u32 -> u32,
+        to_u64 -> u64,
+        to_u128 -> u128,
+        to_usize -> usize,
 
-		to_i8 -> i8,
-		to_i16 -> i16,
-		to_i32 -> i32,
-		to_i64 -> i64,
-		to_i128 -> i128,
-		to_isize -> isize
-	}
+        to_i8 -> i8,
+        to_i16 -> i16,
+        to_i32 -> i32,
+        to_i64 -> i64,
+        to_i128 -> i128,
+        to_isize -> isize
+    }
 
     #[inline]
     fn to_f32(&self) -> Option<f32> {
@@ -366,7 +383,9 @@ impl<const N: usize> ToPrimitive for BUint<N> {
         Some(self.as_())
     }
 }
+//}
 
 impl<const N: usize> Unsigned for BUint<N> {}
 
+#[cfg(test)]
 crate::int::numtraits::tests!(utest);

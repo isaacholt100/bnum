@@ -7,19 +7,19 @@ macro_rules! impl_desc {
 pub(crate) use impl_desc;
 
 crate::doc::link_doc_comment!(
-	overflowing_abs,
-	overflowing_add,
-	overflowing_add_signed,
-	overflowing_add_unsigned,
-	overflowing_div,
-	overflowing_div_euclid,
-	overflowing_mul,
-	overflowing_neg,
-	overflowing_pow,
-	overflowing_rem,
-	overflowing_rem_euclid,
-	overflowing_shl,
-	overflowing_shr,
-	overflowing_sub,
-	overflowing_sub_unsigned
+    overflowing_abs,
+    overflowing_add,
+    overflowing_add_signed,
+    overflowing_add_unsigned,
+    overflowing_div,
+    overflowing_div_euclid,
+    overflowing_mul,
+    overflowing_neg,
+    overflowing_pow,
+    overflowing_rem,
+    overflowing_rem_euclid,
+    overflowing_shl,
+    overflowing_shr,
+    overflowing_sub,
+    overflowing_sub_unsigned
 );

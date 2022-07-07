@@ -1,39 +1,43 @@
-use super::BUint;
-use crate::digit::{self, Digit};
-use crate::{BInt, ExpType};
-use crate::cast::CastFrom;
-use core::mem::MaybeUninit;
-use crate::cast::As;
 use super::convert::{decode_f32, decode_f64};
+use super::BUint;
+use crate::cast::As;
+use crate::cast::CastFrom;
+use crate::digit::{self, Digit};
+use crate::nightly::{const_fn, impl_const};
+use crate::{BInt, ExpType};
+use core::mem::MaybeUninit;
 
 impl<const N: usize> BUint<N> {
-    #[inline]
-    const fn cast_up<const M: usize>(self, digit: Digit) -> BUint<M> {
-        let mut digits = [digit; M];
-        let digits_ptr = digits.as_mut_ptr() as *mut Digit;
-        let self_ptr = self.digits.as_ptr();
-        unsafe {
-            self_ptr.copy_to_nonoverlapping(digits_ptr, N);
-            BUint::from_digits(digits)
+    const_fn! {
+        #[inline]
+        const fn cast_up<const M: usize>(self, digit: Digit) -> BUint<M> {
+            let mut digits = [digit; M];
+            let digits_ptr = digits.as_mut_ptr() as *mut Digit;
+            let self_ptr = self.digits.as_ptr();
+            unsafe {
+                self_ptr.copy_to_nonoverlapping(digits_ptr, N);
+                BUint::from_digits(digits)
+            }
         }
     }
+    const_fn! {
+        #[inline]
+        const fn cast_down<const M: usize>(self) -> BUint<M> {
+            let mut digits = MaybeUninit::<[Digit; M]>::uninit();
+            let digits_ptr = digits.as_mut_ptr() as *mut Digit;
+            let self_ptr = self.digits.as_ptr();
 
-    #[inline]
-    const fn cast_down<const M: usize>(self) -> BUint<M> {
-        let mut digits = MaybeUninit::<[Digit; M]>::uninit();
-        let digits_ptr = digits.as_mut_ptr() as *mut Digit;
-        let self_ptr = self.digits.as_ptr();
-
-        unsafe {
-            self_ptr.copy_to_nonoverlapping(digits_ptr, M);
-            BUint::from_digits(digits.assume_init())
+            unsafe {
+                self_ptr.copy_to_nonoverlapping(digits_ptr, M);
+                BUint::from_digits(digits.assume_init())
+            }
         }
     }
 }
 
 macro_rules! buint_as {
     ($($int: ty), *) => {
-        $(
+        $(impl_const! {
             impl<const N: usize> const CastFrom<BUint<N>> for $int {
                 #[inline]
                 fn cast_from(from: BUint<N>) -> Self {
@@ -46,7 +50,7 @@ macro_rules! buint_as {
                     out
                 }
             }
-        )*
+		})*
     };
 }
 
@@ -62,20 +66,21 @@ impl<const N: usize> CastFrom<BUint<N>> for f32 {
         }
         let bits = from.bits();
         let mut mant = if BUint::<N>::BITS > u32::BITS {
-			if bits < 24 {
-				from.as_::<u32>() << (24 - bits)
-			} else {
-				(from >> (bits - 24)).as_::<u32>()
-			}
-		} else {
-			if bits < 24 {
-				from.as_::<u32>() << (24 - bits)
-			} else {
-				from.as_::<u32>() >> (bits - 24)
-			}
-		};
+            if bits < 24 {
+                from.as_::<u32>() << (24 - bits)
+            } else {
+                (from >> (bits - 24)).as_::<u32>()
+            }
+        } else if bits < 24 {
+            from.as_::<u32>() << (24 - bits)
+        } else {
+            from.as_::<u32>() >> (bits - 24)
+        };
         let mut round_up = true;
-        if bits <= 24 || !from.bit(bits - 25) || (mant & 1 == 0 && from.trailing_zeros() == bits - 25) {
+        if bits <= 24
+            || !from.bit(bits - 25)
+            || (mant & 1 == 0 && from.trailing_zeros() == bits - 25)
+        {
             round_up = false;
         }
         let mut exp = bits as u32 + 127 - 1;
@@ -100,21 +105,22 @@ impl<const N: usize> CastFrom<BUint<N>> for f64 {
             return 0.0;
         }
         let bits = from.bits();
-		let mut mant = if BUint::<N>::BITS > u64::BITS {
-			if bits < 53 {
-				from.as_::<u64>() << (53 - bits)
-			} else {
-				(from >> (bits - 53)).as_::<u64>()
-			}
-		} else {
-			if bits < 53 {
-				from.as_::<u64>() << (53 - bits)
-			} else {
-				from.as_::<u64>() >> (bits - 53)
-			}
-		};
+        let mut mant = if BUint::<N>::BITS > u64::BITS {
+            if bits < 53 {
+                from.as_::<u64>() << (53 - bits)
+            } else {
+                (from >> (bits - 53)).as_::<u64>()
+            }
+        } else if bits < 53 {
+            from.as_::<u64>() << (53 - bits)
+        } else {
+            from.as_::<u64>() >> (bits - 53)
+        };
         let mut round_up = true;
-        if bits <= 53 || !from.bit(bits - 54) || (mant & 1 == 0 && from.trailing_zeros() == bits - 54) {
+        if bits <= 53
+            || !from.bit(bits - 54)
+            || (mant & 1 == 0 && from.trailing_zeros() == bits - 54)
+        {
             round_up = false;
         }
         let mut exp = bits as u64 + 1023 - 1;
@@ -134,7 +140,7 @@ impl<const N: usize> CastFrom<BUint<N>> for f64 {
 
 macro_rules! as_buint {
     ($($ty: ty), *) => {
-        $(
+        $(impl_const! {
             impl<const N: usize> const CastFrom<$ty> for BUint<N> {
                 #[inline]
                 fn cast_from(mut from: $ty) -> Self {
@@ -158,53 +164,61 @@ macro_rules! as_buint {
                     out
                 }
             }
-        )*
+		})*
     };
 }
 
 as_buint!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
 
-impl<const N: usize> const CastFrom<bool> for BUint<N> {
-    #[inline]
-    fn cast_from(from: bool) -> Self {
-        if from {
-            Self::ONE
-        } else {
-            Self::ZERO
-        }
-    }
-}
-
-impl<const N: usize> const CastFrom<char> for BUint<N> {
-    #[inline]
-    fn cast_from(from: char) -> Self {
-        Self::cast_from(from as u32)
-    }
-}
-
-impl<const N: usize, const M: usize> const CastFrom<BUint<M>> for BUint<N> {
-    #[inline]
-    fn cast_from(from: BUint<M>) -> Self {
-        if M < N {
-            from.cast_up(0)
-        } else {
-            from.cast_down()
-        }
-    }
-}
-
-impl<const N: usize, const M: usize> const CastFrom<BInt<M>> for BUint<N> {
-    #[inline]
-    fn cast_from(from: BInt<M>) -> Self {
-        if M < N {
-            let padding_digit = if from.is_negative() {
-                Digit::MAX
+impl_const! {
+    impl<const N: usize> const CastFrom<bool> for BUint<N> {
+        #[inline]
+        fn cast_from(from: bool) -> Self {
+            if from {
+                Self::ONE
             } else {
-                0
-            };
-            from.to_bits().cast_up(padding_digit)
-        } else {
-            from.to_bits().cast_down()
+                Self::ZERO
+            }
+        }
+    }
+}
+
+impl_const! {
+    impl<const N: usize> const CastFrom<char> for BUint<N> {
+        #[inline]
+        fn cast_from(from: char) -> Self {
+            Self::cast_from(from as u32)
+        }
+    }
+}
+
+impl_const! {
+    impl<const N: usize, const M: usize> const CastFrom<BUint<M>> for BUint<N> {
+        #[inline]
+        fn cast_from(from: BUint<M>) -> Self {
+            if M < N {
+                from.cast_up(0)
+            } else {
+                from.cast_down()
+            }
+        }
+    }
+}
+
+impl_const! {
+    impl<const N: usize, const M: usize> const CastFrom<BInt<M>> for BUint<N> {
+        #[inline]
+        fn cast_from(from: BInt<M>) -> Self {
+            if M < N {
+                let padding_digit = if from.is_negative() {
+                    Digit::MAX
+                } else {
+                    0
+                };
+                from.to_bits().cast_up(padding_digit)
+            } else {
+                from.to_bits().cast_down()
+            }
         }
     }
 }
@@ -244,7 +258,7 @@ macro_rules! cast_from_float {
                 mant.as_::<Self>() << exp
             }
         }
-    }
+    };
 }
 
 impl<const N: usize> CastFrom<f32> for BUint<N> {

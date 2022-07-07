@@ -1,7 +1,7 @@
 macro_rules! impl_desc {
-	() => {
-		"Associated constants for this type."
-	}
+    () => {
+        "Associated constants for this type."
+    };
 }
 
 pub(crate) use impl_desc;
@@ -60,13 +60,13 @@ pub(crate) use one;
 
 macro_rules! bits {
     ($sign: ident $bits: literal, $digit_bits: literal) => {
-		doc::doc_comment! {
+        doc::doc_comment! {
             $sign $bits,
             "The total number of bits that this type contains.",
 
             "assert_eq!(" doc::type_str!($sign $bits) "::BITS, " $digit_bits ");"
         }
-    }
+    };
 }
 
 pub(crate) use bits;
@@ -79,7 +79,7 @@ macro_rules! bytes {
 
             "assert_eq!(" doc::type_str!($sign $bits) "::BYTES, " $digit_bits " / 8);"
         }
-    }
+    };
 }
 
 pub(crate) use bytes;

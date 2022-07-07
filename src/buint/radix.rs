@@ -4,16 +4,16 @@ The original license file and copyright notice for this project can be found in 
 */
 
 use super::BUint;
-use crate::doc;
-use crate::ExpType;
-use crate::errors::ParseIntError;
 use crate::digit::{self, Digit, DoubleDigit};
-use core::iter::Iterator;
+use crate::doc;
+use crate::errors::ParseIntError;
+use crate::int::radix::assert_range;
+use crate::radix_bases;
+use crate::ExpType;
 use alloc::string::String;
 use alloc::vec::Vec;
-use crate::radix_bases;
+use core::iter::Iterator;
 use core::num::IntErrorKind;
-use crate::int::radix::assert_range;
 
 const BITS_U8: u8 = digit::BITS as u8;
 
@@ -26,11 +26,7 @@ impl<const N: usize> BUint<N> {
     {
         let mut out = Self::ZERO;
 
-        let iter = iter.map(|inner_iter| {
-            inner_iter.fold(0, |acc, c| {
-                (acc << bits) | c as Digit
-            })
-        });
+        let iter = iter.map(|inner_iter| inner_iter.fold(0, |acc, c| (acc << bits) | c as Digit));
         for (i, digit) in iter.enumerate() {
             if i < N {
                 out.digits[i] = digit;
@@ -42,7 +38,7 @@ impl<const N: usize> BUint<N> {
     }
     fn from_inexact_bitwise_digits_le<I>(iter: I, bits: u8) -> Option<Self>
     where
-        I: Iterator<Item = u8>
+        I: Iterator<Item = u8>,
     {
         let mut out = Self::ZERO;
         let mut digit = 0;
@@ -72,13 +68,18 @@ impl<const N: usize> BUint<N> {
         }
         Some(out)
     }
-    const fn mac_with_carry(a: Digit, b: Digit, acc: &mut DoubleDigit) -> Digit {
+    fn mac_with_carry(a: Digit, b: Digit, acc: &mut DoubleDigit) -> Digit {
         *acc += a as DoubleDigit * b as DoubleDigit;
         let lo = *acc as Digit;
         *acc >>= BITS_U8;
         lo
     }
-    fn from_radix_digits_be<Head, TailInner, Tail>(head: Head, tail: Tail, radix: u32, base: Digit) -> Option<Self>
+    fn from_radix_digits_be<Head, TailInner, Tail>(
+        head: Head,
+        tail: Tail,
+        radix: u32,
+        base: Digit,
+    ) -> Option<Self>
     where
         Head: Iterator<Item = u8>,
         TailInner: Iterator<Item = u8>,
@@ -87,9 +88,7 @@ impl<const N: usize> BUint<N> {
         let mut out = Self::ZERO;
 
         let radix = radix as Digit;
-        let first = head.fold(0, |acc, d| {
-            acc * radix + d as Digit
-        });
+        let first = head.fold(0, |acc, d| acc * radix + d as Digit);
         out.digits[0] = first;
 
         for chunk_iter in tail {
@@ -100,29 +99,27 @@ impl<const N: usize> BUint<N> {
             if carry != 0 {
                 return None;
             }
-            let n = chunk_iter.fold(0, |acc, d| {
-                acc * radix + d as Digit
-            });
+            let n = chunk_iter.fold(0, |acc, d| acc * radix + d as Digit);
             out = out.checked_add(n.into())?;
         }
         Some(out)
     }
 
     /// Converts a byte slice in a given base to an integer. The input slice must contain ascii/utf8 characters in [0-9a-zA-Z].
-    /// 
+    ///
     /// This function is equivalent to the `from_str_radix` function for a string slice equivalent to the byte slice and the same radix.
-    /// 
+    ///
     /// Returns `None` if the conversion of the byte slice to string slice fails or if a digit is larger than the given radix, otherwise the integer is wrapped in `Some`.
-    /// 
+    ///
     /// # Panics
-    /// 
+    ///
     /// This function panics if `radix` is not in the range from 2 to 36.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// use bnum::BUint;
-    /// 
+    ///
     /// let src = "394857hdgfjhsnkg947dgfjkeita";
     /// assert_eq!(BUint::<4>::from_str_radix(src, 32).ok(), BUint::parse_bytes(src.as_bytes(), 32));
     /// ```
@@ -130,18 +127,18 @@ impl<const N: usize> BUint<N> {
         let s = core::str::from_utf8(buf).ok()?;
         Self::from_str_radix(s, radix).ok()
     }
-    
+
     /// Converts a slice of big-endian digits in the given radix to an integer. Each `u8` of the slice is interpreted as one digit of the number, so this function will return `None` if any digit is greater than or equal to `radix`, otherwise the integer is wrapped in `Some`.
-    /// 
+    ///
     /// # Panics
-    /// 
+    ///
     /// This function panics if `radix` is not in the range from 2 to 256.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// use bnum::BUint;
-    /// 
+    ///
     /// let n = BUint::<2>::from(34598748526857897975u128);
     /// let digits = n.to_radix_be(12);
     /// assert_eq!(Some(n), BUint::from_radix_be(&digits, 12));
@@ -155,7 +152,7 @@ impl<const N: usize> BUint<N> {
         if radix == 256 {
             return Self::from_be_slice(buf);
         }
-        
+
         if radix != 256 && buf.iter().any(|&b| b >= radix as u8) {
             return None;
         }
@@ -165,11 +162,7 @@ impl<const N: usize> BUint<N> {
                 let iter = buf
                     .rchunks((BITS_U8 / bits) as usize)
                     //.rev()
-                    .map(|chunk| {
-                        chunk
-                            .iter()
-                            .copied()
-                    });
+                    .map(|chunk| chunk.iter().copied());
                 Self::from_bitwise_digits_le(iter, bits)
             } else {
                 Self::from_inexact_bitwise_digits_le(buf.iter().rev().copied(), bits)
@@ -177,35 +170,25 @@ impl<const N: usize> BUint<N> {
         } else {
             let (base, power) = radix_bases::get_radix_base::<false>(radix);
             let r = buf.len() % power;
-            let i = if r == 0 {
-                power
-            } else {
-                r
-            };
+            let i = if r == 0 { power } else { r };
             let (head, tail) = buf.split_at(i);
             let head = head.iter().copied();
-            let tail = tail
-                .chunks(power)
-                .map(|chunk| {
-                    chunk
-                        .iter()
-                        .copied()
-                });
+            let tail = tail.chunks(power).map(|chunk| chunk.iter().copied());
             Self::from_radix_digits_be(head, tail, radix, base)
         }
     }
-    
+
     /// Converts a slice of little-endian digits in the given radix to an integer. Each `u8` of the slice is interpreted as one digit of the number, so this function will return `None` if any digit is greater than or equal to `radix`, otherwise the integer is wrapped in `Some`.
-    /// 
+    ///
     /// # Panics
-    /// 
+    ///
     /// This function panics if `radix` is not in the range from 2 to 256.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// use bnum::BUint;
-    /// 
+    ///
     /// let n = BUint::<2>::from(109837459878951038945798u128);
     /// let digits = n.to_radix_le(15);
     /// assert_eq!(Some(n), BUint::from_radix_le(&digits, 15));
@@ -228,12 +211,7 @@ impl<const N: usize> BUint<N> {
             if BITS_U8 % bits == 0 {
                 let iter = buf
                     .chunks((BITS_U8 / bits) as usize)
-                    .map(|chunk| {
-                        chunk
-                            .iter()
-                            .rev()
-                            .copied()
-                    });
+                    .map(|chunk| chunk.iter().rev().copied());
                 Self::from_bitwise_digits_le(iter, bits)
             } else {
                 Self::from_inexact_bitwise_digits_le(buf.iter().copied(), bits)
@@ -241,50 +219,39 @@ impl<const N: usize> BUint<N> {
         } else {
             let (base, power) = radix_bases::get_radix_base::<false>(radix);
             let r = buf.len() % power;
-            let i = if r == 0 {
-                power
-            } else {
-                r
-            };
+            let i = if r == 0 { power } else { r };
             let (tail, head) = buf.split_at(buf.len() - i);
             let head = head.iter().rev().copied();
-            let tail = tail
-                .rchunks(power)
-                .map(|chunk| {
-                    chunk
-                        .iter()
-                        .rev()
-                        .copied()
-                });
+            let tail = tail.rchunks(power).map(|chunk| chunk.iter().rev().copied());
             Self::from_radix_digits_be(head, tail, radix, base)
         };
         out
     }
     const fn byte_to_digit(byte: u8) -> u8 {
         match byte {
-            b'0' ..= b'9' => byte - b'0',
-            b'a' ..= b'z' => byte - b'a' + 10,
-            b'A' ..= b'Z' => byte - b'A' + 10,
+            b'0'..=b'9' => byte - b'0',
+            b'a'..=b'z' => byte - b'a' + 10,
+            b'A'..=b'Z' => byte - b'A' + 10,
             _ => u8::MAX,
         }
     }
     /// Converts a string slice in a given base to an integer.
-    /// 
+    ///
     /// The string is expected to be an optional `+` sign followed by digits. Leading and trailing whitespace represent an error. Digits are a subset of these characters, depending on `radix`:
-    /// 
+    ///
     /// - `0-9`
     /// - `a-z`
     /// - `A-Z`
-    /// 
+    ///
     /// # Panics
-    /// 
+    ///
     /// This function panics if `radix` is not in the range from 2 to 36.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// use bnum::BUint;
-    /// 
+    ///
     /// assert_eq!(BUint::<2>::from_str_radix("A", 16), Ok(BUint::from(10u128)));
     /// ```
     pub fn from_str_radix(src: &str, radix: u32) -> Result<Self, ParseIntError> {
@@ -316,46 +283,29 @@ impl<const N: usize> BUint<N> {
                 let bits = ilog2(radix);
                 let iter = buf
                     .rchunks((BITS_U8 / bits) as usize)
-                    .map(|chunk| {
-                        chunk
-                            .iter()
-                            .map(|byte| Self::byte_to_digit(*byte))
-                    });
+                    .map(|chunk| chunk.iter().map(|byte| Self::byte_to_digit(*byte)));
                 Self::from_bitwise_digits_le(iter, bits).ok_or(ParseIntError {
                     kind: IntErrorKind::PosOverflow,
                 })
-            },
+            }
             8 | 32 => {
                 let bits = ilog2(radix);
                 let buf = validate_src()?;
-                let iter = buf
-                    .iter()
-                    .rev()
-                    .map(|byte| Self::byte_to_digit(*byte));
+                let iter = buf.iter().rev().map(|byte| Self::byte_to_digit(*byte));
                 Self::from_inexact_bitwise_digits_le(iter, bits).ok_or(ParseIntError {
                     kind: IntErrorKind::PosOverflow,
                 })
-            },
+            }
             radix => {
                 let (base, power) = radix_bases::get_radix_base::<false>(radix);
                 let buf = validate_src()?;
                 let r = buf.len() % power;
-                let i = if r == 0 {
-                    power
-                } else {
-                    r
-                };
+                let i = if r == 0 { power } else { r };
                 let (head, tail) = buf.split_at(i);
-                let head = head
-                    .iter()
-                    .map(|byte| Self::byte_to_digit(*byte));
+                let head = head.iter().map(|byte| Self::byte_to_digit(*byte));
                 let tail = tail
                     .chunks(power)
-                    .map(|chunk| {
-                        chunk
-                            .iter()
-                            .map(|byte| Self::byte_to_digit(*byte))
-                    });
+                    .map(|chunk| chunk.iter().map(|byte| Self::byte_to_digit(*byte)));
                 Self::from_radix_digits_be(head, tail, radix as u32, base).ok_or(ParseIntError {
                     kind: IntErrorKind::PosOverflow,
                 })
@@ -364,16 +314,16 @@ impl<const N: usize> BUint<N> {
     }
 
     /// Returns the integer as a string in the given radix.
-    /// 
+    ///
     /// # Panics
-    /// 
+    ///
     /// This function panics if `radix` is not in the range from 2 to 36.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// use bnum::BUint;
-    /// 
+    ///
     /// let src = "934857djkfghhkdfgbf9345hdfkh";
     /// let n = BUint::<4>::from_str_radix(src, 36).unwrap();
     /// assert_eq!(n.to_str_radix(36), src);
@@ -388,20 +338,18 @@ impl<const N: usize> BUint<N> {
                 *byte += b'a' - 10;
             }
         }
-        unsafe {
-            String::from_utf8_unchecked(out)
-        }
+        unsafe { String::from_utf8_unchecked(out) }
     }
 
     /// Returns the integer in the given base in big-endian digit order.
-    /// 
+    ///
     /// # Panics
-    /// 
+    ///
     /// This function panics if `radix` is not in the range from 2 to 256.
-    /// 
+    ///
     /// ```
     /// use bnum::BUint;
-    /// 
+    ///
     /// let digits = &[3, 55, 60, 100, 5, 0, 5, 88];
     /// let n = BUint::<4>::from_radix_be(digits, 120).unwrap();
     /// assert_eq!(n.to_radix_be(120), digits);
@@ -413,14 +361,14 @@ impl<const N: usize> BUint<N> {
     }
 
     /// Returns the integer in the given base in little-endian digit order.
-    /// 
+    ///
     /// # Panics
-    /// 
+    ///
     /// This function panics if `radix` is not in the range from 2 to 256.
-    /// 
+    ///
     /// ```
     /// use bnum::BUint;
-    /// 
+    ///
     /// let digits = &[1, 67, 88, 200, 55, 68, 87, 120, 178];
     /// let n = BUint::<4>::from_radix_le(digits, 250).unwrap();
     /// assert_eq!(n.to_radix_le(250), digits);
@@ -433,7 +381,7 @@ impl<const N: usize> BUint<N> {
             if radix == 256 {
                 return (&self.digits[0..=self.last_digit_index()]).to_vec();
             }
-        
+
             let bits = ilog2(radix);
             if BITS_U8 % bits == 0 {
                 self.to_bitwise_digits_le(bits)
@@ -523,21 +471,21 @@ impl<const N: usize> BUint<N> {
 
 #[inline]
 const fn ilog2(a: u32) -> u8 {
-	31 - a.leading_zeros() as u8
+    31 - a.leading_zeros() as u8
 }
 
 #[inline]
 const fn div_ceil(a: ExpType, b: ExpType) -> ExpType {
-	if a % b == 0 {
-		a / b
-	} else {
-		(a / b) + 1
-	}
+    if a % b == 0 {
+        a / b
+    } else {
+        (a / b) + 1
+    }
 }
 
 use core::str::FromStr;
 
-impl<const N: usize> const FromStr for BUint<N> {
+impl<const N: usize> FromStr for BUint<N> {
     type Err = ParseIntError;
 
     fn from_str(src: &str) -> Result<Self, Self::Err> {
@@ -552,13 +500,9 @@ impl<const N: usize> const FromStr for BUint<N> {
             }
             i += 1;
         }
-        
+
         let r = buf.len() % power;
-        let split = if r == 0 {
-            power
-        } else {
-            r
-        };
+        let split = if r == 0 { power } else { r };
         let mut out = Self::ZERO;
         let mut first: Digit = 0;
         i = 0;
@@ -592,9 +536,11 @@ impl<const N: usize> const FromStr for BUint<N> {
 
             out = match out.checked_add(Self::from_digit(n)) {
                 Some(out) => out,
-                None => return Err(ParseIntError {
-                    kind: IntErrorKind::PosOverflow,
-                }),
+                None => {
+                    return Err(ParseIntError {
+                        kind: IntErrorKind::PosOverflow,
+                    })
+                }
             };
             start = end;
         }
@@ -604,28 +550,28 @@ impl<const N: usize> const FromStr for BUint<N> {
 
 #[cfg(test)]
 mod tests {
+    use crate::test::{quickcheck_from_to_radix, test_bignum};
     use crate::BUint;
-    use crate::test::{test_bignum, quickcheck_from_to_radix};
     use core::str::FromStr;
 
-	test_bignum! {
-		function: <utest>::from_str,
-		cases: [
+    test_bignum! {
+        function: <utest>::from_str,
+        cases: [
             ("398475394875230495745"),
             ("3984753948752304957423490785029749572977970985")
         ]
-	}
+    }
 
-	test_bignum! {
-		function: <utest>::from_str_radix,
-		cases: [
+    test_bignum! {
+        function: <utest>::from_str_radix,
+        cases: [
             ("af7345asdofiuweor", 35u32),
             ("945hhdgi73945hjdfj", 32u32),
             ("3436847561345343455", 9u32),
             ("affe758457bc345540ac399", 16u32),
             ("affe758457bc345540ac39929334534ee34579234795", 17u32)
         ]
-	}
+    }
 
     quickcheck_from_to_radix!(utest, radix_be, 255);
     quickcheck_from_to_radix!(utest, radix_le, 255);
@@ -633,7 +579,11 @@ mod tests {
 
     #[test]
     fn from_to_radix_le() {
-        let buf = &[23, 100, 45, 58, 44, 56, 55, 100, 76, 54, 10, 100, 100, 100, 100, 100, 200, 200, 200, 200, 255, 255, 255, 255, 255, 100, 100, 44, 60, 56, 48, 69, 160, 59, 50, 50, 200, 250, 250, 250, 250, 250, 240, 120];
+        let buf = &[
+            23, 100, 45, 58, 44, 56, 55, 100, 76, 54, 10, 100, 100, 100, 100, 100, 200, 200, 200,
+            200, 255, 255, 255, 255, 255, 100, 100, 44, 60, 56, 48, 69, 160, 59, 50, 50, 200, 250,
+            250, 250, 250, 250, 240, 120,
+        ];
         let u = BUint::<100>::from_radix_le(buf, 256).unwrap();
         let v = u.to_radix_le(256);
         assert_eq!(v, buf);
@@ -642,7 +592,10 @@ mod tests {
         let option = BUint::<100>::from_radix_le(buf, 99);
         assert!(option.is_none());
 
-        let buf = &[1, 0, 2, 3, 1, 0, 0, 2, 3, 1, 2, 3, 1, 0, 1, 2, 3, 1, 3, 1, 3, 1, 3, 2, 3, 2, 3, 1, 3, 2, 3, 1, 3, 2, 3, 2, 3, 1, 2, 3, 0, 0, 0, 2, 3];
+        let buf = &[
+            1, 0, 2, 3, 1, 0, 0, 2, 3, 1, 2, 3, 1, 0, 1, 2, 3, 1, 3, 1, 3, 1, 3, 2, 3, 2, 3, 1, 3,
+            2, 3, 1, 3, 2, 3, 2, 3, 1, 2, 3, 0, 0, 0, 2, 3,
+        ];
         let u = BUint::<100>::from_radix_le(buf, 4).unwrap();
         let v = u.to_radix_le(4);
         assert_eq!(v, buf);
@@ -654,7 +607,10 @@ mod tests {
         let v = u.to_radix_be(201);
         assert_eq!(v, buf);
 
-        let buf = &[1, 0, 2, 3, 1, 0, 0, 2, 3, 1, 2, 3, 1, 0, 1, 2, 3, 1, 3, 1, 3, 1, 3, 2, 3, 2, 3, 1, 3, 2, 3, 1, 3, 2, 3, 2, 3, 1, 2, 3, 0, 0, 0, 2, 3];
+        let buf = &[
+            1, 0, 2, 3, 1, 0, 0, 2, 3, 1, 2, 3, 1, 0, 1, 2, 3, 1, 3, 1, 3, 1, 3, 2, 3, 2, 3, 1, 3,
+            2, 3, 1, 3, 2, 3, 2, 3, 1, 2, 3, 0, 0, 0, 2, 3,
+        ];
         let u = BUint::<100>::from_radix_be(buf, 4).unwrap();
         let v = u.to_radix_be(4);
         assert_eq!(v, buf);
@@ -663,7 +619,11 @@ mod tests {
         let option = BUint::<100>::from_radix_le(buf, 150);
         assert!(option.is_none());
 
-        let buf = &[9, 5, 1, 5, 5, 1, 5, 9, 8, 7, 6, 4, 2, 5, 4, 2, 3, 4, 9, 0, 1, 2, 3, 4, 5, 1, 6, 6, 1, 6, 7, 1, 6, 5, 1, 5, 1, 6, 1, 7, 1, 6, 1, 6, 1, 6, 1, 6, 1, 7, 1, 1, 7, 1, 7, 1, 7, 1, 7, 5];
+        let buf = &[
+            9, 5, 1, 5, 5, 1, 5, 9, 8, 7, 6, 4, 2, 5, 4, 2, 3, 4, 9, 0, 1, 2, 3, 4, 5, 1, 6, 6, 1,
+            6, 7, 1, 6, 5, 1, 5, 1, 6, 1, 7, 1, 6, 1, 6, 1, 6, 1, 6, 1, 7, 1, 1, 7, 1, 7, 1, 7, 1,
+            7, 5,
+        ];
         let u = BUint::<100>::from_radix_be(buf, 10).unwrap();
         let v = u.to_radix_be(10);
         assert_eq!(v, buf);

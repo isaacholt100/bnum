@@ -1,33 +1,37 @@
 use crate::doc;
 
 macro_rules! impl_desc {
-	() => {
-		doc::arithmetic_impl_desc!("Checked", "checked", "Each method cannot panic and returns an `Option<Self>`.")
-	};
+    () => {
+        doc::arithmetic_impl_desc!(
+            "Checked",
+            "checked",
+            "Each method cannot panic and returns an `Option<Self>`."
+        )
+    };
 }
 
 pub(crate) use impl_desc;
 
 doc::link_doc_comment!(
-	checked_abs,
-	checked_add,
-	checked_add_signed,
-	checked_add_unsigned,
-	checked_div,
-	checked_div_euclid,
-	checked_log,
-	checked_log10,
-	checked_log2,
-	checked_mul,
-	checked_neg,
-	checked_next_multiple_of,
-	checked_pow,
-	checked_rem,
-	checked_rem_euclid,
-	checked_shl,
-	checked_shr,
-	checked_sub,
-	checked_sub_unsigned
+    checked_abs,
+    checked_add,
+    checked_add_signed,
+    checked_add_unsigned,
+    checked_div,
+    checked_div_euclid,
+    checked_log,
+    checked_log10,
+    checked_log2,
+    checked_mul,
+    checked_neg,
+    checked_next_multiple_of,
+    checked_pow,
+    checked_rem,
+    checked_rem_euclid,
+    checked_shl,
+    checked_shr,
+    checked_sub,
+    checked_sub_unsigned
 );
 
 macro_rules! checked_next_power_of_two {

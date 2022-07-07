@@ -1,73 +1,78 @@
 use super::BInt;
-use num_traits::{Bounded, CheckedAdd, CheckedDiv, CheckedMul, CheckedNeg, CheckedRem, CheckedShl, CheckedShr, CheckedSub, FromPrimitive, MulAdd, MulAddAssign, Num, One, SaturatingAdd, SaturatingMul, SaturatingSub, WrappingAdd, WrappingMul, WrappingNeg, WrappingShl, WrappingShr, WrappingSub, ToPrimitive, Signed, Zero, Pow, Saturating, AsPrimitive};
-use num_integer::{Integer, Roots};
-use core::convert::TryFrom;
-use crate::{ExpType, BUint};
 use crate::digit::{self, Digit};
 use crate::errors;
+use crate::{BUint, ExpType};
+use core::convert::TryFrom;
+use num_integer::{Integer, Roots};
+use num_traits::{
+    AsPrimitive, Bounded, CheckedAdd, CheckedDiv, CheckedMul, CheckedNeg, CheckedRem, CheckedShl,
+    CheckedShr, CheckedSub, FromPrimitive, MulAdd, MulAddAssign, Num, One, Pow, PrimInt,
+    Saturating, SaturatingAdd, SaturatingMul, SaturatingSub, Signed, ToPrimitive, WrappingAdd,
+    WrappingMul, WrappingNeg, WrappingShl, WrappingShr, WrappingSub, Zero,
+};
 
 crate::int::numtraits::impls!(BInt);
 
 macro_rules! from_int {
-	($int: ty, $name: ident) => {
-		#[inline]
-		fn $name(n: $int) -> Option<Self> {
-			const INT_BITS: usize = <$int>::BITS as usize;
-			let initial_digit = if n.is_negative() {
-				Digit::MAX
-			} else {
-				Digit::MIN
-			};
-			let mut out = Self::from_bits(BUint::from_digits([initial_digit; N]));
-			let mut i = 0;
-			while i << digit::BIT_SHIFT < INT_BITS {
-				let d = (n >> (i << digit::BIT_SHIFT)) as Digit;
-				if d != initial_digit {
-					if i < N {
-						out.bits.digits[i] = d;
-					} else {
-						return None;
-					}
-				}
-				i += 1;
-			}
-			if n.is_negative() != out.is_negative() {
-				return None;
-			}
-			Some(out)
-		}
-	};
+    ($int: ty, $name: ident) => {
+        #[inline]
+        fn $name(n: $int) -> Option<Self> {
+            const INT_BITS: usize = <$int>::BITS as usize;
+            let initial_digit = if n.is_negative() {
+                Digit::MAX
+            } else {
+                Digit::MIN
+            };
+            let mut out = Self::from_bits(BUint::from_digits([initial_digit; N]));
+            let mut i = 0;
+            while i << digit::BIT_SHIFT < INT_BITS {
+                let d = (n >> (i << digit::BIT_SHIFT)) as Digit;
+                if d != initial_digit {
+                    if i < N {
+                        out.bits.digits[i] = d;
+                    } else {
+                        return None;
+                    }
+                }
+                i += 1;
+            }
+            if n.is_negative() != out.is_negative() {
+                return None;
+            }
+            Some(out)
+        }
+    };
 }
 
 macro_rules! from_uint {
-	($uint: ty, $name: ident) => {
-		#[inline]
-		fn $name(n: $uint) -> Option<Self> {
-			const UINT_BITS: usize = <$uint>::BITS as usize;
-			let mut out = BInt::ZERO;
-			let mut i = 0;
-			while i << digit::BIT_SHIFT < UINT_BITS {
-				let d = (n >> (i << digit::BIT_SHIFT)) as Digit;
-				if d != 0 {
-					if i < N {
-						out.bits.digits[i] = d;
-					} else {
-						return None;
-					}
-				}
-				i += 1;
-			}
-			if Signed::is_negative(&out) {
-				None
-			} else {
-				Some(out)
-			}
-		}
-	};
+    ($uint: ty, $name: ident) => {
+        #[inline]
+        fn $name(n: $uint) -> Option<Self> {
+            const UINT_BITS: usize = <$uint>::BITS as usize;
+            let mut out = BInt::ZERO;
+            let mut i = 0;
+            while i << digit::BIT_SHIFT < UINT_BITS {
+                let d = (n >> (i << digit::BIT_SHIFT)) as Digit;
+                if d != 0 {
+                    if i < N {
+                        out.bits.digits[i] = d;
+                    } else {
+                        return None;
+                    }
+                }
+                i += 1;
+            }
+            if Signed::is_negative(&out) {
+                None
+            } else {
+                Some(out)
+            }
+        }
+    };
 }
 
 impl<const N: usize> FromPrimitive for BInt<N> {
-	from_uint!(u8, from_u8);
+    from_uint!(u8, from_u8);
     from_uint!(u16, from_u16);
     from_uint!(u32, from_u32);
     from_uint!(u64, from_u64);
@@ -91,79 +96,83 @@ impl<const N: usize> FromPrimitive for BInt<N> {
     }
 }
 
-impl<const N: usize> Integer for BInt<N> {
-    #[inline]
-    fn div_floor(&self, other: &Self) -> Self {
-        *self / *other
-    }
+crate::nightly::impl_const! {
+    impl<const N: usize> const Integer for BInt<N> {
+        #[inline]
+        fn div_floor(&self, other: &Self) -> Self {
+            *self / *other
+        }
 
-    #[inline]
-    fn mod_floor(&self, other: &Self) -> Self {
-        *self % *other
-    }
+        #[inline]
+        fn mod_floor(&self, other: &Self) -> Self {
+            *self % *other
+        }
 
-    #[inline]
-    fn gcd(&self, other: &Self) -> Self {
-        let gcd = self.unsigned_abs().gcd(&other.unsigned_abs());
-		let out = Self::from_bits(gcd);
-		if out == Self::MIN {
-			panic!("{} gcd of {} and {} is too large", errors::err_prefix!(), &self, &other);
-		}
-		out.abs()
-    }
+        #[inline]
+        fn gcd(&self, other: &Self) -> Self {
+            let gcd = self.unsigned_abs().gcd(&other.unsigned_abs());
+            let out = Self::from_bits(gcd);
+            if out == Self::MIN {
+                panic!("{}", errors::err_msg!("gcd of is too large"));
+            }
+            out.abs()
+        }
 
-    #[inline]
-    fn lcm(&self, other: &Self) -> Self {
-        self.div_floor(&self.gcd(other)) * *other
-    }
+        #[inline]
+        fn lcm(&self, other: &Self) -> Self {
+            self.div_floor(&self.gcd(other)) * *other
+        }
 
-    #[inline]
-    fn divides(&self, other: &Self) -> bool {
-        self.is_multiple_of(other)
-    }
+        #[inline]
+        fn divides(&self, other: &Self) -> bool {
+            self.is_multiple_of(other)
+        }
 
-    #[inline]
-    fn is_multiple_of(&self, other: &Self) -> bool {
-        self.mod_floor(other).is_zero()
-    }
+        #[inline]
+        fn is_multiple_of(&self, other: &Self) -> bool {
+            self.mod_floor(other).is_zero()
+        }
 
-    #[inline]
-    fn is_even(&self) -> bool {
-        self.bits.is_even()
-    }
+        #[inline]
+        fn is_even(&self) -> bool {
+            self.bits.is_even()
+        }
 
-    #[inline]
-    fn is_odd(&self) -> bool {
-        self.bits.is_odd()
-    }
+        #[inline]
+        fn is_odd(&self) -> bool {
+            self.bits.is_odd()
+        }
 
-    #[inline]
-    fn div_rem(&self, other: &Self) -> (Self, Self) {
-        (self.div_floor(other), self.mod_floor(other))
+        #[inline]
+        fn div_rem(&self, other: &Self) -> (Self, Self) {
+            (self.div_floor(other), self.mod_floor(other))
+        }
     }
 }
 
-impl<const N: usize> num_traits::PrimInt for BInt<N> {
-	crate::int::numtraits::prim_int_methods!();
+crate::nightly::impl_const! {
+    impl<const N: usize> const PrimInt for BInt<N> {
+        crate::int::numtraits::prim_int_methods!();
 
-	#[inline]
-    fn signed_shl(self, n: u32) -> Self {
-		self << n
-    }
+        #[inline]
+        fn signed_shl(self, n: u32) -> Self {
+            self << n
+        }
 
-	#[inline]
-    fn signed_shr(self, n: u32) -> Self {
-        self >> n
-    }
+        #[inline]
+        fn signed_shr(self, n: u32) -> Self {
+            self >> n
+        }
 
-	#[inline]
-    fn unsigned_shl(self, n: u32) -> Self {
-		self << n
-    }
+        #[inline]
+        fn unsigned_shl(self, n: u32) -> Self {
+            self << n
+        }
 
-	#[inline]
-    fn unsigned_shr(self, n: u32) -> Self {
-        Self::from_bits(self.to_bits() >> n)
+        #[inline]
+        fn unsigned_shr(self, n: u32) -> Self {
+            Self::from_bits(self.to_bits() >> n)
+        }
     }
 }
 
@@ -190,12 +199,12 @@ impl<const N: usize> Roots for BInt<N> {
     #[inline]
     fn nth_root(&self, n: u32) -> Self {
         if self.is_negative() {
-			if n == 0 {
-				panic!(crate::errors::err_msg!("attempt to calculate zeroth root"));
-			}
-			if n == 1 {
-				return *self;
-			}
+            if n == 0 {
+                panic!(crate::errors::err_msg!("attempt to calculate zeroth root"));
+            }
+            if n == 1 {
+                return *self;
+            }
             if n.is_even() {
                 panic!("{} imaginary root degree of {}", errors::err_prefix!(), n)
             } else {
@@ -281,24 +290,25 @@ macro_rules! to_int {
 	};
 }
 
+//crate::nightly::impl_const! {
 impl<const N: usize> ToPrimitive for BInt<N> {
-	to_uint! {
-		to_u8 -> u8,
-		to_u16 -> u16,
-		to_u32 -> u32,
-		to_u64 -> u64,
-		to_u128 -> u128,
-		to_usize -> usize
-	}
+    to_uint! {
+        to_u8 -> u8,
+        to_u16 -> u16,
+        to_u32 -> u32,
+        to_u64 -> u64,
+        to_u128 -> u128,
+        to_usize -> usize
+    }
 
-	to_int! {
-		to_i8 -> i8,
-		to_i16 -> i16,
-		to_i32 -> i32,
-		to_i64 -> i64,
-		to_i128 -> i128,
-		to_isize -> isize
-	}
+    to_int! {
+        to_i8 -> i8,
+        to_i16 -> i16,
+        to_i32 -> i32,
+        to_i64 -> i64,
+        to_i128 -> i128,
+        to_isize -> isize
+    }
 
     #[inline]
     fn to_f32(&self) -> Option<f32> {
@@ -310,36 +320,40 @@ impl<const N: usize> ToPrimitive for BInt<N> {
         Some(self.as_())
     }
 }
+//}
 
-impl<const N: usize> Signed for BInt<N> {
-    #[inline]
-    fn abs(&self) -> Self {
-        Self::abs(*self)
-    }
-
-    #[inline]
-    fn abs_sub(&self, other: &Self) -> Self {
-        if *self <= *other {
-            Self::ZERO
-        } else {
-            *self - *other
+crate::nightly::impl_const! {
+    impl<const N: usize> const Signed for BInt<N> {
+        #[inline]
+        fn abs(&self) -> Self {
+            Self::abs(*self)
         }
-    }
 
-    #[inline]
-    fn signum(&self) -> Self {
-        Self::signum(*self)
-    }
+        #[inline]
+        fn abs_sub(&self, other: &Self) -> Self {
+            if *self <= *other {
+                Self::ZERO
+            } else {
+                *self - *other
+            }
+        }
 
-    #[inline]
-    fn is_positive(&self) -> bool {
-        Self::is_positive(*self)
-    }
+        #[inline]
+        fn signum(&self) -> Self {
+            Self::signum(*self)
+        }
 
-    #[inline]
-    fn is_negative(&self) -> bool {
-        self.signed_digit().is_negative()
+        #[inline]
+        fn is_positive(&self) -> bool {
+            Self::is_positive(*self)
+        }
+
+        #[inline]
+        fn is_negative(&self) -> bool {
+            self.signed_digit().is_negative()
+        }
     }
 }
 
+#[cfg(test)]
 crate::int::numtraits::tests!(itest);

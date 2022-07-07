@@ -17,7 +17,10 @@ impl Display for TryFromIntError {
         let message = match &self.reason {
             TooLarge => format!("{} is too large to convert to {}", self.from, self.to),
             Negative => format!("can't convert negative {} to {}", self.from, self.to),
-            NotFinite => format!("can't convert type {} which is not finite to type {}", self.from, self.to),
+            NotFinite => format!(
+                "can't convert type {} which is not finite to type {}",
+                self.from, self.to
+            ),
         };
         write!(f, "{} {}", super::err_prefix!(), message)
     }

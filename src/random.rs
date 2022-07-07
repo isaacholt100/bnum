@@ -9,11 +9,11 @@ Copyright 2018-2020 Developers of the Rand project.
 Copyright 2017 The Rust Project Developers.
 */
 
+use crate::{BInt, BUint};
 use core::ops::{Deref, DerefMut};
-use rand::distributions::uniform::{SampleUniform, UniformSampler, SampleBorrow};
+use rand::distributions::uniform::{SampleBorrow, SampleUniform, UniformSampler};
 use rand::distributions::{Distribution, Standard};
-use rand::{Rng, Fill, Error};
-use crate::{BUint, BInt};
+use rand::{Error, Fill, Rng};
 
 impl<const N: usize> Distribution<BUint<N>> for Standard {
     #[inline]
@@ -30,7 +30,7 @@ impl<const N: usize> Distribution<BInt<N>> for Standard {
 }
 
 #[cfg(feature = "serde")]
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -43,41 +43,41 @@ pub struct RandomUniformInt<X> {
 pub struct Slice<T>(pub [T]);
 
 impl<T> AsRef<[T]> for Slice<T> {
-	fn as_ref(&self) -> &[T] {
-		&self.0
-	}
+    fn as_ref(&self) -> &[T] {
+        &self.0
+    }
 }
 
 impl<T> AsMut<[T]> for Slice<T> {
-	fn as_mut(&mut self) -> &mut [T] {
-		&mut self.0
-	}
+    fn as_mut(&mut self) -> &mut [T] {
+        &mut self.0
+    }
 }
 
 impl<T> Deref for Slice<T> {
-	type Target = [T];
+    type Target = [T];
 
-	fn deref(&self) -> &Self::Target {
-		self.as_ref()
-	}
+    fn deref(&self) -> &Self::Target {
+        self.as_ref()
+    }
 }
 
 impl<T> DerefMut for Slice<T> {
-	fn deref_mut(&mut self) -> &mut Self::Target {
-		self.as_mut()
-	}
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.as_mut()
+    }
 }
 
 macro_rules! fill_impl {
     ($ty: ty) => {
         impl<const N: usize> Fill for Slice<$ty> {
-			#[inline(never)]
+            #[inline(never)]
             fn try_fill<R: Rng + ?Sized>(&mut self, rng: &mut R) -> Result<(), Error> {
                 if self.0.len() > 0 {
                     rng.try_fill_bytes(unsafe {
                         core::slice::from_raw_parts_mut(
-							self.0.as_mut_ptr() as *mut u8,
-                            self.0.len() * core::mem::size_of::<$ty>()
+                            self.0.as_mut_ptr() as *mut u8,
+                            self.0.len() * core::mem::size_of::<$ty>(),
                         )
                     })?;
                     for x in &mut self.0 {
@@ -93,12 +93,12 @@ macro_rules! fill_impl {
 fill_impl!(BUint<N>);
 fill_impl!(BInt<N>);
 
-#[allow(unused)]
-pub fn fill_slice<T, R: Rng + ?Sized>(slice: &mut [T], rng: &mut R) -> Result<(), Error> where Slice<T>: Fill {
-	let slice = unsafe {
-		&mut *(slice as *mut _ as *mut Slice<T>)
-	};
-	Fill::try_fill(slice, rng)
+pub fn fill_slice<T, R: Rng + ?Sized>(slice: &mut [T], rng: &mut R) -> Result<(), Error>
+where
+    Slice<T>: Fill,
+{
+    let slice = unsafe { &mut *(slice as *mut _ as *mut Slice<T>) };
+    Fill::try_fill(slice, rng)
 }
 
 macro_rules! uniform_int_impl {

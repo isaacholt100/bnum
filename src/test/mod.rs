@@ -48,7 +48,7 @@ impl Arbitrary for U8ArrayWrapper<1> {
     }
 }
 
-use core::fmt::{Formatter, self, Debug};
+use core::fmt::{self, Debug, Formatter};
 
 impl<const N: usize> Debug for U8ArrayWrapper<N> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {

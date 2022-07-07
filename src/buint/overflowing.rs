@@ -1,13 +1,14 @@
 use super::BUint;
+use crate::digit::{self, Digit};
+use crate::nightly::const_fns;
 use crate::ExpType;
-use crate::digit::{Digit, self};
-use crate::{BInt, doc};
+use crate::{doc, BInt};
 
 // TODO: these will no longer be necessary once const_bigint_helper_methods is stabilised: https://github.com/rust-lang/rust/issues/85532
 
 #[doc=doc::overflowing::impl_desc!()]
 impl<const N: usize> BUint<N> {
-	#[doc=doc::overflowing::overflowing_add!(U)]
+    #[doc=doc::overflowing::overflowing_add!(U)]
     #[inline]
     pub const fn overflowing_add(self, rhs: Self) -> (Self, bool) {
         let mut out = Self::ZERO;
@@ -22,14 +23,14 @@ impl<const N: usize> BUint<N> {
         (out, carry)
     }
 
-	#[doc=doc::overflowing::overflowing_add_signed!(U)]
+    #[doc=doc::overflowing::overflowing_add_signed!(U)]
     #[inline]
     pub const fn overflowing_add_signed(self, rhs: BInt<N>) -> (Self, bool) {
-		let (sum, overflow) = self.overflowing_add(rhs.to_bits());
-		(sum, rhs.is_negative() != overflow)
-	}
+        let (sum, overflow) = self.overflowing_add(rhs.to_bits());
+        (sum, rhs.is_negative() != overflow)
+    }
 
-	#[doc=doc::overflowing::overflowing_sub!(U)]
+    #[doc=doc::overflowing::overflowing_sub!(U)]
     #[inline]
     pub const fn overflowing_sub(self, rhs: Self) -> (Self, bool) {
         let mut out = Self::ZERO;
@@ -57,7 +58,12 @@ impl<const N: usize> BUint<N> {
             while j < N {
                 let index = i + j;
                 if index < N {
-                    let (prod, c) = super::carrying_mul(self.digits[i], rhs.digits[j], carry, out.digits[index]);
+                    let (prod, c) = super::carrying_mul(
+                        self.digits[i],
+                        rhs.digits[j],
+                        carry,
+                        out.digits[index],
+                    );
                     out.digits[index] = prod;
                     carry = c;
                 } else if self.digits[i] != 0 && rhs.digits[j] != 0 {
@@ -66,139 +72,141 @@ impl<const N: usize> BUint<N> {
                 }
                 j += 1;
             }
-			if carry != 0 {
-				overflow = true;
-			}
+            if carry != 0 {
+                overflow = true;
+            }
             i += 1;
         }
         (out, overflow)
     }
 
-	#[doc=doc::overflowing::overflowing_mul!(U)]
+    #[doc=doc::overflowing::overflowing_mul!(U)]
     #[inline]
     pub const fn overflowing_mul(self, rhs: Self) -> (Self, bool) {
-		// TODO: implement a faster multiplication algorithm for large values of `N`
+        // TODO: implement a faster multiplication algorithm for large values of `N`
         self.long_mul(rhs)
     }
-	
-	#[doc=doc::overflowing::overflowing_div!(U)]
-    #[inline]
-    pub const fn overflowing_div(self, rhs: Self) -> (Self, bool) {
-        (self.wrapping_div(rhs), false)
+
+    const_fns! {
+        #[doc=doc::overflowing::overflowing_div!(U)]
+        #[inline]
+        pub const fn overflowing_div(self, rhs: Self) -> (Self, bool) {
+            (self.wrapping_div(rhs), false)
+        }
+
+        #[doc=doc::overflowing::overflowing_div_euclid!(U)]
+        #[inline]
+        pub const fn overflowing_div_euclid(self, rhs: Self) -> (Self, bool) {
+            self.overflowing_div(rhs)
+        }
+
+        #[doc=doc::overflowing::overflowing_rem!(U)]
+        #[inline]
+        pub const fn overflowing_rem(self, rhs: Self) -> (Self, bool) {
+            (self.wrapping_rem(rhs), false)
+        }
+
+        #[doc=doc::overflowing::overflowing_rem_euclid!(U)]
+        #[inline]
+        pub const fn overflowing_rem_euclid(self, rhs: Self) -> (Self, bool) {
+            self.overflowing_rem(rhs)
+        }
+
+        #[doc=doc::overflowing::overflowing_neg!(U)]
+        #[inline]
+        pub const fn overflowing_neg(self) -> (Self, bool) {
+            let (a, b) = (!self).overflowing_add(Self::ONE);
+            (a, !b)
+        }
+
+        #[doc=doc::overflowing::overflowing_shl!(U)]
+        #[inline]
+        pub const fn overflowing_shl(self, rhs: ExpType) -> (Self, bool) {
+            unsafe {
+                if rhs >= Self::BITS {
+                    (super::unchecked_shl(self, rhs & Self::BITS_MINUS_1), true)
+                } else {
+                    (super::unchecked_shl(self, rhs), false)
+                }
+            }
+        }
+
+        #[doc=doc::overflowing::overflowing_shr!(U)]
+        #[inline]
+        pub const fn overflowing_shr(self, rhs: ExpType) -> (Self, bool) {
+            unsafe {
+                if rhs >= Self::BITS {
+                    (super::unchecked_shr(self, rhs & Self::BITS_MINUS_1), true)
+                } else {
+                    (super::unchecked_shr(self, rhs), false)
+                }
+            }
+        }
     }
 
-	#[doc=doc::overflowing::overflowing_div_euclid!(U)]
+    #[doc=doc::overflowing::overflowing_pow!(U)]
     #[inline]
-    pub const fn overflowing_div_euclid(self, rhs: Self) -> (Self, bool) {
-        self.overflowing_div(rhs)
+    pub const fn overflowing_pow(mut self, mut pow: ExpType) -> (Self, bool) {
+        if pow == 0 {
+            return (Self::ONE, false);
+        }
+        let mut overflow = false;
+        let mut y = Self::ONE;
+        while pow > 1 {
+            if pow & 1 == 1 {
+                let (prod, o) = y.overflowing_mul(self);
+                overflow |= o;
+                y = prod;
+            }
+            let (prod, o) = self.overflowing_mul(self);
+            overflow |= o;
+            self = prod;
+            pow >>= 1;
+        }
+        let (prod, o) = self.overflowing_mul(y);
+        (prod, o || overflow)
     }
-
-	#[doc=doc::overflowing::overflowing_rem!(U)]
-    #[inline]
-    pub const fn overflowing_rem(self, rhs: Self) -> (Self, bool) {
-        (self.wrapping_rem(rhs), false)
-    }
-
-	#[doc=doc::overflowing::overflowing_rem_euclid!(U)]
-    #[inline]
-    pub const fn overflowing_rem_euclid(self, rhs: Self) -> (Self, bool) {
-        self.overflowing_rem(rhs)
-    }
-
-	#[doc=doc::overflowing::overflowing_neg!(U)]
-    #[inline]
-    pub const fn overflowing_neg(self) -> (Self, bool) {
-        let (a, b) = (!self).overflowing_add(Self::ONE);
-        (a, !b)
-    }
-
-	#[doc=doc::overflowing::overflowing_shl!(U)]
-    #[inline]
-    pub const fn overflowing_shl(self, rhs: ExpType) -> (Self, bool) {
-		unsafe {
-			if rhs >= Self::BITS {
-				(super::unchecked_shl(self, rhs & Self::BITS_MINUS_1), true)
-			} else {
-				(super::unchecked_shl(self, rhs), false)
-			}
-		}
-    }
-
-	#[doc=doc::overflowing::overflowing_shr!(U)]
-    #[inline]
-    pub const fn overflowing_shr(self, rhs: ExpType) -> (Self, bool) {
-        unsafe {
-			if rhs >= Self::BITS {
-				(super::unchecked_shr(self, rhs & Self::BITS_MINUS_1), true)
-			} else {
-				(super::unchecked_shr(self, rhs), false)
-			}
-		}
-    }
-
-	#[doc=doc::overflowing::overflowing_pow!(U)]
-	#[inline]
-	pub const fn overflowing_pow(mut self, mut pow: ExpType) -> (Self, bool) {
-		if pow == 0 {
-			return (Self::ONE, false);
-		}
-		let mut overflow = false;
-		let mut y = Self::ONE;
-		while pow > 1 {
-			if pow & 1 == 1 {
-				let (prod, o) = y.overflowing_mul(self);
-				overflow |= o;
-				y = prod;
-			}
-			let (prod, o) = self.overflowing_mul(self);
-			overflow |= o;
-			self = prod;
-			pow >>= 1;
-		}
-		let (prod, o) = self.overflowing_mul(y);
-		(prod, o || overflow)
-	}
 }
 
 #[cfg(test)]
 mod tests {
-	use crate::test::{test_bignum, types::utest};
+    use crate::test::{test_bignum, types::utest};
 
     test_bignum! {
-		function: <utest>::overflowing_add(a: utest, b: utest)
+        function: <utest>::overflowing_add(a: utest, b: utest)
     }
     test_bignum! {
-		function: <utest>::overflowing_sub(a: utest, b: utest)
+        function: <utest>::overflowing_sub(a: utest, b: utest)
     }
     test_bignum! {
-		function: <utest>::overflowing_mul(a: utest, b: utest)
+        function: <utest>::overflowing_mul(a: utest, b: utest)
     }
     test_bignum! {
-		function: <utest>::overflowing_div(a: utest, b: utest),
+        function: <utest>::overflowing_div(a: utest, b: utest),
         skip: b == 0
     }
     test_bignum! {
-		function: <utest>::overflowing_div_euclid(a: utest, b: utest),
+        function: <utest>::overflowing_div_euclid(a: utest, b: utest),
         skip: b == 0
     }
     test_bignum! {
-		function: <utest>::overflowing_rem(a: utest, b: utest),
+        function: <utest>::overflowing_rem(a: utest, b: utest),
         skip: b == 0
     }
     test_bignum! {
-		function: <utest>::overflowing_rem_euclid(a: utest, b: utest),
+        function: <utest>::overflowing_rem_euclid(a: utest, b: utest),
         skip: b == 0
     }
     test_bignum! {
-		function: <utest>::overflowing_neg(a: utest)
+        function: <utest>::overflowing_neg(a: utest)
     }
     test_bignum! {
-		function: <utest>::overflowing_shl(a: utest, b: u16)
+        function: <utest>::overflowing_shl(a: utest, b: u16)
     }
     test_bignum! {
-		function: <utest>::overflowing_shr(a: utest, b: u16)
+        function: <utest>::overflowing_shr(a: utest, b: u16)
     }
     test_bignum! {
-		function: <utest>::overflowing_pow(a: utest, b: u16)
+        function: <utest>::overflowing_pow(a: utest, b: u16)
     }
 }

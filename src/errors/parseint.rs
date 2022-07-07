@@ -1,8 +1,8 @@
 // This file uses code adapted from Rust's core library: https://doc.rust-lang.org/core/ used under the MIT license.
 // The original license file for this project can be found in this project's root at licenses/LICENSE-rust.
 
-use core::num::IntErrorKind;
 use core::fmt::{self, Display, Formatter};
+use core::num::IntErrorKind;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct ParseIntError {
@@ -17,7 +17,7 @@ impl ParseIntError {
 
 impl Display for ParseIntError {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-		let msg = match &self.kind {
+        let msg = match &self.kind {
             IntErrorKind::Empty => "cannot parse integer from empty string",
             IntErrorKind::InvalidDigit => "invalid digit found in string",
             IntErrorKind::PosOverflow => "number too large to fit in target type",

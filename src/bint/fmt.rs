@@ -1,5 +1,5 @@
 use super::BInt;
-use core::fmt::{Binary, Display, Formatter, LowerExp, LowerHex, Octal, UpperExp, UpperHex, self};
+use core::fmt::{self, Binary, Display, Formatter, LowerExp, LowerHex, Octal, UpperExp, UpperHex};
 
 macro_rules! fmt {
     ($format: expr, $pad: expr, $prefix: expr, $trait: tt) => {
@@ -7,7 +7,7 @@ macro_rules! fmt {
         fn fmt(&self, f: &mut Formatter) -> fmt::Result {
             $trait::fmt(&self.bits, f)
         }
-    }
+    };
 }
 
 impl<const N: usize> Binary for BInt<N> {
@@ -56,4 +56,5 @@ impl<const N: usize> UpperHex for BInt<N> {
     fmt!("{:X}{:0pad$X}", Self::BITS / 4, "0x", UpperHex);
 }
 
+#[cfg(test)]
 crate::int::fmt::tests!(itest);
