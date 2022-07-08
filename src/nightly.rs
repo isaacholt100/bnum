@@ -46,5 +46,3 @@ macro_rules! impl_const {
 }
 
 pub(crate) use impl_const;
-
-// TODO: make all relevant methods and traits optionally const using these

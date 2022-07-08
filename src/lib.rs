@@ -31,11 +31,9 @@ mod bint;
 pub mod cast;
 mod digit;
 mod doc;
-// TODO: document this module's items
 pub mod errors;
 mod int;
 mod nightly;
-// TODO: document this module's items
 pub mod prelude;
 
 #[cfg(feature = "rand")]

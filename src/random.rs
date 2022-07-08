@@ -162,7 +162,7 @@ macro_rules! uniform_int_impl {
                 let high = *high_b.borrow();
                 assert!(
                     low <= high,
-                    "Uniform::new_inclusive called with `low > high`"
+                    crate::errors::err_msg!("Uniform::new_inclusive called with `low > high`")
                 );
 
                 let range = high.wrapping_sub(low).wrapping_add(<$ty>::ONE)$(.$as_unsigned())?;
@@ -204,7 +204,7 @@ macro_rules! uniform_int_impl {
             {
                 let low = *low_b.borrow();
                 let high = *high_b.borrow();
-                assert!(low < high, "UniformSampler::sample_single: low >= high");
+                assert!(low < high, crate::errors::err_msg!("UniformSampler::sample_single: low >= high"));
                 Self::sample_single_inclusive(low, high - <$ty>::ONE, rng)
             }
 
@@ -216,7 +216,7 @@ macro_rules! uniform_int_impl {
             {
                 let low = *low_b.borrow();
                 let high = *high_b.borrow();
-                assert!(low <= high, "UniformSampler::sample_single_inclusive: low > high");
+                assert!(low <= high, crate::errors::err_msg!("UniformSampler::sample_single_inclusive: low > high"));
                 let range = high.wrapping_sub(low).wrapping_add(<$ty>::ONE)$(.$as_unsigned())?;
                 if range.is_zero() {
                     return rng.gen();
