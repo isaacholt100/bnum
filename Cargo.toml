@@ -4,17 +4,19 @@ version = "0.1.0"
 authors = ["isaac-holt <isaac_holt@icloud.com>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
-description = "Arbitrary precision, fixed size numeric types that behave the same as the primitive numeric types."
-homepage = "https://crates.io/crates/bnum"
+description = "Arbitrary precision, fixed size numeric types that extend the functionality of primitive numeric types in Rust."
+homepage = "https://github.com/isaacholt100/bnum"
 documentation = "https://docs.rs/bnum/latest/bnum"
 repository = "https://github.com/isaacholt100/bnum"
 readme = "README.md"
 keywords = ["uint", "int", "bignum", "maths", "arbitrary"]
 categories = ["numbers", "algorithms", "mathematics", "big number"]
+exclude = ["src/float/*", "src/tests"]
 
 [features]
 default = []
 u8_digit = []
+nightly = []
 serde = ["dep:serde", "serde-big-array"]
 numtraits = ["num-integer", "num-traits"]
 

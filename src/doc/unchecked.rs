@@ -7,9 +7,9 @@ macro_rules! impl_desc {
 pub(crate) use impl_desc;
 
 crate::doc::link_doc_comment!(
-	unchecked_add,
-	unchecked_mul,
-	unchecked_shl,
-	unchecked_shr,
-	unchecked_sub
+    unchecked_add,
+    unchecked_mul,
+    unchecked_shl,
+    unchecked_shr,
+    unchecked_sub
 );

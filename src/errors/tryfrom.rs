@@ -3,11 +3,14 @@
 
 use core::fmt::{self, Display, Formatter};
 
+/// The error type that is returned when a failed conversion between two integers occurs.
+///
+/// This error will occur for example when using the `TryFrom` trait to convert an `i32` to a `BUint`.
 #[derive(Debug, PartialEq, Eq)]
 pub struct TryFromIntError {
-    pub from: &'static str,
-    pub to: &'static str,
-    pub reason: TryFromErrorReason,
+    pub(crate) from: &'static str,
+    pub(crate) to: &'static str,
+    pub(crate) reason: TryFromErrorReason,
 }
 
 impl Display for TryFromIntError {
@@ -17,7 +20,10 @@ impl Display for TryFromIntError {
         let message = match &self.reason {
             TooLarge => format!("{} is too large to convert to {}", self.from, self.to),
             Negative => format!("can't convert negative {} to {}", self.from, self.to),
-            NotFinite => format!("can't convert type {} which is not finite to type {}", self.from, self.to),
+            NotFinite => format!(
+                "can't convert type {} which is not finite to type {}",
+                self.from, self.to
+            ),
         };
         write!(f, "{} {}", super::err_prefix!(), message)
     }

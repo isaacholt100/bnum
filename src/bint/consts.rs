@@ -1,7 +1,7 @@
 use super::BInt;
-use crate::{BUint, ExpType};
-use crate::doc;
 use crate::digit::{self, Digit};
+use crate::doc;
+use crate::{BUint, ExpType};
 
 macro_rules! pos_const {
     ($($name: ident $num: literal), *) => {
@@ -13,10 +13,14 @@ macro_rules! pos_const {
 }
 
 macro_rules! neg_const {
-    ($($name: ident $pos: ident $num: literal), *) => {
+    ($($name: ident $num: literal), *) => {
         $(
             #[doc=concat!("The value of -", $num, " represented by this type.")]
-            pub const $name: Self = Self::$pos.wrapping_neg();
+            pub const $name: Self = {
+				let mut u = BUint::MAX;
+				u.digits[0] -= ($num - 1);
+				Self::from_bits(u)
+			};
         )*
     }
 }
@@ -51,7 +55,7 @@ impl<const N: usize> BInt<N> {
 
     pos_const!(TWO 2, THREE 3, FOUR 4, FIVE 5, SIX 6, SEVEN 7, EIGHT 8, NINE 9, TEN 10);
 
-    neg_const!(NEG_ONE ONE 1, NEG_TWO TWO 2, NEG_THREE THREE 3, NEG_FOUR FOUR 4, NEG_FIVE FIVE 5, NEG_SIX SIX 6, NEG_SEVEN SEVEN 7, NEG_EIGHT EIGHT 8, NEG_NINE NINE 9, NEG_TEN TEN 10);
+    neg_const!(NEG_ONE 1, NEG_TWO 2, NEG_THREE 3, NEG_FOUR 4, NEG_FIVE 5, NEG_SIX 6, NEG_SEVEN 7, NEG_EIGHT 8, NEG_NINE 9, NEG_TEN 10);
 
     pub(super) const N_MINUS_1: usize = N - 1;
 }

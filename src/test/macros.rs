@@ -10,9 +10,9 @@ macro_rules! test_bignum {
 					$(if $skip {
 						return quickcheck::TestResult::discard();
 					})?
-	
+
 					let (big, primitive) = crate::test::results!(<$primitive $(as $Trait $(<$($gen), *>)?)?>::$function ($($($re)? Into::into($param)), *));
-	
+
 					quickcheck::TestResult::from_bool(big == primitive)
 				}
 			}
@@ -131,16 +131,14 @@ macro_rules! quickcheck_from_to_radix {
 pub(crate) use quickcheck_from_to_radix;
 
 macro_rules! debug_skip {
-	($skip: expr) => {
-		{
-			#[cfg(debug_assertions)]
-			let skip = $skip;
-			#[cfg(not(debug_assertions))]
-			let skip = false;
+    ($skip: expr) => {{
+        #[cfg(debug_assertions)]
+        let skip = $skip;
+        #[cfg(not(debug_assertions))]
+        let skip = false;
 
-			skip
-		}
-	};
+        skip
+    }};
 }
 
 pub(crate) use debug_skip;

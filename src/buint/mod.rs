@@ -1,82 +1,95 @@
-use crate::digit::{Digit, DoubleDigit, self};
+use crate::digit::{self, Digit, DoubleDigit};
 
 #[cfg(debug_assertions)]
-use crate::errors::{option_expect, self};
+use crate::errors::{self, option_expect};
 
+use crate::doc;
+use crate::nightly::const_fn;
 use crate::ExpType;
 use core::mem::MaybeUninit;
-use crate::doc;
 
 #[inline]
 pub const fn carrying_mul(a: Digit, b: Digit, carry: Digit, current: Digit) -> (Digit, Digit) {
-    let prod = carry as DoubleDigit + current as DoubleDigit + (a as DoubleDigit) * (b as DoubleDigit);
+    let prod =
+        carry as DoubleDigit + current as DoubleDigit + (a as DoubleDigit) * (b as DoubleDigit);
     (prod as Digit, (prod >> Digit::BITS) as Digit)
 }
 
-#[inline]
-pub const unsafe fn unchecked_shl<const N: usize>(u: BUint<N>, rhs: ExpType) -> BUint<N> {
-	let mut out = BUint::ZERO;
-	let digit_shift = (rhs >> digit::BIT_SHIFT) as usize;
-	let bit_shift = rhs & digit::BITS_MINUS_1;
+const_fn! {
+    #[inline]
+    pub const unsafe fn unchecked_shl<const N: usize>(u: BUint<N>, rhs: ExpType) -> BUint<N> {
+        let mut out = BUint::ZERO;
+        let digit_shift = (rhs >> digit::BIT_SHIFT) as usize;
+        let bit_shift = rhs & digit::BITS_MINUS_1;
 
-	let num_copies = N - digit_shift;
+        let num_copies = N - digit_shift;
 
-	u.digits.as_ptr().copy_to_nonoverlapping(out.digits.as_mut_ptr().add(digit_shift), num_copies);
+        u.digits.as_ptr().copy_to_nonoverlapping(out.digits.as_mut_ptr().add(digit_shift), num_copies);
 
-	if bit_shift != 0 {
-		let carry_shift = digit::BITS - bit_shift;
-		let mut carry = 0;
+        if bit_shift != 0 {
+            let carry_shift = digit::BITS - bit_shift;
+            let mut carry = 0;
 
-		let mut i = digit_shift;
-		while i < N {
-			let current_digit = out.digits[i];
-			out.digits[i] = (current_digit << bit_shift) | carry;
-			carry = current_digit >> carry_shift;
-			i += 1;
-		}
-	}
+            let mut i = digit_shift;
+            while i < N {
+                let current_digit = out.digits[i];
+                out.digits[i] = (current_digit << bit_shift) | carry;
+                carry = current_digit >> carry_shift;
+                i += 1;
+            }
+        }
 
-	out
+        out
+    }
 }
 
-#[inline]
-pub const unsafe fn unchecked_shr_pad<const N: usize, const PAD: Digit>(u: BUint<N>, rhs: ExpType) -> BUint<N> {
-	let mut out = BUint::from_digits([PAD; N]);
-	let digit_shift = (rhs >> digit::BIT_SHIFT) as usize;
-	let bit_shift = rhs & digit::BITS_MINUS_1;
+const_fn! {
+    #[inline]
+    pub const unsafe fn unchecked_shr_pad<const N: usize, const PAD: Digit>(u: BUint<N>, rhs: ExpType) -> BUint<N> {
+        let mut out = BUint::from_digits([PAD; N]);
+        let digit_shift = (rhs >> digit::BIT_SHIFT) as usize;
+        let bit_shift = rhs & digit::BITS_MINUS_1;
 
-	let num_copies = N - digit_shift;
+        let num_copies = N - digit_shift;
 
-	u.digits.as_ptr().add(digit_shift).copy_to_nonoverlapping(out.digits.as_mut_ptr(), num_copies);
+        u.digits.as_ptr().add(digit_shift).copy_to_nonoverlapping(out.digits.as_mut_ptr(), num_copies);
 
-	if bit_shift != 0 {
-		let carry_shift = digit::BITS - bit_shift;
-		let mut carry = 0;
+        if bit_shift != 0 {
+            let carry_shift = digit::BITS - bit_shift;
+            let mut carry = 0;
 
-		let mut i = num_copies;
-		while i > 0 {
-			i -= 1;
-			let current_digit = out.digits[i];
-			out.digits[i] = (current_digit >> bit_shift) | carry;
-			carry = current_digit << carry_shift;
-		}
+            let mut i = num_copies;
+            while i > 0 {
+                i -= 1;
+                let current_digit = out.digits[i];
+                out.digits[i] = (current_digit >> bit_shift) | carry;
+                carry = current_digit << carry_shift;
+            }
 
-		if PAD == Digit::MAX {
-			out.digits[num_copies - 1] |= Digit::MAX << carry_shift;
-		}
-	}
+            if PAD == Digit::MAX {
+                out.digits[num_copies - 1] |= Digit::MAX << carry_shift;
+            }
+        }
 
-	out
+        out
+    }
 }
 
-pub const unsafe fn unchecked_shr<const N: usize>(u: BUint<N>, rhs: ExpType) -> BUint<N> {
-	unchecked_shr_pad::<N, {Digit::MIN}>(u, rhs)
+const_fn! {
+    pub const unsafe fn unchecked_shr<const N: usize>(u: BUint<N>, rhs: ExpType) -> BUint<N> {
+        unchecked_shr_pad::<N, {Digit::MIN}>(u, rhs)
+    }
 }
 
 #[cfg(feature = "serde")]
-use ::{serde_big_array::BigArray, serde::{Serialize, Deserialize}};
+use ::{
+    serde::{Deserialize, Serialize},
+    serde_big_array::BigArray,
+};
 
-/// Big unsigned integer type, of fixed size which must be known at compile time. Digits are stored in little endian (least significant digit first). `BUint<N>` aims to exactly replicate the behaviours of Rust's built-in unsigned integer types: `u8`, `u16`, `u32`, `u64`, `u128` and `usize`. The const generic parameter `N` is the number of digits that are stored.
+/// Big unsigned integer type, of fixed size which must be known at compile time.
+///
+/// Digits are stored in little endian (least significant digit first). `BUint<N>` aims to exactly replicate the behaviours of Rust's built-in unsigned integer types: `u8`, `u16`, `u32`, `u64`, `u128` and `usize`. The const generic parameter `N` is the number of digits that are stored.
 
 // Clippy: we can allow derivation of `Hash` and manual implementation of `PartialEq` as the derived `PartialEq` would be the same except we make our implementation const.
 #[allow(clippy::derive_hash_xor_eq)]
@@ -147,7 +160,7 @@ impl<const N: usize> BUint<N> {
     }
 
     #[doc=doc::leading_ones!(U 1024, MAX)]
-    #[inline]   
+    #[inline]
     pub const fn leading_ones(self) -> ExpType {
         let mut ones = 0;
         let mut i = N;
@@ -178,57 +191,62 @@ impl<const N: usize> BUint<N> {
         ones
     }
 
-    #[inline]
-    const unsafe fn rotate_digits_left(self, n: usize) -> Self {
-        let mut uninit = MaybeUninit::<[Digit; N]>::uninit();
-        let digits_ptr = self.digits.as_ptr();
-        let uninit_ptr = uninit.as_mut_ptr() as *mut Digit;
+    crate::nightly::const_fns! {
+        #[inline]
+        const unsafe fn rotate_digits_left(self, n: usize) -> Self {
+            let mut uninit = MaybeUninit::<[Digit; N]>::uninit();
+            let digits_ptr = self.digits.as_ptr();
+            let uninit_ptr = uninit.as_mut_ptr() as *mut Digit;
 
-		digits_ptr.copy_to_nonoverlapping(uninit_ptr.add(n), N - n);
-		digits_ptr.add(N - n).copy_to_nonoverlapping(uninit_ptr, n);
-		Self::from_digits(uninit.assume_init())
+            digits_ptr.copy_to_nonoverlapping(uninit_ptr.add(n), N - n);
+            digits_ptr.add(N - n).copy_to_nonoverlapping(uninit_ptr, n);
+            Self::from_digits(uninit.assume_init())
+        }
+
+        #[inline]
+        const unsafe fn unchecked_rotate_left(self, rhs: ExpType) -> Self {
+            let digit_shift = (rhs >> digit::BIT_SHIFT) as usize;
+            let bit_shift = rhs & digit::BITS_MINUS_1;
+
+            let mut out = self.rotate_digits_left(digit_shift);
+
+            if bit_shift != 0 {
+                let carry_shift = digit::BITS - bit_shift;
+                let mut carry = 0;
+
+                let mut i = 0;
+                while i < N {
+                    let current_digit = out.digits[i];
+                    out.digits[i] = (current_digit << bit_shift) | carry;
+                    carry = current_digit >> carry_shift;
+                    i += 1;
+                }
+                out.digits[0] |= carry;
+            }
+
+            out
+        }
     }
 
-    #[inline]
-    const unsafe fn unchecked_rotate_left(self, rhs: ExpType) -> Self {
-		let digit_shift = (rhs >> digit::BIT_SHIFT) as usize;
-		let bit_shift = rhs & digit::BITS_MINUS_1;
-		
-		let mut out = self.rotate_digits_left(digit_shift);
-
-		if bit_shift != 0 {
-			let carry_shift = digit::BITS - bit_shift;
-			let mut carry = 0;
-
-			let mut i = 0;
-			while i < N {
-				let current_digit = out.digits[i];
-				out.digits[i] = (current_digit << bit_shift) | carry;
-				carry = current_digit >> carry_shift;
-				i += 1;
-			}
-			out.digits[0] |= carry;
-		}
-
-		out
-    }
     const BITS_MINUS_1: ExpType = (Self::BITS - 1) as ExpType;
 
-    #[doc=doc::rotate_left!(U 256, "u")]
-    #[inline]
-    pub const fn rotate_left(self, n: ExpType) -> Self {
-        unsafe {
-			self.unchecked_rotate_left(n & Self::BITS_MINUS_1)
-		}
-    }
+    crate::nightly::const_fns! {
+        #[doc=doc::rotate_left!(U 256, "u")]
+        #[inline]
+        pub const fn rotate_left(self, n: ExpType) -> Self {
+            unsafe {
+                self.unchecked_rotate_left(n & Self::BITS_MINUS_1)
+            }
+        }
 
-    #[doc=doc::rotate_right!(U 256, "u")]
-    #[inline]
-    pub const fn rotate_right(self, n: ExpType) -> Self {
-        let n = n & Self::BITS_MINUS_1;
-        unsafe {
-			self.unchecked_rotate_left(Self::BITS as ExpType - n)
-		}
+        #[doc=doc::rotate_right!(U 256, "u")]
+        #[inline]
+        pub const fn rotate_right(self, n: ExpType) -> Self {
+            let n = n & Self::BITS_MINUS_1;
+            unsafe {
+                self.unchecked_rotate_left(Self::BITS as ExpType - n)
+            }
+        }
     }
 
     const N_MINUS_1: usize = N - 1;
@@ -261,59 +279,33 @@ impl<const N: usize> BUint<N> {
     #[inline]
     pub const fn pow(self, exp: ExpType) -> Self {
         #[cfg(debug_assertions)]
-        return option_expect!(self.checked_pow(exp), errors::err_msg!("attempt to calculate power with overflow"));
+        return option_expect!(
+            self.checked_pow(exp),
+            errors::err_msg!("attempt to calculate power with overflow")
+        );
         #[cfg(not(debug_assertions))]
         self.wrapping_pow(exp)
     }
 
-    /// Performs Euclidean division.
-    ///
-    /// Since, for the positive integers, all common definitions of division are equal, this is exactly equal to `self / rhs`.
-    /// 
-    /// # Panics
-    /// 
-    /// This function will panic if `rhs` is 0.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bnum::BUint;
-    /// 
-    /// let n = BUint::<4>::from(9u128);
-    /// let m = BUint::<4>::from(5u128);
-    /// assert_eq!(n.div_euclid(m), BUint::ONE);
-    /// ```
-    #[inline]
-    pub const fn div_euclid(self, rhs: Self) -> Self {
-        self.wrapping_div_euclid(rhs)
-    }
+    crate::nightly::const_fns! {
+        #[doc=doc::div_euclid!(U)]
+        #[inline]
+        pub const fn div_euclid(self, rhs: Self) -> Self {
+            self.wrapping_div_euclid(rhs)
+        }
 
-    /// Calculates the least remainder of `self (mod rhs)`.
-    ///
-    /// Since, for the positive integers, all common definitions of division are equal, this is exactly equal to `self % rhs`.
-    /// 
-    /// # Panics
-    /// 
-    /// This function will panic if `rhs` is 0.
-    /// 
-    /// # Examples
-    /// 
-    /// ```
-    /// use bnum::BUint;
-    /// 
-    /// let n = BUint::<4>::from(11u128);
-    /// let m = BUint::<4>::from(5u128);
-    /// assert_eq!(n.rem_euclid(m), BUint::ONE);
-    /// ```
-    #[inline]
-    pub const fn rem_euclid(self, rhs: Self) -> Self {
-        self.wrapping_rem_euclid(rhs)
+
+        #[doc=doc::rem_euclid!(U)]
+        #[inline]
+        pub const fn rem_euclid(self, rhs: Self) -> Self {
+            self.wrapping_rem_euclid(rhs)
+        }
     }
 
     #[doc=doc::doc_comment! {
         U 256,
         "Returns `true` if and only if `self == 2^k` for some integer `k`.",
-        
+
         "let n = " stringify!(U256) "::from(1u16 << 14);\n"
         "assert!(n.is_power_of_two());\n"
         "let m = " stringify!(U256) "::from(100u8);\n"
@@ -337,15 +329,22 @@ impl<const N: usize> BUint<N> {
     #[inline]
     pub const fn next_power_of_two(self) -> Self {
         #[cfg(debug_assertions)]
-        return option_expect!(self.checked_next_power_of_two(), errors::err_msg!("attempt to calculate next power of two with overflow"));
+        return option_expect!(
+            self.checked_next_power_of_two(),
+            errors::err_msg!("attempt to calculate next power of two with overflow")
+        );
         #[cfg(not(debug_assertions))]
         self.wrapping_next_power_of_two()
     }
 
+    #[doc=doc::log2!(U)]
     #[inline]
     pub const fn log2(self) -> ExpType {
         #[cfg(debug_assertions)]
-        return option_expect!(self.checked_log2(), errors::err_msg!("attempt to calculate log2 of zero"));
+        return option_expect!(
+            self.checked_log2(),
+            errors::err_msg!("attempt to calculate log2 of zero")
+        );
         #[cfg(not(debug_assertions))]
         match self.checked_log2() {
             Some(n) => n,
@@ -353,59 +352,69 @@ impl<const N: usize> BUint<N> {
         }
     }
 
-    #[inline]
-    pub const fn log10(self) -> ExpType {
-        #[cfg(debug_assertions)]
-        return option_expect!(self.checked_log10(), errors::err_msg!("attempt to calculate log10 of zero"));
-        #[cfg(not(debug_assertions))]
-        match self.checked_log10() {
-            Some(n) => n,
-            None => 0,
+    crate::nightly::const_fns! {
+        #[doc=doc::log10!(U)]
+        #[inline]
+        pub const fn log10(self) -> ExpType {
+            #[cfg(debug_assertions)]
+            return option_expect!(self.checked_log10(), errors::err_msg!("attempt to calculate log10 of zero"));
+            #[cfg(not(debug_assertions))]
+            match self.checked_log10() {
+                Some(n) => n,
+                None => 0,
+            }
+        }
+
+        #[doc=doc::log!(U)]
+        #[inline]
+        pub const fn log(self, base: Self) -> ExpType {
+            #[cfg(debug_assertions)]
+            return option_expect!(self.checked_log(base), errors::err_msg!("attempt to calculate log of zero or log with base < 2"));
+            #[cfg(not(debug_assertions))]
+            match self.checked_log(base) {
+                Some(n) => n,
+                None => 0,
+            }
         }
     }
 
-    #[inline]
-    pub const fn log(self, base: Self) -> ExpType {
-        #[cfg(debug_assertions)]
-        return option_expect!(self.checked_log(base), errors::err_msg!("attempt to calculate log of zero or log with base < 2"));
-        #[cfg(not(debug_assertions))]
-        match self.checked_log(base) {
-            Some(n) => n,
-            None => 0,
+    crate::nightly::const_fns! {
+        #[doc=doc::abs_diff!(U)]
+        #[inline]
+        pub const fn abs_diff(self, other: Self) -> Self {
+            if self < other {
+                other.wrapping_sub(self)
+            } else {
+                self.wrapping_sub(other)
+            }
         }
-    }
 
-    #[inline]
-    pub const fn abs_diff(self, other: Self) -> Self {
-        if self < other {
-            other.wrapping_sub(self)
-        } else {
-            self.wrapping_sub(other)
+        #[doc=doc::next_multiple_of!(U)]
+        #[inline]
+        pub const fn next_multiple_of(self, rhs: Self) -> Self {
+            let rem = self.wrapping_rem(rhs);
+            if rem.is_zero() {
+                self
+            } else {
+                self + (rhs - rem)
+            }
         }
-    }
 
-    #[inline]
-	pub const fn next_multiple_of(self, rhs: Self) -> Self {
-		let rem = self.wrapping_rem(rhs);
-		if rem.is_zero() {
-			self
-		} else {
-			self + (rhs - rem)
-		}
-	}
+        #[doc=doc::div_floor!(U)]
+        #[inline]
+        pub const fn div_floor(self, rhs: Self) -> Self {
+            self.wrapping_div(rhs)
+        }
 
-    #[inline]
-    pub const fn div_floor(self, rhs: Self) -> Self {
-        self.wrapping_div(rhs)
-    }
-
-    #[inline]
-    pub const fn div_ceil(self, rhs: Self) -> Self {
-        let (div, rem) = self.div_rem(rhs);
-        if rem.is_zero() {
-            div
-        } else {
-            div + Self::ONE
+        #[doc=doc::div_ceil!(U)]
+        #[inline]
+        pub const fn div_ceil(self, rhs: Self) -> Self {
+            let (div, rem) = self.div_rem(rhs);
+            if rem.is_zero() {
+                div
+            } else {
+                div + Self::ONE
+            }
         }
     }
 }
@@ -425,16 +434,16 @@ impl<const N: usize> BUint<N> {
     }
 
     /// Returns a `BUint` whose value is `2^power`.
-    /// 
+    ///
     /// # Panics
-    /// 
+    ///
     /// This function will panic if `power` is greater than or equal to `Self::BITS`.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// use bnum::BUint;
-    /// 
+    ///
     /// let power = 11;
     /// assert_eq!(BUint::<2>::power_of_two(11), (1u128 << 11).into());
     /// ```
@@ -454,9 +463,7 @@ impl<const N: usize> BUint<N> {
     /// Creates a new `BUint` from the given array of digits. Digits are stored as little endian (least significant digit first).
     #[inline(always)]
     pub const fn from_digits(digits: [Digit; N]) -> Self {
-        Self {
-            digits,
-        }
+        Self { digits }
     }
 
     /// Creates a new `BUint` from the given digit. The given digit is stored as the least significant digit.
@@ -527,12 +534,12 @@ impl<const N: usize> BUint<N> {
         Some(out)
     }
 
-	#[allow(unused)]
-	#[inline]
-	const fn square(self) -> Self {
-		// TODO: optimise this method, this will make exponentiation by squaring faster
-		self * self
-	}
+    #[allow(unused)]
+    #[inline]
+    fn square(self) -> Self {
+        // TODO: optimise this method, this will make exponentiation by squaring faster
+        self * self
+    }
 }
 
 mod bigint_helpers;
@@ -553,7 +560,7 @@ mod wrapping;
 
 use core::default::Default;
 
-impl<const N: usize> const Default for BUint<N> {
+impl<const N: usize> Default for BUint<N> {
     #[doc=doc::default!()]
     #[inline]
     fn default() -> Self {
@@ -593,13 +600,13 @@ impl<'a, const N: usize> Sum<&'a Self> for BUint<N> {
 
 #[cfg(test)]
 mod tests {
-    use crate::types::U128;
-	use crate::test::{test_bignum, debug_skip, types::utest};
+    use crate::test::types::U128;
+    use crate::test::{debug_skip, test_bignum, types::utest};
 
     crate::int::tests!(utest);
 
     test_bignum! {
-		function: <utest>::next_power_of_two(a: utest),
+        function: <utest>::next_power_of_two(a: utest),
         skip: debug_skip!(a.checked_next_power_of_two().is_none())
     }
 
@@ -648,12 +655,4 @@ mod tests {
         assert!(power.is_power_of_two());
         assert!(!non_power.is_power_of_two());
     }
-
-	#[test]
-	fn test_serde() {
-		let a = 103945820349580342u128;
-		let b = crate::test::types::U128::from(a);
-		println!("{:?}", serde_json::to_string(&a));
-		println!("{:?}", serde_json::to_string(&b));
-	}
 }

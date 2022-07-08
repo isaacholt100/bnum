@@ -1,8 +1,8 @@
 use super::BUint;
 use crate::digit;
-use core::fmt::{Binary, Display, Formatter, LowerExp, LowerHex, Octal, UpperExp, UpperHex, self};
 use alloc::string::String;
 use core::fmt::Write;
+use core::fmt::{self, Binary, Display, Formatter, LowerExp, LowerHex, Octal, UpperExp, UpperHex};
 
 macro_rules! fmt_method {
     ($format: expr, $format_pad: expr, $pad: expr, $prefix: expr) => {
@@ -12,17 +12,21 @@ macro_rules! fmt_method {
             for digit in self.digits.iter().rev() {
                 if format_string.is_empty() {
                     if digit != &0 {
-						write!(format_string, $format, digit)?;
+                        write!(format_string, $format, digit)?;
                     }
                 } else {
-					write!(format_string, $format_pad, digit, $pad)?;
+                    write!(format_string, $format_pad, digit, $pad)?;
                 }
-            };
-            f.pad_integral(true, $prefix, if format_string.is_empty() {
-                "0"
-            } else {
-                &format_string
-            })
+            }
+            f.pad_integral(
+                true,
+                $prefix,
+                if format_string.is_empty() {
+                    "0"
+                } else {
+                    &format_string
+                },
+            )
         }
     };
 }
@@ -58,7 +62,14 @@ macro_rules! exp_fmt {
             if decimal_str.len() == 1 {
                 write!(f, "{}{}{}", &decimal_str[0..1], $e, exp)
             } else {
-                write!(f, "{}.{}{}{}", &decimal_str[0..1], &decimal_str[1..], $e, exp)
+                write!(
+                    f,
+                    "{}.{}{}{}",
+                    &decimal_str[0..1],
+                    &decimal_str[1..],
+                    $e,
+                    exp
+                )
             }
         }
     };
@@ -90,4 +101,5 @@ impl<const N: usize> UpperHex for BUint<N> {
     fmt_method!("{:X}", "{:01$X}", HEX_PADDING, "0x");
 }
 
+#[cfg(test)]
 crate::int::fmt::tests!(utest);
