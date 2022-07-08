@@ -9,8 +9,6 @@ pub mod unchecked;
 
 pub mod wrapping;
 
-// TODO: add links to Rust docs for each method
-
 macro_rules! arithmetic_impl_desc {
     ($name: literal, $method: literal, $rest: literal) => {
         concat!(
@@ -24,6 +22,14 @@ macro_rules! arithmetic_impl_desc {
 }
 
 pub(crate) use arithmetic_impl_desc;
+
+macro_rules! requires_feature {
+	($feature: literal) => {
+		concat!("\n\nThis is supported on the crate feature `", $feature, "` only.")
+	};
+}
+
+pub(crate) use requires_feature;
 
 macro_rules! type_str {
     ($sign: ident $bits: literal) => {
@@ -67,7 +73,7 @@ macro_rules! doc_comment {
     { $(# $method: ident, )? $sign: ident $bits: literal, $($($desc: expr)+)? $(, $($code: expr)+)? } => {
         concat!(
             $($("\n\n", $desc), +,)?
-			$("\n\n", "See also: <https://doc.rust-lang.org/std/primitive.", doc::small_sign!($sign), "64.html#method.", stringify!($method), ">", )?
+			$("\n\n", "See also: <https://doc.rust-lang.org/std/primitive.", doc::small_sign!($sign), "64.html#method.", stringify!($method), ">.", )?
             $(
 				doc::example_header!($sign $bits),
 				$($code), +,

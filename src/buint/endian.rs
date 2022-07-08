@@ -211,6 +211,7 @@ impl<const N: usize> BUint<N> {
 
     #[cfg(feature = "nightly")]
     #[doc=doc::endian::to_ne_bytes!(U)]
+	#[doc=doc::requires_feature!("nightly")]
     #[inline]
     pub const fn to_ne_bytes(self) -> [u8; N * digit::BYTES as usize] {
         #[cfg(target_endian = "big")]
@@ -221,6 +222,7 @@ impl<const N: usize> BUint<N> {
 
     #[cfg(feature = "nightly")]
     #[doc=doc::endian::from_be_bytes!(U)]
+	#[doc=doc::requires_feature!("nightly")]
     #[inline]
     pub const fn from_be_bytes(bytes: [u8; N * digit::BYTES as usize]) -> Self {
         let mut out = Self::ZERO;
@@ -243,6 +245,7 @@ impl<const N: usize> BUint<N> {
 
     #[cfg(feature = "nightly")]
     #[doc=doc::endian::from_le_bytes!(U)]
+	#[doc=doc::requires_feature!("nightly")]
     #[inline]
     pub const fn from_le_bytes(bytes: [u8; N * digit::BYTES as usize]) -> Self {
         let mut out = Self::ZERO;
@@ -265,6 +268,7 @@ impl<const N: usize> BUint<N> {
 
     #[cfg(feature = "nightly")]
     #[doc=doc::endian::from_ne_bytes!(U)]
+	#[doc=doc::requires_feature!("nightly")]
     #[inline]
     pub const fn from_ne_bytes(bytes: [u8; N * digit::BYTES as usize]) -> Self {
         #[cfg(target_endian = "big")]
