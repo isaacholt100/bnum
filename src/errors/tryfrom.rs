@@ -1,6 +1,3 @@
-// This file uses code adapted from Rust's core library: https://doc.rust-lang.org/core/ used under the MIT license.
-// The original license file for this project can be found in this project's root at licenses/LICENSE-rust.
-
 use core::fmt::{self, Display, Formatter};
 
 /// The error type that is returned when a failed conversion between two integers occurs.

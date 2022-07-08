@@ -1,6 +1,3 @@
-// This file uses code adapted from Rust's core library: https://doc.rust-lang.org/core/ used under the MIT license.
-// The original license file for this project can be found in this project's root at licenses/LICENSE-rust.
-
 use core::fmt::{self, Debug, Display, Formatter};
 use core::num::IntErrorKind;
 
@@ -20,12 +17,12 @@ impl ParseIntError {
 
     const fn description(&self) -> &str {
         match &self.kind {
-            IntErrorKind::Empty => "cannot parse integer from empty string",
-            IntErrorKind::InvalidDigit => "invalid digit found in string",
-            IntErrorKind::PosOverflow => "number too large to fit in target type",
-            IntErrorKind::NegOverflow => "number too small to fit in target type",
-            IntErrorKind::Zero => "number would be zero for non-zero type",
-            _ => panic!("unsupported IntErrorKind variant"),
+            IntErrorKind::Empty => "attempt to parse integer from empty string",
+            IntErrorKind::InvalidDigit => "attempt to parse integer from string containing invalid digit",
+            IntErrorKind::PosOverflow => "attempt to parse integer too large to be represented by the target type",
+            IntErrorKind::NegOverflow => "attempt to parse integer too small to be represented by the target type",
+            IntErrorKind::Zero => "attempt to parse the integer `0` which cannot be represented by the target type",
+            _ => panic!("unsupported `IntErrorKind` variant"), // necessary as `IntErrorKind` is non-exhaustive
         }
     }
 }

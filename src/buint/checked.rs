@@ -324,8 +324,6 @@ impl<const N: usize> BUint<N> {
         self.bits().checked_sub(1)
     }
 
-    const LOG_THRESHOLD: Self = Self::from_digit(60);
-
     const_fns! {
         #[inline]
         const fn ilog(m: ExpType, b: Self, k: Self) -> (ExpType, Self) {
@@ -343,61 +341,34 @@ impl<const N: usize> BUint<N> {
         }
 
         #[inline]
-        const fn checked_log_small(self, base: Digit) -> Option<ExpType> {
-            // https://people.csail.mit.edu/jaffer/III/ilog.pdf
-            if base == 2 {
-                return self.checked_log2();
-            }
-            if base < 2 {
-                None
-            } else {
-                let base = Self::from_digit(base);
-                Some(if base > self {
-                    0
-                } else {
-                    Self::ilog(1, base, self / base).0
-                })
-            }
-        }
-
-        #[inline]
         #[doc=doc::checked::checked_log10!(U)]
         pub const fn checked_log10(self) -> Option<ExpType> {
             if self.is_zero() {
                 return None;
             }
-            self.checked_log_small(10)
-        }
-
-        #[inline]
-        const fn log_big(self, base: Self) -> ExpType {
-            // Function adapted from Rust's core library: https://doc.rust-lang.org/core/ used under the MIT license.
-            // The original license file and copyright notice for this project can be found in this project's root at licenses/LICENSE-rust.
-            let (mut n, mut r) = if Self::BITS >= 128 {
-                let b = (self.bits() - 1) / base.bits();
-                let r = self.div_rem_unchecked(base.pow(b)).0;
-                (b, r)
-            } else {
-                (0, self)
-            };
-            while r >= base {
-                r /= base;
-                n += 1;
-            }
-            n
+			if Self::TEN > self {
+				return Some(0);
+			}
+            Some(Self::ilog(1, Self::TEN, self.div_rem_digit(10).0).0)
         }
 
         #[inline]
         #[doc=doc::checked::checked_log!(U)]
         pub const fn checked_log(self, base: Self) -> Option<ExpType> {
-            if self.is_zero() {
-                return None;
-            }
-            if base < Self::LOG_THRESHOLD {
-                self.checked_log_small(base.digits[0])
-            } else {
-                Some(self.log_big(base))
-            }
+			use core::cmp::Ordering;
+			match base.cmp(&Self::TWO) {
+				Ordering::Less => None,
+				Ordering::Equal => self.checked_log2(),
+				Ordering::Greater => {
+					if self.is_zero() {
+						return None;
+					}
+					if base > self {
+						return Some(0);
+					}
+					Some(Self::ilog(1, base, self / base).0)
+				}
+			}
         }
 
         #[inline]
@@ -480,7 +451,10 @@ mod tests {
         function: <utest>::checked_pow(a: utest, b: u16)
     }
     test_bignum! {
-        function: <utest>::checked_log(a: utest, b: utest)
+        function: <utest>::checked_log(a: utest, b: utest),
+		cases: [
+			(2u8, 60u8)
+		]
     }
     test_bignum! {
         function: <utest>::checked_log2(a: utest)

@@ -23,12 +23,14 @@ macro_rules! arithmetic_impl_desc {
 
 pub(crate) use arithmetic_impl_desc;
 
+#[cfg(feature = "nightly")]
 macro_rules! requires_feature {
 	($feature: literal) => {
 		concat!("\n\nThis is supported on the crate feature `", $feature, "` only.")
 	};
 }
 
+#[cfg(feature = "nightly")]
 pub(crate) use requires_feature;
 
 macro_rules! type_str {
