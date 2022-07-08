@@ -46,99 +46,101 @@ impl<const N: usize> BInt<N> {
         Self::from_le(self)
     }
 
-    /// Create an integer value from a slice of bytes in big endian. The value is wrapped in an `Option` as the integer represented by the slice of bytes may represent an integer large to be represented by the type.
-    ///
-    /// If the length of the slice is shorter than `Self::BYTES`, the slice is padded with zeros or ones at the start so that it's length equals `Self::BYTES`. It is padded with ones if the bytes represent a negative integer, otherwise it is padded with zeros.
-    ///
-    /// If the length of the slice is longer than `Self::BYTES`, `None` will be returned, unless the bytes represent a non-negative integer and leading zeros from the slice can be removed until the length of the slice equals `Self::BYTES`, or if the bytes represent a negative integer and leading ones from the slice can be removed until the length of the slice equals `Self::BYTES`.
-    pub fn from_be_slice(slice: &[u8]) -> Option<Self> {
-        let len = slice.len();
-        if len == 0 {
-            return Some(Self::ZERO);
-        }
-        let is_negative = (slice[0] as i8).is_negative();
-        let sign_bits = if is_negative { Digit::MAX } else { Digit::MIN };
-        let mut out_digits = if is_negative { [Digit::MAX; N] } else { [0; N] };
-        let slice_ptr = slice.as_ptr();
-        let mut i = 0;
-        let exact = len >> digit::BYTE_SHIFT;
-        while i < exact {
-            let mut uninit = MaybeUninit::<[u8; digit::BYTES as usize]>::uninit();
-            let ptr = uninit.as_mut_ptr() as *mut u8;
-            let digit_bytes = unsafe {
-                slice_ptr
-                    .add(len - digit::BYTES as usize - (i << digit::BYTE_SHIFT))
-                    .copy_to_nonoverlapping(ptr, digit::BYTES as usize);
-                uninit.assume_init()
-            };
-            let digit = Digit::from_be_bytes(digit_bytes);
-            set_digit!(out_digits, i, digit, is_negative, sign_bits);
-            i += 1;
-        }
-        let rem = len & (digit::BYTES as usize - 1);
-        if rem == 0 {
-            Some(Self::from_bits(BUint::from_digits(out_digits)))
-        } else {
-            let pad_byte = if is_negative { u8::MAX } else { 0 };
-            let mut last_digit_bytes = [pad_byte; digit::BYTES as usize];
-            let mut j = 0;
-            while j < rem {
-                last_digit_bytes[digit::BYTES as usize - rem + j] = slice[j];
-                j += 1;
-            }
-            let digit = Digit::from_be_bytes(last_digit_bytes);
-            set_digit!(out_digits, i, digit, is_negative, sign_bits);
-            Some(Self::from_bits(BUint::from_digits(out_digits)))
-        }
-    }
+	crate::nightly::const_fns! {
+		/// Create an integer value from a slice of bytes in big endian. The value is wrapped in an `Option` as the integer represented by the slice of bytes may represent an integer large to be represented by the type.
+		///
+		/// If the length of the slice is shorter than `Self::BYTES`, the slice is padded with zeros or ones at the start so that it's length equals `Self::BYTES`. It is padded with ones if the bytes represent a negative integer, otherwise it is padded with zeros.
+		///
+		/// If the length of the slice is longer than `Self::BYTES`, `None` will be returned, unless the bytes represent a non-negative integer and leading zeros from the slice can be removed until the length of the slice equals `Self::BYTES`, or if the bytes represent a negative integer and leading ones from the slice can be removed until the length of the slice equals `Self::BYTES`.
+		pub const fn from_be_slice(slice: &[u8]) -> Option<Self> {
+			let len = slice.len();
+			if len == 0 {
+				return Some(Self::ZERO);
+			}
+			let is_negative = (slice[0] as i8).is_negative();
+			let sign_bits = if is_negative { Digit::MAX } else { Digit::MIN };
+			let mut out_digits = if is_negative { [Digit::MAX; N] } else { [0; N] };
+			let slice_ptr = slice.as_ptr();
+			let mut i = 0;
+			let exact = len >> digit::BYTE_SHIFT;
+			while i < exact {
+				let mut uninit = MaybeUninit::<[u8; digit::BYTES as usize]>::uninit();
+				let ptr = uninit.as_mut_ptr() as *mut u8;
+				let digit_bytes = unsafe {
+					slice_ptr
+						.add(len - digit::BYTES as usize - (i << digit::BYTE_SHIFT))
+						.copy_to_nonoverlapping(ptr, digit::BYTES as usize);
+					uninit.assume_init()
+				};
+				let digit = Digit::from_be_bytes(digit_bytes);
+				set_digit!(out_digits, i, digit, is_negative, sign_bits);
+				i += 1;
+			}
+			let rem = len & (digit::BYTES as usize - 1);
+			if rem == 0 {
+				Some(Self::from_bits(BUint::from_digits(out_digits)))
+			} else {
+				let pad_byte = if is_negative { u8::MAX } else { 0 };
+				let mut last_digit_bytes = [pad_byte; digit::BYTES as usize];
+				let mut j = 0;
+				while j < rem {
+					last_digit_bytes[digit::BYTES as usize - rem + j] = slice[j];
+					j += 1;
+				}
+				let digit = Digit::from_be_bytes(last_digit_bytes);
+				set_digit!(out_digits, i, digit, is_negative, sign_bits);
+				Some(Self::from_bits(BUint::from_digits(out_digits)))
+			}
+		}
 
-    /// Creates an integer value from a slice of bytes in little endian. The value is wrapped in an `Option` as the bytes may represent an integer too large to be represented by the type.
-    ///
-    /// If the length of the slice is shorter than `Self::BYTES`, the slice is padded with zeros or ones at the end so that it's length equals `Self::BYTES`. It is padded with ones if the bytes represent a negative integer, otherwise it is padded with zeros.
-    ///
-    /// If the length of the slice is longer than `Self::BYTES`, `None` will be returned, unless the bytes represent a non-negative integer and trailing zeros from the slice can be removed until the length of the slice equals `Self::BYTES`, or if the bytes represent a negative integer and trailing ones from the slice can be removed until the length of the slice equals `Self::BYTES`.
-    ///
-    /// For examples, see the `from_le_slice` method documentation for `BUint`.
-    pub fn from_le_slice(slice: &[u8]) -> Option<Self> {
-        let len = slice.len();
-        if len == 0 {
-            return Some(Self::ZERO);
-        }
-        let is_negative = (slice[len - 1] as i8).is_negative();
-        let sign_bits = if is_negative { Digit::MAX } else { Digit::MIN };
-        let mut out_digits = [sign_bits; N];
-        let slice_ptr = slice.as_ptr();
-        let mut i = 0;
-        let exact = len >> digit::BYTE_SHIFT;
-        while i < exact {
-            let mut uninit = MaybeUninit::<[u8; digit::BYTES as usize]>::uninit();
-            let ptr = uninit.as_mut_ptr() as *mut u8;
-            let digit_bytes = unsafe {
-                slice_ptr
-                    .add(i << digit::BYTE_SHIFT)
-                    .copy_to_nonoverlapping(ptr, digit::BYTES as usize);
-                uninit.assume_init()
-            };
-            let digit = Digit::from_le_bytes(digit_bytes);
-            set_digit!(out_digits, i, digit, is_negative, sign_bits);
-            i += 1;
-        }
-        if len & (digit::BYTES as usize - 1) == 0 {
-            Some(Self::from_bits(BUint::from_digits(out_digits)))
-        } else {
-            let pad_byte = if is_negative { u8::MAX } else { 0 };
-            let mut last_digit_bytes = [pad_byte; digit::BYTES as usize];
-            let addition = exact << digit::BYTE_SHIFT;
-            let mut j = 0;
-            while j + addition < len {
-                last_digit_bytes[j] = slice[j + addition];
-                j += 1;
-            }
-            let digit = Digit::from_le_bytes(last_digit_bytes);
-            set_digit!(out_digits, i, digit, is_negative, sign_bits);
-            Some(Self::from_bits(BUint::from_digits(out_digits)))
-        }
-    }
+		/// Creates an integer value from a slice of bytes in little endian. The value is wrapped in an `Option` as the bytes may represent an integer too large to be represented by the type.
+		///
+		/// If the length of the slice is shorter than `Self::BYTES`, the slice is padded with zeros or ones at the end so that it's length equals `Self::BYTES`. It is padded with ones if the bytes represent a negative integer, otherwise it is padded with zeros.
+		///
+		/// If the length of the slice is longer than `Self::BYTES`, `None` will be returned, unless the bytes represent a non-negative integer and trailing zeros from the slice can be removed until the length of the slice equals `Self::BYTES`, or if the bytes represent a negative integer and trailing ones from the slice can be removed until the length of the slice equals `Self::BYTES`.
+		///
+		/// For examples, see the `from_le_slice` method documentation for `BUint`.
+		pub const fn from_le_slice(slice: &[u8]) -> Option<Self> {
+			let len = slice.len();
+			if len == 0 {
+				return Some(Self::ZERO);
+			}
+			let is_negative = (slice[len - 1] as i8).is_negative();
+			let sign_bits = if is_negative { Digit::MAX } else { Digit::MIN };
+			let mut out_digits = [sign_bits; N];
+			let slice_ptr = slice.as_ptr();
+			let mut i = 0;
+			let exact = len >> digit::BYTE_SHIFT;
+			while i < exact {
+				let mut uninit = MaybeUninit::<[u8; digit::BYTES as usize]>::uninit();
+				let ptr = uninit.as_mut_ptr() as *mut u8;
+				let digit_bytes = unsafe {
+					slice_ptr
+						.add(i << digit::BYTE_SHIFT)
+						.copy_to_nonoverlapping(ptr, digit::BYTES as usize);
+					uninit.assume_init()
+				};
+				let digit = Digit::from_le_bytes(digit_bytes);
+				set_digit!(out_digits, i, digit, is_negative, sign_bits);
+				i += 1;
+			}
+			if len & (digit::BYTES as usize - 1) == 0 {
+				Some(Self::from_bits(BUint::from_digits(out_digits)))
+			} else {
+				let pad_byte = if is_negative { u8::MAX } else { 0 };
+				let mut last_digit_bytes = [pad_byte; digit::BYTES as usize];
+				let addition = exact << digit::BYTE_SHIFT;
+				let mut j = 0;
+				while j + addition < len {
+					last_digit_bytes[j] = slice[j + addition];
+					j += 1;
+				}
+				let digit = Digit::from_le_bytes(last_digit_bytes);
+				set_digit!(out_digits, i, digit, is_negative, sign_bits);
+				Some(Self::from_bits(BUint::from_digits(out_digits)))
+			}
+		}
+	}
 
     #[cfg(feature = "nightly")]
     #[doc=doc::endian::to_be_bytes!(I)]

@@ -28,32 +28,28 @@
 extern crate alloc;
 
 mod bint;
-mod cast;
+pub mod cast;
 mod digit;
 mod doc;
+// TODO: document this module's items
 pub mod errors;
 mod int;
 mod nightly;
+// TODO: document this module's items
 pub mod prelude;
 
-// TODO: document this modules items
 #[cfg(feature = "rand")]
-mod random;
+pub mod random;
 
 mod buint;
 mod radix_bases;
-mod types;
+pub mod types;
 
 #[cfg(test)]
 mod test;
 
 #[cfg(test)]
 use test::types::*;
-
-pub use cast::As;
-
-#[cfg(feature = "rand")]
-pub use random::RandomUniformInt;
 
 #[cfg(feature = "usize_exptype")]
 type ExpType = usize;
@@ -63,7 +59,5 @@ type ExpType = u32;
 pub use bint::BInt;
 pub use buint::BUint;
 pub use digit::Digit;
-
-pub use types::*;
 
 // TODO: indicate which methods are only available on nightly (maybe not bc already mentioned in README)

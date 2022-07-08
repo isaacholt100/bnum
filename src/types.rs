@@ -1,3 +1,5 @@
+//! Type aliases for big signed and unsigned integers.
+
 use crate::{digit, BInt, BUint};
 
 macro_rules! int_type_doc {
@@ -19,6 +21,7 @@ macro_rules! int_types {
 }
 
 int_types! {
+    128 U128 I128;
     256 U256 I256;
     512 U512 I512;
     1024 U1024 I1024;

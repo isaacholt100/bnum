@@ -1,6 +1,6 @@
 use super::BInt;
 use crate::buint::BUint;
-use crate::cast::{As, CastFrom};
+use crate::cast::CastFrom;
 use crate::digit;
 use crate::nightly::impl_const;
 
@@ -35,7 +35,7 @@ bint_as!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
 impl<const N: usize> CastFrom<BInt<N>> for f32 {
     #[inline]
     fn cast_from(from: BInt<N>) -> Self {
-        let f: f32 = from.unsigned_abs().as_();
+        let f = f32::cast_from(from.unsigned_abs());
         if from.is_negative() {
             -f
         } else {
@@ -47,7 +47,7 @@ impl<const N: usize> CastFrom<BInt<N>> for f32 {
 impl<const N: usize> CastFrom<BInt<N>> for f64 {
     #[inline]
     fn cast_from(from: BInt<N>) -> Self {
-        let f: f64 = from.unsigned_abs().as_();
+        let f = f64::cast_from(from.unsigned_abs());
         if from.is_negative() {
             -f
         } else {

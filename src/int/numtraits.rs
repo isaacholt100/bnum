@@ -4,7 +4,7 @@ macro_rules! as_primitive_impl {
 			impl<const N: usize> AsPrimitive<$ty> for $Int<N> {
 				#[inline]
 				fn as_(self) -> $ty {
-					crate::As::as_(self)
+					<$ty as crate::cast::CastFrom<Self>>::cast_from(self)
 				}
 			}
 		)*

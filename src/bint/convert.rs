@@ -4,7 +4,7 @@ use crate::digit::{self, Digit};
 use crate::errors::TryFromErrorReason::*;
 use crate::errors::{ParseIntError, TryFromIntError};
 use crate::nightly::impl_const;
-use crate::As;
+use crate::cast::CastFrom;
 use core::str::FromStr;
 
 impl<const N: usize> FromStr for BInt<N> {
@@ -62,7 +62,7 @@ impl_const! {
     impl<const N: usize> const From<bool> for BInt<N> {
         #[inline]
         fn from(small: bool) -> Self {
-            small.as_()
+            Self::cast_from(small)
         }
     }
 }

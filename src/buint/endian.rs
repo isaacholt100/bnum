@@ -35,135 +35,139 @@ impl<const N: usize> BUint<N> {
         Self::from_le(self)
     }
 
-    /// Create an integer value from a slice of bytes in big endian. The value is wrapped in an `Option` as the integer represented by the slice of bytes may represent an integer large to be represented by the type.
-    ///
-    /// If the length of the slice is shorter than `Self::BYTES`, the slice is padded with zeros at the start so that it's length equals `Self::BYTES`.
-    ///
-    /// If the length of the slice is longer than `Self::BYTES`, `None` will be returned, unless leading zeros from the slice can be removed until the length of the slice equals `Self::BYTES`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bnum::BUint;
-    ///
-    /// let value_from_array = BUint::<2>::from_be_bytes([0, 0, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12]);
-    /// let value_from_slice = BUint::<2>::from_be_slice(&[0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12]).unwrap();
-    /// let value_from_long_slice = BUint::<2>::from_be_slice(&[0, 0, 0, 0, 0, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12]).unwrap();
-    ///
-    /// assert_eq!(value_from_array, value_from_slice);
-    /// assert_eq!(value_from_array, value_from_long_slice);
-    ///
-    /// let invalid_slice = &[0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90];
-    /// assert_eq!(BUint::<2>::from_be_slice(invalid_slice), None);
-    /// ```
-    #[inline]
-    pub fn from_be_slice(slice: &[u8]) -> Option<Self> {
-        let len = slice.len();
-        let mut out = Self::ZERO;
-        let slice_ptr = slice.as_ptr();
-        let mut i = 0;
-        let exact = len >> digit::BYTE_SHIFT;
-        while i < exact {
-            let mut uninit = MaybeUninit::<[u8; digit::BYTES as usize]>::uninit();
-            let ptr = uninit.as_mut_ptr() as *mut u8;
-            let digit_bytes = unsafe {
-                slice_ptr
-                    .add(len - digit::BYTES as usize - (i << digit::BYTE_SHIFT))
-                    .copy_to_nonoverlapping(ptr, digit::BYTES as usize);
-                uninit.assume_init()
-            };
-            let digit = Digit::from_be_bytes(digit_bytes);
-            if i < N {
-                out.digits[i] = digit;
-            } else if digit != 0 {
-                return None;
-            };
-            i += 1;
-        }
-        let rem = len & (digit::BYTES as usize - 1);
-        if rem == 0 {
-            Some(out)
-        } else {
-            let mut last_digit_bytes = [0; digit::BYTES as usize];
-            let mut j = 0;
-            while j < rem {
-                last_digit_bytes[digit::BYTES as usize - rem + j] = slice[j];
-                j += 1;
-            }
-            let digit = Digit::from_be_bytes(last_digit_bytes);
-            if i < N {
-                out.digits[i] = digit;
-            } else if digit != 0 {
-                return None;
-            };
-            Some(out)
-        }
-    }
+	crate::nightly::const_fns! {
+		/// Create an integer value from a slice of bytes in big endian. The value is wrapped in an `Option` as the integer represented by the slice of bytes may represent an integer large to be represented by the type.
+		///
+		/// If the length of the slice is shorter than `Self::BYTES`, the slice is padded with zeros at the start so that it's length equals `Self::BYTES`.
+		///
+		/// If the length of the slice is longer than `Self::BYTES`, `None` will be returned, unless leading zeros from the slice can be removed until the length of the slice equals `Self::BYTES`.
+		///
+		/// # Examples
+		///
+		/// ```
+		/// // NB: This example requires the `nightly` feature to use the `from_be_bytes` method.
+		/// use bnum::types::U128;
+		///
+		/// let value_from_array = U128::from_be_bytes([0, 0, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12]);
+		/// let value_from_slice = U128::from_be_slice(&[0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12]).unwrap();
+		/// let value_from_long_slice = U128::from_be_slice(&[0, 0, 0, 0, 0, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12]).unwrap();
+		///
+		/// assert_eq!(value_from_array, value_from_slice);
+		/// assert_eq!(value_from_array, value_from_long_slice);
+		///
+		/// let invalid_slice = &[0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90];
+		/// assert_eq!(U128::from_be_slice(invalid_slice), None);
+		/// ```
+		#[inline]
+		pub const fn from_be_slice(slice: &[u8]) -> Option<Self> {
+			let len = slice.len();
+			let mut out = Self::ZERO;
+			let slice_ptr = slice.as_ptr();
+			let mut i = 0;
+			let exact = len >> digit::BYTE_SHIFT;
+			while i < exact {
+				let mut uninit = MaybeUninit::<[u8; digit::BYTES as usize]>::uninit();
+				let ptr = uninit.as_mut_ptr() as *mut u8;
+				let digit_bytes = unsafe {
+					slice_ptr
+						.add(len - digit::BYTES as usize - (i << digit::BYTE_SHIFT))
+						.copy_to_nonoverlapping(ptr, digit::BYTES as usize);
+					uninit.assume_init()
+				};
+				let digit = Digit::from_be_bytes(digit_bytes);
+				if i < N {
+					out.digits[i] = digit;
+				} else if digit != 0 {
+					return None;
+				};
+				i += 1;
+			}
+			let rem = len & (digit::BYTES as usize - 1);
+			if rem == 0 {
+				Some(out)
+			} else {
+				let mut last_digit_bytes = [0; digit::BYTES as usize];
+				let mut j = 0;
+				while j < rem {
+					last_digit_bytes[digit::BYTES as usize - rem + j] = slice[j];
+					j += 1;
+				}
+				let digit = Digit::from_be_bytes(last_digit_bytes);
+				if i < N {
+					out.digits[i] = digit;
+				} else if digit != 0 {
+					return None;
+				};
+				Some(out)
+			}
+		}
 
-    /// Creates an integer value from a slice of bytes in little endian. The value is wrapped in an `Option` as the bytes may represent an integer too large to be represented by the type.
-    ///
-    /// If the length of the slice is shorter than `Self::BYTES`, the slice is padded with zeros at the end so that it's length equals `Self::BYTES`.
-    ///
-    /// If the length of the slice is longer than `Self::BYTES`, `None` will be returned, unless trailing zeros from the slice can be removed until the length of the slice equals `Self::BYTES`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bnum::BUint;
-    ///
-    /// let value_from_array = BUint::<2>::from_le_bytes([0x12, 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0, 0]);
-    /// let value_from_slice = BUint::<2>::from_le_slice(&[0x12, 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56]).unwrap();
-    /// let value_from_long_slice = BUint::<2>::from_le_slice(&[0x12, 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0, 0, 0, 0, 0, 0]).unwrap();
-    ///
-    /// assert_eq!(value_from_array, value_from_slice);
-    /// assert_eq!(value_from_array, value_from_long_slice);
-    ///
-    /// let invalid_slice = &[0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90];
-    /// assert_eq!(BUint::<2>::from_le_slice(invalid_slice), None);
-    /// ```
-    #[inline]
-    pub fn from_le_slice(slice: &[u8]) -> Option<Self> {
-        let len = slice.len();
-        let mut out = Self::ZERO;
-        let slice_ptr = slice.as_ptr();
-        let mut i = 0;
-        let exact = len >> digit::BYTE_SHIFT;
-        while i < exact {
-            let mut uninit = MaybeUninit::<[u8; digit::BYTES as usize]>::uninit();
-            let ptr = uninit.as_mut_ptr() as *mut u8;
-            let digit_bytes = unsafe {
-                slice_ptr
-                    .add(i << digit::BYTE_SHIFT)
-                    .copy_to_nonoverlapping(ptr, digit::BYTES as usize);
-                uninit.assume_init()
-            };
-            let digit = Digit::from_le_bytes(digit_bytes);
-            if i < N {
-                out.digits[i] = digit;
-            } else if digit != 0 {
-                return None;
-            };
-            i += 1;
-        }
-        if len & (digit::BYTES as usize - 1) == 0 {
-            Some(out)
-        } else {
-            let mut last_digit_bytes = [0; digit::BYTES as usize];
-            let addition = exact << digit::BYTE_SHIFT;
-            let mut j = 0;
-            while j + addition < len {
-                last_digit_bytes[j] = slice[j + addition];
-                j += 1;
-            }
-            let digit = Digit::from_le_bytes(last_digit_bytes);
-            if i < N {
-                out.digits[i] = digit;
-            } else if digit != 0 {
-                return None;
-            };
-            Some(out)
-        }
-    }
+		/// Creates an integer value from a slice of bytes in little endian. The value is wrapped in an `Option` as the bytes may represent an integer too large to be represented by the type.
+		///
+		/// If the length of the slice is shorter than `Self::BYTES`, the slice is padded with zeros at the end so that it's length equals `Self::BYTES`.
+		///
+		/// If the length of the slice is longer than `Self::BYTES`, `None` will be returned, unless trailing zeros from the slice can be removed until the length of the slice equals `Self::BYTES`.
+		///
+		/// # Examples
+		///
+		/// ```
+		/// // NB: This example requires the `nightly` feature to use the `from_le_bytes` method.
+		/// use bnum::types::U128;
+		///
+		/// let value_from_array = U128::from_le_bytes([0x12, 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0, 0]);
+		/// let value_from_slice = U128::from_le_slice(&[0x12, 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56]).unwrap();
+		/// let value_from_long_slice = U128::from_le_slice(&[0x12, 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0, 0, 0, 0, 0, 0]).unwrap();
+		///
+		/// assert_eq!(value_from_array, value_from_slice);
+		/// assert_eq!(value_from_array, value_from_long_slice);
+		///
+		/// let invalid_slice = &[0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90];
+		/// assert_eq!(U128::from_le_slice(invalid_slice), None);
+		/// ```
+		#[inline]
+		pub const fn from_le_slice(slice: &[u8]) -> Option<Self> {
+			let len = slice.len();
+			let mut out = Self::ZERO;
+			let slice_ptr = slice.as_ptr();
+			let mut i = 0;
+			let exact = len >> digit::BYTE_SHIFT;
+			while i < exact {
+				let mut uninit = MaybeUninit::<[u8; digit::BYTES as usize]>::uninit();
+				let ptr = uninit.as_mut_ptr() as *mut u8;
+				let digit_bytes = unsafe {
+					slice_ptr
+						.add(i << digit::BYTE_SHIFT)
+						.copy_to_nonoverlapping(ptr, digit::BYTES as usize);
+					uninit.assume_init()
+				};
+				let digit = Digit::from_le_bytes(digit_bytes);
+				if i < N {
+					out.digits[i] = digit;
+				} else if digit != 0 {
+					return None;
+				};
+				i += 1;
+			}
+			if len & (digit::BYTES as usize - 1) == 0 {
+				Some(out)
+			} else {
+				let mut last_digit_bytes = [0; digit::BYTES as usize];
+				let addition = exact << digit::BYTE_SHIFT;
+				let mut j = 0;
+				while j + addition < len {
+					last_digit_bytes[j] = slice[j + addition];
+					j += 1;
+				}
+				let digit = Digit::from_le_bytes(last_digit_bytes);
+				if i < N {
+					out.digits[i] = digit;
+				} else if digit != 0 {
+					return None;
+				};
+				Some(out)
+			}
+		}
+	}
 
     #[cfg(feature = "nightly")]
     #[doc=doc::endian::to_be_bytes!(U)]

@@ -1,6 +1,5 @@
 use super::convert::{decode_f32, decode_f64};
 use super::BUint;
-use crate::cast::As;
 use crate::cast::CastFrom;
 use crate::digit::{self, Digit};
 use crate::nightly::{const_fn, impl_const};
@@ -67,14 +66,14 @@ impl<const N: usize> CastFrom<BUint<N>> for f32 {
         let bits = from.bits();
         let mut mant = if BUint::<N>::BITS > u32::BITS {
             if bits < 24 {
-                from.as_::<u32>() << (24 - bits)
+                u32::cast_from(from) << (24 - bits)
             } else {
-                (from >> (bits - 24)).as_::<u32>()
+                u32::cast_from(from >> (bits - 24))
             }
         } else if bits < 24 {
-            from.as_::<u32>() << (24 - bits)
+            u32::cast_from(from) << (24 - bits)
         } else {
-            from.as_::<u32>() >> (bits - 24)
+            u32::cast_from(from) >> (bits - 24)
         };
         let mut round_up = true;
         if bits <= 24
@@ -93,7 +92,7 @@ impl<const N: usize> CastFrom<BUint<N>> for f32 {
         if exp > f32::MAX_EXP as u32 + 127 {
             return f32::INFINITY;
         }
-        let mant: u32 = mant.as_();
+        let mant = u32::cast_from(mant);
         f32::from_bits((exp << 23) | (mant & (u32::MAX >> (32 - 23))))
     }
 }
@@ -107,14 +106,14 @@ impl<const N: usize> CastFrom<BUint<N>> for f64 {
         let bits = from.bits();
         let mut mant = if BUint::<N>::BITS > u64::BITS {
             if bits < 53 {
-                from.as_::<u64>() << (53 - bits)
+                u64::cast_from(from) << (53 - bits)
             } else {
-                (from >> (bits - 53)).as_::<u64>()
+                u64::cast_from(from >> (bits - 53))
             }
         } else if bits < 53 {
-            from.as_::<u64>() << (53 - bits)
+            u64::cast_from(from) << (53 - bits)
         } else {
-            from.as_::<u64>() >> (bits - 53)
+            u64::cast_from(from) >> (bits - 53)
         };
         let mut round_up = true;
         if bits <= 53
@@ -133,7 +132,7 @@ impl<const N: usize> CastFrom<BUint<N>> for f64 {
         if exp > f64::MAX_EXP as u64 + 1023 {
             return f64::INFINITY;
         }
-        let mant: u64 = mant.as_();
+        let mant = u64::cast_from(mant);
         f64::from_bits((exp << 52) | (mant & (u64::MAX >> (64 - 52))))
     }
 }
@@ -250,12 +249,12 @@ macro_rules! cast_from_float {
                 if $mant_bits(&mant) > Self::BITS {
                     return Self::MAX;
                 }
-                mant.as_()
+                Self::cast_from(mant)
             } else {
                 if $mant_bits(&mant) + exp as ExpType > Self::BITS {
                     return Self::MAX;
                 }
-                mant.as_::<Self>() << exp
+                Self::cast_from(mant) << exp
             }
         }
     };

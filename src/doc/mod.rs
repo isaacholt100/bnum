@@ -41,7 +41,7 @@ macro_rules! example_header {
 # Examples
         
 ```
-use bnum::",
+use bnum::types::",
             doc::type_str!($sign $bits),
 ";
 

@@ -2,7 +2,7 @@ use super::BUint;
 use crate::digit::{self, Digit};
 use crate::errors::{TryFromErrorReason::*, TryFromIntError};
 use crate::nightly::impl_const;
-use crate::As;
+use crate::cast::CastFrom;
 use crate::ExpType;
 use core::{f32, f64};
 
@@ -10,7 +10,7 @@ impl_const! {
     impl<const N: usize> const From<bool> for BUint<N> {
         #[inline]
         fn from(small: bool) -> Self {
-            small.as_()
+            Self::cast_from(small)
         }
     }
 }
@@ -114,7 +114,7 @@ macro_rules! try_from_float {
                             reason: TooLarge,
                         });
                     }
-                    Ok(mant.as_())
+                    Ok(Self::cast_from(mant))
                 } else {
                     if $mant_bits(mant) + exp as ExpType > Self::BITS {
                         return Err(TryFromIntError {
@@ -123,7 +123,7 @@ macro_rules! try_from_float {
                             reason: TooLarge,
                         });
                     }
-                    Ok(mant.as_::<Self>() << exp)
+                    Ok(Self::cast_from(mant) << exp)
                 }
             }
         }

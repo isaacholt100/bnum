@@ -1,5 +1,5 @@
 use crate::test::types::*;
-use crate::As;
+use crate::cast::CastFrom;
 
 pub trait TestConvert {
     type Output;
@@ -14,7 +14,7 @@ macro_rules! test_convert_big {
 
             #[inline]
             fn into(self) -> Self::Output {
-                self.as_()
+                Self::Output::cast_from(self)
             }
         }
     };

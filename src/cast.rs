@@ -1,14 +1,19 @@
+//! Panic-free casting between numeric types.
+
+/// Backend implementation trait for panic-free casting between numeric types.
 pub trait CastFrom<T> {
     fn cast_from(from: T) -> Self;
 }
 
-pub trait CastTo<U> {
+pub(crate) trait CastTo<U> {
     fn cast_to(self) -> U;
 }
 
 macro_rules! as_trait_doc {
 	() => {
-"Trait which allows panic-free casting between integer types. The behavior matches the behavior of the `as` conversion operator between primitive integers. This trait can be used to convert between `BUint` and `BInt` of any sizes, as well as between `BUint`/`BInt` and Rust's primitive integers. Conversions between Rust's primitive integers themselves are also defined for consistency."
+"Trait which allows panic-free casting between numeric types.
+
+The behavior matches the behavior of the `as` conversion operator between primitive integers. This trait can be used to convert between `BUint` and `BInt` of any sizes, as well as between `BUint`/`BInt` and Rust's primitive integers. Conversions between Rust's primitive integers themselves are also defined for consistency."
 	};
 }
 
@@ -19,7 +24,8 @@ macro_rules! as_method_doc {
 # Examples
  
 ```
-use bnum::{U256, I512, I256, U1024, As};
+use bnum::types::{U256, I512, I256, U1024};
+use bnum::cast::As;
  
 // Cast `u64` to `U256`:
 let a = 399872465243u64;
@@ -34,6 +40,10 @@ let d = c.as_::<I512>();
 // Cast `I512` to `U1024` (result will be sign-extended with leading ones):
 let e: U1024 = d.as_();
 assert_eq!(d, e.as_());
+
+// Cast `U256` to `f64` and back:
+let f: f64 = b.as_();
+assert_eq!(b, f.as_());
 ```"
 	};
 }
@@ -55,7 +65,7 @@ macro_rules! as_trait {
             #[doc=as_method_doc!()]
             fn as_<T>(self) -> T
             where
-                T: ~const CastFrom<Self>,
+                T: CastFrom<Self>,
                 Self: Sized;
         }
 
