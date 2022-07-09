@@ -10,8 +10,6 @@ This crate uses Rust's const generics to allow creation integers of any size tha
 
 `bnum` can be used in `no_std` environments, provided a global default allocator is configured.
 
-**NB: this library relies on a few features that are only available on the nightly Rust compiler, and so currently it can only run on nightly. These features are [`generic_const_exprs`](https://github.com/rust-lang/rust/issues/76560), [`const_mut_refs`](https://github.com/rust-lang/rust/issues/57349), [`const_maybe_uninit_as_mut_ptr`](https://github.com/rust-lang/rust/issues/75251), [`const_trait_impl`](https://github.com/rust-lang/rust/issues/67792). This allows nearly all methods defined on `BUint` and `BInt` to be `const`, just as the ones on Rust's primitive integers are.**
-
 **NB: the examples in the documentation use specific types (e.g. `U256`, `U512`,  or `I256`, `I512`) to give examples of correct usage for most methods. There is nothing special about these types: all methods that are shown with these are implemented for `BUint` (or `BInt`) of any size.**
 
 ## Features
