@@ -60,9 +60,9 @@ macro_rules! as_trait {
             }
         }
 
-        #[doc=as_trait_doc!()]
+        #[doc = as_trait_doc!()]
         pub trait As {
-            #[doc=as_method_doc!()]
+            #[doc = as_method_doc!()]
             fn as_<T>(self) -> T
             where
                 T: CastFrom<Self>,
@@ -94,9 +94,9 @@ macro_rules! as_trait {
             }
         }
 
-        #[doc=as_trait_doc!()]
+        #[doc = as_trait_doc!()]
         pub trait As {
-            #[doc=as_method_doc!()]
+            #[doc = as_method_doc!()]
             fn as_<T>(self) -> T
             where
                 T: CastFrom<Self>,

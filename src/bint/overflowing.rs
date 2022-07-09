@@ -23,9 +23,10 @@ const fn borrowing_sub_signed(a: SignedDigit, b: SignedDigit, borrow: bool) -> (
     )
 }
 
-#[doc=doc::overflowing::impl_desc!()]
+#[doc = doc::overflowing::impl_desc!()]
 impl<const N: usize> BInt<N> {
-    #[doc=doc::overflowing::overflowing_add!(I)]
+    #[doc = doc::overflowing::overflowing_add!(I)]
+	#[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn overflowing_add(self, rhs: Self) -> (Self, bool) {
         let mut out = Self::ZERO;
@@ -51,7 +52,8 @@ impl<const N: usize> BInt<N> {
         (out, carry)
     }
 
-    #[doc=doc::overflowing::overflowing_add_unsigned!(I)]
+    #[doc = doc::overflowing::overflowing_add_unsigned!(I)]
+	#[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn overflowing_add_unsigned(self, rhs: BUint<N>) -> (Self, bool) {
         let rhs = Self::from_bits(rhs);
@@ -59,7 +61,8 @@ impl<const N: usize> BInt<N> {
         (sum, rhs.is_negative() != overflow)
     }
 
-    #[doc=doc::overflowing::overflowing_sub!(I)]
+    #[doc = doc::overflowing::overflowing_sub!(I)]
+	#[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn overflowing_sub(self, rhs: Self) -> (Self, bool) {
         let mut out = Self::ZERO;
@@ -85,7 +88,8 @@ impl<const N: usize> BInt<N> {
         (out, borrow)
     }
 
-    #[doc=doc::overflowing::overflowing_sub_unsigned!(I)]
+    #[doc = doc::overflowing::overflowing_sub_unsigned!(I)]
+	#[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn overflowing_sub_unsigned(self, rhs: BUint<N>) -> (Self, bool) {
         let rhs = Self::from_bits(rhs);
@@ -96,7 +100,8 @@ impl<const N: usize> BInt<N> {
     const BITS_MINUS_1: ExpType = (Self::BITS - 1) as ExpType;
 
     crate::nightly::const_fns! {
-        #[doc=doc::overflowing::overflowing_mul!(I)]
+        #[doc = doc::overflowing::overflowing_mul!(I)]
+		#[must_use = doc::must_use_op!()]
         #[inline]
         pub const fn overflowing_mul(self, rhs: Self) -> (Self, bool) {
             let (uint, overflow) = self.unsigned_abs().overflowing_mul(rhs.unsigned_abs());
@@ -128,7 +133,8 @@ impl<const N: usize> BInt<N> {
             }
         }
 
-        #[doc=doc::overflowing::overflowing_div!(I)]
+        #[doc = doc::overflowing::overflowing_div!(I)]
+		#[must_use = doc::must_use_op!()]
         #[inline]
         pub const fn overflowing_div(self, rhs: Self) -> (Self, bool) {
             if rhs.is_zero() {
@@ -144,7 +150,8 @@ impl<const N: usize> BInt<N> {
             (self.div_rem_unchecked(rhs).0, false)
         }
 
-        #[doc=doc::overflowing::overflowing_div_euclid!(I)]
+        #[doc = doc::overflowing::overflowing_div_euclid!(I)]
+		#[must_use = doc::must_use_op!()]
         #[inline]
         pub const fn overflowing_div_euclid(self, rhs: Self) -> (Self, bool) {
             if rhs.is_zero() {
@@ -171,7 +178,8 @@ impl<const N: usize> BInt<N> {
             (div, false)
         }
 
-        #[doc=doc::overflowing::overflowing_rem!(I)]
+        #[doc = doc::overflowing::overflowing_rem!(I)]
+		#[must_use = doc::must_use_op!()]
         #[inline]
         pub const fn overflowing_rem(self, rhs: Self) -> (Self, bool) {
             if rhs.is_zero() {
@@ -184,7 +192,8 @@ impl<const N: usize> BInt<N> {
             }
         }
 
-        #[doc=doc::overflowing::overflowing_rem_euclid!(I)]
+        #[doc = doc::overflowing::overflowing_rem_euclid!(I)]
+		#[must_use = doc::must_use_op!()]
         #[inline]
         pub const fn overflowing_rem_euclid(self, rhs: Self) -> (Self, bool) {
             if rhs.is_zero() {
@@ -205,20 +214,23 @@ impl<const N: usize> BInt<N> {
             }
         }
 
-        #[doc=doc::overflowing::overflowing_neg!(I)]
+        #[doc = doc::overflowing::overflowing_neg!(I)]
+		#[must_use = doc::must_use_op!()]
         #[inline]
         pub const fn overflowing_neg(self) -> (Self, bool) {
             (!self).overflowing_add(Self::ONE)
         }
 
-        #[doc=doc::overflowing::overflowing_shl!(I)]
+        #[doc = doc::overflowing::overflowing_shl!(I)]
+		#[must_use = doc::must_use_op!()]
         #[inline]
         pub const fn overflowing_shl(self, rhs: ExpType) -> (Self, bool) {
             let (uint, overflow) = self.bits.overflowing_shl(rhs);
             (Self::from_bits(uint), overflow)
         }
 
-        #[doc=doc::overflowing::overflowing_shr!(I)]
+        #[doc = doc::overflowing::overflowing_shr!(I)]
+		#[must_use = doc::must_use_op!()]
         #[inline]
         pub const fn overflowing_shr(self, rhs: ExpType) -> (Self, bool) {
             let bits = self.to_bits();
@@ -237,7 +249,8 @@ impl<const N: usize> BInt<N> {
             (Self::from_bits(u), overflow)
         }
 
-        #[doc=doc::overflowing::overflowing_abs!(I)]
+        #[doc = doc::overflowing::overflowing_abs!(I)]
+		#[must_use = doc::must_use_op!()]
         #[inline]
         pub const fn overflowing_abs(self) -> (Self, bool) {
             if self.is_negative() {
@@ -247,7 +260,8 @@ impl<const N: usize> BInt<N> {
             }
         }
 
-        #[doc=doc::overflowing::overflowing_pow!(I)]
+        #[doc = doc::overflowing::overflowing_pow!(I)]
+		#[must_use = doc::must_use_op!()]
         #[inline]
         pub const fn overflowing_pow(self, pow: ExpType) -> (Self, bool) {
             let (u, mut overflow) = self.unsigned_abs().overflowing_pow(pow);

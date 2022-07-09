@@ -8,7 +8,7 @@ By default it is a `u64`. Activating the `u8_digit` feature will make it a `u8` 
 
 #[cfg(feature = "u8_digit")]
 mod types {
-    #[doc=digit_doc!()]
+    #[doc = digit_doc!()]
     pub type Digit = u8;
 
     pub type SignedDigit = i8;
@@ -19,7 +19,7 @@ mod types {
 }
 #[cfg(not(feature = "u8_digit"))]
 mod types {
-    #[doc=digit_doc!()]
+    #[doc = digit_doc!()]
     pub type Digit = u64;
 
     pub type SignedDigit = i64;

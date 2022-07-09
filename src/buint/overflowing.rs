@@ -6,9 +6,10 @@ use crate::{doc, BInt};
 
 // TODO: these will no longer be necessary once const_bigint_helper_methods is stabilised: https://github.com/rust-lang/rust/issues/85532
 
-#[doc=doc::overflowing::impl_desc!()]
+#[doc = doc::overflowing::impl_desc!()]
 impl<const N: usize> BUint<N> {
-    #[doc=doc::overflowing::overflowing_add!(U)]
+    #[doc = doc::overflowing::overflowing_add!(U)]
+	#[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn overflowing_add(self, rhs: Self) -> (Self, bool) {
         let mut out = Self::ZERO;
@@ -23,14 +24,16 @@ impl<const N: usize> BUint<N> {
         (out, carry)
     }
 
-    #[doc=doc::overflowing::overflowing_add_signed!(U)]
+    #[doc = doc::overflowing::overflowing_add_signed!(U)]
+	#[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn overflowing_add_signed(self, rhs: BInt<N>) -> (Self, bool) {
         let (sum, overflow) = self.overflowing_add(rhs.to_bits());
         (sum, rhs.is_negative() != overflow)
     }
 
-    #[doc=doc::overflowing::overflowing_sub!(U)]
+    #[doc = doc::overflowing::overflowing_sub!(U)]
+	#[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn overflowing_sub(self, rhs: Self) -> (Self, bool) {
         let mut out = Self::ZERO;
@@ -80,7 +83,8 @@ impl<const N: usize> BUint<N> {
         (out, overflow)
     }
 
-    #[doc=doc::overflowing::overflowing_mul!(U)]
+    #[doc = doc::overflowing::overflowing_mul!(U)]
+	#[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn overflowing_mul(self, rhs: Self) -> (Self, bool) {
         // TODO: implement a faster multiplication algorithm for large values of `N`
@@ -88,38 +92,44 @@ impl<const N: usize> BUint<N> {
     }
 
     const_fns! {
-        #[doc=doc::overflowing::overflowing_div!(U)]
+        #[doc = doc::overflowing::overflowing_div!(U)]
+		#[must_use = doc::must_use_op!()]
         #[inline]
         pub const fn overflowing_div(self, rhs: Self) -> (Self, bool) {
             (self.wrapping_div(rhs), false)
         }
 
-        #[doc=doc::overflowing::overflowing_div_euclid!(U)]
+        #[doc = doc::overflowing::overflowing_div_euclid!(U)]
+		#[must_use = doc::must_use_op!()]
         #[inline]
         pub const fn overflowing_div_euclid(self, rhs: Self) -> (Self, bool) {
             self.overflowing_div(rhs)
         }
 
-        #[doc=doc::overflowing::overflowing_rem!(U)]
+        #[doc = doc::overflowing::overflowing_rem!(U)]
+		#[must_use = doc::must_use_op!()]
         #[inline]
         pub const fn overflowing_rem(self, rhs: Self) -> (Self, bool) {
             (self.wrapping_rem(rhs), false)
         }
 
-        #[doc=doc::overflowing::overflowing_rem_euclid!(U)]
+        #[doc = doc::overflowing::overflowing_rem_euclid!(U)]
+		#[must_use = doc::must_use_op!()]
         #[inline]
         pub const fn overflowing_rem_euclid(self, rhs: Self) -> (Self, bool) {
             self.overflowing_rem(rhs)
         }
 
-        #[doc=doc::overflowing::overflowing_neg!(U)]
+        #[doc = doc::overflowing::overflowing_neg!(U)]
+		#[must_use = doc::must_use_op!()]
         #[inline]
         pub const fn overflowing_neg(self) -> (Self, bool) {
             let (a, b) = (!self).overflowing_add(Self::ONE);
             (a, !b)
         }
 
-        #[doc=doc::overflowing::overflowing_shl!(U)]
+        #[doc = doc::overflowing::overflowing_shl!(U)]
+		#[must_use = doc::must_use_op!()]
         #[inline]
         pub const fn overflowing_shl(self, rhs: ExpType) -> (Self, bool) {
             unsafe {
@@ -131,7 +141,8 @@ impl<const N: usize> BUint<N> {
             }
         }
 
-        #[doc=doc::overflowing::overflowing_shr!(U)]
+        #[doc = doc::overflowing::overflowing_shr!(U)]
+		#[must_use = doc::must_use_op!()]
         #[inline]
         pub const fn overflowing_shr(self, rhs: ExpType) -> (Self, bool) {
             unsafe {
@@ -144,7 +155,8 @@ impl<const N: usize> BUint<N> {
         }
     }
 
-    #[doc=doc::overflowing::overflowing_pow!(U)]
+    #[doc = doc::overflowing::overflowing_pow!(U)]
+	#[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn overflowing_pow(mut self, mut pow: ExpType) -> (Self, bool) {
         if pow == 0 {

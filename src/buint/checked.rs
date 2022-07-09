@@ -11,28 +11,32 @@ const fn div_rem_double(a: DoubleDigit, b: DoubleDigit) -> (DoubleDigit, DoubleD
     (a / b, a % b)
 }
 
-#[doc=doc::checked::impl_desc!()]
+#[doc = doc::checked::impl_desc!()]
 impl<const N: usize> BUint<N> {
+    #[doc = doc::checked::checked_add!(U)]
+	#[must_use = doc::must_use_op!()]
     #[inline]
-    #[doc=doc::checked::checked_add!(U)]
     pub const fn checked_add(self, rhs: Self) -> Option<Self> {
         tuple_to_option(self.overflowing_add(rhs))
     }
 
+    #[doc = doc::checked::checked_add_signed!(U)]
+	#[must_use = doc::must_use_op!()]
     #[inline]
-    #[doc=doc::checked::checked_add_signed!(U)]
     pub const fn checked_add_signed(self, rhs: BInt<N>) -> Option<Self> {
         tuple_to_option(self.overflowing_add_signed(rhs))
     }
 
+    #[doc = doc::checked::checked_sub!(U)]
+	#[must_use = doc::must_use_op!()]
     #[inline]
-    #[doc=doc::checked::checked_sub!(U)]
     pub const fn checked_sub(self, rhs: Self) -> Option<Self> {
         tuple_to_option(self.overflowing_sub(rhs))
     }
 
+    #[doc = doc::checked::checked_mul!(U)]
+	#[must_use = doc::must_use_op!()]
     #[inline]
-    #[doc=doc::checked::checked_mul!(U)]
     pub const fn checked_mul(self, rhs: Self) -> Option<Self> {
         tuple_to_option(self.overflowing_mul(rhs))
     }
@@ -225,8 +229,9 @@ impl<const N: usize> BUint<N> {
             }
         }
 
-        #[inline]
-        #[doc=doc::checked::checked_div!(U)]
+        #[doc = doc::checked::checked_div!(U)]
+		#[must_use = doc::must_use_op!()]
+		#[inline]
         pub const fn checked_div(self, rhs: Self) -> Option<Self> {
             if rhs.is_zero() {
                 None
@@ -235,14 +240,16 @@ impl<const N: usize> BUint<N> {
             }
         }
 
-        #[inline]
-        #[doc=doc::checked::checked_div_euclid!(U)]
+        #[doc = doc::checked::checked_div_euclid!(U)]
+		#[must_use = doc::must_use_op!()]
+		#[inline]
         pub const fn checked_div_euclid(self, rhs: Self) -> Option<Self> {
             self.checked_div(rhs)
         }
 
-        #[inline]
-        #[doc=doc::checked::checked_rem!(U)]
+        #[doc = doc::checked::checked_rem!(U)]
+		#[must_use = doc::must_use_op!()]
+		#[inline]
         pub const fn checked_rem(self, rhs: Self) -> Option<Self> {
             if rhs.is_zero() {
                 None
@@ -251,15 +258,17 @@ impl<const N: usize> BUint<N> {
             }
         }
 
-        #[inline]
-        #[doc=doc::checked::checked_rem_euclid!(U)]
+        #[doc = doc::checked::checked_rem_euclid!(U)]
+		#[must_use = doc::must_use_op!()]
+		#[inline]
         pub const fn checked_rem_euclid(self, rhs: Self) -> Option<Self> {
             self.checked_rem(rhs)
         }
     }
 
+    #[doc = doc::checked::checked_neg!(U)]
+	#[must_use = doc::must_use_op!()]
     #[inline]
-    #[doc=doc::checked::checked_neg!(U)]
     pub const fn checked_neg(self) -> Option<Self> {
         if self.is_zero() {
             Some(self)
@@ -269,8 +278,9 @@ impl<const N: usize> BUint<N> {
     }
 
     const_fns! {
-        #[inline]
-        #[doc=doc::checked::checked_shl!(U)]
+        #[doc = doc::checked::checked_shl!(U)]
+		#[must_use = doc::must_use_op!()]
+		#[inline]
         pub const fn checked_shl(self, rhs: ExpType) -> Option<Self> {
             if rhs >= Self::BITS {
                 None
@@ -281,8 +291,9 @@ impl<const N: usize> BUint<N> {
             }
         }
 
-        #[inline]
-        #[doc=doc::checked::checked_shr!(U)]
+        #[doc = doc::checked::checked_shr!(U)]
+		#[must_use = doc::must_use_op!()]
+		#[inline]
         pub const fn checked_shr(self, rhs: ExpType) -> Option<Self> {
             if rhs >= Self::BITS {
                 None
@@ -294,8 +305,9 @@ impl<const N: usize> BUint<N> {
         }
     }
 
+    #[doc = doc::checked::checked_pow!(U)]
+	#[must_use = doc::must_use_op!()]
     #[inline]
-    #[doc=doc::checked::checked_pow!(U)]
     pub const fn checked_pow(mut self, mut pow: ExpType) -> Option<Self> {
         // https://en.wikipedia.org/wiki/Exponentiation_by_squaring#Basic_method
         if pow == 0 {
@@ -318,8 +330,9 @@ impl<const N: usize> BUint<N> {
         self.checked_mul(y)
     }
 
+    #[doc = doc::checked::checked_log2!(U)]
+	#[must_use = doc::must_use_op!()]
     #[inline]
-    #[doc=doc::checked::checked_log2!(U)]
     pub const fn checked_log2(self) -> Option<ExpType> {
         self.bits().checked_sub(1)
     }
@@ -340,8 +353,9 @@ impl<const N: usize> BUint<N> {
             }
         }
 
-        #[inline]
-        #[doc=doc::checked::checked_log10!(U)]
+        #[doc = doc::checked::checked_log10!(U)]
+		#[must_use = doc::must_use_op!()]
+		#[inline]
         pub const fn checked_log10(self) -> Option<ExpType> {
             if self.is_zero() {
                 return None;
@@ -352,8 +366,9 @@ impl<const N: usize> BUint<N> {
             Some(Self::ilog(1, Self::TEN, self.div_rem_digit(10).0).0)
         }
 
-        #[inline]
-        #[doc=doc::checked::checked_log!(U)]
+        #[doc = doc::checked::checked_log!(U)]
+		#[must_use = doc::must_use_op!()]
+		#[inline]
         pub const fn checked_log(self, base: Self) -> Option<ExpType> {
 			use core::cmp::Ordering;
 			match base.cmp(&Self::TWO) {
@@ -371,8 +386,9 @@ impl<const N: usize> BUint<N> {
 			}
         }
 
-        #[inline]
-        #[doc=doc::checked::checked_next_multiple_of!(U)]
+        #[doc = doc::checked::checked_next_multiple_of!(U)]
+		#[must_use = doc::must_use_op!()]
+		#[inline]
         pub const fn checked_next_multiple_of(self, rhs: Self) -> Option<Self> {
             match self.checked_rem(rhs) {
                 Some(rem) => {
@@ -389,7 +405,8 @@ impl<const N: usize> BUint<N> {
         }
     }
 
-    #[doc=doc::checked::checked_next_power_of_two!(U 256)]
+    #[doc = doc::checked::checked_next_power_of_two!(U 256)]
+	#[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn checked_next_power_of_two(self) -> Option<Self> {
         if self.is_power_of_two() {

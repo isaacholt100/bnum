@@ -11,7 +11,7 @@ Copyright 2017 The Rust Project Developers.
 
 //! Utilities for generating random `BUint`s and `BInt`s.
 //!
-//! The `rand` feature must be activated to use items from this module.
+//! The `rand` feature must be enabled to use items from this module.
 
 use crate::{BInt, BUint};
 use core::ops::{Deref, DerefMut};
@@ -113,7 +113,7 @@ Implements the [`UniformSampler`](https://docs.rs/rand/latest/rand/distributions
 	}
 }
 
-#[doc=uniform_int_doc!()]
+#[doc = uniform_int_doc!()]
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct UniformBUint<const N: usize> {
@@ -122,7 +122,7 @@ pub struct UniformBUint<const N: usize> {
     z: BUint<N>,
 }
 
-#[doc=uniform_int_doc!()]
+#[doc = uniform_int_doc!()]
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct UniformBInt<const N: usize> {

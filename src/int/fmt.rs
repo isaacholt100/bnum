@@ -1,7 +1,9 @@
+#[cfg(test)]
 macro_rules! format_trait {
 	($($method: ident), *) => {
 		use alloc::string::String;
 
+		// This trait allows us to use the default tester macro instead of creating a custom one
 		pub trait Format {
 			$(
 				fn $method(&self) -> String;
@@ -10,6 +12,7 @@ macro_rules! format_trait {
 	};
 }
 
+#[cfg(test)]
 format_trait!(binary, lower_hex, upper_hex, octal, display, debug, lower_exp, upper_exp);
 
 #[cfg(test)]

@@ -4,6 +4,7 @@ use crate::digit::{self, Digit};
 use crate::nightly::{const_fn, impl_const};
 use crate::{BInt, ExpType};
 use core::mem::MaybeUninit;
+use crate::doc;
 
 impl<const N: usize> BUint<N> {
     const_fn! {
@@ -37,6 +38,7 @@ macro_rules! buint_as {
     ($($int: ty), *) => {
         $(impl_const! {
             impl<const N: usize> const CastFrom<BUint<N>> for $int {
+				#[must_use = doc::must_use_op!()]
                 #[inline]
                 fn cast_from(from: BUint<N>) -> Self {
                     let mut out = 0;
@@ -57,6 +59,7 @@ buint_as!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
 // TODO: combine these impls for f32 and f64 into a macro for both
 
 impl<const N: usize> CastFrom<BUint<N>> for f32 {
+	#[must_use = doc::must_use_op!()]
     #[inline]
     fn cast_from(from: BUint<N>) -> Self {
         if from.is_zero() {
@@ -97,6 +100,7 @@ impl<const N: usize> CastFrom<BUint<N>> for f32 {
 }
 
 impl<const N: usize> CastFrom<BUint<N>> for f64 {
+	#[must_use = doc::must_use_op!()]
     #[inline]
     fn cast_from(from: BUint<N>) -> Self {
         if from.is_zero() {
@@ -140,6 +144,7 @@ macro_rules! as_buint {
     ($($ty: ty), *) => {
         $(impl_const! {
             impl<const N: usize> const CastFrom<$ty> for BUint<N> {
+				#[must_use = doc::must_use_op!()]
                 #[inline]
                 fn cast_from(mut from: $ty) -> Self {
                     #[allow(unused_comparisons)]
@@ -170,6 +175,7 @@ as_buint!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
 
 impl_const! {
     impl<const N: usize> const CastFrom<bool> for BUint<N> {
+		#[must_use = doc::must_use_op!()]
         #[inline]
         fn cast_from(from: bool) -> Self {
             if from {
@@ -183,6 +189,7 @@ impl_const! {
 
 impl_const! {
     impl<const N: usize> const CastFrom<char> for BUint<N> {
+		#[must_use = doc::must_use_op!()]
         #[inline]
         fn cast_from(from: char) -> Self {
             Self::cast_from(from as u32)
@@ -192,6 +199,7 @@ impl_const! {
 
 impl_const! {
     impl<const N: usize, const M: usize> const CastFrom<BUint<M>> for BUint<N> {
+		#[must_use = doc::must_use_op!()]
         #[inline]
         fn cast_from(from: BUint<M>) -> Self {
             if M < N {
@@ -205,6 +213,7 @@ impl_const! {
 
 impl_const! {
     impl<const N: usize, const M: usize> const CastFrom<BInt<M>> for BUint<N> {
+		#[must_use = doc::must_use_op!()]
         #[inline]
         fn cast_from(from: BInt<M>) -> Self {
             if M < N {
@@ -253,6 +262,7 @@ decode_float!(decode_f64, f64, u64);
 
 macro_rules! cast_from_float {
     ($f: ty, $exp_type: ty, $decoder: expr, $mant_bits: expr) => {
+		#[must_use = doc::must_use_op!()]
         #[inline]
         fn cast_from(from: $f) -> Self {
             if from.is_nan() {

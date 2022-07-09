@@ -11,10 +11,10 @@ macro_rules! int_type_doc {
 macro_rules! int_types {
 	{ $($bits: literal $u: ident $i: ident; ) *}  => {
 		$(
-			#[doc=int_type_doc!($bits, "unsigned")]
+			#[doc = int_type_doc!($bits, "unsigned")]
 			pub type $u = BUint::<{$bits / digit::BITS as usize}>;
 
-			#[doc=int_type_doc!($bits, "signed")]
+			#[doc = int_type_doc!($bits, "signed")]
 			pub type $i = BInt::<{$bits / digit::BITS as usize}>;
 		)*
 	};

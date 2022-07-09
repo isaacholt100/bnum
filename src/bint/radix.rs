@@ -7,7 +7,7 @@ use alloc::string::String;
 use alloc::vec::Vec;
 use core::num::IntErrorKind;
 
-#[doc=doc::radix::impl_desc!(BInt)]
+#[doc = doc::radix::impl_desc!(BInt)]
 impl<const N: usize> BInt<N> {
     /// Converts a byte slice in a given base to an integer. The input slice must contain ascii/utf8 characters in [0-9a-zA-Z].
     ///
@@ -143,11 +143,11 @@ mod tests {
     test_bignum! {
         function: <itest>::from_str_radix,
         cases: [
-            ("-14359abcasdhfkdgdfgsde", 34u32)//,
-            //("23797984569ahgkhhjdskjdfiu", 32u32),
-            //("-253613132341435345", 7u32),
-            //("23467abcad47790809ef37", 16u32),
-            //("-712930769245766867875986646", 10u32)
+            ("-14359abcasdhfkdgdfgsde", 34u32),
+            ("23797984569ahgkhhjdskjdfiu", 32u32),
+            ("-253613132341435345", 7u32),
+            ("23467abcad47790809ef37", 16u32),
+            ("-712930769245766867875986646", 10u32)
         ]
     }
 

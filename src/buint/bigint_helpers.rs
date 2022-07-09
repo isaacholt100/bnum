@@ -3,7 +3,8 @@ use crate::digit::Digit;
 use crate::doc;
 
 impl<const N: usize> BUint<N> {
-    #[doc=doc::bigint_helpers::carrying_add!(U)]
+    #[doc = doc::bigint_helpers::carrying_add!(U)]
+	#[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn carrying_add(self, rhs: Self, carry: bool) -> (Self, bool) {
         let (s1, o1) = self.overflowing_add(rhs);
@@ -15,7 +16,8 @@ impl<const N: usize> BUint<N> {
         }
     }
 
-    #[doc=doc::bigint_helpers::borrowing_sub!(U)]
+    #[doc = doc::bigint_helpers::borrowing_sub!(U)]
+	#[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn borrowing_sub(self, rhs: Self, borrow: bool) -> (Self, bool) {
         let (s1, o1) = self.overflowing_sub(rhs);
@@ -27,7 +29,8 @@ impl<const N: usize> BUint<N> {
         }
     }
 
-    #[doc=doc::bigint_helpers::widening_mul!(U)]
+    #[doc = doc::bigint_helpers::widening_mul!(U)]
+	#[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn widening_mul(self, rhs: Self) -> (Self, Self) {
         let mut low = Self::ZERO;
@@ -63,7 +66,8 @@ impl<const N: usize> BUint<N> {
         (low, high)
     }
 
-    #[doc=doc::bigint_helpers::carrying_mul!(U)]
+    #[doc = doc::bigint_helpers::carrying_mul!(U)]
+	#[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn carrying_mul(self, rhs: Self, carry: Self) -> (Self, Self) {
         let (low, high) = self.widening_mul(rhs);

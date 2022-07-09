@@ -3,37 +3,69 @@ use crate::digit::{self, Digit};
 use crate::doc;
 use core::mem::MaybeUninit;
 
-#[doc=doc::endian::impl_desc!(BUint)]
+#[doc = doc::endian::impl_desc!(BUint)]
 impl<const N: usize> BUint<N> {
-    #[doc=doc::endian::from_be!(U 256)]
-    #[inline]
-    pub const fn from_be(x: Self) -> Self {
-        #[cfg(target_endian = "big")]
-        return x;
-        #[cfg(not(target_endian = "big"))]
-        x.swap_bytes()
-    }
+	#[cfg(not(target_endian = "little"))]
+	#[inline]
+	const fn swap_digit_bytes(self) -> Self {
+		let mut out = Self::ZERO;
 
-    #[doc=doc::endian::from_le!(U 256)]
-    #[inline]
-    pub const fn from_le(x: Self) -> Self {
-        #[cfg(target_endian = "little")]
-        return x;
-        #[cfg(not(target_endian = "little"))]
-        x.swap_bytes()
-    }
+		let mut i = 0;
+		while i < N {
+			out.digits[i] = self.digits[i].swap_bytes();
+			i += 1;
+		}
 
-    #[doc=doc::endian::to_be!(U 256)]
-    #[inline]
-    pub const fn to_be(self) -> Self {
-        Self::from_be(self)
-    }
+		out
+	}
 
-    #[doc=doc::endian::to_be!(U 256)]
-    #[inline]
-    pub const fn to_le(self) -> Self {
-        Self::from_le(self)
-    }
+	crate::nightly::const_fns! {
+		#[cfg(target_endian = "big")]
+		const fn reverse_digits(mut self) -> Self {
+			let mut i = 0;
+			while i < N / 2 {
+				self.digits.swap(i, N - 1 - i);
+				i += 1;
+			}
+			self
+		}
+
+		#[doc = doc::endian::from_be!(U 256)]
+		#[must_use]
+		#[inline]
+		pub const fn from_be(x: Self) -> Self {
+			#[cfg(target_endian = "big")]
+			return x.reverse_digits();
+			#[cfg(not(target_endian = "big"))]
+			x.swap_bytes()
+		}
+	}
+	
+	#[doc = doc::endian::from_le!(U 256)]
+	#[must_use]
+	#[inline]
+	pub const fn from_le(x: Self) -> Self {
+		#[cfg(target_endian = "little")]
+		return x;
+		#[cfg(not(target_endian = "little"))]
+		x.swap_digit_bytes()
+	}
+
+	crate::nightly::const_fn! {
+		#[doc = doc::endian::to_be!(U 256)]
+		#[must_use = doc::must_use_op!()]
+		#[inline]
+		pub const fn to_be(self) -> Self {
+			Self::from_be(self)
+		}
+	}
+	
+	#[doc = doc::endian::to_be!(U 256)]
+	#[must_use = doc::must_use_op!()]
+	#[inline]
+	pub const fn to_le(self) -> Self {
+		Self::from_le(self)
+	}
 
 	crate::nightly::const_fns! {
 		/// Create an integer value from a slice of bytes in big endian. The value is wrapped in an `Option` as the integer represented by the slice of bytes may represent an integer large to be represented by the type.
@@ -58,7 +90,7 @@ impl<const N: usize> BUint<N> {
 		/// let invalid_slice = &[0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90];
 		/// assert_eq!(U128::from_be_slice(invalid_slice), None);
 		/// ```
-		#[inline]
+		#[must_use]
 		pub const fn from_be_slice(slice: &[u8]) -> Option<Self> {
 			let len = slice.len();
 			let mut out = Self::ZERO;
@@ -124,7 +156,7 @@ impl<const N: usize> BUint<N> {
 		/// let invalid_slice = &[0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90];
 		/// assert_eq!(U128::from_le_slice(invalid_slice), None);
 		/// ```
-		#[inline]
+		#[must_use]
 		pub const fn from_le_slice(slice: &[u8]) -> Option<Self> {
 			let len = slice.len();
 			let mut out = Self::ZERO;
@@ -170,7 +202,9 @@ impl<const N: usize> BUint<N> {
 	}
 
     #[cfg(feature = "nightly")]
-    #[doc=doc::endian::to_be_bytes!(U)]
+    #[doc = doc::endian::to_be_bytes!(U)]
+	#[doc = doc::requires_feature!("nightly")]
+	#[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn to_be_bytes(self) -> [u8; N * digit::BYTES as usize] {
         let mut bytes = [0; N * digit::BYTES as usize];
@@ -188,7 +222,9 @@ impl<const N: usize> BUint<N> {
     }
 
     #[cfg(feature = "nightly")]
-    #[doc=doc::endian::to_le_bytes!(U)]
+    #[doc = doc::endian::to_le_bytes!(U)]
+	#[doc = doc::requires_feature!("nightly")]
+	#[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn to_le_bytes(self) -> [u8; N * digit::BYTES as usize] {
         // Strangely, this is slightly faster than direct transmutation by either `mem::transmute_copy` or `ptr::read`.
@@ -210,8 +246,9 @@ impl<const N: usize> BUint<N> {
     }
 
     #[cfg(feature = "nightly")]
-    #[doc=doc::endian::to_ne_bytes!(U)]
-	#[doc=doc::requires_feature!("nightly")]
+    #[doc = doc::endian::to_ne_bytes!(U)]
+	#[doc = doc::requires_feature!("nightly")]
+	#[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn to_ne_bytes(self) -> [u8; N * digit::BYTES as usize] {
         #[cfg(target_endian = "big")]
@@ -221,8 +258,9 @@ impl<const N: usize> BUint<N> {
     }
 
     #[cfg(feature = "nightly")]
-    #[doc=doc::endian::from_be_bytes!(U)]
-	#[doc=doc::requires_feature!("nightly")]
+    #[doc = doc::endian::from_be_bytes!(U)]
+	#[doc = doc::requires_feature!("nightly")]
+	#[must_use]
     #[inline]
     pub const fn from_be_bytes(bytes: [u8; N * digit::BYTES as usize]) -> Self {
         let mut out = Self::ZERO;
@@ -244,8 +282,9 @@ impl<const N: usize> BUint<N> {
     }
 
     #[cfg(feature = "nightly")]
-    #[doc=doc::endian::from_le_bytes!(U)]
-	#[doc=doc::requires_feature!("nightly")]
+    #[doc = doc::endian::from_le_bytes!(U)]
+	#[doc = doc::requires_feature!("nightly")]
+	#[must_use]
     #[inline]
     pub const fn from_le_bytes(bytes: [u8; N * digit::BYTES as usize]) -> Self {
         let mut out = Self::ZERO;
@@ -267,8 +306,9 @@ impl<const N: usize> BUint<N> {
     }
 
     #[cfg(feature = "nightly")]
-    #[doc=doc::endian::from_ne_bytes!(U)]
-	#[doc=doc::requires_feature!("nightly")]
+    #[doc = doc::endian::from_ne_bytes!(U)]
+	#[doc = doc::requires_feature!("nightly")]
+	#[must_use]
     #[inline]
     pub const fn from_ne_bytes(bytes: [u8; N * digit::BYTES as usize]) -> Self {
         #[cfg(target_endian = "big")]

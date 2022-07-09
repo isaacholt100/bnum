@@ -17,8 +17,7 @@ impl_const! {
     impl<const N: usize> const From<char> for BUint<N> {
         #[inline]
         fn from(c: char) -> Self {
-            let u = c as u32;
-            Self::from(u)
+            Self::cast_from(c)
         }
     }
 }

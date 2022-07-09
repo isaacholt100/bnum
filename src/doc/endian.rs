@@ -16,14 +16,7 @@ macro_rules! from_be {
             #from_be,
             $sign $bits,
             "Converts an integer from big endian to the target’s endianness."
-            "On big endian this is a no-op. On little endian the bytes are swapped.",
-
-            "let n = " doc::type_str!($sign $bits) "::from(0x1Au8);\n"
-            "if cfg!(target_endian = \"big\") {\n"
-            "    assert_eq!(" doc::type_str!($sign $bits) "::from_be(n), n);\n"
-            "} else {\n"
-            "    assert_eq!(" doc::type_str!($sign $bits) "::from_be(n), n.swap_bytes());\n"
-            "}"
+            "On big endian the underlying digits are reversed (as `bnum` integer digits are stored with the least significant digit first). On little endian the bytes are swapped."
         }
     };
 }
@@ -36,14 +29,7 @@ macro_rules! from_le {
             #from_le,
             $sign $bits,
             "Converts an integer from little endian to the target’s endianness."
-            "On little endian this is a no-op. On big endian the bytes are swapped.",
-
-            "let n = " doc::type_str!($sign $bits) "::from(0x1Au8);\n"
-            "if cfg!(target_endian = \"little\") {\n"
-            "    assert_eq!(" doc::type_str!($sign $bits) "::from_le(n), n);\n"
-            "} else {\n"
-            "    assert_eq!(" doc::type_str!($sign $bits) "::from_le(n), n.swap_bytes());\n"
-            "}"
+            "On little endian this is a no-op. On big endian the bytes of each digit are swapped (as `bnum` integer digits are stored with the least significant digit first)."
         }
     };
 }
@@ -56,14 +42,7 @@ macro_rules! to_be {
             #to_be,
             $sign $bits,
             "Converts `self` from big endian to the target’s endianness."
-            "On big endian this is a no-op. On little endian the bytes are swapped.",
-
-            "let n = " doc::type_str!($sign $bits) "::from(0x1Au8);\n"
-            "if cfg!(target_endian = \"big\") {\n"
-            "    assert_eq!(n.to_be(), n);\n"
-            "} else {\n"
-            "    assert_eq!(n.to_be(), n.swap_bytes());\n"
-            "}"
+            "On big endian the underlying digits are reversed (as `bnum` integer digits are stored with the least significant digit first). On little endian the bytes are swapped."
         }
     };
 }
@@ -76,14 +55,7 @@ macro_rules! to_le {
             #to_le,
             $sign $bits,
             "Converts `self` from little endian to the target’s endianness."
-            "On little endian this is a no-op. On big endian the bytes are swapped.",
-
-            "let n = " doc::type_str!($sign $bits) "::from(0x1Au8);\n"
-            "if cfg!(target_endian = \"little\") {\n"
-            "    assert_eq!(n.to_le(), n);\n"
-            "} else {\n"
-            "    assert_eq!(n.to_le(), n.swap_bytes());\n"
-            "}"
+            "On little endian this is a no-op. On big endian the bytes of each digit are swapped (as `bnum` integer digits are stored with the least significant digit first)."
         }
     };
 }
