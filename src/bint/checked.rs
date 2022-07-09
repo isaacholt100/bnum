@@ -225,7 +225,7 @@ mod tests {
         cases: [
             (23098403i32 as itest, 0i8),
             (itest::MIN, -1i8),
-            (8388600i32 as itest, 68201i32 as itest) // tests the unlikely condition
+            (8388600i32 as itest, 68201i32 as itest) // tests the unlikely condition in the division algorithm at step D5
         ]
     }
     test_bignum! {

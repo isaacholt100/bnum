@@ -396,7 +396,7 @@ impl<const N: usize> BUint<N> {
                         // `rhs` divides `self` exactly so just return `self`
                         Some(self)
                     } else {
-                        // `next_multiple = (self / rhs) * rhs + rhs = (self - rem) + rhs`
+                        // `next_multiple = floor(self / rhs) * rhs + rhs = (self - rem) + rhs`
                         self.checked_add(rhs - rem)
                     }
                 },
@@ -442,8 +442,8 @@ mod tests {
     test_bignum! {
         function: <utest>::checked_div(a: utest, b: utest),
         cases: [
-            (328622u32 as utest, 10000u32 as utest), // tests the unlikely condition
-            (2074086u32 as utest, 76819u32 as utest) // tests the unlikely condition
+            (328622u32 as utest, 10000u32 as utest), // tests the unlikely condition in the division algorithm at step D5
+            (2074086u32 as utest, 76819u32 as utest) // tests the unlikely condition in the division algorithm at step D5
         ]
     }
     test_bignum! {

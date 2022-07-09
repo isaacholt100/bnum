@@ -41,7 +41,7 @@ impl_const! {
                 let a = self.digits[i];
                 let b = other.digits[i];
 
-                // Don't use match here as `cmp` is not yet const for primitive integers
+                // Clippy: don't use match here as `cmp` is not yet const for primitive integers
                 #[allow(clippy::comparison_chain)]
                 if a > b {
                     return Ordering::Greater;

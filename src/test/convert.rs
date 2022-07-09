@@ -63,17 +63,6 @@ impl TestConvert for f32 {
     }
 }
 
-/*impl TestConvert for F64 {
-    type Output = u64;
-
-    #[inline]
-    fn into(self) -> Self::Output {
-        unsafe {
-            self.to_bits().as_()
-        }
-    }
-}*/
-
 impl<T: TestConvert, U: TestConvert> TestConvert for (T, U) {
     type Output = (<T as TestConvert>::Output, <U as TestConvert>::Output);
 
