@@ -1,7 +1,6 @@
 use super::Float;
 use core::num::FpCategory;
 use core::ops::{Add, Sub, Mul, Div, Rem, Neg};
-use core::convert::TryInto;
 use crate::{BUint, Bint, ExpType, digit};
 use core::iter::{Product, Sum, Iterator};
 use crate::cast::As;

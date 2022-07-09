@@ -2,7 +2,6 @@ use super::BInt;
 use crate::digit::{self, Digit};
 use crate::errors;
 use crate::{BUint, ExpType};
-use core::convert::TryFrom;
 use num_integer::{Integer, Roots};
 use num_traits::{
     AsPrimitive, Bounded, CheckedAdd, CheckedDiv, CheckedMul, CheckedNeg, CheckedRem, CheckedShl,
@@ -71,6 +70,42 @@ macro_rules! from_uint {
     };
 }
 
+macro_rules! from_float {
+	($method: ident, $float: ty) => {
+		#[inline]
+		fn $method(f: $float) -> Option<Self> {
+			if f.is_sign_negative() {
+				let i = Self::from_bits(BUint::$method(-f)?);
+				if i == Self::MIN {
+					Some(Self::MIN)
+				} else if i.is_negative() {
+					None
+				} else {
+					Some(-i)
+				}
+			} else {
+				let i = Self::from_bits(BUint::$method(f)?);
+				if i.is_negative() {
+					None
+				} else {
+					Some(i)
+				}
+			}
+		}
+	};
+}
+
+#[test]
+fn test_i8_from_f32() {
+	use crate::test::types::I8;
+
+	let f = -128.0f32;
+	let a = i8::from_f32(f);
+	let b = I8::from_f32(f);
+
+	assert_eq!(b, a.map(|i| i.into()));
+}
+
 impl<const N: usize> FromPrimitive for BInt<N> {
     from_uint!(u8, from_u8);
     from_uint!(u16, from_u16);
@@ -85,15 +120,8 @@ impl<const N: usize> FromPrimitive for BInt<N> {
     from_int!(i128, from_i128);
     from_int!(isize, from_isize);
 
-    #[inline]
-    fn from_f32(f: f32) -> Option<Self> {
-        Self::try_from(f).ok()
-    }
-
-    #[inline]
-    fn from_f64(f: f64) -> Option<Self> {
-        Self::try_from(f).ok()
-    }
+    from_float!(from_f32, f32);
+    from_float!(from_f64, f64);
 }
 
 crate::nightly::impl_const! {

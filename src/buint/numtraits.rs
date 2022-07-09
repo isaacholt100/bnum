@@ -9,8 +9,39 @@ use num_traits::{
     Saturating, SaturatingAdd, SaturatingMul, SaturatingSub, ToPrimitive, Unsigned, WrappingAdd,
     WrappingMul, WrappingNeg, WrappingShl, WrappingShr, WrappingSub, Zero,
 };
+use super::cast::{decode_f32, decode_f64, u32_bits, u64_bits};
 
 crate::int::numtraits::impls!(BUint);
+
+macro_rules! from_float {
+    ($method: ident, $float: ty, $decoder: ident, $mant_bits: ident) => {
+		#[inline]
+		fn $method(f: $float) -> Option<Self> {
+			if !f.is_finite() {
+				return None;
+			}
+			if f == 0.0 {
+				return Some(Self::ZERO);
+			}
+			if f.is_sign_negative() {
+				return None;
+			}
+			let (mut mant, exp) = $decoder(f);
+			if exp.is_negative() {
+				mant = mant.checked_shr((-exp) as ExpType).unwrap_or(0);
+				if $mant_bits(mant) > Self::BITS {
+					return None;
+				}
+				Some(Self::cast_from(mant))
+			} else {
+				if $mant_bits(mant) + exp as ExpType > Self::BITS {
+					return None;
+				}
+				Some(Self::cast_from(mant) << exp)
+			}
+		}
+    };
+}
 
 //impl_const! {
 impl<const N: usize> FromPrimitive for BUint<N> {
@@ -68,17 +99,12 @@ impl<const N: usize> FromPrimitive for BUint<N> {
         }
     }
 
-    #[inline]
-    fn from_f32(f: f32) -> Option<Self> {
-        Self::try_from(f).ok()
-    }
-
-    #[inline]
-    fn from_f64(f: f64) -> Option<Self> {
-        Self::try_from(f).ok()
-    }
+	from_float!(from_f32, f32, decode_f32, u32_bits);
+	from_float!(from_f64, f64, decode_f64, u64_bits);
 }
 //}
+
+
 
 impl_const! {
     impl<const N: usize> const Integer for BUint<N> {

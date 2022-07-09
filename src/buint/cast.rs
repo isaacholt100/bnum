@@ -1,4 +1,3 @@
-use super::convert::{decode_f32, decode_f64};
 use super::BUint;
 use crate::cast::CastFrom;
 use crate::digit::{self, Digit};
@@ -222,13 +221,35 @@ impl_const! {
     }
 }
 
-const fn u32_bits(u: &u32) -> ExpType {
+pub const fn u32_bits(u: u32) -> ExpType {
     32 - u.leading_zeros() as ExpType
 }
 
-const fn u64_bits(u: &u64) -> ExpType {
+pub const fn u64_bits(u: u64) -> ExpType {
     64 - u.leading_zeros() as ExpType
 }
+
+macro_rules! decode_float {
+    ($name: ident, $f: ty, $u: ty) => {
+        pub fn $name(f: $f) -> ($u, i16) {
+            const BITS: u32 = core::mem::size_of::<$f>() as u32 * 8;
+            const MANT_MASK: $u = <$u>::MAX >> (BITS - (<$f>::MANTISSA_DIGITS - 1));
+            const EXP_MASK: $u = <$u>::MAX >> 1;
+            const BIAS: i16 = <$f>::MAX_EXP as i16 - 1;
+
+            let bits = f.to_bits();
+            let exp = ((bits & EXP_MASK) >> (<$f>::MANTISSA_DIGITS - 1)) as i16;
+            let mut mant = bits & MANT_MASK;
+            if exp != 0 {
+                mant |= (1 << (<$f>::MANTISSA_DIGITS - 1));
+            }
+            (mant, exp - (BIAS + <$f>::MANTISSA_DIGITS as i16 - 1))
+        }
+    };
+}
+
+decode_float!(decode_f32, f32, u32);
+decode_float!(decode_f64, f64, u64);
 
 macro_rules! cast_from_float {
     ($f: ty, $exp_type: ty, $decoder: expr, $mant_bits: expr) => {
@@ -246,12 +267,12 @@ macro_rules! cast_from_float {
             let (mut mant, exp) = $decoder(from);
             if exp.is_negative() {
                 mant = mant.checked_shr((-exp) as $exp_type).unwrap_or(0);
-                if $mant_bits(&mant) > Self::BITS {
+                if $mant_bits(mant) > Self::BITS {
                     return Self::MAX;
                 }
                 Self::cast_from(mant)
             } else {
-                if $mant_bits(&mant) + exp as ExpType > Self::BITS {
+                if $mant_bits(mant) + exp as ExpType > Self::BITS {
                     return Self::MAX;
                 }
                 Self::cast_from(mant) << exp

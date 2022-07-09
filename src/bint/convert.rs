@@ -88,66 +88,6 @@ impl_const! {
     }
 }
 
-impl<const N: usize> TryFrom<f32> for BInt<N> {
-    type Error = TryFromIntError;
-
-    #[inline]
-    fn try_from(f: f32) -> Result<Self, Self::Error> {
-        if f.is_sign_negative() {
-            let x = BInt::from_bits(BUint::try_from(-f)?);
-            if x.is_negative() {
-                return Err(TryFromIntError {
-                    from: stringify!($float),
-                    to: "BInt",
-                    reason: TooLarge,
-                });
-            }
-            Ok(-x)
-        } else {
-            let x = BInt::from_bits(BUint::try_from(f)?);
-            if x.is_negative() {
-                return Err(TryFromIntError {
-                    from: stringify!($float),
-                    to: "BInt",
-                    reason: TooLarge,
-                });
-            }
-            Ok(x)
-        }
-    }
-}
-
-impl<const N: usize> TryFrom<f64> for BInt<N> {
-    type Error = TryFromIntError;
-
-    #[inline]
-    fn try_from(f: f64) -> Result<Self, Self::Error> {
-        if f.is_sign_negative() {
-            let x = BUint::try_from(-f)?;
-            let out = Self::from_bits(x);
-            if out.is_negative() {
-                return Err(TryFromIntError {
-                    from: stringify!($float),
-                    to: "BInt",
-                    reason: TooLarge,
-                });
-            }
-            Ok(-out)
-        } else {
-            let x = BUint::try_from(f)?;
-            let out = Self::from_bits(x);
-            if out.is_negative() {
-                return Err(TryFromIntError {
-                    from: stringify!($float),
-                    to: "BInt",
-                    reason: TooLarge,
-                });
-            }
-            Ok(out)
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use crate::test;

@@ -337,7 +337,10 @@ macro_rules! test_from_primitive {
 		paste::paste! {
 			$(
 				test_bignum! {
-					function: <$int>::[<from_ $prim>](u: $prim)
+					function: <$int>::[<from_ $prim>](u: $prim),
+					cases: [
+						(<$int>::MIN as $prim)
+					]
 				}
 			)*
 		}
