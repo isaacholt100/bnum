@@ -232,8 +232,12 @@ macro_rules! check_zero_or_one {
 }
 
 /*
-The `fixpoint` function and the implementation of `Roots` below are adapted from the Rust `num_bigint` library: https://docs.rs/num-bigint/latest/num_bigint/ used under the MIT license.
-The original license file and copyright notice for this project can be found in this project's root at licenses/LICENSE-num-bigint.
+The `fixpoint` function and the implementation of `Roots` below are adapted from the Rust `num_bigint` library, https://docs.rs/num-bigint/latest/num_bigint/, modified under the MIT license. The changes are released under either the MIT license or the Apache License 2.0, as described in the README. See LICENSE-MIT or LICENSE-APACHE at the project root.
+
+The appropriate copyright notice for the `num_bigint` code is given below:
+Copyright (c) 2014 The Rust Project Developers
+
+The original license file and copyright notice for `num_bigint` can be found in this project's root at licenses/LICENSE-num-bigint.
 */
 
 impl<const N: usize> BUint<N> {

@@ -1,8 +1,8 @@
 /*
-Most of the code in this file is adapted from code from the Rust `rand` library: https://docs.rs/rand/latest/rand/ used under the MIT license.
-The original license file for this project can be found in this project's root at licenses/LICENSE-rand.
+Most of the code in this file is adapted from code from the Rust `rand` library, https://docs.rs/rand/latest/rand/, modified under the MIT license. The changes are released under either the MIT license or the Apache License 2.0, as described in the README. See LICENSE-MIT or LICENSE-APACHE at the project root.
+The original license file for `rand` can be found in this project's root at licenses/LICENSE-rand.
 
-The appropriate copyright notices for this is given below:
+The appropriate copyright notices for this are given below:
 Copyright 2018 Developers of the Rand project.
 Copyright 2013-2017 The Rust Project Developers.
 Copyright 2018-2020 Developers of the Rand project.

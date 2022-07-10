@@ -95,17 +95,6 @@ macro_rules! from_float {
 	};
 }
 
-#[test]
-fn test_i8_from_f32() {
-	use crate::test::types::I8;
-
-	let f = -128.0f32;
-	let a = i8::from_f32(f);
-	let b = I8::from_f32(f);
-
-	assert_eq!(b, a.map(|i| i.into()));
-}
-
 impl<const N: usize> FromPrimitive for BInt<N> {
     from_uint!(u8, from_u8);
     from_uint!(u16, from_u16);

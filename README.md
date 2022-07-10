@@ -6,7 +6,7 @@ Arbitrary precision, fixed-size signed and unsigned integer types for Rust: `BIn
 
 The aim of this crate is to provide integer types of any fixed size which behave exactly like Rust's primitive integer types: `u8`, `i8`, `u16`, `i16`, etc. Nearly all methods defined on Rust's signed and unsigned primitive integers are defined on `BInt` and `BUint` respectively. Additionally, some other useful methods are provided, mostly inspired by the `BigInt` and `BigUint` types from the `num` crate.
 
-This crate uses Rust's const generics to allow creation integers of any size that can be determined at compile time. `BUint<N>` is stored as an array of digits (primitive unsigned integers) of length `N`. `BInt` is simply stored as a `BUint` in two's complement.
+This crate uses Rust's const generics to allow creation integers of any size that can be determined at compile time. `BUint<N>` is stored as an array of digits (primitive unsigned integers) of length `N`. This means all `BUint` (and `BInt`s) can be stored on the stack, as they are fixed size. `BInt` is simply stored as a `BUint` in two's complement.
 
 `bnum` can be used in `no_std` environments, provided a global default allocator is configured.
 
@@ -28,7 +28,7 @@ The `numtraits` feature includes implementations of traits from the [`num_traits
 
 ### `u8` Digit
 
-By default, each "digit" which is stored in a `BUint` (or a `BInt`) is a `u64`. This gives the best performance as having a larger number of bits in each digit means less digits need to be stored for a given type, so less operations need to be performed. The drawback of this is that the number of bits in a `BUint` or a `BInt` is a multiple of 64. For situations where memory is limited or a more precise size is required, the `u8_digit` feature can be enabled. This means that each digit is now stored as a `u8` instead of a `u64`, so the number of bits can be any multiple of 8 instead of 64.
+By default, each "digit" which is stored in a `BUint` (or a `BInt`) is a `u64`. This means that the integer is stored as an array base `2^64` digits. This gives the best performance as having a larger number of bits in each digit means less digits need to be stored for a given type, so less operations need to be performed. The drawback of this is that the number of bits in a `BUint` or a `BInt` is a multiple of 64. For situations where memory is limited or a more precise size is required, the `u8_digit` feature can be enabled. This means that each digit is now stored as a `u8` instead of a `u64`, so the number of bits can be any multiple of 8 instead of 64. The integer is therefore stored as an array base `2^8` digits.
 
 ### Nightly features
 
@@ -42,7 +42,7 @@ This crate is tested with the [`quickcheck`](https://docs.rs/quickcheck/latest/q
 
 ## Documentation
 
-Documentation for this project is currently incomplete and will be completed at a later date. In the meantime, since the API for all undocumented methods is the same as for the equivalent for a signed or unsigned primitive integer, the documentation for these can be referred to instead, e.g. [`u64`](https://doc.rust-lang.org/std/primitive.u64.html) or [`i64`](https://doc.rust-lang.org/std/primitive.i64.html).
+Documentation for this project is currently incomplete and will be completed at a later date. In the meantime, since the API for all undocumented methods is the same as for the equivalent signed or unsigned primitive integer, the documentation for these can be referred to instead, e.g. [`u64`](https://doc.rust-lang.org/std/primitive.u64.html) or [`i64`](https://doc.rust-lang.org/std/primitive.i64.html).
 
 ## Known Issues
 
@@ -52,10 +52,14 @@ The `num_traits::NumCast` trait is implemented for `BUint` and `BInt` but will p
 
 ## Future Work
 
-This library aims to provide arbitrary precision equivalents of Rust's 3 built-in number types: signed integers (`BInt`), unsigned integers (`BUint`) and floats. Signed and unsigned integers have been implemented and nearly fully tested, and will keep up to date with Rust's integer interface (e.g. when a new method is implemented on a Rust primitive integer, this library will be updated to include that method as well).
+This library aims to provide arbitrary precision equivalents of Rust's 3 built-in number types: signed integers (`BInt`), unsigned integers (`BUint`) and floats. Signed and unsigned integers have been implemented and nearly fully tested, and will aim to keep up to date with Rust's integer interface (e.g. when a new method is implemented on a Rust primitive integer, this library will attempt to keep in step to include that method as well).
 
 Currently, arbitrary precision fixed size floats are being worked on but are incomplete. Most of the basic methods have been implemented but are not fully tested, and at the moment    there is no implementation of the transcendental floating point methods such as `sin`, `exp`, `log`, etc.
 
 Obviously, the documentation needs to be completed, and benchmarks need to be written as well. This will take priority over the implementation of floats.
 
 Additionally, a proc macro for parsing numeric values is being developed, which will allow easier creation of large constant values for `BInt` and `BUint`.
+
+## Licensing
+
+bnum is licensed under either the MIT license or the Apache License 2.0.
