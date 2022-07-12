@@ -90,6 +90,8 @@ use ::{
 /// Big unsigned integer type, of fixed size which must be known at compile time.
 ///
 /// Digits are stored in little endian (least significant digit first). `BUint<N>` aims to exactly replicate the behaviours of Rust's built-in unsigned integer types: `u8`, `u16`, `u32`, `u64`, `u128` and `usize`. The const generic parameter `N` is the number of digits that are stored.
+/// 
+#[doc = doc::arithmetic_doc!(BUint)]
 
 // Clippy: we can allow derivation of `Hash` and manual implementation of `PartialEq` as the derived `PartialEq` would be the same except we make our implementation const.
 #[allow(clippy::derive_hash_xor_eq)]

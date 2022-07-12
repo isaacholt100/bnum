@@ -19,7 +19,7 @@ The behavior matches the behavior of the `as` conversion operator between primit
 
 macro_rules! as_method_doc {
 	() => {
-"Casts `self` to type `T`. The semantics of numeric casting with the `as` operator are followed, so `<T as As>::as_::<U>` can be used in the same way as `T as U` for numeric conversions.
+"Casts `self` to type `T`. The [semantics of numeric casting](https://doc.rust-lang.org/reference/expressions/operator-expr.html#semantics) with the `as` operator are followed, so `<T as As>::as_::<U>` can be used in the same way as `T as U` for numeric conversions.
 
 # Examples
  

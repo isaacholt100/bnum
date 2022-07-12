@@ -37,7 +37,7 @@ impl<const N: usize> Distribution<BInt<N>> for Standard {
 
 /// Wrapper type designed to be filled with random big integers.
 ///
-/// This type exists because [`rand::Fill`](https://docs.rs/rand/latest/rand/trait.Fill.html) can't be implemented for `[BUint<N>]` or `[BInt<N>]` due to Rust's orphan rules. Instead, it is implemented for `Slice<BUint<N>>` and `Slice<BInt<N>>`. The underlying slice can then be accessed by calling `as_ref` or `as_mut` on the wrapper, or deferencing it. An alternative way of filling a slice with random big integers is using the `try_fill_slice` method in this crate's `random` module.
+/// This type exists because [`rand::Fill`](https://docs.rs/rand/latest/rand/trait.Fill.html) can't be implemented for `[BUint<N>]` or `[BInt<N>]` due to Rust's orphan rules. Instead, it is implemented for `Slice<BUint<N>>` and `Slice<BInt<N>>`. The underlying slice can then be accessed by calling [`AsRef::as_ref`](https://doc.rust-lang.org/core/convert/trait.AsRef.html#tymethod.as_ref) or [`AsMut::as_mut`](https://doc.rust-lang.org/core/convert/trait.AsMut.html#tymethod.as_mut) on the wrapper, or deferencing it. An alternative way of filling a slice with random big integers is using the [`try_fill_slice`] method in this crate's [`random`](crate::random) module.
 pub struct Slice<T>(pub [T]);
 
 impl<T> AsRef<[T]> for Slice<T> {
@@ -93,7 +93,24 @@ fill_impl!(BInt<N>);
 
 /// Fills a slice with random big integers.
 ///
-/// An alternative way of filling a slice with random big integers is using the [`rand::Fill`](https://docs.rs/rand/latest/rand/trait.Fill.html) trait's method `fill` on the `Slice` struct in this crate's `random` module.
+/// An alternative way of filling a slice with random big integers is using the [`rand::Fill`](https://docs.rs/rand/latest/rand/trait.Fill.html) trait's method [`try_fill`](https://docs.rs/rand/latest/rand/trait.Fill.html#tymethod.try_fill) on the [`Slice`] struct in this crate's [`random`](crate::random) module.
+/// 
+/// # Examples
+/// 
+/// ```
+/// // Fill a `Vec` of length 10 with random `I256`s
+/// 
+/// use bnum::types::I256;
+/// use bnum::random;
+/// 
+/// let mut v = vec![I256::ZERO; 10];
+/// let mut rng = rand::thread_rng();
+/// 
+/// random::try_fill_slice(&mut v, &mut rng).unwrap();
+/// // each initial `I256::ZERO` is replaced with a random `I256`
+/// 
+/// println!("{:?}", v);
+/// ```
 pub fn try_fill_slice<T, R: Rng + ?Sized>(slice: &mut [T], rng: &mut R) -> Result<(), Error>
 where
     Slice<T>: Fill,
@@ -106,14 +123,14 @@ where
 use serde::{Deserialize, Serialize};
 
 macro_rules! uniform_int_doc {
-	() => {
-"Used for generating random integers in a given range.
+	($Int: ty) => {
+concat!("Used for generating random [`", stringify!($Int), "`]s in a given range.
 
-Implements the [`UniformSampler`](https://docs.rs/rand/latest/rand/distributions/uniform/trait.UniformSampler.html) trait from the `rand` crate. This struct should not be used directly; instead use the [`Uniform`](https://docs.rs/rand/latest/rand/distributions/struct.Uniform.html) struct from the `rand` crate."
+Implements the [`UniformSampler`](https://docs.rs/rand/latest/rand/distributions/uniform/trait.UniformSampler.html) trait from the [`rand`](https://docs.rs/rand/latest/rand/) crate. This struct should not be used directly; instead use the [`Uniform`](https://docs.rs/rand/latest/rand/distributions/struct.Uniform.html) struct from the [`rand`](https://docs.rs/rand/latest/rand/) crate.")
 	}
 }
 
-#[doc = uniform_int_doc!()]
+#[doc = uniform_int_doc!(BUint)]
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct UniformBUint<const N: usize> {
@@ -122,7 +139,7 @@ pub struct UniformBUint<const N: usize> {
     z: BUint<N>,
 }
 
-#[doc = uniform_int_doc!()]
+#[doc = uniform_int_doc!(BInt)]
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct UniformBInt<const N: usize> {

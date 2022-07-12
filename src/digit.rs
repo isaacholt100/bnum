@@ -1,8 +1,8 @@
 macro_rules! digit_doc {
     () => {
-        "The digit type that `BUint` is composed of.
+"The digit type that `BUint` is composed of.
 
-By default it is a `u64`. Activating the `u8_digit` feature will make it a `u8` instead."
+By default it is a [`u64`]. Activating the `u8_digit` feature will make it a [`u8`] instead."
     };
 }
 

@@ -55,11 +55,13 @@ impl<const N: usize> BInt<N> {
     }
 
 	crate::nightly::const_fns! {
-		/// Create an integer value from a slice of bytes in big endian. The value is wrapped in an `Option` as the integer represented by the slice of bytes may represent an integer large to be represented by the type.
+		/// Create an integer value from a slice of bytes in big endian. The value is wrapped in an [`Option`](https://doc.rust-lang.org/core/option/enum.Option.html) as the integer represented by the slice of bytes may represent an integer too large to be represented by the type.
 		///
 		/// If the length of the slice is shorter than `Self::BYTES`, the slice is padded with zeros or ones at the start so that it's length equals `Self::BYTES`. It is padded with ones if the bytes represent a negative integer, otherwise it is padded with zeros.
 		///
 		/// If the length of the slice is longer than `Self::BYTES`, `None` will be returned, unless the bytes represent a non-negative integer and leading zeros from the slice can be removed until the length of the slice equals `Self::BYTES`, or if the bytes represent a negative integer and leading ones from the slice can be removed until the length of the slice equals `Self::BYTES`.
+		///
+		/// For examples, see the [`from_be_slice`](crate::BUint::from_be_slice) method documentation for [`BUint`](crate::BUint).
 		#[must_use = doc::must_use_op!()]
 		pub const fn from_be_slice(slice: &[u8]) -> Option<Self> {
 			let len = slice.len();
@@ -102,13 +104,13 @@ impl<const N: usize> BInt<N> {
 			}
 		}
 
-		/// Creates an integer value from a slice of bytes in little endian. The value is wrapped in an `Option` as the bytes may represent an integer too large to be represented by the type.
+		/// Creates an integer value from a slice of bytes in little endian. The value is wrapped in an [`Option`](https://doc.rust-lang.org/core/option/enum.Option.html) as the bytes may represent an integer too large to be represented by the type.
 		///
 		/// If the length of the slice is shorter than `Self::BYTES`, the slice is padded with zeros or ones at the end so that it's length equals `Self::BYTES`. It is padded with ones if the bytes represent a negative integer, otherwise it is padded with zeros.
 		///
 		/// If the length of the slice is longer than `Self::BYTES`, `None` will be returned, unless the bytes represent a non-negative integer and trailing zeros from the slice can be removed until the length of the slice equals `Self::BYTES`, or if the bytes represent a negative integer and trailing ones from the slice can be removed until the length of the slice equals `Self::BYTES`.
 		///
-		/// For examples, see the `from_le_slice` method documentation for `BUint`.
+		/// For examples, see the [`from_le_slice`](crate::BUint::from_le_slice) method documentation for [`BUint`](crate::BUint).
 		#[must_use = doc::must_use_op!()]
 		pub const fn from_le_slice(slice: &[u8]) -> Option<Self> {
 			let len = slice.len();

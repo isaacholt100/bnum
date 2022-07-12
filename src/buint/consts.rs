@@ -6,7 +6,7 @@ use crate::ExpType;
 macro_rules! pos_const {
     ($($name: ident $num: literal), *) => {
         $(
-            #[doc = concat!("The value of ", $num, " represented by this type.")]
+            #[doc = doc::consts::value_desc!($num)]
             pub const $name: Self = Self::from_digit($num);
         )*
     }

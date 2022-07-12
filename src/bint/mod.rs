@@ -14,7 +14,9 @@ use serde::{Deserialize, Serialize};
 
 /// Big signed integer type, of fixed size which must be known at compile time.
 ///
-/// Digits are stored in little endian (least significant digit first). `BInt<N>` aims to exactly replicate the behaviours of Rust's built-in signed integer types: `i8`, `i16`, `i32`, `i64`, `i128` and `isize`. The const generic parameter `N` is the number of digits that are stored in the underlying `BUint`.
+/// Digits of the underlying [`BUint`](crate::BUint) are stored in little endian (least significant digit first). `BInt<N>` aims to exactly replicate the behaviours of Rust's built-in signed integer types: [`i8`], [`i16`], [`i32`], [`i64`], [`i128`] and [`isize`]. The const generic parameter `N` is the number of digits that are stored in the underlying [`BUint`].
+/// 
+#[doc = doc::arithmetic_doc!(BInt)]
 
 // Clippy: we can allow derivation of `Hash` and manual implementation of `PartialEq` as the derived `PartialEq` would be the same except we make our implementation const.
 #[allow(clippy::derive_hash_xor_eq)]

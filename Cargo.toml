@@ -4,13 +4,13 @@ version = "0.1.0"
 authors = ["isaac-holt <isaac_holt@icloud.com>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
-description = "Arbitrary precision, fixed size numeric types that extend the functionality of primitive numeric types in Rust."
+description = "Arbitrary, fixed size numeric types that extend the functionality of primitive numeric types in Rust."
 homepage = "https://github.com/isaacholt100/bnum"
 documentation = "https://docs.rs/bnum/latest/bnum"
 repository = "https://github.com/isaacholt100/bnum"
 readme = "README.md"
 keywords = ["uint", "int", "bignum", "maths", "arbitrary"]
-categories = ["numbers", "algorithms", "mathematics", "big number"]
+categories = ["numbers", "algorithms", "mathematics", "integers"]
 exclude = ["src/float/*", "src/tests"]
 
 [features]
@@ -26,7 +26,6 @@ num-traits = { version = "0.2.15", optional = true }
 serde = { version = "1.0.126", features = ["derive"], optional = true }
 serde-big-array = { version = "0.3.2", features = ["const-generics"], optional = true }
 rand = { version = "0.8.5", features = ["min_const_gen"], optional = true }
-serde_json = { version = "1.0", optional = true }
 
 [dev-dependencies]
 quickcheck = "1.0.3"

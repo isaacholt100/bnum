@@ -36,7 +36,7 @@ macro_rules! zero {
     ($sign: ident $bits: literal) => {
         doc::doc_comment! {
             $sign $bits,
-            "The value of zero represented by this type.",
+            doc::consts::value_desc!(0),
 
             "assert_eq!(" doc::type_str!($sign $bits) "::ZERO, " doc::type_str!($sign $bits) "::from(0u8));"
         }
@@ -49,7 +49,7 @@ macro_rules! one {
     ($sign: ident $bits: literal) => {
         doc::doc_comment! {
             $sign $bits,
-            "The value of one represented by this type.",
+            doc::consts::value_desc!(1),
 
             "assert_eq!(" doc::type_str!($sign $bits) "::ONE, " doc::type_str!($sign $bits) "::from(1u8));"
         }
@@ -75,7 +75,7 @@ macro_rules! bytes {
     ($sign: ident $bits: literal, $digit_bits: literal) => {
         doc::doc_comment! {
             $sign $bits,
-            "The total number of bits that this type contains.",
+            "The total number of bytes that this type contains.",
 
             "assert_eq!(" doc::type_str!($sign $bits) "::BYTES, " $digit_bits " / 8);"
         }
@@ -83,3 +83,11 @@ macro_rules! bytes {
 }
 
 pub(crate) use bytes;
+
+macro_rules! value_desc {
+	($($lit: literal) +) => {
+		concat!("The value of `", $($lit,)+ "` represented by this type.")
+	}
+}
+
+pub(crate) use value_desc;

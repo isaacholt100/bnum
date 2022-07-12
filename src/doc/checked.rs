@@ -5,7 +5,7 @@ macro_rules! impl_desc {
         doc::arithmetic_impl_desc!(
             "Checked",
             "checked",
-            "Each method cannot panic and returns an `Option<Self>`."
+            "Each method cannot panic and returns an `Option<Self>`. `None` is returned when overflow would have occurred or there was an attempt to divide by zero or calculate a remainder with a divisor of zero."
         )
     };
 }

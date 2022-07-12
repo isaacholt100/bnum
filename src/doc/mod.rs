@@ -9,6 +9,14 @@ pub mod unchecked;
 
 pub mod wrapping;
 
+macro_rules! arithmetic_doc {
+	($Int: ty) => {
+concat!("`", stringify!($Int), "` implements all the arithmetic traits from the [`core::ops`](https://doc.rust-lang.org/core/ops/) module. The behaviour of the implementation of these traits is the same as for Rust's primitive integers - i.e. in debug mode it panics on overflow, and in release mode it performs two's complement wrapping (see <https://doc.rust-lang.org/book/ch03-02-data-types.html#integer-overflow>). However, an attempt to divide by zero or calculate a remainder with a divisor of zero will always panic, unless using the [`checked_`](#method.checked_div) methods, which never panic.")
+	}
+}
+
+pub(crate) use arithmetic_doc;
+
 macro_rules! must_use_op {
 	() => {
 		"this returns the result of the operation, without modifying the original"
@@ -223,7 +231,7 @@ macro_rules! rotate_right {
             $sign $bits,
             "Shifts the bits to the left by a specified amount, `n`, wrapping the truncated bits to the end of the resulting integer."
             "Please note this isn't the same operation as the `>>` shifting operator!"
-            "`rotate_right(n)` is equivalent to `rotate_left(BITS - n)` where `BITS` is the size of the type in bits."
+            "`self.rotate_right(n)` is equivalent to `self.rotate_left(Self::BITS - n)`."
         }
     }
 }
@@ -280,7 +288,7 @@ macro_rules! next_power_of_two {
         doc::doc_comment! {
 			#next_power_of_two,
             $sign $bits,
-            concat!("When return value overflows, it panics in debug mode and the return value is wrapped to", $wrap, "in release mode (the only situation in which method can return ", $wrap, ")."),
+            concat!("When return value overflows, it panics in debug mode and the return value is wrapped to ", $wrap, " in release mode (the only situation in which method can return ", $wrap, ")."),
 
             "let n = " doc::type_str!($sign $bits) "::from(2u8);\n"
             "assert_eq!(n.next_power_of_two(), n);\n"
@@ -305,7 +313,7 @@ macro_rules! bits {
     ($sign: ident $bits: literal) => {
         doc::doc_comment! {
             $sign $bits,
-            "Returns the fewest bits necessary to represent `self`."
+            "Returns the smallest number of bits necessary to represent `self`."
             "This is equal to the size of the type in bits minus the leading zeros of `self`.",
 
             "assert_eq!(" doc::type_str!($sign $bits) "::from(0b1111001010100u16).bits(), 13);\n"
@@ -320,7 +328,7 @@ macro_rules! bit {
     ($sign: ident $bits: literal) => {
         doc::doc_comment! {
             $sign $bits,
-            "Returns a boolean of the bit in the given position (`true` if the bit is set).",
+            "Returns a boolean representing the bit in the given position (`true` if the bit is set). The least significant bit is at index `0`, the most significant bit is at index `Self::BITS - 1`",
 
             "let n = " doc::type_str!($sign $bits) "::from(0b001010100101010101u32);\n"
             "assert!(n.bit(0));\n"

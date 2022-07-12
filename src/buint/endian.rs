@@ -68,7 +68,7 @@ impl<const N: usize> BUint<N> {
 	}
 
 	crate::nightly::const_fns! {
-		/// Create an integer value from a slice of bytes in big endian. The value is wrapped in an `Option` as the integer represented by the slice of bytes may represent an integer large to be represented by the type.
+		/// Create an integer value from a slice of bytes in big endian. The value is wrapped in an `Option` as the integer represented by the slice of bytes may represent an integer too large to be represented by the type.
 		///
 		/// If the length of the slice is shorter than `Self::BYTES`, the slice is padded with zeros at the start so that it's length equals `Self::BYTES`.
 		///

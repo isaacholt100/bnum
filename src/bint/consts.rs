@@ -6,7 +6,7 @@ use crate::{BUint, ExpType};
 macro_rules! pos_const {
     ($($name: ident $num: literal), *) => {
         $(
-            #[doc = concat!("The value of ", $num, " represented by this type.")]
+            #[doc = doc::consts::value_desc!($num)]
             pub const $name: Self = Self::from_bits(BUint::$name);
         )*
     }
@@ -15,7 +15,7 @@ macro_rules! pos_const {
 macro_rules! neg_const {
     ($($name: ident $num: literal), *) => {
         $(
-            #[doc = concat!("The value of -", $num, " represented by this type.")]
+            #[doc = doc::consts::value_desc!("-" $num)]
             pub const $name: Self = {
 				let mut u = BUint::MAX;
 				u.digits[0] -= ($num - 1);
