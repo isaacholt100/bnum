@@ -18,11 +18,11 @@ The default digit that is used to store [`BUint`] and [`BInt`] is [`u64`], so th
 
 ```rust
 // Calculate the `n`th Fibonacci number, using the type alias `U512`.
-// Note that this is just an example, it is not the most efficient algorithm to calculate Fibonacchi numbers!
+// Note that this is just an example, it is not the most efficient algorithm to calculate Fibonacci numbers!
 
 use bnum::types::U512;
 
-fn fibonacchi(n: usize) -> U512 {
+fn fibonacci(n: usize) -> U512 {
 	let mut f_n: U512 = U512::ZERO; // or `U512::from(0u8)`
 	let mut f_n_next: U512 = U512::ONE; // or `U512::from(1u8)`
 
@@ -36,10 +36,10 @@ fn fibonacchi(n: usize) -> U512 {
 }
 
 let n = 100;
-let f_n = fibonacchi(n);
+let f_n = fibonacci(n);
 
-println!("The {}th Fibonacchi number is {}", n, f_n);
-// Prints "The 100th Fibonacchi number is 354224848179261915075"
+println!("The {}th Fibonacci number is {}", n, f_n);
+// Prints "The 100th Fibonacci number is 354224848179261915075"
 
 assert_eq!(f_n, U512::from_str_radix("354224848179261915075", 10).unwrap());
 ```
