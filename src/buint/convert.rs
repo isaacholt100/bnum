@@ -45,7 +45,7 @@ macro_rules! from_uint {
     }
 }
 
-from_uint!(u8, u16, u32, usize, u64, u128);
+from_uint!(u8, u16, u32, u64, u128, usize);
 
 macro_rules! try_from_iint {
     ($($int: tt -> $uint: tt),*) => {

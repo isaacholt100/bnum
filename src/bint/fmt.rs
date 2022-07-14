@@ -1,5 +1,5 @@
 use super::BInt;
-use core::fmt::{self, Binary, Display, Formatter, LowerExp, LowerHex, Octal, UpperExp, UpperHex};
+use core::fmt::{self, Binary, Debug, Display, Formatter, LowerExp, LowerHex, Octal, UpperExp, UpperHex};
 
 macro_rules! fmt {
     ($format: expr, $pad: expr, $prefix: expr, $trait: tt) => {
@@ -21,7 +21,7 @@ impl<const N: usize> Display for BInt<N> {
     }
 }
 
-impl<const N: usize> fmt::Debug for BInt<N> {
+impl<const N: usize> Debug for BInt<N> {
     #[inline]
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         Display::fmt(&self, f)

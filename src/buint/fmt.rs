@@ -2,7 +2,7 @@ use super::BUint;
 use crate::digit;
 use alloc::string::String;
 use core::fmt::Write;
-use core::fmt::{self, Binary, Display, Formatter, LowerExp, LowerHex, Octal, UpperExp, UpperHex};
+use core::fmt::{self, Binary, Debug, Display, Formatter, LowerExp, LowerHex, Octal, UpperExp, UpperHex};
 
 macro_rules! fmt_method {
     ($format: expr, $format_pad: expr, $pad: expr, $prefix: expr) => {
@@ -35,7 +35,7 @@ impl<const N: usize> Binary for BUint<N> {
     fmt_method!("{:b}", "{:01$b}", digit::BITS as usize, "0b");
 }
 
-impl<const N: usize> core::fmt::Debug for BUint<N> {
+impl<const N: usize> Debug for BUint<N> {
     #[inline]
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         Display::fmt(&self, f)
