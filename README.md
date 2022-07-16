@@ -23,16 +23,16 @@ The default digit that is used to store `BUint` and `BInt` is [`u64`], so the nu
 use bnum::types::U512;
 
 fn fibonacci(n: usize) -> U512 {
-let mut f_n: U512 = U512::ZERO; // or `U512::from(0u8)`
-let mut f_n_next: U512 = U512::ONE; // or `U512::from(1u8)`
+    let mut f_n: U512 = U512::ZERO; // or `U512::from(0u8)`
+    let mut f_n_next: U512 = U512::ONE; // or `U512::from(1u8)`
 
-for _ in 0..n {
-let temp = f_n_next;
-f_n_next += f_n;
-f_n = temp;
-}
+    for _ in 0..n {
+        let temp = f_n_next;
+        f_n_next += f_n;
+        f_n = temp;
+    }
 
-f_n
+    f_n
 }
 
 let n = 100;
