@@ -19,6 +19,6 @@ jobs:
     - name: Update toolchain to nightly
       run: rustup install nightly
     - name: Build
-      run: cargo build --verbose
+      run: cargo +nightly build --all-features --verbose
     - name: Run tests
       run: sh scripts/run_all_tests.sh
