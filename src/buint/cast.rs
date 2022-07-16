@@ -34,7 +34,7 @@ impl<const N: usize> BUint<N> {
     }
 }
 
-macro_rules! buint_as {
+macro_rules! buint_as_int {
     ($($int: ty), *) => {
         $(impl_const! {
             impl<const N: usize> const CastFrom<BUint<N>> for $int {
@@ -54,91 +54,55 @@ macro_rules! buint_as {
     };
 }
 
-buint_as!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
+buint_as_int!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
 
-// TODO: combine these impls for f32 and f64 into a macro for both
-
-impl<const N: usize> CastFrom<BUint<N>> for f32 {
-	#[must_use = doc::must_use_op!()]
-    #[inline]
-    fn cast_from(from: BUint<N>) -> Self {
-        if from.is_zero() {
-            return 0.0;
-        }
-        let bits = from.bits();
-        let mut mant = if BUint::<N>::BITS > u32::BITS {
-            if bits < 24 {
-                u32::cast_from(from) << (24 - bits)
-            } else {
-                u32::cast_from(from >> (bits - 24))
-            }
-        } else if bits < 24 {
-            u32::cast_from(from) << (24 - bits)
-        } else {
-            u32::cast_from(from) >> (bits - 24)
-        };
-        let mut round_up = true;
-        if bits <= 24
-            || !from.bit(bits - 25)
-            || (mant & 1 == 0 && from.trailing_zeros() == bits - 25)
-        {
-            round_up = false;
-        }
-        let mut exp = bits as u32 + 127 - 1;
-        if round_up {
-            mant += 1;
-            if mant.leading_zeros() == 32 - 25 {
-                exp += 1;
-            }
-        }
-        if exp > f32::MAX_EXP as u32 + 127 {
-            return f32::INFINITY;
-        }
-        let mant = u32::cast_from(mant);
-        f32::from_bits((exp << 23) | (mant & (u32::MAX >> (32 - 23))))
-    }
+macro_rules! buint_as_float {
+	($f: ty, $u: ty) => {
+		impl<const N: usize> CastFrom<BUint<N>> for $f {
+			#[must_use = doc::must_use_op!()]
+			#[inline]
+			fn cast_from(from: BUint<N>) -> Self {
+				if from.is_zero() {
+					return 0.0;
+				}
+				let bits = from.bits();
+				let mut mant = if BUint::<N>::BITS > <$u>::BITS {
+					if bits < <$f>::MANTISSA_DIGITS {
+						<$u>::cast_from(from) << (<$f>::MANTISSA_DIGITS - bits)
+					} else {
+						<$u>::cast_from(from >> (bits - <$f>::MANTISSA_DIGITS))
+					}
+				} else if bits < <$f>::MANTISSA_DIGITS {
+					<$u>::cast_from(from) << (<$f>::MANTISSA_DIGITS - bits)
+				} else {
+					<$u>::cast_from(from) >> (bits - <$f>::MANTISSA_DIGITS)
+				};
+				let mut round_up = true;
+				if bits <= <$f>::MANTISSA_DIGITS
+					|| !from.bit(bits - (<$f>::MANTISSA_DIGITS + 1))
+					|| (mant & 1 == 0 && from.trailing_zeros() == bits - (<$f>::MANTISSA_DIGITS + 1))
+				{
+					round_up = false;
+				}
+				let mut exp = bits as $u + (<$f>::MAX_EXP - 1) as $u - 1;
+				if round_up {
+					mant += 1;
+					if mant.leading_zeros() == <$u>::BITS - (<$f>::MANTISSA_DIGITS + 1) {
+						exp += 1;
+					}
+				}
+				if exp > <$f>::MAX_EXP as $u + (<$f>::MAX_EXP - 1) as $u {
+					return <$f>::INFINITY;
+				}
+				let mant = <$u>::cast_from(mant);
+				<$f>::from_bits((exp << (<$f>::MANTISSA_DIGITS - 1)) | (mant & (<$u>::MAX >> (<$u>::BITS - (<$f>::MANTISSA_DIGITS as u32 - 1)))))
+			}
+		}
+	};
 }
 
-impl<const N: usize> CastFrom<BUint<N>> for f64 {
-	#[must_use = doc::must_use_op!()]
-    #[inline]
-    fn cast_from(from: BUint<N>) -> Self {
-        if from.is_zero() {
-            return 0.0;
-        }
-        let bits = from.bits();
-        let mut mant = if BUint::<N>::BITS > u64::BITS {
-            if bits < 53 {
-                u64::cast_from(from) << (53 - bits)
-            } else {
-                u64::cast_from(from >> (bits - 53))
-            }
-        } else if bits < 53 {
-            u64::cast_from(from) << (53 - bits)
-        } else {
-            u64::cast_from(from) >> (bits - 53)
-        };
-        let mut round_up = true;
-        if bits <= 53
-            || !from.bit(bits - 54)
-            || (mant & 1 == 0 && from.trailing_zeros() == bits - 54)
-        {
-            round_up = false;
-        }
-        let mut exp = bits as u64 + 1023 - 1;
-        if round_up {
-            mant += 1;
-            if mant.leading_zeros() == 64 - 54 {
-                exp += 1;
-            }
-        }
-        if exp > f64::MAX_EXP as u64 + 1023 {
-            return f64::INFINITY;
-        }
-        let mant = u64::cast_from(mant);
-        f64::from_bits((exp << 52) | (mant & (u64::MAX >> (64 - 52))))
-    }
-}
+buint_as_float!(f32, u32);
+buint_as_float!(f64, u64);
 
 macro_rules! as_buint {
     ($($ty: ty), *) => {

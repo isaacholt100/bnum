@@ -46,6 +46,7 @@ macro_rules! from_uint {
 }
 
 from_uint!(u8, u16, u32, u64, u128, usize);
+// TODO: decide whether it should be TryFrom<usize> or From<usize>, same for BInt
 
 macro_rules! try_from_iint {
     ($($int: tt -> $uint: tt),*) => {

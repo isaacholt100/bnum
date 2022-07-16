@@ -4,8 +4,6 @@ use crate::nightly::const_fns;
 use crate::ExpType;
 use crate::{doc, BInt};
 
-// TODO: these will no longer be necessary once const_bigint_helper_methods is stabilised: https://github.com/rust-lang/rust/issues/85532
-
 #[doc = doc::overflowing::impl_desc!()]
 impl<const N: usize> BUint<N> {
     #[doc = doc::overflowing::overflowing_add!(U)]

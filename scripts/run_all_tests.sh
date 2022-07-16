@@ -1,11 +1,11 @@
 CYAN_COLOR="\033[0;36;1m"
 RESET_FORMAT="\033[0m"
 
-function digit_type_info() {
+function digit_type_info () {
 	echo "\n${CYAN_COLOR}info${RESET_FORMAT}: running bnum integer tests with \`$1\` as the \`Digit\` type..."
 }
 
-function test_integer_info() {
+function test_integer_info () {
 	echo "\n${CYAN_COLOR}info${RESET_FORMAT}: running tests with $1-bit test integers..."
 }
 

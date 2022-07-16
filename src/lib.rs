@@ -57,5 +57,3 @@ type ExpType = u32;
 pub use bint::BInt;
 pub use buint::BUint;
 pub use digit::Digit;
-
-// TODO: indicate which methods are only available on nightly (maybe not bc already mentioned in README)

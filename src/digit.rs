@@ -55,6 +55,8 @@ pub const fn from_double_digit(double: DoubleDigit) -> (Digit, Digit) {
     (double as Digit, (double >> BITS) as Digit)
 }
 
+// TODO: these will no longer be necessary once const_bigint_helper_methods is stabilised: https://github.com/rust-lang/rust/issues/85532
+
 #[inline]
 pub const fn carrying_add(a: Digit, b: Digit, carry: bool) -> (Digit, bool) {
     let (s1, o1) = a.overflowing_add(b);
