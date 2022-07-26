@@ -8,6 +8,7 @@
         const_trait_impl,
         const_num_from_num,
         const_swap,
+        //bigint_helper_methods,
     )
 )]
 #![cfg_attr(
@@ -22,7 +23,7 @@
     )
 )]
 #![doc = include_str!("../README.md")]
-#![no_std]
+//#![no_std]
 
 #[macro_use]
 extern crate alloc;
@@ -57,3 +58,21 @@ type ExpType = u32;
 pub use bint::BInt;
 pub use buint::BUint;
 pub use digit::Digit;
+
+/*pub const fn widening_mul_u128(a: u128, b: u128) -> (u128, u128) {
+	let (a_low, a_high) = (a as u64 as u128, a >> 64);
+	let (b_low, b_high) = (b as u64 as u128, b >> 64);
+
+	let high = a_high * b_high;
+	let low = a_low * b_low;
+
+	let (mid, carry) = (a_low * b_high).overflowing_add(b_low * a_high);
+	let (mid_low, mut mid_high) = (mid as u64 as u128, mid >> 64);
+	if carry {
+		mid_high |= 1 << 64;
+	}
+
+	let (low, carry) = low.overflowing_add(mid_low << 64);
+
+	(low, high + mid_high + carry as u128)
+}*/
