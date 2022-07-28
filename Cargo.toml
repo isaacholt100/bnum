@@ -15,7 +15,6 @@ exclude = ["src/float/*", "src/tests"]
 
 [features]
 default = []
-u8_digit = []
 nightly = []
 serde = ["dep:serde", "serde-big-array"]
 numtraits = ["num-integer", "num-traits"]

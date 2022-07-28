@@ -31,19 +31,21 @@ pub(crate) use impl_format_method;
 
 #[cfg(test)]
 macro_rules! impl_format {
-    ($ty: ty) => {
-        impl Format for $ty {
-            crate::int::fmt::impl_format_method! {
-                binary: "b",
-                lower_hex: "x",
-                upper_hex: "X",
-                octal: "o",
-                display: "",
-                debug: "?",
-                lower_exp: "e",
-                upper_exp: "E"
-            }
-        }
+    ($($ty: ty), *) => {
+        $(
+			impl Format for $ty {
+				crate::int::fmt::impl_format_method! {
+					binary: "b",
+					lower_hex: "x",
+					upper_hex: "X",
+					octal: "o",
+					display: "",
+					debug: "?",
+					lower_exp: "e",
+					upper_exp: "E"
+				}
+			}
+		)*
     };
 }
 
@@ -67,20 +69,20 @@ pub(crate) use test_formats;
 #[cfg(test)]
 macro_rules! tests {
 	($ty: ty) => {
-		mod tests {
-			use crate::int::fmt::{Format, self};
-			use crate::test::{test_bignum, types::*};
-			use alloc::string::String;
+		use crate::int::fmt::{Format, self};
+		use crate::test::{test_bignum, types::*};
+		use alloc::string::String;
 
-			fmt::impl_format!($ty);
-			paste::paste! {
-				fmt::impl_format!([<$ty:upper>]);
-			}
-
-			fmt::test_formats!($ty; binary, lower_hex, upper_hex, octal, display, debug, lower_exp, upper_exp);
+		paste::paste! {
+			fmt::impl_format!([<$ty:upper>]);
 		}
+
+		fmt::test_formats!($ty; binary, lower_hex, upper_hex, octal, display, debug, lower_exp, upper_exp);
 	};
 }
 
 #[cfg(test)]
 pub(crate) use tests;
+
+#[cfg(test)]
+crate::int::fmt::impl_format!(u128, i128);

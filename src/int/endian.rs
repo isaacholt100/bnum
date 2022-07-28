@@ -5,8 +5,9 @@ macro_rules! test_from_endian_slice {
 		paste::paste! {
 			quickcheck::quickcheck! {
 				fn [<quickcheck_ $int _from_ $endian _slice>](int: $int, pad_length: u8) -> quickcheck::TestResult {
-					type Big = crate::test::types::[<$int:upper>];
+					type Big = [<$int:upper>];
 					type Small = crate::test::types::$int;
+
 					use crate::test::TestConvert;
 					use crate::int::endian;
 
@@ -102,7 +103,7 @@ pub fn le_pad(pad_length: usize, bits: u32) -> (usize, Range<usize>, Range<usize
 
 #[cfg(test)]
 macro_rules! tests {
-    ($int: ty) => {
+    ($Digit: ident; $int: ty) => {
         #[cfg(feature = "nightly")]
         use crate::test::U8ArrayWrapper;
 

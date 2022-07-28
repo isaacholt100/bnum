@@ -1,6 +1,6 @@
 //! Type aliases for big signed and unsigned integers.
 
-use crate::{digit, BInt, BUint};
+use crate::{BInt, BUint};
 
 macro_rules! int_type_doc {
     ($bits: literal, $sign: literal) => {
@@ -12,10 +12,10 @@ macro_rules! int_types {
 	{ $($bits: literal $u: ident $i: ident; ) *}  => {
 		$(
 			#[doc = int_type_doc!($bits, "unsigned")]
-			pub type $u = BUint::<{$bits / digit::BITS as usize}>;
+			pub type $u = BUint::<{$bits / 8}>;
 
 			#[doc = int_type_doc!($bits, "signed")]
-			pub type $i = BInt::<{$bits / digit::BITS as usize}>;
+			pub type $i = BInt::<{$bits / 8}>;
 		)*
 	};
 }

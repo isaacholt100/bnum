@@ -2,7 +2,7 @@ use core::fmt::{self, Display, Formatter};
 
 /// The error type that is returned when a failed conversion from an integer occurs.
 ///
-/// This error will occur for example when using the [`TryFrom`](https://doc.rust-lang.org/core/convert/trait.TryFrom.html) trait to convert a negative [`i32`] to a [`BUint`](crate::BUint).
+/// This error will occur for example when using the [`TryFrom`](https://doc.rust-lang.org/core/convert/trait.TryFrom.html) trait to convert a negative [`i32`] to a [`$BUint`](crate::$BUint).
 #[derive(Debug, PartialEq, Eq)]
 pub struct TryFromIntError {
     pub(crate) from: &'static str,

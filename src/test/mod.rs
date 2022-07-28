@@ -1,4 +1,4 @@
-mod convert;
+pub mod convert;
 pub use convert::TestConvert;
 
 mod macros;

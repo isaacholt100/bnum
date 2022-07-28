@@ -1,5 +1,6 @@
-use crate::test::types::*;
 use crate::cast::CastFrom;
+use crate::test::types::*;
+use crate::*;
 
 pub trait TestConvert {
     type Output;
@@ -8,15 +9,17 @@ pub trait TestConvert {
 }
 
 macro_rules! test_convert_big {
-    ($big: ty, $output: ty) => {
-        impl TestConvert for $big {
-            type Output = $output;
+    ($($big: ty), *; $output: ty) => {
+        $(
+			impl TestConvert for $big {
+				type Output = $output;
 
-            #[inline]
-            fn into(self) -> Self::Output {
-                Self::Output::cast_from(self)
-            }
-        }
+				#[inline]
+				fn into(self) -> Self::Output {
+					Self::Output::cast_from(self)
+				}
+			}
+		)*
     };
 }
 
@@ -24,17 +27,14 @@ macro_rules! test_convert_bigints {
 	($($bits: literal), *) => {
 		paste::paste! {
 			$(
-				test_convert_big!([<U $bits>], [<u $bits>]);
-				test_convert_big!([<I $bits>], [<i $bits>]);
+				test_convert_big!(BUint<2>, BUintU32D<4>, BUintU16D<8>, BUintU8D<16>; [<u $bits>]);
+				test_convert_big!(BInt<2>, BIntU32D<4>, BIntU16D<8>, BIntU8D<16>; [<i $bits>]);
 			)*
 		}
 	};
 }
 
-test_convert_bigints!(64, 128);
-
-#[cfg(feature = "u8_digit")]
-test_convert_bigints!(8, 16, 32);
+test_convert_bigints!(128);
 
 impl<T: TestConvert> TestConvert for Option<T> {
     type Output = Option<<T as TestConvert>::Output>;

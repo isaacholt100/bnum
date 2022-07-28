@@ -18,9 +18,9 @@ concat!("`", stringify!($Int), "` implements all the arithmetic traits from the 
 pub(crate) use arithmetic_doc;
 
 macro_rules! must_use_op {
-	() => {
-		"this returns the result of the operation, without modifying the original"
-	};
+    () => {
+        "this returns the result of the operation, without modifying the original"
+    };
 }
 
 pub(crate) use must_use_op;
@@ -41,9 +41,13 @@ pub(crate) use arithmetic_impl_desc;
 
 #[cfg(feature = "nightly")]
 macro_rules! requires_feature {
-	($feature: literal) => {
-		concat!("\n\nThis is supported on the crate feature `", $feature, "` only.")
-	};
+    ($feature: literal) => {
+        concat!(
+            "\n\nThis is supported on the crate feature `",
+            $feature,
+            "` only."
+        )
+    };
 }
 
 #[cfg(feature = "nightly")]
@@ -375,8 +379,8 @@ macro_rules! unsigned_abs {
 			$sign $bits,
 			"Computes the absolute value of `self` without any wrapping or panicking.",
 
-			"assert_eq!(" doc::type_str!($sign $bits) "::from(100).unsigned_abs(), bnum::BUint::from(100u8));"
-			"assert_eq!(" doc::type_str!($sign $bits) "::from(-100).unsigned_abs(), bnum::BUint::from(100u8));"
+			"assert_eq!(" doc::type_str!($sign $bits) "::from(100).unsigned_abs(), bnum::$BUint::from(100u8));"
+			"assert_eq!(" doc::type_str!($sign $bits) "::from(-100).unsigned_abs(), bnum::$BUint::from(100u8));"
 			"assert_eq!(" doc::type_str!($sign $bits) "::MIN.unsigned_abs(), I256::MIN.to_bits());"
 		}
 	};

@@ -1,12 +1,5 @@
-impl<const N: usize> crate::BUint<N> {
-    #[inline]
-    pub(crate) const fn is_negative(&self) -> bool {
-        false
-    }
-}
-
 macro_rules! try_int_impl {
-    ($Struct: tt, [$($int: ty), *]) => {
+    ($Struct: ident, $Digit: ident; [$($int: ty), *]) => {
         $(crate::nightly::impl_const! {
 			impl<const N: usize> const TryFrom<$Struct<N>> for $int {
 				type Error = crate::errors::TryFromIntError;
@@ -16,8 +9,8 @@ macro_rules! try_int_impl {
 					let digits = from.digits();
 					let mut out = 0;
 					let mut i = 0;
-					while i << digit::BIT_SHIFT < <$int>::BITS as usize && i < N {
-						out |= digits[i] as $int << (i << digit::BIT_SHIFT);
+					while i << crate::digit::$Digit::BIT_SHIFT < <$int>::BITS as usize && i < N {
+						out |= digits[i] as $int << (i << crate::digit::$Digit::BIT_SHIFT);
 						i += 1;
 					}
 					while i < N {
@@ -30,6 +23,7 @@ macro_rules! try_int_impl {
 						}
 						i += 1;
 					}
+
 					#[allow(unused_comparisons)]
 					if (out < 0) ^ from.is_negative() {
 						return Err(crate::errors::TryFromIntError {
@@ -47,9 +41,9 @@ macro_rules! try_int_impl {
 pub(crate) use try_int_impl;
 
 macro_rules! all_try_int_impls {
-    ($Struct: tt) => {
+    ($Struct: ident, $Digit: ident) => {
         crate::int::convert::try_int_impl!(
-            $Struct,
+            $Struct, $Digit;
             [u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize]
         );
     };

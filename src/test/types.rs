@@ -5,8 +5,8 @@ macro_rules! test_type {
             #[$attr]
             pub type [<$prefix $suffix>] = [<$prefix $bits>];
 
-            #[$attr]
-            pub type [<$prefix:upper $suffix:upper>] = crate::test::types::[<$prefix:upper $bits>];
+            /*#[$attr]
+            pub type [<$prefix:upper $suffix:upper>] = crate::test::types::[<$prefix:upper $bits>];*/
         }
     };
 }
@@ -15,9 +15,10 @@ macro_rules! big_type {
 	($($bits: literal), *) => {
 		paste::paste! {
 			$(
-				pub type [<U $bits>] = crate::BUint::<{$bits / (crate::digit::BITS as usize)}>;
+				// TODO: change
+				pub type [<U $bits>] = crate::BUint::<{$bits / crate::BUint::<0>::DIGIT_BITS}>;
 
-				pub type [<I $bits>] = crate::BInt::<{$bits / (crate::digit::BITS as usize)}>;
+				pub type [<I $bits>] = crate::BInt::<{$bits / crate::BUint::<0>::DIGIT_BITS}>;
 			)*
 		}
 	};
@@ -66,3 +67,22 @@ macro_rules! test_types {
 }
 
 test_types!(test);
+
+pub mod big_types {
+    pub mod u8 {
+        pub type UTEST = crate::BUintU8D<16>;
+        pub type ITEST = crate::BIntU8D<16>;
+    }
+    pub mod u16 {
+        pub type UTEST = crate::BUintU16D<8>;
+        pub type ITEST = crate::BIntU16D<8>;
+    }
+    pub mod u32 {
+        pub type UTEST = crate::BUintU32D<4>;
+        pub type ITEST = crate::BIntU32D<4>;
+    }
+    pub mod u64 {
+        pub type UTEST = crate::BUint<2>;
+        pub type ITEST = crate::BInt<2>;
+    }
+}
