@@ -23,7 +23,7 @@
     )
 )]
 #![doc = include_str!("../README.md")]
-#![no_std]
+//#![no_std]
 
 #[macro_use]
 extern crate alloc;
@@ -87,15 +87,54 @@ type ExpType = u32;
     let (q_low, q_high) = (q as u64, (q >> 64) as u64);
     let (r_low, r_high) = (rhs as u64, (rhs >> 64) as u64);
 
-    let mut j = 2;
-    while j > 0 {
-        j -= 1;
-        let q_hat =
-    }
+	let u = [q_low, q_high, c_low, c_high];
+	let v = [r_low, r_high];
+
+	let n = 2;
+	let m = 2;
+
+    let mut j = m + 1; // D2
+	while j > 0 {
+		j -= 1; // D7
+
+		let u_jn = u[j + n];
+
+		#[inline]
+		const fn tuple_gt(a: (u64, $Digit), b: ($Digit, $Digit)) -> bool {
+			a.1 > b.1 || a.1 == b.1 && a.0 > b.0
+		}
+
+		let mut q_hat = if u_jn < v_n_m1 {
+			let (mut q_hat, r_hat) = digit::$Digit::div_rem_wide(u.digit(j + n - 1), u_jn, v_n_m1); // D3
+
+			if tuple_gt(digit::$Digit::widening_mul(q_hat, v_n_m2), (u.digit(j + n - 2), r_hat as $Digit)) {
+				q_hat -= 1;
+
+				if let Some(r_hat) = r_hat.checked_add(v_n_m1) {
+					if tuple_gt(digit::$Digit::widening_mul(q_hat, v_n_m2), (u.digit(j + n - 2), r_hat as $Digit)) {
+						q_hat -= 1;
+					}
+				}
+			}
+			q_hat
+		} else {
+			u64::MAX
+		};
+		let overflow = u.sub(Mul::new(v, q_hat), j, n); // D4
+
+		if overflow {
+			q_hat -= 1;
+			u.add(v, j, n);
+		}
+		q.digits[j] = q_hat;
+	}
+	(q, u.shr(shift))
 }*/
 
 macro_rules! macro_impl {
     ($name: ident) => {
+        use crate::bigints::*;
+
         crate::main_impl!($name);
     };
 }
@@ -104,8 +143,6 @@ pub(crate) use macro_impl;
 
 macro_rules! main_impl {
     ($name: ident) => {
-        use crate::bigints::*;
-
         $name!(BUint, BInt, u64);
         $name!(BUintU32D, BIntU32D, u32);
         $name!(BUintU16D, BIntU16D, u16);

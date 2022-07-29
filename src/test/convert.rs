@@ -27,14 +27,15 @@ macro_rules! test_convert_bigints {
 	($($bits: literal), *) => {
 		paste::paste! {
 			$(
-				test_convert_big!(BUint<2>, BUintU32D<4>, BUintU16D<8>, BUintU8D<16>; [<u $bits>]);
-				test_convert_big!(BInt<2>, BIntU32D<4>, BIntU16D<8>, BIntU8D<16>; [<i $bits>]);
+				test_convert_big!(BUint<{$bits / 64}>, BUintU32D<{$bits / 32}>, BUintU16D<{$bits / 16}>, BUintU8D<{$bits / 8}>; [<u $bits>]);
+
+				test_convert_big!(BInt<{$bits / 64}>, BIntU32D<{$bits / 32}>, BIntU16D<{$bits / 16}>, BIntU8D<{$bits / 8}>; [<i $bits>]);
 			)*
 		}
 	};
 }
 
-test_convert_bigints!(128);
+test_convert_bigints!(128, 64);
 
 impl<T: TestConvert> TestConvert for Option<T> {
     type Output = Option<<T as TestConvert>::Output>;

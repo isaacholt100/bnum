@@ -1,33 +1,20 @@
 CYAN_COLOR="\033[0;36;1m"
 RESET_FORMAT="\033[0m"
 
-digit_type_info () {
-	echo "\n${CYAN_COLOR}info${RESET_FORMAT}: running bnum integer tests with \`$1\` as the \`Digit\` type..."
-}
-
 test_integer_info () {
 	echo "\n${CYAN_COLOR}info${RESET_FORMAT}: running tests with $1-bit test integers..."
 }
 
 run_test () {
 	test_integer_info "$1"
-	RUSTFLAGS="--cfg test_int_bits=\"$1\"" cargo +nightly test int --lib --quiet --features "$2 rand numtraits nightly"
+	RUSTFLAGS="--cfg test_int_bits=\"$1\"" cargo +nightly test int --lib --quiet --features "rand numtraits nightly"
 	if [ $? -ne 0 ]
 	then
 		exit 1
 	fi
 }
 
-digit_type_info "u64"
-
-for bits in 64 128
+for bits in 128 64
 do
-	run_test $bits ""
-done
-
-digit_type_info "u8"
-
-for bits in 8 16 32 64 128
-do
-	run_test $bits "u8_digit"
+	run_test $bits
 done

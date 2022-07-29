@@ -30,11 +30,7 @@ macro_rules! try_from_iint {
 				#[inline]
 				fn try_from(int: $int) -> Result<Self, Self::Error> {
 					if int.is_negative() {
-						return Err(TryFromIntError {
-							from: stringify!($int),
-							to: "$BUint",
-							reason: Negative,
-						});
+						return Err(TryFromIntError(()));
 					}
 					let bits = int as $uint;
 					Ok(Self::from(bits))
@@ -44,8 +40,56 @@ macro_rules! try_from_iint {
 	}
 }
 
+macro_rules! try_from_buint {
+	($BUint: ident, $Digit: ident; $($int: ty), *) => {
+		$(crate::nightly::impl_const! {
+			impl<const N: usize> const TryFrom<$BUint<N>> for $int {
+				type Error = TryFromIntError;
+
+				#[inline]
+				fn try_from(u: $BUint<N>) -> Result<$int, Self::Error> {
+					let mut out = 0;
+					let mut i = 0;
+					if $Digit::BITS > <$int>::BITS {
+						let small = u.digits[i] as $int;
+						let trunc = small as $Digit;
+						if u.digits[i] != trunc {
+							return Err(TryFromIntError(()));
+						}
+						out = small;
+						i = 1;
+					} else {
+						loop {
+							let shift = i << crate::digit::$Digit::BIT_SHIFT;
+							if i >= N || shift >= <$int>::BITS as usize {
+								break;
+							}
+							out |= u.digits[i] as $int << shift;
+							i += 1;
+						}
+					}
+
+					#[allow(unused_comparisons)]
+					if out < 0 {
+						return Err(TryFromIntError(()));
+					}
+
+					while i < N {
+						if u.digits[i] != 0 {
+							return Err(TryFromIntError(()));
+						}
+						i += 1;
+					}
+
+					Ok(out)
+				}
+			}
+		})*
+	};
+}
+
 use crate::cast::CastFrom;
-use crate::errors::{TryFromErrorReason::*, TryFromIntError};
+use crate::errors::TryFromIntError;
 use crate::nightly::impl_const;
 
 macro_rules! convert {
@@ -73,7 +117,7 @@ macro_rules! convert {
 
 		try_from_iint!($BUint; i8 -> u8, i16 -> u16, i32 -> u32, isize -> usize, i64 -> u64, i128 -> u128);
 
-		crate::int::convert::all_try_int_impls!($BUint, $Digit);
+		try_from_buint!($BUint, $Digit; u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
 
 		impl_const! {
 			impl<const N: usize> const From<[$Digit; N]> for $BUint<N> {
@@ -96,21 +140,17 @@ macro_rules! convert {
 		#[cfg(test)]
 		paste::paste! {
 			mod [<$Digit _digit_tests>] {
-				use crate::test::types::U128;
-				use crate::test;
+				use crate::test::types::big_types::$Digit::*;
+				use crate::test::{self, types::utest};
 
+				// We can test with `TryFrom` for all types as `TryFrom` is automatically implemented when `From` is implemented
 				test::test_from! {
-					function: <u128 as From>::from,
-					from_types: (u8, u16, u32, u64, u128, bool, char)
-				}
-
-				test::test_from! {
-					function: <u128 as TryFrom>::try_from,
-					from_types: (i8, i16, i32, i64, i128, isize, usize)
+					function: <utest as TryFrom>::try_from,
+					from_types: (u8, u16, u32, u64, bool, char, i8, i16, i32, i64, isize, usize)
 				}
 
 				test::test_into! {
-					function: <u128 as TryInto>::try_into,
+					function: <utest as TryInto>::try_into,
 					into_types: (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize)
 				}
 			}

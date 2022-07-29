@@ -1,4 +1,4 @@
-use bnum::types::{U1024, U512};
+/*use bnum::types::{U1024, U512};
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use rug::Integer;
 
@@ -129,6 +129,29 @@ fn bench_count_ones(c: &mut Criterion) {
     }
 }
 
+fn bench_ops(c: &mut Criterion) {
+    let mut group = c.benchmark_group("ops");
+
+    let a = u128::MAX;
+	let b = u128::MAX >> 24;
+
+    let c = u64::MAX;
+	let d = u64::MAX >> 24;
+
+    let e = u8::MAX;
+	let f = u8::MAX;
+	
+	group.bench_with_input(BenchmarkId::new("128", "add"), &(a, b), |b, &(a, c)| {
+		b.iter(|| for _ in 0..100000 { black_box(a.wrapping_add(c)); })
+	});
+	group.bench_with_input(BenchmarkId::new("64", "add"), &(c, d), |b, &(a, c)| {
+		b.iter(|| for _ in 0..100000 { black_box(a.wrapping_add(c)); })
+	});
+	group.bench_with_input(BenchmarkId::new("8", "add"), &(e, f), |b, &(a, c)| {
+		b.iter(|| for _ in 0..100000 { black_box(a.wrapping_add(c)); })
+	});
+}
+
 fn bench_div(c: &mut Criterion) {
     let mut group = c.benchmark_group("div");
 
@@ -146,6 +169,39 @@ fn bench_div(c: &mut Criterion) {
     }
 }
 
-criterion_group!(benches, bench_div);
+criterion_group!(benches, bench_ops);
+
+criterion_main!(benches);
+*/
+
+#![feature(portable_simd)]
+
+use criterion::{Criterion, BenchmarkId, criterion_group, criterion_main, black_box};
+
+fn bench_and(c: &mut Criterion) {
+    let mut group = c.benchmark_group("div");
+
+	let a = [3405983049u64; 64];
+	let b = [303458203459834059u64; 64];
+
+	use std::simd::Simd;
+	use bnum::BUint;
+
+	let sa = Simd::from_array(a);
+	let sb = Simd::from_array(b);
+
+	let ba = BUint::from_digits(a);
+	let bb = BUint::from_digits(b);
+
+	group.bench_with_input(BenchmarkId::new("simd", "simd"), &(sa, sb), |b, &(x, y)| b.iter(|| black_box({
+		black_box(x) == black_box(y)
+	})));
+
+	group.bench_with_input(BenchmarkId::new("bnum", "bnum"), &(ba, bb), |b, &(x, y)| b.iter(|| black_box({
+		black_box(x) == black_box(y)
+	})));
+}
+
+criterion_group!(benches, bench_and);
 
 criterion_main!(benches);

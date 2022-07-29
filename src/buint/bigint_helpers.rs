@@ -87,6 +87,8 @@ macro_rules! bigint_helpers {
                 use crate::test::{test_bignum, types::*};
                 use crate::test::types::big_types::$Digit::*;
 
+				type U64 = crate::$BUint::<{64 / $Digit::BITS as usize}>;
+
                 test_bignum! {
                     function: <utest>::carrying_add(a: utest, rhs: utest, carry: bool),
                     cases: [
@@ -103,7 +105,6 @@ macro_rules! bigint_helpers {
                     ]
                 }
 
-                /*
                 test_bignum! {
                     function: <u64>::widening_mul(a: u64, b: u64),
                     cases: [
@@ -117,7 +118,7 @@ macro_rules! bigint_helpers {
                         (u64::MAX, u64::MAX, u64::MAX),
                         (u64::MAX, u64::MAX, 1u64)
                     ]
-                }*/ // TODO: sort these tests out
+                }
             }
         }
     };

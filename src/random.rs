@@ -99,10 +99,10 @@ macro_rules! fill_impl {
 macro_rules! uniform_int_impl {
     ($ty: ty, $u_large: ty $(, $as_unsigned: ident, $as_signed: ident)?) => {
         impl<const N: usize> SampleUniform for $ty {
-            type Sampler = RandomUniformInt<$ty>;
+            type Sampler = UniformInt<$ty>;
         }
 
-        impl<const N: usize> UniformSampler for RandomUniformInt<$ty> {
+        impl<const N: usize> UniformSampler for UniformInt<$ty> {
             type X = $ty;
 
             #[inline]
@@ -137,7 +137,7 @@ macro_rules! uniform_int_impl {
                     <$u_large>::ZERO
                 };
 
-                RandomUniformInt {
+                UniformInt {
                     low,
                     range: $(<$ty>::$as_signed)?(range),
                     z: $(<$ty>::$as_signed)?(ints_to_reject),
@@ -206,6 +206,7 @@ macro_rules! uniform_int_impl {
     };
 }
 
+#[cfg(test)]
 macro_rules! test_random {
 	($int: ty; $($Rng: ty), *) => {
 		paste::paste! {
@@ -281,10 +282,10 @@ use serde::{Deserialize, Serialize};
 
 /// Used for generating random big integers in a given range.
 ///
-/// Implements the [`UniformSampler`](https://docs.rs/rand/latest/rand/distributions/uniform/trait.UniformSampler.html) trait from the [`rand`](https://docs.rs/rand/latest/rand/) crate. This struct should not be used directly; instead use the [`Uniform`](https://docs.rs/rand/latest/rand/distributions/struct.Uniform.html) struct from the [`rand`](https://docs.rs/rand/latest/rand/) crate."
+/// Implements the [`UniformSampler`](https://docs.rs/rand/latest/rand/distributions/uniform/trait.UniformSampler.html) trait from the [`rand`](https://docs.rs/rand/latest/rand/) crate. This struct should not be used directly; instead use the [`Uniform`](https://docs.rs/rand/latest/rand/distributions/struct.Uniform.html) struct from the [`rand`](https://docs.rs/rand/latest/rand/) crate.
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct RandomUniformInt<X> {
+pub struct UniformInt<X> {
     low: X,
     range: X,
     z: X,

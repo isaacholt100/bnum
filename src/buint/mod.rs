@@ -568,11 +568,6 @@ macro_rules! mod_impl {
 				// TODO: optimise this method, this will make exponentiation by squaring faster
 				self * self
 			}
-
-			#[inline]
-			pub(crate) const fn is_negative(&self) -> bool {
-				false
-			}
 		}
 
 		impl<const N: usize> Default for $BUint<N> {
@@ -614,7 +609,6 @@ macro_rules! mod_impl {
 		#[cfg(test)]
 		paste::paste! {
 			mod [<$Digit _digit_tests>] {
-				use crate::test::types::U128;
 				use crate::test::{debug_skip, test_bignum, types::utest};
 				use crate::test::types::big_types::$Digit::*;
 
@@ -631,7 +625,7 @@ macro_rules! mod_impl {
 
 				#[test]
 				fn bit() {
-					let u = U128::from(0b001010100101010101u128);
+					let u = UTEST::from(0b001010100101010101u64);
 					assert!(u.bit(0));
 					assert!(!u.bit(1));
 					assert!(!u.bit(17));
@@ -641,30 +635,30 @@ macro_rules! mod_impl {
 
 				#[test]
 				fn is_zero() {
-					assert!(U128::MIN.is_zero());
-					assert!(!U128::MAX.is_zero());
-					assert!(!U128::ONE.is_zero());
+					assert!(UTEST::MIN.is_zero());
+					assert!(!UTEST::MAX.is_zero());
+					assert!(!UTEST::ONE.is_zero());
 				}
 
 				#[test]
 				fn is_one() {
-					assert!(U128::ONE.is_one());
-					assert!(!U128::MAX.is_one());
-					assert!(!U128::ZERO.is_one());
+					assert!(UTEST::ONE.is_one());
+					assert!(!UTEST::MAX.is_one());
+					assert!(!UTEST::ZERO.is_one());
 				}
 
 				#[test]
 				fn bits() {
-					let u = U128::from(0b1001010100101010101u128);
+					let u = UTEST::from(0b1001010100101010101u128);
 					assert_eq!(u.bits(), 19);
 
-					let u = U128::power_of_two(78);
-					assert_eq!(u.bits(), 79);
+					let u = UTEST::power_of_two(34);
+					assert_eq!(u.bits(), 35);
 				}
 
 				#[test]
 				fn default() {
-					assert_eq!(U128::default(), u128::default().into());
+					assert_eq!(UTEST::default(), utest::default().into());
 				}
 			}
 		}

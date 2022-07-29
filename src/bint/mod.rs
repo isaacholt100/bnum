@@ -7,7 +7,7 @@ macro_rules! log {
 			pub const fn $method(self, $($base : $ty),*) -> ExpType {
 				if self.is_negative() {
 					#[cfg(debug_assertions)]
-					panic!(crate::errors::err_msg!("attempt to calculate log of negative number"));
+					panic!(errors::err_msg!("attempt to calculate log of negative number"));
 					#[cfg(not(debug_assertions))]
 					0
 				} else {
@@ -148,7 +148,7 @@ macro_rules! mod_impl {
 				#[must_use = doc::must_use_op!()]
 				#[inline]
 				pub const fn div_euclid(self, rhs: Self) -> Self {
-					assert!(self != Self::MIN || rhs != Self::NEG_ONE, crate::errors::err_msg!("attempt to divide with overflow"));
+					assert!(self != Self::MIN || rhs != Self::NEG_ONE, errors::err_msg!("attempt to divide with overflow"));
 					self.wrapping_div_euclid(rhs)
 				}
 
@@ -156,7 +156,7 @@ macro_rules! mod_impl {
 				#[must_use = doc::must_use_op!()]
 				#[inline]
 				pub const fn rem_euclid(self, rhs: Self) -> Self {
-					assert!(self != Self::MIN || rhs != Self::NEG_ONE, crate::errors::err_msg!("attempt to calculate remainder with overflow"));
+					assert!(self != Self::MIN || rhs != Self::NEG_ONE, errors::err_msg!("attempt to calculate remainder with overflow"));
 					self.wrapping_rem_euclid(rhs)
 				}
 
@@ -259,7 +259,7 @@ macro_rules! mod_impl {
 				#[inline]
 				pub const fn div_floor(self, rhs: Self) -> Self {
 					if rhs.is_zero() {
-						crate::errors::div_zero!();
+						errors::div_zero!();
 					}
 					let (div, rem) = self.div_rem_unchecked(rhs);
 					if rem.is_zero() || self.is_negative() == rhs.is_negative() {
@@ -274,7 +274,7 @@ macro_rules! mod_impl {
 				#[inline]
 				pub const fn div_ceil(self, rhs: Self) -> Self {
 					if rhs.is_zero() {
-						crate::errors::div_zero!();
+						errors::div_zero!();
 					}
 					let (div, rem) = self.div_rem_unchecked(rhs);
 					if rem.is_zero() || self.is_negative() != rhs.is_negative() {
@@ -318,11 +318,6 @@ macro_rules! mod_impl {
 			#[inline]
 			pub const fn is_one(&self) -> bool {
 				self.bits.is_one()
-			}
-
-			#[inline(always)]
-			pub(crate) const fn digits(&self) -> &[$Digit; N] {
-				&self.bits.digits
 			}
 
 			/// Casts a `$BUint<N>` to `$BInt<N>`. This creates a `$BInt<N>` with `bits` as the underlying representation in two's complement.
@@ -394,7 +389,7 @@ macro_rules! mod_impl {
 			mod [<$Digit _digit_tests>] {
 				use crate::test::{
 					debug_skip, test_bignum,
-					types::{itest, I128},
+					types::itest,
 				};
 				use crate::test::types::big_types::$Digit::*;
 
@@ -423,7 +418,7 @@ macro_rules! mod_impl {
 
 				#[test]
 				fn bit() {
-					let i = I128::from(0b1001010100101010101i128);
+					let i = ITEST::from(0b1001010100101010101i64);
 					assert!(i.bit(2));
 					assert!(!i.bit(3));
 					assert!(i.bit(8));
@@ -433,41 +428,41 @@ macro_rules! mod_impl {
 
 				#[test]
 				fn is_zero() {
-					assert!(I128::ZERO.is_zero());
-					assert!(!I128::MAX.is_zero());
-					assert!(!I128::ONE.is_zero());
+					assert!(ITEST::ZERO.is_zero());
+					assert!(!ITEST::MAX.is_zero());
+					assert!(!ITEST::ONE.is_zero());
 				}
 
 				#[test]
 				fn is_one() {
-					assert!(I128::ONE.is_one());
-					assert!(!I128::MAX.is_one());
-					assert!(!I128::ZERO.is_one());
+					assert!(ITEST::ONE.is_one());
+					assert!(!ITEST::MAX.is_one());
+					assert!(!ITEST::ZERO.is_one());
 				}
 
 				#[test]
 				fn bits() {
-					let u = I128::from(0b11101001010100101010101i128);
+					let u = ITEST::from(0b11101001010100101010101i32);
 					assert_eq!(u.bits(), 23);
 				}
 
 				#[test]
 				fn default() {
-					assert_eq!(I128::default(), i128::default().into());
+					assert_eq!(ITEST::default(), itest::default().into());
 				}
 
 				#[test]
 				fn is_power_of_two() {
-					assert!(!I128::from(-94956729465i128).is_power_of_two());
-					assert!(!I128::from(79458945i128).is_power_of_two());
-					assert!(I128::from(1i128 << 17).is_power_of_two());
+					assert!(!ITEST::from(-94956729465i64).is_power_of_two());
+					assert!(!ITEST::from(79458945i32).is_power_of_two());
+					assert!(ITEST::from(1i32 << 17).is_power_of_two());
 				}
 			}
 		}
 	};
 }
 
-crate::main_impl!(mod_impl);
+crate::macro_impl!(mod_impl);
 
 mod cast;
 mod checked;

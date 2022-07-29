@@ -85,4 +85,4 @@ macro_rules! tests {
 pub(crate) use tests;
 
 #[cfg(test)]
-crate::int::fmt::impl_format!(u128, i128);
+crate::int::fmt::impl_format!(u128, i128, u64, i64);
