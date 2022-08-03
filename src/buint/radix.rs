@@ -165,7 +165,7 @@ macro_rules! radix {
             ///
             /// # Panics
             ///
-            /// This function panics if `radix` is not in the range from 2 to 36.
+            /// This function panics if `radix` is not in the range from 2 to 36 inclusive.
             ///
             /// # Examples
             ///
@@ -185,7 +185,7 @@ macro_rules! radix {
             ///
             /// # Panics
             ///
-            /// This function panics if `radix` is not in the range from 2 to 256.
+            /// This function panics if `radix` is not in the range from 2 to 256 inclusive.
             ///
             /// # Examples
             ///
@@ -234,7 +234,7 @@ macro_rules! radix {
             ///
             /// # Panics
             ///
-            /// This function panics if `radix` is not in the range from 2 to 256.
+            /// This function panics if `radix` is not in the range from 2 to 256 inclusive.
             ///
             /// # Examples
             ///
@@ -296,7 +296,7 @@ macro_rules! radix {
             ///
             /// # Panics
             ///
-            /// This function panics if `radix` is not in the range from 2 to 36.
+            /// This function panics if `radix` is not in the range from 2 to 36 inclusive.
             ///
             /// # Examples
             ///
@@ -370,7 +370,7 @@ macro_rules! radix {
             ///
             /// # Panics
             ///
-            /// This function panics if `radix` is not in the range from 2 to 36.
+            /// This function panics if `radix` is not in the range from 2 to 36 inclusive.
             ///
             /// # Examples
             ///
@@ -399,7 +399,7 @@ macro_rules! radix {
             ///
             /// # Panics
             ///
-            /// This function panics if `radix` is not in the range from 2 to 256.
+            /// This function panics if `radix` is not in the range from 2 to 256 inclusive.
             ///
             /// ```
             /// use bnum::types::U512;
@@ -419,7 +419,7 @@ macro_rules! radix {
             ///
             /// # Panics
             ///
-            /// This function panics if `radix` is not in the range from 2 to 256.
+            /// This function panics if `radix` is not in the range from 2 to 256 inclusive.
             ///
             /// ```
             /// use bnum::types::U512;

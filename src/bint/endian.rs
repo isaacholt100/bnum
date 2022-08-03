@@ -57,7 +57,10 @@ macro_rules! endian {
 				///
 				/// If the length of the slice is longer than `Self::BYTES`, `None` will be returned, unless the bytes represent a non-negative integer and leading zeros from the slice can be removed until the length of the slice equals `Self::BYTES`, or if the bytes represent a negative integer and leading ones from the slice can be removed until the length of the slice equals `Self::BYTES`.
 				///
-				/// For examples, see the [`from_be_slice`](crate::$BUint::from_be_slice) method documentation for [`$BUint`](crate::$BUint).
+				/// For examples, see the 
+				#[doc = concat!("[`from_be_slice`](crate::", stringify!($BUint), "::from_be_slice)")]
+				/// method documentation for
+				#[doc = concat!("[`", stringify!($BUint), "`](crate::", stringify!($BUint), ").")]
 				#[must_use = doc::must_use_op!()]
 				pub const fn from_be_slice(slice: &[u8]) -> Option<Self> {
 					let len = slice.len();
@@ -106,7 +109,10 @@ macro_rules! endian {
 				///
 				/// If the length of the slice is longer than `Self::BYTES`, `None` will be returned, unless the bytes represent a non-negative integer and trailing zeros from the slice can be removed until the length of the slice equals `Self::BYTES`, or if the bytes represent a negative integer and trailing ones from the slice can be removed until the length of the slice equals `Self::BYTES`.
 				///
-				/// For examples, see the [`from_le_slice`](crate::$BUint::from_le_slice) method documentation for [`$BUint`](crate::$BUint).
+				/// For examples, see the
+				#[doc = concat!("[`from_le_slice`](crate::", stringify!($BUint), "::from_le_slice)")]
+				/// method documentation for
+				#[doc = concat!("[`", stringify!($BUint), "`](crate::", stringify!($BUint), ").")]
 				#[must_use = doc::must_use_op!()]
 				pub const fn from_le_slice(slice: &[u8]) -> Option<Self> {
 					let len = slice.len();

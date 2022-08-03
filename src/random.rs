@@ -9,7 +9,7 @@ Copyright 2018-2020 Developers of the Rand project.
 Copyright 2017 The Rust Project Developers.
 */
 
-//! Utilities for generating random `$BUint`s and `$BInt`s.
+//! Utilities for generating random bnum integers.
 //!
 //! The `rand` feature must be enabled to use items from this module.
 
@@ -17,7 +17,7 @@ use core::ops::{Deref, DerefMut};
 
 /// Wrapper type designed to be filled with random big integers.
 ///
-/// This type exists because [`rand::Fill`](https://docs.rs/rand/latest/rand/trait.Fill.html) can't be implemented for `[$BUint<N>]` or `[$BInt<N>]` due to Rust's orphan rules. Instead, it is implemented for `Slice<$BUint<N>>` and `Slice<$BInt<N>>`. The underlying slice can then be accessed by calling [`AsRef::as_ref`](https://doc.rust-lang.org/core/convert/trait.AsRef.html#tymethod.as_ref) or [`AsMut::as_mut`](https://doc.rust-lang.org/core/convert/trait.AsMut.html#tymethod.as_mut) on the wrapper, or deferencing it. An alternative way of filling a slice with random big integers is using the [`try_fill_slice`] method in this crate's [`random`](crate::random) module.
+/// This type exists because [`rand::Fill`](https://docs.rs/rand/latest/rand/trait.Fill.html) can't be implemented for `[BUint<N>]` (or any other slice of bnum integers) due to Rust's orphan rules. Instead, it is implemented for `Slice<BUint<N>>`, etc. The underlying slice can then be accessed by calling [`AsRef::as_ref`](https://doc.rust-lang.org/core/convert/trait.AsRef.html#tymethod.as_ref) or [`AsMut::as_mut`](https://doc.rust-lang.org/core/convert/trait.AsMut.html#tymethod.as_mut) on the wrapper, or deferencing it. An alternative way of filling a slice with random big integers is using the [`try_fill_slice`] method in this crate's [`random`](crate::random) module.
 pub struct Slice<T>(pub [T]);
 
 impl<T> AsRef<[T]> for Slice<T> {

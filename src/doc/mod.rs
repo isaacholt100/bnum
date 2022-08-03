@@ -372,23 +372,8 @@ macro_rules! is_one {
 
 pub(crate) use is_one;
 
-macro_rules! unsigned_abs {
-	($sign: ident $bits: literal) => {
-		doc::doc_comment! {
-			#unsigned_abs,
-			$sign $bits,
-			"Computes the absolute value of `self` without any wrapping or panicking.",
-
-			"assert_eq!(" doc::type_str!($sign $bits) "::from(100).unsigned_abs(), bnum::$BUint::from(100u8));"
-			"assert_eq!(" doc::type_str!($sign $bits) "::from(-100).unsigned_abs(), bnum::$BUint::from(100u8));"
-			"assert_eq!(" doc::type_str!($sign $bits) "::MIN.unsigned_abs(), I256::MIN.to_bits());"
-		}
-	};
-}
-
-pub(crate) use unsigned_abs;
-
 crate::doc::link_doc_comment! {
+	unsigned_abs,
     div_euclid,
     rem_euclid,
     log2,

@@ -22,7 +22,8 @@ macro_rules! radix {
 
             /// Converts a slice of big-endian digits in the given radix to an integer. The digits are first converted to an unsigned integer, then this is transmuted to a signed integer. Each `u8` of the slice is interpreted as one digit of base `radix` of the number, so this function will return `None` if any digit is greater than or equal to `radix`, otherwise the integer is wrapped in `Some`.
             ///
-            /// For examples, see the [`from_radix_be`](crate::$BUint::from_radix_be) method documentation for [`$BUint`](crate::$BUint).
+            /// For examples, see the
+			#[doc = concat!("[`from_radix_be`](crate::", stringify!($BUint), "::from_radix_be) method documentation for [`", stringify!($BUint), "`](crate::", stringify!($BUint), ").")]
             #[inline]
             pub fn from_radix_be(buf: &[u8], radix: u32) -> Option<Self> {
                 $BUint::from_radix_be(buf, radix).map(Self::from_bits)
@@ -30,7 +31,8 @@ macro_rules! radix {
 
             /// Converts a slice of big-endian digits in the given radix to an integer. The digits are first converted to an unsigned integer, then this is transmuted to a signed integer. Each `u8` of the slice is interpreted as one digit of base `radix` of the number, so this function will return `None` if any digit is greater than or equal to `radix`, otherwise the integer is wrapped in `Some`.
             ///
-            /// For examples, see the [`from_radix_le`](crate::$BUint::from_radix_le) method documentation for [`$BUint`](crate::$BUint).
+            /// For examples, see the
+			#[doc = concat!("[`from_radix_le`](crate::", stringify!($BUint), "::from_radix_le) method documentation for [`", stringify!($BUint), "`](crate::", stringify!($BUint), ").")]
             #[inline]
             pub fn from_radix_le(buf: &[u8], radix: u32) -> Option<Self> {
                 $BUint::from_radix_le(buf, radix).map(Self::from_bits)
@@ -46,9 +48,10 @@ macro_rules! radix {
             ///
             /// # Panics
             ///
-            /// This function panics if `radix` is not in the range from 2 to 36.
+            /// This function panics if `radix` is not in the range from 2 to 36 inclusive.
             ///
-            /// For examples, see the [`from_str_radix`](crate::$BUint::from_str_radix) method documentation for [`$BUint`](crate::$BUint).
+            /// For examples, see the
+			#[doc = concat!("[`from_str_radix`](crate::", stringify!($BUint), "::from_str_radix) method documentation for [`", stringify!($BUint), "`](crate::", stringify!($BUint), ").")]
             #[inline]
             pub fn from_str_radix(mut src: &str, radix: u32) -> Result<Self, ParseIntError> {
                 assert_range!(radix, 36);
@@ -102,9 +105,10 @@ macro_rules! radix {
             ///
             /// # Panics
             ///
-            /// This function panics if `radix` is not in the range from 2 to 36.
+            /// This function panics if `radix` is not in the range from 2 to 36 inclusive.
             ///
-            /// For examples, see the [`to_str_radix`](crate::$BUint::to_str_radix) method documentation for [`$BUint`](crate::$BUint).
+            /// For examples, see the
+			#[doc = concat!("[`to_str_radix`](crate::", stringify!($BUint), "::to_str_radix) method documentation for [`", stringify!($BUint), "`](crate::", stringify!($BUint), ").")]
             #[inline]
             pub fn to_str_radix(&self, radix: u32) -> String {
                 if self.is_negative() {
@@ -118,9 +122,10 @@ macro_rules! radix {
             ///
             /// # Panics
             ///
-            /// This function panics if `radix` is not in the range from 2 to 256.
+            /// This function panics if `radix` is not in the range from 2 to 256 inclusive.
             ///
-            /// For examples, see the [`to_radix_be`](crate::$BUint::to_radix_be) method documentation for [`$BUint`](crate::$BUint).
+            /// For examples, see the
+			#[doc = concat!("[`to_radix_be`](crate::", stringify!($BUint), "::to_radix_be) method documentation for [`", stringify!($BUint), "`]")]
             #[inline]
             pub fn to_radix_be(&self, radix: u32) -> Vec<u8> {
                 self.bits.to_radix_be(radix)
@@ -130,9 +135,10 @@ macro_rules! radix {
             ///
             /// # Panics
             ///
-            /// This function panics if `radix` is not in the range from 2 to 256.
+            /// This function panics if `radix` is not in the range from 2 to 256 inclusive.
             ///
-            /// For examples, see the [`to_radix_le`](crate::$BUint::to_radix_le) method documentation for [`$BUint`](crate::$BUint).
+            /// For examples, see the
+			#[doc = concat!("[`to_radix_le`](crate::", stringify!($BUint), "::to_radix_le) method documentation for [`", stringify!($BUint), "`](crate::", stringify!($BUint), ").")]
             #[inline]
             pub fn to_radix_le(&self, radix: u32) -> Vec<u8> {
                 self.bits.to_radix_le(radix)

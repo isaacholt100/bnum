@@ -36,7 +36,10 @@ macro_rules! mod_impl {
 	($BUint: ident, $BInt: ident, $Digit: ident) => {
 		/// Big signed integer type, of fixed size which must be known at compile time.
 		///
-		/// Digits of the underlying [`$BUint`](crate::$BUint) are stored in little endian (least significant digit first). `$BInt<N>` aims to exactly replicate the behaviours of Rust's built-in signed integer types: [`i8`], [`i16`], [`i32`], [`i64`], [`i128`] and [`isize`]. The const generic parameter `N` is the number of digits that are stored in the underlying [`$BUint`].
+		/// Digits of the underlying
+		#[doc = concat!("[`", stringify!($BUint), "`](crate::", stringify!($BUint), ")")]
+		/// are stored in little endian (least significant digit first). This integer type aims to exactly replicate the behaviours of Rust's built-in signed integer types: [`i8`], [`i16`], [`i32`], [`i64`], [`i128`] and [`isize`]. The const generic parameter `N` is the number of digits that are stored in the underlying
+		#[doc = concat!("[`", stringify!($BUint), "`].")]
 		///
 		#[doc = doc::arithmetic_doc!($BInt)]
 
@@ -122,7 +125,7 @@ macro_rules! mod_impl {
 			}
 
 			crate::nightly::const_fns! {
-				#[doc = doc::unsigned_abs!(I 256)]
+				#[doc = doc::unsigned_abs!(I)]
 				#[must_use = doc::must_use_op!()]
 				#[inline]
 				pub const fn unsigned_abs(self) -> $BUint<N> {
@@ -320,18 +323,26 @@ macro_rules! mod_impl {
 				self.bits.is_one()
 			}
 
-			/// Casts a `$BUint<N>` to `$BInt<N>`. This creates a `$BInt<N>` with `bits` as the underlying representation in two's complement.
+			/// Creates a signed integer with `bits` as its underlying representation in two's complement.
 			///
-			/// This method is faster for casting between `$BInt`s and `$BUint`s of the same size than using the `As` trait.
+			/// This method is faster for casting from a
+			#[doc = concat!("[`", stringify!($BUint), "`]")]
+			/// to a
+			#[doc = concat!("[`", stringify!($BInt), "`]")]
+			/// of the same size than using the `As` trait.
 			#[must_use]
 			#[inline(always)]
 			pub const fn from_bits(bits: $BUint<N>) -> Self {
 				Self { bits }
 			}
 
-			/// Casts a `self` to `$BUint<N>`. This simply returns the underlying representation of the integer in two's complement, as a `$BUint<N>`.
+			/// This simply returns the underlying representation of the integer in two's complement, as an unsigned integer.
 			///
-			/// This method is faster for casting between `$BUint`s and `$BInt`s of the same size than using the `As` trait.
+			/// This method is faster for casting from a
+			#[doc = concat!("[`", stringify!($BInt), "`]")]
+			/// to a
+			#[doc = concat!("[`", stringify!($BUint), "`]")]
+			/// of the same size than using the `As` trait.
 			#[must_use]
 			#[inline(always)]
 			pub const fn to_bits(self) -> $BUint<N> {
