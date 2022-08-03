@@ -181,24 +181,20 @@ use criterion::{Criterion, BenchmarkId, criterion_group, criterion_main, black_b
 fn bench_and(c: &mut Criterion) {
     let mut group = c.benchmark_group("div");
 
-	let a = [3405983049u64; 64];
-	let b = [303458203459834059u64; 64];
-
 	use std::simd::Simd;
-	use bnum::BUint;
 
-	let sa = Simd::from_array(a);
-	let sb = Simd::from_array(b);
+	let a = 2349852439572957999u64;
+	let c = 2934859437589439834u64;
 
-	let ba = BUint::from_digits(a);
-	let bb = BUint::from_digits(b);
+	let a_s = Simd::from([a]);
+	let c_s = Simd::from([c]);
 
-	group.bench_with_input(BenchmarkId::new("simd", "simd"), &(sa, sb), |b, &(x, y)| b.iter(|| black_box({
-		black_box(x) == black_box(y)
+	group.bench_with_input(BenchmarkId::new("simd", "simd"), &(a_s, c_s), |b, &(a_s, c_s)| b.iter(|| black_box({
+		for _ in 0..10000 { black_box(a_s) & black_box(c_s); }
 	})));
 
-	group.bench_with_input(BenchmarkId::new("bnum", "bnum"), &(ba, bb), |b, &(x, y)| b.iter(|| black_box({
-		black_box(x) == black_box(y)
+	group.bench_with_input(BenchmarkId::new("prim", "prim"), &(a, c), |b, &(a, c)| b.iter(|| black_box({
+		for _ in 0..10000 { black_box(a) & black_box(c); }
 	})));
 }
 

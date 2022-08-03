@@ -19,9 +19,13 @@ use core::iter::{Iterator, Product, Sum};
 
 macro_rules! mod_impl {
 	($BUint: ident, $BInt: ident, $Digit: ident) => {
-		/// Big unsigned integer type, of fixed size which must be known at compile time.
+		/// Unsigned integer type composed of
+		#[doc = concat!("`", stringify!($Digit), "`")]
+		/// digits, of arbitrary fixed size which must be known at compile time.
 		///
-		/// Digits are stored in little endian (least significant digit first). `$BUint<N>` aims to exactly replicate the behaviours of Rust's built-in unsigned integer types: `u8`, `u16`, `u32`, `u64`, `u128` and `usize`. The const generic parameter `N` is the number of digits that are stored.
+		/// Digits are stored in little endian (least significant digit first). This integer type aims to exactly replicate the behaviours of Rust's built-in unsigned integer types: `u8`, `u16`, `u32`, `u64`, `u128` and `usize`. The const generic parameter `N` is the number of
+		#[doc = concat!("`", stringify!($Digit), "`")]
+		/// digits that are stored.
 		///
 		#[doc = doc::arithmetic_doc!($BUint)]
 
@@ -455,7 +459,7 @@ macro_rules! mod_impl {
 				digit & (1 << (index & digit::$Digit::BITS_MINUS_1)) != 0
 			}
 
-			/// Returns a `$BUint` whose value is `2^power`. This is faster than using a shift left on `Self::ONE`.
+			/// Returns an integer whose value is `2^power`. This is faster than using a shift left on `Self::ONE`.
 			///
 			/// # Panics
 			///
@@ -464,10 +468,10 @@ macro_rules! mod_impl {
 			/// # Examples
 			///
 			/// ```
-			/// use bnum::$BUint;
+			/// use bnum::types::U256;
 			///
 			/// let power = 11;
-			/// assert_eq!($BUint::<2>::power_of_two(11), (1u128 << 11).into());
+			/// assert_eq!(U256::power_of_two(11), (1u128 << 11).into());
 			/// ```
 			#[must_use]
 			#[inline]
@@ -484,14 +488,14 @@ macro_rules! mod_impl {
 				&self.digits
 			}
 
-			/// Creates a new `$BUint` from the given array of digits. Digits are stored as little endian (least significant digit first).
+			/// Creates a new unsigned integer from the given array of digits. Digits are stored as little endian (least significant digit first).
 			#[must_use]
 			#[inline(always)]
 			pub const fn from_digits(digits: [$Digit; N]) -> Self {
 				Self { digits }
 			}
 
-			/// Creates a new `$BUint` from the given digit. The given digit is stored as the least significant digit.
+			/// Creates a new unsigned integer from the given digit. The given digit is stored as the least significant digit.
 			#[must_use]
 			#[inline(always)]
 			pub const fn from_digit(digit: $Digit) -> Self {
@@ -667,11 +671,11 @@ macro_rules! mod_impl {
 
 crate::main_impl!(mod_impl);
 
+mod consts;
 mod bigint_helpers;
 mod cast;
 mod checked;
 mod cmp;
-mod consts;
 mod convert;
 mod endian;
 mod fmt;

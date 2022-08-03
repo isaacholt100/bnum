@@ -22,13 +22,11 @@ macro_rules! endian {
 
 		#[doc = doc::endian::impl_desc!($BInt)]
 		impl<const N: usize> $BInt<N> {
-			crate::nightly::const_fn! {
-				#[doc = doc::endian::from_be!(I 256)]
-				#[must_use = doc::must_use_op!()]
-				#[inline]
-				pub const fn from_be(x: Self) -> Self {
-					Self::from_bits($BUint::from_be(x.bits))
-				}
+			#[doc = doc::endian::from_be!(I 256)]
+			#[must_use = doc::must_use_op!()]
+			#[inline]
+			pub const fn from_be(x: Self) -> Self {
+				Self::from_bits($BUint::from_be(x.bits))
 			}
 
 			#[doc = doc::endian::from_le!(I 256)]
@@ -38,13 +36,11 @@ macro_rules! endian {
 				Self::from_bits($BUint::from_le(x.bits))
 			}
 
-			crate::nightly::const_fn! {
-				#[doc = doc::endian::to_be!(I 256)]
-				#[must_use = doc::must_use_op!()]
-				#[inline]
-				pub const fn to_be(self) -> Self {
-					Self::from_be(self)
-				}
+			#[doc = doc::endian::to_be!(I 256)]
+			#[must_use = doc::must_use_op!()]
+			#[inline]
+			pub const fn to_be(self) -> Self {
+				Self::from_be(self)
 			}
 
 			#[doc = doc::endian::to_le!(I 256)]

@@ -170,10 +170,10 @@ macro_rules! radix {
             /// # Examples
             ///
             /// ```
-            /// use bnum::$BUint;
+            /// use bnum::types::U512;
             ///
             /// let src = "394857hdgfjhsnkg947dgfjkeita";
-            /// assert_eq!($BUint::<4>::from_str_radix(src, 32).ok(), $BUint::parse_bytes(src.as_bytes(), 32));
+            /// assert_eq!(U512::from_str_radix(src, 32).ok(), U512::parse_bytes(src.as_bytes(), 32));
             /// ```
             #[inline]
             pub fn parse_bytes(buf: &[u8], radix: u32) -> Option<Self> {
@@ -190,11 +190,11 @@ macro_rules! radix {
             /// # Examples
             ///
             /// ```
-            /// use bnum::$BUint;
+            /// use bnum::types::U512;
             ///
-            /// let n = $BUint::<2>::from(34598748526857897975u128);
+            /// let n = U512::from(34598748526857897975u128);
             /// let digits = n.to_radix_be(12);
-            /// assert_eq!(Some(n), $BUint::from_radix_be(&digits, 12));
+            /// assert_eq!(Some(n), U512::from_radix_be(&digits, 12));
             /// ```
             pub fn from_radix_be(buf: &[u8], radix: u32) -> Option<Self> {
                 assert_range!(radix, 256);
@@ -239,11 +239,11 @@ macro_rules! radix {
             /// # Examples
             ///
             /// ```
-            /// use bnum::$BUint;
+            /// use bnum::types::U512;
             ///
-            /// let n = $BUint::<2>::from(109837459878951038945798u128);
+            /// let n = U512::from(109837459878951038945798u128);
             /// let digits = n.to_radix_le(15);
-            /// assert_eq!(Some(n), $BUint::from_radix_le(&digits, 15));
+            /// assert_eq!(Some(n), U512::from_radix_le(&digits, 15));
             /// ```
             pub fn from_radix_le(buf: &[u8], radix: u32) -> Option<Self> {
                 assert_range!(radix, 256);
@@ -301,9 +301,9 @@ macro_rules! radix {
             /// # Examples
             ///
             /// ```
-            /// use bnum::$BUint;
+            /// use bnum::types::U512;
             ///
-            /// assert_eq!($BUint::<2>::from_str_radix("A", 16), Ok($BUint::from(10u128)));
+            /// assert_eq!(U512::from_str_radix("A", 16), Ok(U512::from(10u128)));
             /// ```
             pub fn from_str_radix(src: &str, radix: u32) -> Result<Self, ParseIntError> {
                 assert_range!(radix, 36);
@@ -375,10 +375,10 @@ macro_rules! radix {
             /// # Examples
             ///
             /// ```
-            /// use bnum::$BUint;
+            /// use bnum::types::U512;
             ///
             /// let src = "934857djkfghhkdfgbf9345hdfkh";
-            /// let n = $BUint::<4>::from_str_radix(src, 36).unwrap();
+            /// let n = U512::from_str_radix(src, 36).unwrap();
             /// assert_eq!(n.to_str_radix(36), src);
             /// ```
             #[inline]
@@ -402,10 +402,10 @@ macro_rules! radix {
             /// This function panics if `radix` is not in the range from 2 to 256.
             ///
             /// ```
-            /// use bnum::$BUint;
+            /// use bnum::types::U512;
             ///
             /// let digits = &[3, 55, 60, 100, 5, 0, 5, 88];
-            /// let n = $BUint::<4>::from_radix_be(digits, 120).unwrap();
+            /// let n = U512::from_radix_be(digits, 120).unwrap();
             /// assert_eq!(n.to_radix_be(120), digits);
             /// ```
             #[inline]
@@ -422,10 +422,10 @@ macro_rules! radix {
             /// This function panics if `radix` is not in the range from 2 to 256.
             ///
             /// ```
-            /// use bnum::$BUint;
+            /// use bnum::types::U512;
             ///
             /// let digits = &[1, 67, 88, 200, 55, 68, 87, 120, 178];
-            /// let n = $BUint::<4>::from_radix_le(digits, 250).unwrap();
+            /// let n = U512::from_radix_le(digits, 250).unwrap();
             /// assert_eq!(n.to_radix_le(250), digits);
             /// ```
             pub fn to_radix_le(&self, radix: u32) -> Vec<u8> {

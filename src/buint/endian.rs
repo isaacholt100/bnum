@@ -6,40 +6,14 @@ macro_rules! endian {
 	($BUint: ident, $BInt: ident, $Digit: ident) => {
 		#[doc = doc::endian::impl_desc!($BUint)]
 		impl<const N: usize> $BUint<N> {
-			#[cfg(not(target_endian = "little"))]
+			#[doc = doc::endian::from_be!(U 256)]
+			#[must_use]
 			#[inline]
-			const fn swap_digit_bytes(self) -> Self {
-				let mut out = Self::ZERO;
-
-				let mut i = 0;
-				while i < N {
-					out.digits[i] = self.digits[i].swap_bytes();
-					i += 1;
-				}
-
-				out
-			}
-
-			crate::nightly::const_fns! {
+			pub const fn from_be(x: Self) -> Self {
 				#[cfg(target_endian = "big")]
-				const fn reverse_digits(mut self) -> Self {
-					let mut i = 0;
-					while i < N / 2 {
-						self.digits.swap(i, N - 1 - i);
-						i += 1;
-					}
-					self
-				}
-
-				#[doc = doc::endian::from_be!(U 256)]
-				#[must_use]
-				#[inline]
-				pub const fn from_be(x: Self) -> Self {
-					#[cfg(target_endian = "big")]
-					return x.reverse_digits();
-					#[cfg(not(target_endian = "big"))]
-					x.swap_bytes()
-				}
+				return x;
+				#[cfg(not(target_endian = "big"))]
+				x.swap_bytes()
 			}
 
 			#[doc = doc::endian::from_le!(U 256)]
@@ -49,19 +23,17 @@ macro_rules! endian {
 				#[cfg(target_endian = "little")]
 				return x;
 				#[cfg(not(target_endian = "little"))]
-				x.swap_digit_bytes()
-			}
-
-			crate::nightly::const_fn! {
-				#[doc = doc::endian::to_be!(U 256)]
-				#[must_use = doc::must_use_op!()]
-				#[inline]
-				pub const fn to_be(self) -> Self {
-					Self::from_be(self)
-				}
+				x.swap_bytes()
 			}
 
 			#[doc = doc::endian::to_be!(U 256)]
+			#[must_use = doc::must_use_op!()]
+			#[inline]
+			pub const fn to_be(self) -> Self {
+				Self::from_be(self)
+			}
+
+			#[doc = doc::endian::to_le!(U 256)]
 			#[must_use = doc::must_use_op!()]
 			#[inline]
 			pub const fn to_le(self) -> Self {
