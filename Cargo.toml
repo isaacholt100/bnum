@@ -15,7 +15,6 @@ exclude = ["src/float/*", "src/tests"]
 
 [features]
 default = []
-u8_digit = []
 nightly = []
 serde = ["dep:serde", "serde-big-array"]
 numtraits = ["num-integer", "num-traits"]
@@ -30,12 +29,6 @@ rand = { version = "0.8.5", features = ["min_const_gen"], optional = true }
 [dev-dependencies]
 quickcheck = "1.0.3"
 paste = "1.0.6"
-criterion = "0.3.6"
-rug = "1.16.0"
-
-[[bench]]
-name = "benchmark"
-harness = false
 
 [profile.release]
 lto = true # enable link-time optimisation for faster runtime, but slower compile time

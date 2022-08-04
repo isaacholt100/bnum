@@ -11,16 +11,16 @@ pub mod wrapping;
 
 macro_rules! arithmetic_doc {
 	($Int: ty) => {
-concat!("`", stringify!($Int), "` implements all the arithmetic traits from the [`core::ops`](https://doc.rust-lang.org/core/ops/) module. The behaviour of the implementation of these traits is the same as for Rust's primitive integers - i.e. in debug mode it panics on overflow, and in release mode it performs two's complement wrapping (see <https://doc.rust-lang.org/book/ch03-02-data-types.html#integer-overflow>). However, an attempt to divide by zero or calculate a remainder with a divisor of zero will always panic, unless using the [`checked_`](#method.checked_div) methods, which never panic.")
+concat!("`", stringify!($Int), "` implements all the arithmetic traits from the [`core::ops`](https://doc.rust-lang.org/core/ops/) module. The behaviour of the implementation of these traits is the same as for Rust's primitive integers - i.e. in debug mode it panics on overflow, and in release mode it performs two's complement wrapping (see <https://doc.rust-lang.org/book/ch03-02-data-types.html#integer-overflow>). However, an attempt to divide by zero or calculate a remainder with a divisor of zero will always panic, unless the [`checked_`](#method.checked_div) methods are used, which never panic.")
 	}
 }
 
 pub(crate) use arithmetic_doc;
 
 macro_rules! must_use_op {
-	() => {
-		"this returns the result of the operation, without modifying the original"
-	};
+    () => {
+        "this returns the result of the operation, without modifying the original"
+    };
 }
 
 pub(crate) use must_use_op;
@@ -41,9 +41,13 @@ pub(crate) use arithmetic_impl_desc;
 
 #[cfg(feature = "nightly")]
 macro_rules! requires_feature {
-	($feature: literal) => {
-		concat!("\n\nThis is supported on the crate feature `", $feature, "` only.")
-	};
+    ($feature: literal) => {
+        concat!(
+            "\n\nThis is supported on the crate feature `",
+            $feature,
+            "` only."
+        )
+    };
 }
 
 #[cfg(feature = "nightly")]
@@ -368,23 +372,8 @@ macro_rules! is_one {
 
 pub(crate) use is_one;
 
-macro_rules! unsigned_abs {
-	($sign: ident $bits: literal) => {
-		doc::doc_comment! {
-			#unsigned_abs,
-			$sign $bits,
-			"Computes the absolute value of `self` without any wrapping or panicking.",
-
-			"assert_eq!(" doc::type_str!($sign $bits) "::from(100).unsigned_abs(), bnum::BUint::from(100u8));"
-			"assert_eq!(" doc::type_str!($sign $bits) "::from(-100).unsigned_abs(), bnum::BUint::from(100u8));"
-			"assert_eq!(" doc::type_str!($sign $bits) "::MIN.unsigned_abs(), I256::MIN.to_bits());"
-		}
-	};
-}
-
-pub(crate) use unsigned_abs;
-
 crate::doc::link_doc_comment! {
+	unsigned_abs,
     div_euclid,
     rem_euclid,
     log2,

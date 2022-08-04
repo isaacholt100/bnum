@@ -1,33 +1,30 @@
 macro_rules! impls {
     ($Int: ident, $sign: ident) => {
-        use super::$Int;
-        use crate::doc;
-
         #[doc = doc::unchecked::impl_desc!()]
         impl<const N: usize> $Int<N> {
             #[doc = doc::unchecked::unchecked_add!($sign)]
-			#[must_use = doc::must_use_op!()]
+            #[must_use = doc::must_use_op!()]
             #[inline]
             pub unsafe fn unchecked_add(self, rhs: Self) -> Self {
                 self.checked_add(rhs).unwrap_unchecked()
             }
 
             #[doc = doc::unchecked::unchecked_sub!($sign)]
-			#[must_use = doc::must_use_op!()]
+            #[must_use = doc::must_use_op!()]
             #[inline]
             pub unsafe fn unchecked_sub(self, rhs: Self) -> Self {
                 self.checked_sub(rhs).unwrap_unchecked()
             }
 
             #[doc = doc::unchecked::unchecked_mul!($sign)]
-			#[must_use = doc::must_use_op!()]
+            #[must_use = doc::must_use_op!()]
             #[inline]
             pub unsafe fn unchecked_mul(self, rhs: Self) -> Self {
                 self.checked_mul(rhs).unwrap_unchecked()
             }
 
             #[doc = doc::unchecked::unchecked_shl!($sign)]
-			#[must_use = doc::must_use_op!()]
+            #[must_use = doc::must_use_op!()]
             #[inline]
             pub unsafe fn unchecked_shl(self, rhs: Self) -> Self {
                 let rhs = rhs.to_exp_type().unwrap_unchecked();
@@ -35,7 +32,7 @@ macro_rules! impls {
             }
 
             #[doc = doc::unchecked::unchecked_shr!($sign)]
-			#[must_use = doc::must_use_op!()]
+            #[must_use = doc::must_use_op!()]
             #[inline]
             pub unsafe fn unchecked_shr(self, rhs: Self) -> Self {
                 let rhs = rhs.to_exp_type().unwrap_unchecked();

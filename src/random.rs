@@ -9,35 +9,15 @@ Copyright 2018-2020 Developers of the Rand project.
 Copyright 2017 The Rust Project Developers.
 */
 
-//! Utilities for generating random `BUint`s and `BInt`s.
+//! Utilities for generating random bnum integers.
 //!
 //! The `rand` feature must be enabled to use items from this module.
 
-use crate::{BInt, BUint};
 use core::ops::{Deref, DerefMut};
-use rand::distributions::uniform::{SampleBorrow, SampleUniform, UniformSampler};
-use rand::distributions::{Distribution, Standard};
-use rand::{Error, Fill, Rng};
-
-impl<const N: usize> Distribution<BUint<N>> for Standard {
-    #[inline]
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> BUint<N> {
-        let mut digits = [0; N];
-        rng.fill(&mut digits);
-        BUint::from_digits(digits)
-    }
-}
-
-impl<const N: usize> Distribution<BInt<N>> for Standard {
-    #[inline]
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> BInt<N> {
-        BInt::from_bits(rng.gen())
-    }
-}
 
 /// Wrapper type designed to be filled with random big integers.
 ///
-/// This type exists because [`rand::Fill`](https://docs.rs/rand/latest/rand/trait.Fill.html) can't be implemented for `[BUint<N>]` or `[BInt<N>]` due to Rust's orphan rules. Instead, it is implemented for `Slice<BUint<N>>` and `Slice<BInt<N>>`. The underlying slice can then be accessed by calling [`AsRef::as_ref`](https://doc.rust-lang.org/core/convert/trait.AsRef.html#tymethod.as_ref) or [`AsMut::as_mut`](https://doc.rust-lang.org/core/convert/trait.AsMut.html#tymethod.as_mut) on the wrapper, or deferencing it. An alternative way of filling a slice with random big integers is using the [`try_fill_slice`] method in this crate's [`random`](crate::random) module.
+/// This type exists because [`rand::Fill`](https://docs.rs/rand/latest/rand/trait.Fill.html) can't be implemented for `[BUint<N>]` (or any other slice of bnum integers) due to Rust's orphan rules. Instead, it is implemented for `Slice<BUint<N>>`, etc. The underlying slice can then be accessed by calling [`AsRef::as_ref`](https://doc.rust-lang.org/core/convert/trait.AsRef.html#tymethod.as_ref) or [`AsMut::as_mut`](https://doc.rust-lang.org/core/convert/trait.AsMut.html#tymethod.as_mut) on the wrapper, or deferencing it. An alternative way of filling a slice with random big integers is using the [`try_fill_slice`] method in this crate's [`random`](crate::random) module.
 pub struct Slice<T>(pub [T]);
 
 impl<T> AsRef<[T]> for Slice<T> {
@@ -66,9 +46,37 @@ impl<T> DerefMut for Slice<T> {
     }
 }
 
+/// Fills a slice with random big integers.
+///
+/// An alternative way of filling a slice with random big integers is using the [`rand::Fill`](https://docs.rs/rand/latest/rand/trait.Fill.html) trait's method [`try_fill`](https://docs.rs/rand/latest/rand/trait.Fill.html#tymethod.try_fill) on the [`Slice`] struct in this crate's [`random`](crate::random) module.
+///
+/// # Examples
+///
+/// ```
+/// // Fill a `Vec` of length 10 with random `I256`s
+///
+/// use bnum::types::I256;
+/// use bnum::random;
+///
+/// let mut v = vec![I256::ZERO; 10];
+/// let mut rng = rand::thread_rng();
+///
+/// random::try_fill_slice(&mut v, &mut rng).unwrap();
+/// // each initial `I256::ZERO` is replaced with a random `I256`
+///
+/// println!("{:?}", v);
+/// ```
+pub fn try_fill_slice<T, R: Rng + ?Sized>(slice: &mut [T], rng: &mut R) -> Result<(), Error>
+where
+    Slice<T>: Fill,
+{
+    let slice = unsafe { &mut *(slice as *mut _ as *mut Slice<T>) };
+    Fill::try_fill(slice, rng)
+}
+
 macro_rules! fill_impl {
     ($ty: ty) => {
-        impl<const N: usize> Fill for Slice<$ty> {
+        impl<const N: usize> Fill for crate::random::Slice<$ty> {
             #[inline(never)]
             fn try_fill<R: Rng + ?Sized>(&mut self, rng: &mut R) -> Result<(), Error> {
                 if self.0.len() > 0 {
@@ -88,73 +96,13 @@ macro_rules! fill_impl {
     };
 }
 
-fill_impl!(BUint<N>);
-fill_impl!(BInt<N>);
-
-/// Fills a slice with random big integers.
-///
-/// An alternative way of filling a slice with random big integers is using the [`rand::Fill`](https://docs.rs/rand/latest/rand/trait.Fill.html) trait's method [`try_fill`](https://docs.rs/rand/latest/rand/trait.Fill.html#tymethod.try_fill) on the [`Slice`] struct in this crate's [`random`](crate::random) module.
-/// 
-/// # Examples
-/// 
-/// ```
-/// // Fill a `Vec` of length 10 with random `I256`s
-/// 
-/// use bnum::types::I256;
-/// use bnum::random;
-/// 
-/// let mut v = vec![I256::ZERO; 10];
-/// let mut rng = rand::thread_rng();
-/// 
-/// random::try_fill_slice(&mut v, &mut rng).unwrap();
-/// // each initial `I256::ZERO` is replaced with a random `I256`
-/// 
-/// println!("{:?}", v);
-/// ```
-pub fn try_fill_slice<T, R: Rng + ?Sized>(slice: &mut [T], rng: &mut R) -> Result<(), Error>
-where
-    Slice<T>: Fill,
-{
-    let slice = unsafe { &mut *(slice as *mut _ as *mut Slice<T>) };
-    Fill::try_fill(slice, rng)
-}
-
-#[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
-
-macro_rules! uniform_int_doc {
-	($Int: ty) => {
-concat!("Used for generating random [`", stringify!($Int), "`]s in a given range.
-
-Implements the [`UniformSampler`](https://docs.rs/rand/latest/rand/distributions/uniform/trait.UniformSampler.html) trait from the [`rand`](https://docs.rs/rand/latest/rand/) crate. This struct should not be used directly; instead use the [`Uniform`](https://docs.rs/rand/latest/rand/distributions/struct.Uniform.html) struct from the [`rand`](https://docs.rs/rand/latest/rand/) crate.")
-	}
-}
-
-#[doc = uniform_int_doc!(BUint)]
-#[derive(Clone, Copy, Debug, PartialEq)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct UniformBUint<const N: usize> {
-    low: BUint<N>,
-    range: BUint<N>,
-    z: BUint<N>,
-}
-
-#[doc = uniform_int_doc!(BInt)]
-#[derive(Clone, Copy, Debug, PartialEq)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct UniformBInt<const N: usize> {
-    low: BInt<N>,
-    range: BInt<N>,
-    z: BInt<N>,
-}
-
 macro_rules! uniform_int_impl {
-    ($Uniform: ty, $ty:ty, $u_large:ty $(, $as_unsigned: ident, $as_signed: ident)?) => {
+    ($ty: ty, $u_large: ty $(, $as_unsigned: ident, $as_signed: ident)?) => {
         impl<const N: usize> SampleUniform for $ty {
-            type Sampler = $Uniform;
+            type Sampler = UniformInt<$ty>;
         }
 
-        impl<const N: usize> UniformSampler for $Uniform {
+        impl<const N: usize> UniformSampler for UniformInt<$ty> {
             type X = $ty;
 
             #[inline]
@@ -179,7 +127,7 @@ macro_rules! uniform_int_impl {
                 let high = *high_b.borrow();
                 assert!(
                     low <= high,
-                    crate::errors::err_msg!("Uniform::new_inclusive called with `low > high`")
+                    "Uniform::new_inclusive called with `low > high`"
                 );
 
                 let range = high.wrapping_sub(low).wrapping_add(<$ty>::ONE)$(.$as_unsigned())?;
@@ -189,10 +137,10 @@ macro_rules! uniform_int_impl {
                     <$u_large>::ZERO
                 };
 
-                Self {
+                UniformInt {
                     low,
-                    range: $(BInt::$as_signed)?(range),
-                    z: $(BInt::$as_signed)?(ints_to_reject),
+                    range: $(<$ty>::$as_signed)?(range),
+                    z: $(<$ty>::$as_signed)?(ints_to_reject),
                 }
             }
 
@@ -205,7 +153,7 @@ macro_rules! uniform_int_impl {
                         let v: $u_large = rng.gen();
                         let (lo, hi) = v.widening_mul(range);
                         if lo <= zone {
-                            return self.low.wrapping_add($(BInt::$as_signed)?(hi));
+                            return self.low.wrapping_add($(<$ty>::$as_signed)?(hi));
                         }
                     }
                 } else {
@@ -221,7 +169,7 @@ macro_rules! uniform_int_impl {
             {
                 let low = *low_b.borrow();
                 let high = *high_b.borrow();
-                assert!(low < high, crate::errors::err_msg!("UniformSampler::sample_single: low >= high"));
+                assert!(low < high, "UniformSampler::sample_single: low >= high");
                 Self::sample_single_inclusive(low, high - <$ty>::ONE, rng)
             }
 
@@ -233,7 +181,7 @@ macro_rules! uniform_int_impl {
             {
                 let low = *low_b.borrow();
                 let high = *high_b.borrow();
-                assert!(low <= high, crate::errors::err_msg!("UniformSampler::sample_single_inclusive: low > high"));
+                assert!(low <= high, "UniformSampler::sample_single_inclusive: low > high");
                 let range = high.wrapping_sub(low).wrapping_add(<$ty>::ONE)$(.$as_unsigned())?;
                 if range.is_zero() {
                     return rng.gen();
@@ -250,7 +198,7 @@ macro_rules! uniform_int_impl {
                     let v: $u_large = rng.gen();
                     let (lo, hi) = v.widening_mul(range);
                     if lo <= zone {
-                        return low.wrapping_add($(BInt::$as_signed)?(hi));
+                        return low.wrapping_add($(<$ty>::$as_signed)?(hi));
                     }
                 }
             }
@@ -258,91 +206,138 @@ macro_rules! uniform_int_impl {
     };
 }
 
-uniform_int_impl!(UniformBUint<N>, BUint<N>, BUint<N>);
-
-uniform_int_impl!(UniformBInt<N>, BInt<N>, BUint<N>, to_bits, from_bits);
-
 #[cfg(test)]
-mod tests {
-    use crate::test::types::*;
-    use rand::SeedableRng;
+macro_rules! test_random {
+	($int: ty; $($Rng: ty), *) => {
+		paste::paste! {
+			$(
+				quickcheck::quickcheck! {
+					#[allow(non_snake_case)]
+					fn [<quickcheck_ $Rng _gen_ $int>](seed: u64) -> bool {
+						use crate::test::TestConvert;
+						use crate::test::types::*;
+						use rand::Rng;
+						use rand::rngs::$Rng;
 
-    fn seeded_rngs<R: SeedableRng + Clone>(seed: u64) -> (R, R) {
-        let rng = R::seed_from_u64(seed);
-        let rng2 = rng.clone(); // need to clone `rng` to produce the same results before it is used as `gen` mutates it
-        (rng, rng2)
-    }
+						let (mut rng, mut rng2) = seeded_rngs::<$Rng>(seed);
 
-    macro_rules! test_random {
-		($int: ty; $($Rng: ty), *) => {
-			paste::paste! {
-				$(
-					quickcheck::quickcheck! {
-						#[allow(non_snake_case)]
-						fn [<quickcheck_ $Rng _gen_ $int>](seed: u64) -> bool {
-							use crate::test::TestConvert;
-							use crate::test::types::*;
-							use rand::Rng;
-							use rand::rngs::$Rng;
+						let big = rng.gen::<[<$int:upper>]>();
+						let primitive = rng2.gen::<$int>();
 
-							let (mut rng, mut rng2) = seeded_rngs::<$Rng>(seed);
-
-							let big = rng.gen::<[<$int:upper>]>();
-							let primitive = rng2.gen::<$int>();
-
-							TestConvert::into(big) == TestConvert::into(primitive)
-						}
-
-						#[allow(non_snake_case)]
-						fn [<quickcheck_ $Rng _fill_ $int _slice>](seed: u64) -> bool {
-							use crate::test::TestConvert;
-							use rand::Fill;
-							use rand::rngs::$Rng;
-
-							const SLICE_LENGTH: usize = 20;
-
-							let (mut rng, mut rng2) = seeded_rngs::<$Rng>(seed);
-
-							let mut big_array = [<[<$int:upper>]>::MIN; SLICE_LENGTH];
-							let mut primitive_array = [<$int>::MIN; SLICE_LENGTH];
-
-							crate::random::try_fill_slice(&mut big_array, &mut rng).unwrap();
-
-							primitive_array.try_fill(&mut rng2).unwrap();
-
-							big_array
-								.into_iter()
-								.zip(primitive_array.into_iter())
-								.all(|(big, primitive)| {
-									TestConvert::into(big) == TestConvert::into(primitive)
-								})
-						}
-
-						#[allow(non_snake_case)]
-						fn [<quickcheck_ $Rng _gen_range_ $int>](seed: u64, min: $int, max: $int) -> quickcheck::TestResult {
-							if min >= max {
-								return quickcheck::TestResult::discard();
-							}
-							use crate::test::TestConvert;
-							use rand::Rng;
-							use rand::rngs::$Rng;
-
-							let (mut rng, mut rng2) = seeded_rngs::<$Rng>(seed);
-
-							let min_big = [<$int:upper>]::from(min);
-							let max_big = [<$int:upper>]::from(max);
-
-							let big = rng.gen_range(min_big..max_big);
-							let primitive = rng2.gen_range(min..max);
-
-							quickcheck::TestResult::from_bool(TestConvert::into(big) == TestConvert::into(primitive))
-						}
+						TestConvert::into(big) == TestConvert::into(primitive)
 					}
-				)*
-			}
-		};
-	}
 
-    test_random!(utest; StdRng, SmallRng);
-    test_random!(itest; StdRng, SmallRng);
+					#[allow(non_snake_case)]
+					fn [<quickcheck_ $Rng _fill_ $int _slice>](seed: u64) -> bool {
+						use crate::test::TestConvert;
+						use rand::Fill;
+						use rand::rngs::$Rng;
+
+						const SLICE_LENGTH: usize = 20;
+
+						let (mut rng, mut rng2) = seeded_rngs::<$Rng>(seed);
+
+						let mut big_array = [<[<$int:upper>]>::MIN; SLICE_LENGTH];
+						let mut primitive_array = [<$int>::MIN; SLICE_LENGTH];
+
+						crate::random::try_fill_slice(&mut big_array, &mut rng).unwrap();
+
+						primitive_array.try_fill(&mut rng2).unwrap();
+
+						big_array
+							.into_iter()
+							.zip(primitive_array.into_iter())
+							.all(|(big, primitive)| {
+								TestConvert::into(big) == TestConvert::into(primitive)
+							})
+					}
+
+					#[allow(non_snake_case)]
+					fn [<quickcheck_ $Rng _gen_range_ $int>](seed: u64, min: $int, max: $int) -> quickcheck::TestResult {
+						if min >= max {
+							return quickcheck::TestResult::discard();
+						}
+						use crate::test::TestConvert;
+						use rand::Rng;
+						use rand::rngs::$Rng;
+
+						let (mut rng, mut rng2) = seeded_rngs::<$Rng>(seed);
+
+						let min_big = [<$int:upper>]::from(min);
+						let max_big = [<$int:upper>]::from(max);
+
+						let big = rng.gen_range(min_big..max_big);
+						let primitive = rng2.gen_range(min..max);
+
+						quickcheck::TestResult::from_bool(TestConvert::into(big) == TestConvert::into(primitive))
+					}
+				}
+			)*
+		}
+	};
 }
+
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
+/// Used for generating random big integers in a given range.
+///
+/// Implements the [`UniformSampler`](https://docs.rs/rand/latest/rand/distributions/uniform/trait.UniformSampler.html) trait from the [`rand`](https://docs.rs/rand/latest/rand/) crate. This struct should not be used directly; instead use the [`Uniform`](https://docs.rs/rand/latest/rand/distributions/struct.Uniform.html) struct from the [`rand`](https://docs.rs/rand/latest/rand/) crate.
+#[derive(Clone, Copy, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+pub struct UniformInt<X> {
+    low: X,
+    range: X,
+    z: X,
+}
+
+use rand::distributions::uniform::{SampleBorrow, SampleUniform, UniformSampler};
+use rand::distributions::{Distribution, Standard};
+use rand::{Error, Fill, Rng};
+
+macro_rules! random {
+    ($BUint: ident, $BInt: ident, $Digit: ident) => {
+        impl<const N: usize> Distribution<$BUint<N>> for Standard {
+            #[inline]
+            fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> $BUint<N> {
+                let mut digits = [0; N];
+                rng.fill(&mut digits);
+                $BUint::from_digits(digits)
+            }
+        }
+
+        impl<const N: usize> Distribution<$BInt<N>> for Standard {
+            #[inline]
+            fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> $BInt<N> {
+                $BInt::from_bits(rng.gen())
+            }
+        }
+
+        fill_impl!($BUint<N>);
+        fill_impl!($BInt<N>);
+
+        uniform_int_impl!($BUint<N>, $BUint<N>);
+
+        uniform_int_impl!($BInt<N>, $BUint<N>, to_bits, from_bits);
+
+        #[cfg(test)]
+        paste::paste! {
+			mod [<$Digit _digit_tests>] {
+				use crate::test::types::big_types::$Digit::*;
+                use crate::test::types::*;
+                use rand::SeedableRng;
+
+                fn seeded_rngs<R: SeedableRng + Clone>(seed: u64) -> (R, R) {
+                    let rng = R::seed_from_u64(seed);
+                    let rng2 = rng.clone(); // need to clone `rng` to produce the same results before it is used as `gen` mutates it
+                    (rng, rng2)
+                }
+
+                test_random!(utest; StdRng, SmallRng);
+                test_random!(itest; StdRng, SmallRng);
+            }
+        }
+    };
+}
+
+crate::macro_impl!(random);

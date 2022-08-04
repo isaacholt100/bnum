@@ -13,7 +13,7 @@ macro_rules! as_trait_doc {
 	() => {
 "Trait which allows panic-free casting between numeric types.
 
-The behavior matches the behavior of the `as` conversion operator between primitive integers. This trait can be used to convert between `BUint` and `BInt` of any sizes, as well as between `BUint`/`BInt` and Rust's primitive integers. Conversions between Rust's primitive integers themselves are also defined for consistency."
+The behavior matches the behavior of the `as` conversion operator between primitive integers. This trait can be used to convert between bnum's integer types, as well as between bnum's integer types and Rust's primitive integers. Conversions between Rust's primitive integers themselves are also defined for consistency."
 	};
 }
 

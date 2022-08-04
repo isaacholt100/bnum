@@ -1,7 +1,6 @@
 pub mod cast;
 pub mod checked;
 pub mod cmp;
-pub mod convert;
 pub mod endian;
 pub mod fmt;
 

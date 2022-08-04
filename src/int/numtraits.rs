@@ -44,9 +44,7 @@ macro_rules! as_bigint_impl {
 pub(crate) use as_bigint_impl;
 
 macro_rules! impls {
-	($Int: ident) => {
-		use crate::cast::CastFrom;
-
+	($Int: ident, $BUint: ident, $BInt: ident) => {
 		crate::nightly::impl_const! {
 			impl<const N: usize> const Bounded for $Int<N> {
 				#[inline]
@@ -60,8 +58,6 @@ macro_rules! impls {
 				}
 			}
 		}
-
-		use crate::int::numtraits::num_trait_impl;
 
 		num_trait_impl!($Int, CheckedAdd, checked_add, Option<Self>);
 		num_trait_impl!($Int, CheckedDiv, checked_div, Option<Self>);
@@ -175,19 +171,19 @@ macro_rules! impls {
 		}
 
 		crate::nightly::impl_const! {
-			impl<const N: usize, const M: usize> const AsPrimitive<crate::BUint<M>> for $Int<N> {
+			impl<const N: usize, const M: usize> const AsPrimitive<$BUint<M>> for $Int<N> {
 				#[inline]
-				fn as_(self) -> crate::BUint<M> {
-					crate::BUint::<M>::cast_from(self)
+				fn as_(self) -> crate::$BUint<M> {
+					crate::$BUint::<M>::cast_from(self)
 				}
 			}
 		}
 
 		crate::nightly::impl_const! {
-			impl<const N: usize, const M: usize> const AsPrimitive<crate::BInt<M>> for $Int<N> {
+			impl<const N: usize, const M: usize> const AsPrimitive<$BInt<M>> for $Int<N> {
 				#[inline]
-				fn as_(self) -> crate::BInt<M> {
-					crate::BInt::<M>::cast_from(self)
+				fn as_(self) -> crate::$BInt<M> {
+					crate::$BInt::<M>::cast_from(self)
 				}
 			}
 		}
@@ -212,10 +208,8 @@ macro_rules! impls {
 			}
 		}
 
-		use crate::errors::ParseIntError;
-
 		impl<const N: usize> Num for $Int<N> {
-			type FromStrRadixErr = ParseIntError;
+			type FromStrRadixErr = crate::errors::ParseIntError;
 
 			#[inline]
 			fn from_str_radix(string: &str, radix: u32) -> Result<Self, Self::FromStrRadixErr> {
@@ -353,10 +347,9 @@ pub(crate) use test_from_primitive;
 #[cfg(test)]
 macro_rules! tests {
 	($int: ty) => {
-		mod tests {
 			use super::*;
 			use num_traits::PrimInt;
-			use crate::test::{test_bignum, types::*};
+			use crate::test::test_bignum;
 
 			test_bignum! {
 				function: <$int>::sqrt(a: ref &$int),
@@ -425,7 +418,6 @@ macro_rules! tests {
 				function: <$int as PrimInt>::signed_shr(a: $int, n: u8),
 				skip: n >= <$int>::BITS as u8
 			}
-		}
 	};
 }
 

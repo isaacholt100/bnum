@@ -21,14 +21,14 @@ macro_rules! test_bignum {
 	{
 		function: <$primitive: ty $(as $Trait: ty)?> :: $function: ident,
 		cases: [
-            $(($($arg: expr), *)), *
+            $(($($(ref $re2: tt)? $arg: expr), *)), *
         ]
 	} => {
 		paste::paste! {
 			#[test]
 			fn [<cases_ $primitive _ $function>]() {
 				$(
-					let (big, primitive) = crate::test::results!(<$primitive> :: $function ($(Into::into($arg)), *));
+					let (big, primitive) = crate::test::results!(<$primitive> :: $function ($($($re2)? Into::into($arg)), *));
 					assert_eq!(big, primitive);
 				)*
 			}
@@ -38,13 +38,13 @@ macro_rules! test_bignum {
 		function: <$primitive: ty $(as $Trait: ty)?> :: $function: ident ($($param: ident : $(ref $re: tt)? $ty: ty), *)
 		$(, skip: $skip: expr)?
 		, cases: [
-            $(($($arg: expr), *)), *
+            $(($($(ref $re2: tt)? $arg: expr), *)), *
         ]
 	} => {
 		crate::test::test_bignum! {
 			function: <$primitive $(as $Trait)?> :: $function,
 			cases: [
-				$(($($arg), *)), *
+				$(($($(ref $re2)? $arg), *)), *
 			]
 		}
 		crate::test::test_bignum! {
@@ -61,7 +61,7 @@ macro_rules! results {
 		paste::paste! {
 			{
 				use crate::test::types;
-				let big_result = <types::[<$primitive:upper>] $(as $Trait)?>::$function(
+				let big_result = <[<$primitive:upper>] $(as $Trait)?>::$function(
 					$($arg), *
 				);
 				let prim_result = <types::$primitive $(as $Trait)?>::$function(
@@ -118,9 +118,9 @@ macro_rules! quickcheck_from_to_radix {
                     if !((2..=$max).contains(&radix)) {
                         return quickcheck::TestResult::discard();
                     }
-                    let u = <crate::[<$primitive:upper>]>::from(u);
+                    let u = <[<$primitive:upper>]>::from(u);
                     let v = u.[<to_ $name>](radix as u32);
-                    let u1 = <crate::[<$primitive:upper>]>::[<from_ $name>](&v, radix as u32).unwrap();
+                    let u1 = <[<$primitive:upper>]>::[<from_ $name>](&v, radix as u32).unwrap();
                     quickcheck::TestResult::from_bool(u == u1)
                 }
             }
