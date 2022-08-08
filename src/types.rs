@@ -1,4 +1,4 @@
-//! Type aliases for big signed and unsigned integers. Each is an alias for either a [`BUint`] or a [`BInt`]
+//! Type aliases for big signed and unsigned integers. Each is an alias for either a [`BUint`] or a [`BInt`].
 
 use crate::{BInt, BUint};
 
