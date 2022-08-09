@@ -85,17 +85,17 @@ pub(crate) use macro_impl;
 macro_rules! main_impl {
     ($name: ident) => {
         $name!(BUint, BInt, u64);
-        $name!(BUintU32D, BIntU32D, u32);
-        $name!(BUintU16D, BIntU16D, u16);
-        $name!(BUintU8D, BIntU8D, u8);
+        $name!(BUintD32, BIntD32, u32);
+        $name!(BUintD16, BIntD16, u16);
+        $name!(BUintD8, BIntD8, u8);
     };
 }
 
 pub(crate) use main_impl;
 
 mod bigints {
-	pub use crate::bint::{BInt, BIntU16D, BIntU32D, BIntU8D};
-	pub use crate::buint::{BUint, BUintU16D, BUintU32D, BUintU8D};
+	pub use crate::bint::{BInt, BIntD16, BIntD32, BIntD8};
+	pub use crate::buint::{BUint, BUintD16, BUintD32, BUintD8};
 }
 
 pub use bigints::*;

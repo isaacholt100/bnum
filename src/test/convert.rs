@@ -27,9 +27,9 @@ macro_rules! test_convert_bigints {
 	($($bits: literal), *) => {
 		paste::paste! {
 			$(
-				test_convert_big!(BUint<{$bits / 64}>, BUintU32D<{$bits / 32}>, BUintU16D<{$bits / 16}>, BUintU8D<{$bits / 8}>; [<u $bits>]);
+				test_convert_big!(BUint<{$bits / 64}>, BUintD32<{$bits / 32}>, BUintD16<{$bits / 16}>, BUintD8<{$bits / 8}>; [<u $bits>]);
 
-				test_convert_big!(BInt<{$bits / 64}>, BIntU32D<{$bits / 32}>, BIntU16D<{$bits / 16}>, BIntU8D<{$bits / 8}>; [<i $bits>]);
+				test_convert_big!(BInt<{$bits / 64}>, BIntD32<{$bits / 32}>, BIntD16<{$bits / 16}>, BIntD8<{$bits / 8}>; [<i $bits>]);
 			)*
 		}
 	};

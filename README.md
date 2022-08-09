@@ -8,9 +8,9 @@ The aim of this crate is to provide integer types of arbitrary fixed size which 
 
 This crate uses Rust's const generics to allow creation of integers of arbitrary size that can be determined at compile time. Unsigned integers are stored as an array of digits (primitive unsigned integers) of length `N`. This means all `bnum` integers can be stored on the stack, as they are fixed size. Signed integers are simply stored as an unsigned integer in two's complement.
 
-`bnum` defines 4 unsigned integer types: each uses a different primitive integer as its digit type. `BUint` uses `u64` as its digit, `BUintU32D` uses `u32`, `BUintU16D` uses `u16` and `BUintU8D` uses `u8`. The signed integer types, `BInt`, `BIntU32D`, `BIntU16D` and `BIntU8D` are represented by these unsigned integers respectively.
+`bnum` defines 4 unsigned integer types: each uses a different primitive integer as its digit type. `BUint` uses `u64` as its digit, `BUintD32` uses `u32`, `BUintD16` uses `u16` and `BUintD8` uses `u8`. The signed integer types, `BInt`, `BIntD32`, `BIntD16` and `BIntD8` are represented by these unsigned integers respectively.
 
-`BUint` and `BInt` are the fastest as they store (and so operate on) the least number of digits for a given bit size. However, the drawback is that the bit size must be a multiple of `64` (`bitsize = N * 64`). This is why other integer types are provided as well, as they allow the bit size to be a multiple of `32`, `16`, or `8` instead. When choosing which of these types to use, determine which of `64, 32, 16, 8` is the largest multiple of the desired bit size, and use the corresponding type. For example, if you wanted a 96-bit unsigned integer, 32 is the largest multiple of 96 out of these, so use `BUintU32D<3>`. A 40-bit signed integer would be `BIntU32D<5>`.
+`BUint` and `BInt` are the fastest as they store (and so operate on) the least number of digits for a given bit size. However, the drawback is that the bit size must be a multiple of `64` (`bitsize = N * 64`). This is why other integer types are provided as well, as they allow the bit size to be a multiple of `32`, `16`, or `8` instead. When choosing which of these types to use, determine which of `64, 32, 16, 8` is the largest multiple of the desired bit size, and use the corresponding type. For example, if you wanted a 96-bit unsigned integer, 32 is the largest multiple of 96 out of these, so use `BUintD32<3>`. A 40-bit signed integer would be `BIntD32<5>`.
 
 `bnum` can be used in `no_std` environments, provided a global default allocator is configured.
 
@@ -62,10 +62,10 @@ assert_eq!(f_n, U512::from_str_radix("354224848179261915075", 10).unwrap());
 
 ```rust
 // Construct an 80-bit signed integer
-// Out of [64, 32, 16, 8], 16 is the largest multiple of 80, so use `BIntU16D`
-use bnum::BIntU16D;
+// Out of [64, 32, 16, 8], 16 is the largest multiple of 80, so use `BIntD16`
+use bnum::BIntD16;
 
-type I80 = BIntU16D<5>; // 80 / 16 = 5
+type I80 = BIntD16<5>; // 80 / 16 = 5
 
 let neg_one = I80::NEG_ONE;
 assert_eq!(neg_one.count_ones(), 80); // signed integers are stored in two's complement so `-1` is represented as `111111...`
@@ -103,7 +103,7 @@ Documentation for this project has not been fully written. However, since the AP
 
 ## Known Issues
 
-At the moment, the [`From`](https://doc.rust-lang.org/core/convert/trait.From.html) trait is implemented for bnum's integers, from all the Rust primitive integers. However, this behaviour is not quite correct. For example, if a 24-bit wide unsigned integer were created (`BUintU8D<3>`), this should not implement `From<u32>`, etc. and should implement `TryFrom<u32>` instead. To ensure correct behaviour, the [`FromPrimitive`](https://docs.rs/num-traits/latest/num_traits/cast/trait.FromPrimitive.html) trait from the [`num_traits`](https://docs.rs/num-traits/latest/num_traits/index.html) crate can be used instead, as this will always return an `Option` rather than the integer itself.
+At the moment, the [`From`](https://doc.rust-lang.org/core/convert/trait.From.html) trait is implemented for bnum's integers, from all the Rust primitive integers. However, this behaviour is not quite correct. For example, if a 24-bit wide unsigned integer were created (`BUintD8<3>`), this should not implement `From<u32>`, etc. and should implement `TryFrom<u32>` instead. To ensure correct behaviour, the [`FromPrimitive`](https://docs.rs/num-traits/latest/num_traits/cast/trait.FromPrimitive.html) trait from the [`num_traits`](https://docs.rs/num-traits/latest/num_traits/index.html) crate can be used instead, as this will always return an `Option` rather than the integer itself.
 
 The [`num_traits::NumCast`](https://docs.rs/num-traits/latest/num_traits/cast/trait.NumCast.html) trait is implemented for bnum's integers but will panic if its method [`from`](https://docs.rs/num-traits/latest/num_traits/cast/trait.NumCast.html#tymethod.from) is called, as it is not possible to guarantee a correct conversion, due to trait bounds enforced by [`NumCast`](https://docs.rs/num-traits/latest/num_traits/cast/trait.NumCast.html). This trait should therefore never be used on bnum's integers. The implementation exists only to allow implementation of the [`num_traits::PrimInt`](https://docs.rs/num-traits/latest/num_traits/int/trait.PrimInt.html) trait for bnum's integers.
 
