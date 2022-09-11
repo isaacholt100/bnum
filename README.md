@@ -14,6 +14,10 @@ This crate uses Rust's const generics to allow creation of integers of arbitrary
 
 `bnum` can be used in `no_std` environments, provided a global default allocator is configured.
 
+### Important: bug in v0.1.0
+
+In version `0.1.0`, the `from_be` and `to_be` methods on all integers were implemented incorrectly. This problem was fixed in `0.2.0` (the next version). If you are using `0.1.0`, either update to a later version or do not use these methods.
+
 ## Installation
 
 To install and use `bnum`, simply add the following line to your `Cargo.toml` file in the `[dependencies]` section:

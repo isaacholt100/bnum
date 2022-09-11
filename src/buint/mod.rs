@@ -288,44 +288,44 @@ macro_rules! mod_impl {
 				self.wrapping_next_power_of_two()
 			}
 
-			#[doc = doc::log2!(U)]
+			#[doc = doc::ilog2!(U)]
 			#[must_use = doc::must_use_op!()]
 			#[inline]
-			pub const fn log2(self) -> ExpType {
+			pub const fn ilog2(self) -> ExpType {
 				#[cfg(debug_assertions)]
 				return option_expect!(
-					self.checked_log2(),
-					errors::err_msg!("attempt to calculate log2 of zero")
+					self.checked_ilog2(),
+					errors::err_msg!("attempt to calculate ilog2 of zero")
 				);
 				#[cfg(not(debug_assertions))]
-				match self.checked_log2() {
+				match self.checked_ilog2() {
 					Some(n) => n,
 					None => 0,
 				}
 			}
 
 			crate::nightly::const_fns! {
-				#[doc = doc::log10!(U)]
+				#[doc = doc::ilog10!(U)]
 				#[must_use = doc::must_use_op!()]
 				#[inline]
-				pub const fn log10(self) -> ExpType {
+				pub const fn ilog10(self) -> ExpType {
 					#[cfg(debug_assertions)]
-					return option_expect!(self.checked_log10(), errors::err_msg!("attempt to calculate log10 of zero"));
+					return option_expect!(self.checked_ilog10(), errors::err_msg!("attempt to calculate ilog10 of zero"));
 					#[cfg(not(debug_assertions))]
-					match self.checked_log10() {
+					match self.checked_ilog10() {
 						Some(n) => n,
 						None => 0,
 					}
 				}
 
-				#[doc = doc::log!(U)]
+				#[doc = doc::ilog!(U)]
 				#[must_use = doc::must_use_op!()]
 				#[inline]
-				pub const fn log(self, base: Self) -> ExpType {
+				pub const fn ilog(self, base: Self) -> ExpType {
 					#[cfg(debug_assertions)]
-					return option_expect!(self.checked_log(base), errors::err_msg!("attempt to calculate log of zero or log with base < 2"));
+					return option_expect!(self.checked_ilog(base), errors::err_msg!("attempt to calculate ilog of zero or ilog with base < 2"));
 					#[cfg(not(debug_assertions))]
-					match self.checked_log(base) {
+					match self.checked_ilog(base) {
 						Some(n) => n,
 						None => 0,
 					}

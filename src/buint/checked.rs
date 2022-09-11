@@ -340,21 +340,21 @@ macro_rules! checked {
 				self.checked_mul(y)
 			}
 
-			#[doc = doc::checked::checked_log2!(U)]
+			#[doc = doc::checked::checked_ilog2!(U)]
 			#[must_use = doc::must_use_op!()]
 			#[inline]
-			pub const fn checked_log2(self) -> Option<ExpType> {
+			pub const fn checked_ilog2(self) -> Option<ExpType> {
 				self.bits().checked_sub(1)
 			}
 
 			const_fns! {
 				#[inline]
-				const fn ilog(m: ExpType, b: Self, k: Self) -> (ExpType, Self) {
-					// https://people.csail.mit.edu/jaffer/III/ilog.pdf
+				const fn iilog(m: ExpType, b: Self, k: Self) -> (ExpType, Self) {
+					// https://people.csail.mit.edu/jaffer/III/iilog.pdf
 					if b > k {
 						(m, k)
 					} else {
-						let (new, q) = Self::ilog(m << 1, b * b, k.div_rem_unchecked(b).0);
+						let (new, q) = Self::iilog(m << 1, b * b, k.div_rem_unchecked(b).0);
 						if b > q {
 							(new, q)
 						} else {
@@ -363,27 +363,27 @@ macro_rules! checked {
 					}
 				}
 
-				#[doc = doc::checked::checked_log10!(U)]
+				#[doc = doc::checked::checked_ilog10!(U)]
 				#[must_use = doc::must_use_op!()]
 				#[inline]
-				pub const fn checked_log10(self) -> Option<ExpType> {
+				pub const fn checked_ilog10(self) -> Option<ExpType> {
 					if self.is_zero() {
 						return None;
 					}
 					if Self::TEN > self {
 						return Some(0);
 					}
-					Some(Self::ilog(1, Self::TEN, self.div_rem_digit(10).0).0)
+					Some(Self::iilog(1, Self::TEN, self.div_rem_digit(10).0).0)
 				}
 
-				#[doc = doc::checked::checked_log!(U)]
+				#[doc = doc::checked::checked_ilog!(U)]
 				#[must_use = doc::must_use_op!()]
 				#[inline]
-				pub const fn checked_log(self, base: Self) -> Option<ExpType> {
+				pub const fn checked_ilog(self, base: Self) -> Option<ExpType> {
 					use core::cmp::Ordering;
 					match base.cmp(&Self::TWO) {
 						Ordering::Less => None,
-						Ordering::Equal => self.checked_log2(),
+						Ordering::Equal => self.checked_ilog2(),
 						Ordering::Greater => {
 							if self.is_zero() {
 								return None;
@@ -391,7 +391,7 @@ macro_rules! checked {
 							if base > self {
 								return Some(0);
 							}
-							Some(Self::ilog(1, base, self / base).0)
+							Some(Self::iilog(1, base, self / base).0)
 						}
 					}
 				}
@@ -480,16 +480,16 @@ macro_rules! checked {
 					function: <utest>::checked_pow(a: utest, b: u16)
 				}
 				test_bignum! {
-					function: <utest>::checked_log(a: utest, b: utest),
+					function: <utest>::checked_ilog(a: utest, b: utest),
 					cases: [
 						(2u8, 60u8)
 					]
 				}
 				test_bignum! {
-					function: <utest>::checked_log2(a: utest)
+					function: <utest>::checked_ilog2(a: utest)
 				}
 				test_bignum! {
-					function: <utest>::checked_log10(a: utest)
+					function: <utest>::checked_ilog10(a: utest)
 				}
 				test_bignum! {
 					function: <utest>::checked_next_power_of_two(a: utest),

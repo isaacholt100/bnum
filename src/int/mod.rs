@@ -60,15 +60,15 @@ macro_rules! tests {
             function: <$int>::abs_diff(a: $int, b: $int)
         }
         test_bignum! {
-            function: <$int>::log(a: $int, base: $int),
+            function: <$int>::ilog(a: $int, base: $int),
             skip: crate::test::debug_skip!(a <= 0 || base <= 1)
         }
         test_bignum! {
-            function: <$int>::log2(a: $int),
+            function: <$int>::ilog2(a: $int),
             skip: crate::test::debug_skip!(a <= 0)
         }
         test_bignum! {
-            function: <$int>::log10(a: $int),
+            function: <$int>::ilog10(a: $int),
             skip: crate::test::debug_skip!(a <= 0)
         }
         test_bignum! {

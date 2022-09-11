@@ -8,7 +8,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
     pub const MANTISSA_DIGITS: u32 = MB as u32 + 1;
 
-    pub const DIGITS: u32 = BUint::<W>::ONE.wrapping_shl(Self::MB).log10() as u32;
+    pub const DIGITS: u32 = BUint::<W>::ONE.wrapping_shl(Self::MB).ilog10() as u32;
 
     pub const EPSILON: Self = {
         let u = Self::EXP_BIAS.to_bits() - MB.as_::<BUint<W>>();

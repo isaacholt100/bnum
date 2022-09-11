@@ -1,4 +1,4 @@
-macro_rules! checked_log {
+macro_rules! checked_ilog {
 	($method: ident $(, $base: ident: $ty: ty)?) => {
 		const_fn! {
 			#[doc = doc::checked::$method!(I)]
@@ -177,20 +177,20 @@ macro_rules! checked {
                     }
                 }
 
-                #[doc = doc::checked::checked_log!(I)]
+                #[doc = doc::checked::checked_ilog!(I)]
                 #[must_use = doc::must_use_op!()]
                 #[inline]
-                pub const fn checked_log(self, base: Self) -> Option<ExpType> {
+                pub const fn checked_ilog(self, base: Self) -> Option<ExpType> {
                     if base.is_negative() || self.is_negative() {
                         None
                     } else {
-                        self.to_bits().checked_log(base.to_bits())
+                        self.to_bits().checked_ilog(base.to_bits())
                     }
                 }
             }
 
-            checked_log!(checked_log2);
-            checked_log!(checked_log10);
+            checked_ilog!(checked_ilog2);
+            checked_ilog!(checked_ilog10);
         }
 
         #[cfg(test)]

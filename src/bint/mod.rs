@@ -1,4 +1,4 @@
-macro_rules! log {
+macro_rules! ilog {
 	($method: ident $(, $base: ident : $ty: ty)?) => {
 		crate::nightly::const_fn! {
 			#[doc = doc::$method!(I)]
@@ -7,7 +7,7 @@ macro_rules! log {
 			pub const fn $method(self, $($base : $ty),*) -> ExpType {
 				if self.is_negative() {
 					#[cfg(debug_assertions)]
-					panic!(errors::err_msg!("attempt to calculate log of negative number"));
+					panic!(errors::err_msg!("attempt to calculate ilog of negative number"));
 					#[cfg(not(debug_assertions))]
 					0
 				} else {
@@ -226,9 +226,9 @@ macro_rules! mod_impl {
 				}
 			}
 
-			log!(log, base: Self);
-			log!(log2);
-			log!(log10);
+			ilog!(ilog, base: Self);
+			ilog!(ilog2);
+			ilog!(ilog10);
 
 			crate::nightly::const_fns! {
 				#[doc = doc::abs_diff!(I)]
