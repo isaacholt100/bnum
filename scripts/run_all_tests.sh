@@ -7,7 +7,7 @@ test_integer_info () {
 
 run_test () {
 	test_integer_info "$1"
-	RUSTFLAGS="--cfg test_int_bits=\"$1\"" cargo test int --lib --quiet --features "rand numtraits nightly serde"
+	RUSTFLAGS="--cfg test_int_bits=\"$1\"" cargo test int --lib --quiet --all-features
 	if [ $? -ne 0 ]
 	then
 		exit 1

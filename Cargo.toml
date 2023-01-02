@@ -20,8 +20,8 @@ serde = ["dep:serde", "serde-big-array"]
 numtraits = ["num-integer", "num-traits"]
 
 [dependencies]
-num-integer = { version = "0.1.44", optional = true }
-num-traits = { version = "0.2.15", optional = true }
+num-integer = { version = "0.1.44", optional = true, default-features = false }
+num-traits = { version = "0.2.15", optional = true, default-features = false }
 serde = { version = "1.0.126", features = ["derive"], optional = true, default-features = false }
 serde-big-array = { version = "0.3.2", features = ["const-generics"], optional = true, default-features = false }
 rand = { version = "0.8.5", features = ["min_const_gen", "small_rng", "std_rng"], optional = true, default-features = false }
