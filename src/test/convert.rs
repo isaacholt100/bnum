@@ -67,7 +67,7 @@ impl TestConvert for f32 {
     }
 }
 
-impl TestConvert for crate::float::F64 {
+/*impl TestConvert for crate::float::F64 {
 	type Output = u64;
 
 	#[inline]
@@ -87,7 +87,7 @@ impl TestConvert for crate::float::F32 {
 		
 		self.to_bits().as_()
 	}
-}
+}*/
 
 impl<T: TestConvert, U: TestConvert> TestConvert for (T, U) {
     type Output = (<T as TestConvert>::Output, <U as TestConvert>::Output);

@@ -41,11 +41,11 @@ pub mod random;
 
 pub mod types;
 
-#[cfg(feature = "nightly")]
+/*#[cfg(feature = "nightly")]
 mod float;
 
 #[cfg(feature = "nightly")]
-pub use float::Float;
+pub use float::Float;*/
 
 #[cfg(test)]
 mod test;
