@@ -17,9 +17,9 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Update toolchain to nightly
-      run: rustup toolchain install nightly-2022-08-11
+      run: rustup install nightly
     - name: Set nightly as default
-      run: rustup default nightly-2022-08-11
+      run: rustup default nightly
     - name: Build
       run: cargo build --all-features --verbose
     - name: Run tests

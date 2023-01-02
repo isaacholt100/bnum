@@ -37,6 +37,9 @@ macro_rules! test_convert_bigints {
 
 test_convert_bigints!(128, 64);
 
+test_convert_big!(BUintD32<{32 / 32}>, BUintD16<{32 / 16}>, BUintD8<{32 / 8}>; u32);
+test_convert_big!(BIntD32<{32 / 32}>, BIntD16<{32 / 16}>, BIntD8<{32 / 8}>; i32);
+
 impl<T: TestConvert> TestConvert for Option<T> {
     type Output = Option<<T as TestConvert>::Output>;
 
@@ -63,6 +66,28 @@ impl TestConvert for f32 {
         self.to_bits()
     }
 }
+
+/*impl TestConvert for crate::float::F64 {
+	type Output = u64;
+
+	#[inline]
+	fn into(self) -> Self::Output {
+		use crate::cast::As;
+		
+		self.to_bits().as_()
+	}
+}
+
+impl TestConvert for crate::float::F32 {
+	type Output = u32;
+
+	#[inline]
+	fn into(self) -> Self::Output {
+		use crate::cast::As;
+		
+		self.to_bits().as_()
+	}
+}*/
 
 impl<T: TestConvert, U: TestConvert> TestConvert for (T, U) {
     type Output = (<T as TestConvert>::Output, <U as TestConvert>::Output);

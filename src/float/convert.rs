@@ -1,80 +1,33 @@
 use super::Float;
-use crate::BUint;
-use crate::digit;
+use crate::BUintD8;
 
 impl<const W: usize, const MB: usize> Float<W, MB> {
     #[inline(always)]
-    pub const fn to_bits(self) -> BUint<W> {
+    pub const fn to_bits(self) -> BUintD8<W> {
         self.bits
     }
 
     #[inline(always)]
-    pub const fn from_bits(v: BUint<W>) -> Self {
+    pub const fn from_bits(v: BUintD8<W>) -> Self {
         Self {
             bits: v,
         }
     }
 }
 
-impl<const W: usize, const MB: usize> Float<W, MB> {
-    #[inline]
-    pub const fn to_be_bytes(self) -> [u8; W * digit::BYTES as usize] {
-        self.to_bits().to_be_bytes()
-    }
-
-    #[inline]
-    pub const fn to_le_bytes(self) -> [u8; W * digit::BYTES as usize] {
-        self.to_bits().to_le_bytes()
-    }
-
-    #[inline]
-    pub const fn to_ne_bytes(self) -> [u8; W * digit::BYTES as usize] {
-        self.to_bits().to_ne_bytes()
-    }
-
-    #[inline]
-    pub const fn from_be_bytes(bytes: [u8; W * digit::BYTES as usize]) -> Self {
-        Self::from_bits(BUint::from_be_bytes(bytes))
-    }
-
-    #[inline]
-    pub const fn from_le_bytes(bytes: [u8; W * digit::BYTES as usize]) -> Self {
-        Self::from_bits(BUint::from_le_bytes(bytes))
-    }
-
-    #[inline]
-    pub const fn from_ne_bytes(bytes: [u8; W * digit::BYTES as usize]) -> Self {
-        Self::from_bits(BUint::from_ne_bytes(bytes))
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use crate::test::U8ArrayWrapper;
 	use crate::test::test_bignum;
+    use crate::test::types::{ftest, FTEST};
+	use super::super::{F64, F32};
 
     test_bignum! {
-        function: <f64>::to_bits(a: f64)
+        function: <ftest>::to_bits(a: ftest)
     }
     test_bignum! {
         function: <f64>::from_bits(a: u64)
     }
     test_bignum! {
-        function: <f64>::to_be_bytes(a: f64)
-    }
-    test_bignum! {
-        function: <f64>::to_le_bytes(a: f64)
-    }
-    test_bignum! {
-        function: <f64>::to_ne_bytes(a: f64)
-    }
-    test_bignum! {
-        function: <f64>::from_be_bytes(a: U8ArrayWrapper<8>)
-    }
-    test_bignum! {
-        function: <f64>::from_le_bytes(a: U8ArrayWrapper<8>)
-    }
-    test_bignum! {
-        function: <f64>::from_ne_bytes(a: U8ArrayWrapper<8>)
+        function: <f32>::from_bits(a: u32)
     }
 }

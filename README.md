@@ -4,7 +4,7 @@ Arbitrary precision, fixed-size signed and unsigned integer types for Rust.
 
 ## Overview
 
-The aim of this crate is to provide integer types of arbitrary fixed size which behave exactly like Rust's primitive integer types: `u8`, `i8`, `u16`, `i16`, etc. Nearly all methods defined on Rust's signed and unsigned primitive integers are defined `bnum`s signed and unsigned integers. Additionally, some other useful methods are provided, mostly inspired by the [`BigInt`](https://docs.rs/num-bigint/latest/num_bigint/struct.BigInt.html) and [`BigUint`](https://docs.rs/num-bigint/latest/num_bigint/struct.BigUint.html) types from the [`num_bigint`](https://docs.rs/num-bigint/latest/num_bigint/index.html) crate.
+The aim of this crate is to provide integer types of arbitrary fixed size which behave exactly like Rust's primitive integer types: `u8`, `i8`, `u16`, `i16`, etc. Nearly all methods defined on Rust's signed and unsigned primitive integers are defined `bnum`'s signed and unsigned integers. Additionally, some other useful methods are provided, mostly inspired by the [`BigInt`](https://docs.rs/num-bigint/latest/num_bigint/struct.BigInt.html) and [`BigUint`](https://docs.rs/num-bigint/latest/num_bigint/struct.BigUint.html) types from the [`num_bigint`](https://docs.rs/num-bigint/latest/num_bigint/index.html) crate.
 
 This crate uses Rust's const generics to allow creation of integers of arbitrary size that can be determined at compile time. Unsigned integers are stored as an array of digits (primitive unsigned integers) of length `N`. This means all `bnum` integers can be stored on the stack, as they are fixed size. Signed integers are simply stored as an unsigned integer in two's complement.
 
@@ -23,13 +23,13 @@ In version `0.1.0`, the `from_be` and `to_be` methods on all integers were imple
 To install and use `bnum`, simply add the following line to your `Cargo.toml` file in the `[dependencies]` section:
 
 ```toml
-bnum = "0.4.0"
+bnum = "0.5.0"
 ```
 
 Or, to enable various `bnum` features as well, add for example this line instead:
 
 ```toml
-bnum = { version = "0.4.0", features = ["rand"] } # enables the "rand" feature
+bnum = { version = "0.5.0", features = ["rand"] } # enables the "rand" feature
 ```
 
 ## Example Usage

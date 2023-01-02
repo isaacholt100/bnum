@@ -1,9 +1,11 @@
 use super::Float;
 use core::num::FpCategory;
 use core::ops::{Add, Sub, Mul, Div, Rem, Neg};
-use crate::{BUint, Bint, ExpType, digit};
+use crate::{BUintD8, BIntD8, ExpType};
 use core::iter::{Product, Sum, Iterator};
 use crate::cast::As;
+
+type Digit = u8;
 
 // TODO: fix this function
 impl<const W: usize, const MB: usize> Float<W, MB> {
@@ -20,7 +22,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     
         let exp_diff = a_exp - b_exp;
     
-        let sticky_bit = BUint::from(b_mant.trailing_zeros() + 1) < exp_diff;
+        let sticky_bit = BUintD8::from(b_mant.trailing_zeros() + 1) < exp_diff;
     
         // Append extra bits to the mantissas to ensure correct rounding
         a_mant <<= 2 as ExpType;
@@ -28,59 +30,60 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     
         // If the shift causes an overflow, the b_mant is too small so is set to 0
         b_mant = match exp_diff.try_into().ok() {
-            Some(exp_diff) => b_mant.checked_shr(exp_diff).unwrap_or(BUint::ZERO),
-            None => BUint::ZERO,
+            Some(exp_diff) => b_mant.checked_shr(exp_diff).unwrap_or(BUintD8::ZERO),
+            None => BUintD8::ZERO,
         };
     
         // If the shift causes an overflow, the b_mant is too small so is set to 0
     
         if sticky_bit {
-            b_mant |= BUint::ONE;
+            b_mant |= BUintD8::ONE;
         }
     
         let mut mant = a_mant + b_mant;
     
         let overflow = !(mant >> (MB + 3)).is_zero();
         if !overflow {
-            if mant & BUint::from_digit(0b11) == BUint::from_digit(0b11) || mant & BUint::from_digit(0b110) == BUint::from_digit(0b110) {
-                mant += BUint::FOUR;
+            if mant & BUintD8::from_digit(0b11) == BUintD8::from_digit(0b11) || mant & BUintD8::from_digit(0b110) == BUintD8::from_digit(0b110) {
+                mant += BUintD8::FOUR;
                 if !(mant >> (MB + 3)).is_zero() {
                     mant >>= 1 as ExpType;
-                    a_exp += BUint::ONE;
+                    a_exp += BUintD8::ONE;
                 }
             }
         } else {
-            match (mant & BUint::from_digit(0b111)).digits()[0] {
+            match (mant & BUintD8::from_digit(0b111)).digits()[0] {
                 0b111 | 0b110 | 0b101 => {
-                    mant += BUint::EIGHT;
+                    mant += BUintD8::EIGHT;
                 },
                 0b100 => {
-                    if mant & BUint::from_digit(0b1000) == BUint::from_digit(0b1000) {
-                        mant += BUint::EIGHT;
+                    if mant & BUintD8::from_digit(0b1000) == BUintD8::from_digit(0b1000) {
+                        mant += BUintD8::EIGHT; // 0b1000
                     }
                 },
                 _ => {},
             }
             
             mant >>= 1 as ExpType;
-            a_exp += BUint::ONE;
+            a_exp += BUintD8::ONE;
         }
         if a_exp > Self::MAX_UNBIASED_EXP {
-            return Self::INFINITY;
+            return if negative {
+				Self::NEG_INFINITY
+			} else {
+				Self::INFINITY
+			};
         }
     
         mant >>= 2 as ExpType;
     
         if (mant >> Self::MB).is_zero() {
-            a_exp = BUint::ZERO;
+            a_exp = BUintD8::ZERO;
         } else {
-            mant ^= BUint::ONE << Self::MB;
+            mant ^= BUintD8::ONE << Self::MB;
         }
-        //println!("{}", negative);
-        //assert!(negative);
-            let a = Self::from_exp_mant(false, a_exp, mant).neg();
-            assert!(a.is_sign_negative());
-            a
+		let a = Self::from_exp_mant(negative, a_exp, mant);
+		a
     }
 }
 
@@ -91,12 +94,19 @@ impl<const W: usize, const MB: usize> Add for Float<W, MB> {
     fn add(self, rhs: Self) -> Self {
         let self_negative = self.is_sign_negative();
         let rhs_negative = rhs.is_sign_negative();
-        match (self.classify(), rhs.classify()) {
-            (FpCategory::Nan, _) => return self,
-            (_, FpCategory::Nan) => return rhs,
-            (FpCategory::Infinite, _) => return self,
-            (_, FpCategory::Infinite) => return rhs,
-            (FpCategory::Zero, FpCategory::Zero) => return if self_negative && rhs_negative {
+        let a = match (self.classify(), rhs.classify()) {
+            (FpCategory::Nan, _) => self,
+            (_, FpCategory::Nan) => rhs,
+			(FpCategory::Infinite, FpCategory::Infinite) => {
+				if self_negative ^ rhs_negative {
+					Self::NAN 
+				} else {
+					self
+				}
+			}
+            (FpCategory::Infinite, _) => self,
+            (_, FpCategory::Infinite) => rhs,
+            (FpCategory::Zero, FpCategory::Zero) => if self_negative && rhs_negative {
                 Self::NEG_ZERO
             } else {
                 Self::ZERO
@@ -106,15 +116,16 @@ impl<const W: usize, const MB: usize> Add for Float<W, MB> {
                     self.sub_internal(rhs, self_negative)
                 } else {
                     let r = self.add_internal(rhs, self_negative);
-                    assert!(r.is_sign_negative());
                     r
                 }
             }
-        }
+        };
+		//assert_eq!(a.to_bits(), (self.to_f64() + rhs.to_f64()).to_bits().into());
+		a
     }
 }
 
-crate::errors::op_ref_impl!(Add<Float<N, MB>> for Float<N, MB>, add);
+//crate::errors::op_ref_impl!(Add<Float<N, MB>> for Float<N, MB>, add);
 
 impl<const W: usize, const MB: usize> Sum for Float<W, MB> {
     #[inline]
@@ -146,9 +157,9 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         let (b_exp, mut b_mant) = rhs.exp_mant();
         let exp_diff = a_exp - b_exp;
     
-        let mut a_exp = Bint::from_bits(a_exp);
+        let mut a_exp = BIntD8::from_bits(a_exp);
     
-        let sticky_bit2 = !exp_diff.is_zero() && exp_diff < BUint::<W>::BITS.into() && b_mant.bit(exp_diff.as_::<ExpType>() - 1);
+        let sticky_bit2 = !exp_diff.is_zero() && exp_diff < BUintD8::<W>::BITS.into() && b_mant.bit(exp_diff.as_::<ExpType>() - 1);
         let all_zeros = !exp_diff.is_zero() && b_mant.trailing_zeros() + 1 == exp_diff.as_();
     
     
@@ -160,8 +171,8 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
         // If the shift causes an overflow, the b_mant is too small so is set to 0
         let shifted_b_mant = match exp_diff.try_into().ok() {
-            Some(exp_diff) => b_mant.checked_shr(exp_diff).unwrap_or(BUint::ZERO),
-            None => BUint::ZERO,
+            Some(exp_diff) => b_mant.checked_shr(exp_diff).unwrap_or(BUintD8::ZERO),
+            None => BUintD8::ZERO,
         };
     
         // If the shift causes an overflow, the b_mant is too small so is set to 0
@@ -173,13 +184,13 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         let mut mant = a_mant - shifted_b_mant;
     
         if mant.bits() == Self::MB + 2 {
-            if mant & BUint::from(0b10u8) == BUint::from(0b10u8) && !sticky_bit {
-                mant += BUint::ONE;
+            if mant & BUintD8::from(0b10u8) == BUintD8::from(0b10u8) && !sticky_bit {
+                mant += BUintD8::ONE;
             }
     
             mant >>= 1 as ExpType;
         } else {
-            a_exp -= Bint::ONE;
+            a_exp -= BIntD8::ONE;
             a_mant <<= 1 as ExpType;
             b_mant <<= 1 as ExpType;
     
@@ -187,8 +198,8 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     
             // If the shift causes an overflow, the b_mant is too small so is set to 0
             let shifted_b_mant = match exp_diff.try_into().ok() {
-                Some(exp_diff) => b_mant.checked_shr(exp_diff).unwrap_or(BUint::ZERO),
-                None => BUint::ZERO,
+                Some(exp_diff) => b_mant.checked_shr(exp_diff).unwrap_or(BUintD8::ZERO),
+                None => BUintD8::ZERO,
             };
     
             // If the shift causes an overflow, the b_mant is too small so is set to 0
@@ -200,8 +211,8 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             mant = a_mant - shifted_b_mant;
 
             if mant.bits() == Self::MB + 2 {
-                if mant & BUint::from(0b10u8) == BUint::from(0b10u8) && !sticky_bit {
-                    mant += BUint::ONE;
+                if mant & BUintD8::from(0b10u8) == BUintD8::from(0b10u8) && !sticky_bit {
+                    mant += BUintD8::ONE;
                 }
     
                 mant >>= 1 as ExpType;
@@ -209,24 +220,24 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                 
                 let _half_way = (); // TODO
                 //println!("sticky: {}", sticky_bit);
-                if sticky_bit2 && !all_zeros || (sticky_bit2 && all_zeros && b_mant & BUint::from(0b1u8) == BUint::from(0b1u8)) {
+                if sticky_bit2 && !all_zeros || (sticky_bit2 && all_zeros && b_mant & BUintD8::from(0b1u8) == BUintD8::from(0b1u8)) {
                     //println!("sub");
-                    mant -= BUint::ONE;
+                    mant -= BUintD8::ONE;
                 }
                 let bits = mant.bits();
                 mant <<= Self::MB + 1 - bits;
-                a_exp -= Bint::from(MB as i64 + 2 - bits as i64);
+                a_exp -= (MB as i64 + 2 - bits as i64).as_::<BIntD8<W>>();
                 if !a_exp.is_positive() {
-                    a_exp = Bint::ONE;
-                    mant >>= Bint::ONE - a_exp;
+                    a_exp = BIntD8::ONE;
+                    mant >>= BIntD8::ONE - a_exp;
                 }
             }
         }
     
         if (mant >> Self::MB).is_zero() {
-            a_exp = Bint::ZERO;
+            a_exp = BIntD8::ZERO;
         } else {
-            mant ^= BUint::ONE << Self::MB;
+            mant ^= BUintD8::ONE << Self::MB;
         }
         
         Self::from_exp_mant(negative, a_exp.to_bits(), mant)
@@ -238,10 +249,15 @@ impl<const W: usize, const MB: usize> Sub for Float<W, MB> {
 
     #[inline]
     fn sub(self, rhs: Self) -> Self {
+		//println!("{:064b} {:064b}", self.to_bits(), rhs.to_bits());
         match (self.classify(), rhs.classify()) {
             (FpCategory::Nan, _) => return self,
             (_, FpCategory::Nan) => rhs,
-            (FpCategory::Infinite, FpCategory::Infinite) => return Self::NEG_NAN,
+            (FpCategory::Infinite, FpCategory::Infinite) => return if self.is_sign_negative() && !rhs.is_sign_negative() {
+				Self::NEG_NAN
+			} else {
+				Self::NAN
+			},
             (FpCategory::Infinite, _) => return self,
             (_, FpCategory::Infinite) => return rhs.neg(),
             (_, _) => {
@@ -257,7 +273,7 @@ impl<const W: usize, const MB: usize> Sub for Float<W, MB> {
     }
 }
 
-crate::errors::op_ref_impl!(Sub<Float<N, MB>> for Float<N, MB>, sub);
+//crate::errors::op_ref_impl!(Sub<Float<N, MB>> for Float<N, MB>, sub);
 
 impl<const W: usize, const MB: usize> Float<W, MB> {
     #[inline]
@@ -267,7 +283,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         let (exp_b, mant_b) = b.exp_mant();
 
         // TODO: make so as_ can infer type so can switch trait definition if needed
-        let mant_prod = mant_a.as_::<BUint<{W * 2}>>() * mant_b.as_::<BUint<{W * 2}>>();
+        let mant_prod = mant_a.as_::<BUintD8<{W * 2}>>() * mant_b.as_::<BUintD8<{W * 2}>>();
 
         let prod_bits = mant_prod.bits();
 
@@ -285,9 +301,9 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             0
         };
 
-        let mut exp = Bint::from_bits(exp_a) + Bint::from_bits(exp_b) + Bint::from(extra_bits) - Self::EXP_BIAS - Bint::from(MB);
+        let mut exp = BIntD8::from_bits(exp_a) + BIntD8::from_bits(exp_b) + BIntD8::from(extra_bits) - Self::EXP_BIAS - BIntD8::from(MB);
 
-        if exp > Self::MAX_EXP + Self::EXP_BIAS - Bint::ONE {
+        if exp > Self::MAX_EXP + Self::EXP_BIAS - BIntD8::ONE {
             //println!("rhs: {}", rhs.to_bits());
             return if negative {
                 Self::NEG_INFINITY
@@ -296,37 +312,145 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             };
         }
 
-        let mut extra_shift = BUint::ZERO;
+        let mut extra_shift = BUintD8::ZERO;
         if !exp.is_positive() {
-            extra_shift = (Bint::ONE - exp).to_bits();
-            exp = Bint::ONE;
+            extra_shift = (BIntD8::ONE - exp).to_bits();
+            exp = BIntD8::ONE;
         }
-        let total_shift = BUint::from(extra_bits) + extra_shift;
+        let total_shift = BUintD8::from(extra_bits) + extra_shift;
 
-        let sticky_bit = BUint::from(mant_prod.trailing_zeros() + 1) < total_shift;
-        let mut mant = match (total_shift - BUint::ONE).to_exp_type() {
-            Some(sub) => mant_prod.checked_shr(sub).unwrap_or(BUint::ZERO),
-            None => BUint::ZERO,
+        let sticky_bit = BUintD8::from(mant_prod.trailing_zeros() + 1) < total_shift;
+        let mut mant = match (total_shift - BUintD8::ONE).to_exp_type() {
+            Some(sub) => mant_prod.checked_shr(sub).unwrap_or(BUintD8::ZERO),
+            None => BUintD8::ZERO,
         };
-        if mant & BUint::ONE == BUint::ONE {
-            if sticky_bit || mant & BUint::from(0b11u8) == BUint::from(0b11u8) {
+        if mant & BUintD8::ONE == BUintD8::ONE {
+            if sticky_bit || mant & BUintD8::from(0b11u8) == BUintD8::from(0b11u8) {
                 // Round up
-                mant += BUint::ONE;
+                mant += BUintD8::ONE;
             }
         }
         mant >>= 1 as ExpType;
 
-        if exp == Bint::ONE && mant.bits() < Self::MB + 1 {
-            return Self::from_exp_mant(negative, BUint::ZERO, mant.as_());
+        if exp == BIntD8::ONE && mant.bits() < Self::MB + 1 {
+            return Self::from_exp_mant(negative, BUintD8::ZERO, mant.as_());
         }
-        if mant >> Self::MB != BUint::ZERO {
-            mant ^= BUint::ONE << Self::MB as u32;
+        if mant >> Self::MB != BUintD8::ZERO {
+            mant ^= BUintD8::ONE << Self::MB;
         }
         Self::from_exp_mant(negative, exp.to_bits(), mant.as_())
     }
+
+
+    #[inline]
+    fn mul_internal2(self, rhs: Self, negative: bool) -> Self {
+        let (a, b) = (self, rhs);
+        let (exp_a, mant_a) = a.exp_mant();
+        let (exp_b, mant_b) = b.exp_mant();
+
+        // TODO: make so as_ can infer type so can switch trait definition if needed
+        let mut mant_prod = mant_a.widening_mul(mant_b);
+
+        let prod_bits = if mant_prod.1.bits() == 0 {
+			mant_prod.0.bits()
+		} else {
+			mant_prod.1.bits() + Self::BITS
+		};
+
+        if prod_bits == 0 {
+            return if negative {
+                Self::NEG_ZERO
+            } else {
+                Self::ZERO
+            };
+        }
+
+        let extra_bits = if prod_bits > (Self::MB + 1) {
+            prod_bits - (Self::MB + 1)
+        } else {
+            0
+        };
+
+        let mut exp = BIntD8::from_bits(exp_a) + BIntD8::from_bits(exp_b) + BIntD8::from(extra_bits) - Self::EXP_BIAS - BIntD8::from(MB);
+
+        if exp > Self::MAX_EXP + Self::EXP_BIAS - BIntD8::ONE {
+            //println!("rhs: {}", rhs.to_bits());
+            return if negative {
+                Self::NEG_INFINITY
+            } else {
+                Self::INFINITY
+            };
+        }
+
+        let mut extra_shift = BUintD8::ZERO;
+        if !exp.is_positive() {
+            extra_shift = (BIntD8::ONE - exp).to_bits();
+            exp = BIntD8::ONE;
+        }
+        let total_shift = BUintD8::from(extra_bits) + extra_shift;
+
+		let mp0tz = mant_prod.0.trailing_zeros();
+		let tz = if mp0tz == Self::BITS {
+			mant_prod.1.trailing_zeros() + Self::BITS
+		} else {
+			mp0tz
+		};
+
+        let sticky_bit = BUintD8::from(tz + 1) < total_shift;
+        let mut mant = match (total_shift - BUintD8::ONE).to_exp_type() {
+            Some(sub) => if sub > Self::BITS * 2 {
+				(BUintD8::ZERO, BUintD8::ZERO)
+			} else if sub >= Self::BITS {
+				(mant_prod.1 >> (sub - Self::BITS), BUintD8::ZERO)
+			} else {
+				let mask = BUintD8::MAX >> (Self::BITS - sub);
+				let carry = mant_prod.1 & mask;
+				mant_prod.1 >>= sub;
+				mant_prod.0 = (mant_prod.0 >> sub) | (carry << (Self::BITS - sub));
+				mant_prod
+			}
+            None => (BUintD8::ZERO, BUintD8::ZERO),
+        };
+        if mant.0.bit(0) {
+            if sticky_bit || mant.0.bit(1) {
+                // Round up
+				let (sum, carry) = mant.0.overflowing_add(BUintD8::ONE);
+				mant.0 = sum;
+				if carry {
+					mant.1 += BUintD8::ONE;
+				}
+            }
+        }
+		{
+			let carry = mant.1.bit(0);
+			//mant.1 >>= 1 as ExpType;
+			mant.0 >>= 1 as ExpType;
+			if carry {
+				mant.0 |= BIntD8::MIN.to_bits();
+			}
+		}
+
+		let mut m1b = mant.1.bits();
+		if m1b != 0 {
+			m1b -= 1;
+		}
+		let bits = if m1b == 0 {
+			mant.0.bits()
+		} else {
+			m1b + Self::BITS
+		};
+
+        if exp == BIntD8::ONE && m1b < Self::MB + 1 {
+            return Self::from_exp_mant(negative, BUintD8::ZERO, mant.0);
+        }
+        //if mant >> Self::MB != BUintD8::ZERO {
+		mant.0 ^= BUintD8::ONE << Self::MB;
+       	//}
+        Self::from_exp_mant(negative, exp.to_bits(), mant.0)
+    }
 }
 
-impl<const W: usize, const MB: usize> Mul for Float<W, MB> where [(); W * 2]:, {
+impl<const W: usize, const MB: usize> Mul for Float<W, MB> {
     type Output = Self;
     
     #[inline]
@@ -334,14 +458,14 @@ impl<const W: usize, const MB: usize> Mul for Float<W, MB> where [(); W * 2]:, {
         let negative = self.is_sign_negative() ^ rhs.is_sign_negative();
         match (self.classify(), rhs.classify()) {
             (FpCategory::Nan, _) | (_, FpCategory::Nan) => return Self::NAN,
-            (FpCategory::Infinite, FpCategory::Zero) | (FpCategory::Zero, FpCategory::Infinite) => Self::NEG_NAN,
+            (FpCategory::Infinite, FpCategory::Zero) | (FpCategory::Zero, FpCategory::Infinite) => Self::NAN,
             (FpCategory::Infinite, _) | (_, FpCategory::Infinite) => if negative {
                 Self::NEG_INFINITY
             } else {
                 Self::INFINITY
             },
             (_, _) => {
-                self.mul_internal(rhs, negative)
+                self.mul_internal2(rhs, negative)
             },
         }
     }
@@ -371,58 +495,58 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         let b1 = s1.bits();
         let b2 = s2.bits();
     
-        let mut e = Bint::from_bits(e1) - Bint::from_bits(e2) + Self::EXP_BIAS + Bint::from(b1) - Bint::from(b2) - Bint::ONE;
+        let mut e = BIntD8::from_bits(e1) - BIntD8::from_bits(e2) + Self::EXP_BIAS + BIntD8::from(b1) - BIntD8::from(b2) - BIntD8::ONE;
     
-        let mut extra_shift = BUint::ZERO;
+        let mut extra_shift = BUintD8::ZERO;
         if !e.is_positive() {
-            extra_shift = (Bint::ONE - e).to_bits();
-            e = Bint::ONE;
+            extra_shift = (BIntD8::ONE - e).to_bits();
+            e = BIntD8::ONE;
         }
     
-        let total_shift = Bint::from(MB as i32 + 1 + b2 as i32 - b1 as i32) - Bint::from_bits(extra_shift);
+        let total_shift = BIntD8::from(MB as i32 + 1 + b2 as i32 - b1 as i32) - BIntD8::from_bits(extra_shift);
     
         let large = if !total_shift.is_negative() {
-            (s1.as_::<BUint<{W * 2}>>()) << total_shift
+            (s1.as_::<BUintD8<{W * 2}>>()) << total_shift
         } else {
-            (s1.as_::<BUint<{W * 2}>>()) >> (-total_shift)
+            (s1.as_::<BUintD8<{W * 2}>>()) >> (-total_shift)
         };
-        let mut division = (large / (s2.as_::<BUint<{W * 2}>>())).as_::<BUint<W>>();
+        let mut division = (large / (s2.as_::<BUintD8<{W * 2}>>())).as_::<BUintD8<W>>();
     
         let rem = if division.bits() != Self::MB + 2 {
-            let rem = (large % (s2.as_::<BUint<{W * 2}>>())).as_::<BUint<W>>();
+            let rem = (large % (s2.as_::<BUintD8<{W * 2}>>())).as_::<BUintD8<W>>();
             rem
         } else {
-            e += Bint::ONE;
-            division = ((large >> 1 as ExpType) / (s2.as_::<BUint<{W * 2}>>())).as_::<BUint<W>>();
+            e += BIntD8::ONE;
+            division = ((large >> 1 as ExpType) / (s2.as_::<BUintD8<{W * 2}>>())).as_::<BUintD8<W>>();
             //println!("div {} {}", large >> 1u8, s2);
-            let rem = ((large >> 1 as ExpType) % (s2.as_::<BUint<{W * 2}>>())).as_::<BUint<W>>();
+            let rem = ((large >> 1 as ExpType) % (s2.as_::<BUintD8<{W * 2}>>())).as_::<BUintD8<W>>();
             rem
         };
         //println!("{}", rem);
-        if rem * BUint::TWO > s2 {
-            division += BUint::ONE;
-        } else if rem * BUint::TWO == s2 {
-            if (division & BUint::ONE) == BUint::ONE {
-                division += BUint::ONE;
+        if rem * BUintD8::TWO > s2 {
+            division += BUintD8::ONE;
+        } else if rem * BUintD8::TWO == s2 {
+            if (division & BUintD8::ONE) == BUintD8::ONE {
+                division += BUintD8::ONE;
             }
         }
         if division.bits() == Self::MB + 2 {
-            e += Bint::ONE;
+            e += BIntD8::ONE;
             division >>= 1 as ExpType;
         }
     
-        if e > Self::MAX_EXP + Self::EXP_BIAS - Bint::ONE {
+        if e > Self::MAX_EXP + Self::EXP_BIAS - BIntD8::ONE {
             return Self::INFINITY;
         }
 
         //println!("{:032b}", division);
     
-        if e == Bint::ONE && division.bits() < Self::MB + 1 {
-            return Self::from_exp_mant(negative, BUint::ZERO, division);
+        if e == BIntD8::ONE && division.bits() < Self::MB + 1 {
+            return Self::from_exp_mant(negative, BUintD8::ZERO, division);
         }
     
-        if division >> Self::MB != BUint::ZERO {
-            division ^= BUint::ONE << Self::MB;
+        if division >> Self::MB != BUintD8::ZERO {
+            division ^= BUintD8::ONE << Self::MB;
         }
         Self::from_exp_mant(negative, e.to_bits(), division)
     }
@@ -438,7 +562,11 @@ impl<const W: usize, const MB: usize> Div for Float<W, MB> where [(); W * 2]:, {
             (FpCategory::Nan, _) | (_, FpCategory::Nan) => Self::NAN,
             (FpCategory::Infinite, FpCategory::Infinite) => Self::NEG_NAN,
             (FpCategory::Zero, FpCategory::Zero) => {
-                Self::NEG_NAN
+                if negative {
+					Self::NEG_NAN
+				} else {
+					Self::NAN
+				}
             },
             (FpCategory::Infinite, _) | (_, FpCategory::Zero) => if negative {
                 Self::NEG_INFINITY
@@ -499,34 +627,34 @@ impl<const W: usize, const MB: usize> Rem for Float<W, MB> {
         /* normalize x and y */
         if ex.is_zero() {
             i = uxi << (Self::BITS - Self::MB);
-            while !Bint::from_bits(i).is_negative() {
-                ex -= Bint::ONE;
+            while !BIntD8::from_bits(i).is_negative() {
+                ex -= BIntD8::ONE;
                 i <<= 1 as ExpType;
             }
 
-            uxi <<= -ex + Bint::ONE;
+            uxi <<= -ex + BIntD8::ONE;
         } else {
-            uxi &= BUint::MAX >> (Self::BITS - Self::MB);
-            uxi |= BUint::ONE << Self::MB;
+            uxi &= BUintD8::MAX >> (Self::BITS - Self::MB);
+            uxi |= BUintD8::ONE << Self::MB;
         }
         //println!("{}", i);
 
         if ey.is_zero() {
             i = uyi << (Self::BITS - Self::MB);
-            while !Bint::from_bits(i).is_negative() {
-                ey -= Bint::ONE;
+            while !BIntD8::from_bits(i).is_negative() {
+                ey -= BIntD8::ONE;
                 i <<= 1 as ExpType;
             }
 
-            uyi <<= -ey + Bint::ONE;
+            uyi <<= -ey + BIntD8::ONE;
         } else {
-            uyi &= BUint::MAX >> (Self::BITS - Self::MB);
-            uyi |= BUint::ONE << Self::MB;
+            uyi &= BUintD8::MAX >> (Self::BITS - Self::MB);
+            uyi |= BUintD8::ONE << Self::MB;
         }
         /* x mod y */
         while ex > ey {
             i = uxi.wrapping_sub(uyi);
-            if !Bint::from_bits(i).is_negative() {
+            if !BIntD8::from_bits(i).is_negative() {
                 if i.is_zero() {
                     return if self.is_sign_negative() {
                         Self::NEG_ZERO
@@ -538,11 +666,11 @@ impl<const W: usize, const MB: usize> Rem for Float<W, MB> {
             }
             uxi <<= 1 as ExpType;
 
-            ex -= Bint::ONE;
+            ex -= BIntD8::ONE;
         }
 
         i = uxi.wrapping_sub(uyi);
-        if !Bint::from_bits(i).is_negative() {
+        if !BIntD8::from_bits(i).is_negative() {
             if i.is_zero() {
                 return if self.is_sign_negative() {
                     Self::NEG_ZERO
@@ -555,15 +683,15 @@ impl<const W: usize, const MB: usize> Rem for Float<W, MB> {
 
         while (uxi >> Self::MB).is_zero() {
             uxi <<= 1 as ExpType;
-            ex -= Bint::ONE;
+            ex -= BIntD8::ONE;
         }
 
         /* scale result up */
         if ex.is_positive() {
-            uxi -= BUint::ONE << Self::MB;
+            uxi -= BUintD8::ONE << Self::MB;
             uxi |= (ex.to_bits()) << Self::MB;
         } else {
-            uxi >>= -ex + Bint::ONE;
+            uxi >>= -ex + BIntD8::ONE;
         }
 
         let f = Self::from_bits(uxi);
@@ -575,34 +703,37 @@ impl<const W: usize, const MB: usize> Rem for Float<W, MB> {
     }
 }
 
-impl<const W: usize, const MB: usize> const Neg for Float<W, MB> {
-    type Output = Self;
+crate::nightly::impl_const! {
+	impl<const W: usize, const MB: usize> const Neg for Float<W, MB> {
+		type Output = Self;
 
-    #[inline]
-    fn neg(self) -> Self {
-        let mut words = *self.words();
-        words[W - 1] ^= 1 << (digit::BITS - 1);
-        Self::from_words(words)
-    }
+		#[inline]
+		fn neg(mut self) -> Self {
+			self.bits.digits[W - 1] ^= 1 << (Digit::BITS - 1);
+			self
+		}
+	}
 }
 
-impl<const W: usize, const MB: usize> const Neg for &Float<W, MB> {
-    type Output = Float<W, MB>;
+crate::nightly::impl_const! {
+	impl<const W: usize, const MB: usize> const Neg for &Float<W, MB> {
+		type Output = Float<W, MB>;
 
-    #[inline]
-    fn neg(self) -> Float<W, MB> {
-        (*self).neg()
-    }
+		#[inline]
+		fn neg(self) -> Float<W, MB> {
+			(*self).neg()
+		}
+	}
 }
-
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::F64;
-	use crate::test::test_bignum;
+    use super::super::F64;
+	use crate::test::{test_bignum, TestConvert};
+	use crate::test::types::{ftest, FTEST};
 
-    trait ToBits {
+    /*trait ToBits {
         fn to_bits(self) -> u64;
     }
     impl ToBits for F64 {
@@ -610,47 +741,71 @@ mod tests {
             self.to_bits().as_()
         }
     }
-    impl ToBits for f64 {
+    impl ToBits for ftest {
         fn to_bits(self) -> u64 {
             self.to_bits()
         }
+    }*/
+    
+    test_bignum! {
+        function: <ftest as Add>::add(a: ftest, b: ftest)
     }
     
     test_bignum! {
-        function: <f64 as Add>::add(a: f64, b: f64),
-        skip: a.is_sign_positive() || b.is_sign_positive()
+        function: <ftest as Sub>::sub(a: ftest, b: ftest),
+		skip: !b.is_finite() || !a.is_finite()
     }
     
     test_bignum! {
-        function: <f64 as Sub>::sub(a: f64, b: f64),
-        skip: a.is_sign_negative() != b.is_sign_negative()
+        function: <ftest as Mul>::mul(a: ftest, b: ftest)
     }
     
     test_bignum! {
-        function: <f64 as Mul>::mul(a: f64, b: f64)
+        function: <ftest as Div>::div(a: ftest, b: ftest)
     }
     
     test_bignum! {
-        function: <f64 as Div>::div(a: f64, b: f64)
-    }
-    
-    test_bignum! {
-        function: <f64 as Rem>::rem(a: f64, b: f64)
+        function: <ftest as Rem>::rem(a: ftest, b: ftest)
     }
     
 	test_bignum! {
-        function: <f64 as Neg>::neg(f: f64)
+        function: <ftest as Neg>::neg(f: ftest)
     }
 
     #[test]
-    fn sub() {
-        let f1 = f64::from_bits(0b1100001111100000000000000000000000000000000000000000000000000000);
-        let f2 = f64::from_bits(0b1111111110001111001000000100000100100001110101001010110010110011);
+    fn sub3() {
+		//1111111111110000000000000000000000000000000000000000000000000000 0111111111110000000000000000000000000000000000000000000000000000
+        let f1 = f64::from_bits(0b1111111111110000000000000000000000000000000000000000000000000000 );
+        let f2 = f64::from_bits(0b0111111111110000000000000000000000000000000000000000000000000000);
         //println!("{:064b}", ((-0.0f64).div_euclid(f2)).to_bits());
-        let a = (crate::F64::from(f1) + (crate::F64::from(f2))).to_bits();
+        let a = (F64::from(f1) + (F64::from(f2))).to_bits();
         let b = (f1 + (f2)).to_bits();
-        /*println!("{:064b}", a);
-        println!("{:064b}", b);*/
-        assert!(a == b.into());
+        println!("{:064b}", a);
+        println!("{:064b}", b);
+		panic!("");
     }
+
+    #[test]
+    fn sub2() {
+		//1111111111101111111111111111111111111111111111111111111111111111 1100001111100000000000000000000000000000000000000000000000000000
+        let f1 = f64::from_bits(0b1111111111101111111111111111111111111111111111111111111111111111);
+        let f2 = f64::from_bits(0b1100001111100000000000000000000000000000000000000000000000000000);
+        //println!("{:064b}", ((-0.0f64).div_euclid(f2)).to_bits());
+        let a = (F64::from(f1) + F64::from(f2)).to_bits();
+        let b = (f1 + f2).to_bits();
+        println!("{:064b}", b);
+        println!("{:064b}", a);
+        assert!(false && TestConvert::into(a) == TestConvert::into(b));
+    }
+
+	#[test]
+	fn sub1() {
+		// 1111111011001100010100110111011010010100011011000110011111000110 1100001111100000000000000000000000000000000000000000000000000000
+		let f1 = -0f64;
+		let f2 = -0f64;
+
+		println!("{:064b}", (f1 / f2).to_bits());
+		println!("{:064b}", (F64::from(f1) / F64::from(f2)).to_bits());
+		panic!("")
+	}
 }

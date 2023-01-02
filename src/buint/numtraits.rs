@@ -43,7 +43,7 @@ macro_rules! to_int {
 }
 
 use crate::buint::cast::{decode_f32, decode_f64, u32_bits, u64_bits};
-use crate::nightly::impl_const;
+//use crate::nightly::impl_const;
 use crate::ExpType;
 use num_integer::{Integer, Roots};
 use num_traits::{
@@ -151,8 +151,8 @@ macro_rules! numtraits {
         }
         //}
 
-        impl_const! {
-            impl<const N: usize> const Integer for $BUint<N> {
+        //impl_const! {
+            impl<const N: usize> Integer for $BUint<N> {
                 #[inline]
                 fn div_floor(&self, other: &Self) -> Self {
                     *self / *other
@@ -234,10 +234,10 @@ macro_rules! numtraits {
                     Self::div_rem(*self, *rhs)
                 }
             }
-        }
+        //}
 
-        impl_const! {
-            impl<const N: usize> const PrimInt for $BUint<N> {
+        //impl_const! {
+            impl<const N: usize> PrimInt for $BUint<N> {
                 crate::int::numtraits::prim_int_methods!();
 
                 #[inline]
@@ -260,7 +260,7 @@ macro_rules! numtraits {
                     self >> n
                 }
             }
-        }
+        //}
 
         macro_rules! check_zero_or_one {
             ($self: ident) => {

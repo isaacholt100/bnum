@@ -15,14 +15,14 @@ pub(crate) use as_primitive_impl;
 
 macro_rules! num_trait_impl {
     ($Int: ident, $tr: ident, $method: ident, $ret: ty) => {
-        crate::nightly::impl_const! {
-            impl<const N: usize> const $tr for $Int<N> {
+        //crate::nightly::impl_const! {
+            impl<const N: usize> $tr for $Int<N> {
                 #[inline]
                 fn $method(&self, rhs: &Self) -> $ret {
                     Self::$method(*self, *rhs)
                 }
             }
-        }
+        //}
     };
 }
 
@@ -30,14 +30,16 @@ pub(crate) use num_trait_impl;
 
 macro_rules! as_bigint_impl {
     ([$($ty: ty), *] as $Big: ident) => {
-        $(crate::nightly::impl_const! {
-            impl<const N: usize> const AsPrimitive<$Big<N>> for $ty {
-                #[inline]
-                fn as_(self) -> $Big<N> {
-					$Big::cast_from(self)
-                }
-            }
-		})*
+        $(
+			//crate::nightly::impl_const! {
+				impl<const N: usize> AsPrimitive<$Big<N>> for $ty {
+					#[inline]
+					fn as_(self) -> $Big<N> {
+						$Big::cast_from(self)
+					}
+				}
+			//}
+		)*
     }
 }
 
@@ -45,8 +47,8 @@ pub(crate) use as_bigint_impl;
 
 macro_rules! impls {
 	($Int: ident, $BUint: ident, $BInt: ident) => {
-		crate::nightly::impl_const! {
-			impl<const N: usize> const Bounded for $Int<N> {
+		//crate::nightly::impl_const! {
+			impl<const N: usize> Bounded for $Int<N> {
 				#[inline]
 				fn min_value() -> Self {
 					Self::MIN
@@ -57,7 +59,7 @@ macro_rules! impls {
 					Self::MAX
 				}
 			}
-		}
+		//}
 
 		num_trait_impl!($Int, CheckedAdd, checked_add, Option<Self>);
 		num_trait_impl!($Int, CheckedDiv, checked_div, Option<Self>);
@@ -73,62 +75,62 @@ macro_rules! impls {
 		num_trait_impl!($Int, WrappingMul, wrapping_mul, Self);
 		num_trait_impl!($Int, WrappingSub, wrapping_sub, Self);
 
-		crate::nightly::impl_const! {
-			impl<const N: usize> const CheckedNeg for $Int<N> {
+		//crate::nightly::impl_const! {
+			impl<const N: usize> CheckedNeg for $Int<N> {
 				#[inline]
 				fn checked_neg(&self) -> Option<Self> {
 					Self::checked_neg(*self)
 				}
 			}
-		}
+		//}
 
-		crate::nightly::impl_const! {
-			impl<const N: usize> const CheckedShl for $Int<N> {
+		//crate::nightly::impl_const! {
+			impl<const N: usize> CheckedShl for $Int<N> {
 				#[inline]
 				fn checked_shl(&self, rhs: u32) -> Option<Self> {
 					Self::checked_shl(*self, rhs)
 				}
 			}
-		}
+		//}
 
-		crate::nightly::impl_const! {
-			impl<const N: usize> const CheckedShr for $Int<N> {
+		//crate::nightly::impl_const! {
+			impl<const N: usize> CheckedShr for $Int<N> {
 				#[inline]
 				fn checked_shr(&self, rhs: u32) -> Option<Self> {
 					Self::checked_shr(*self, rhs)
 				}
 			}
-		}
+		//}
 
-		crate::nightly::impl_const! {
-			impl<const N: usize> const WrappingNeg for $Int<N> {
+		//crate::nightly::impl_const! {
+			impl<const N: usize> WrappingNeg for $Int<N> {
 				#[inline]
 				fn wrapping_neg(&self) -> Self {
 					Self::wrapping_neg(*self)
 				}
 			}
-		}
+		//}
 
-		crate::nightly::impl_const! {
-			impl<const N: usize> const WrappingShl for $Int<N> {
+		//crate::nightly::impl_const! {
+			impl<const N: usize> WrappingShl for $Int<N> {
 				#[inline]
 				fn wrapping_shl(&self, rhs: u32) -> Self {
 					Self::wrapping_shl(*self, rhs as ExpType)
 				}
 			}
-		}
+		//}
 
-		crate::nightly::impl_const! {
-			impl<const N: usize> const WrappingShr for $Int<N> {
+		//crate::nightly::impl_const! {
+			impl<const N: usize> WrappingShr for $Int<N> {
 				#[inline]
 				fn wrapping_shr(&self, rhs: u32) -> Self {
 					Self::wrapping_shr(*self, rhs as ExpType)
 				}
 			}
-		}
+		//}
 
-		crate::nightly::impl_const! {
-			impl<const N: usize> const Pow<ExpType> for $Int<N> {
+		//crate::nightly::impl_const! {
+			impl<const N: usize> Pow<ExpType> for $Int<N> {
 				type Output = Self;
 
 				#[inline]
@@ -136,10 +138,10 @@ macro_rules! impls {
 					Self::pow(self, exp)
 				}
 			}
-		}
+		//}
 
-		crate::nightly::impl_const! {
-			impl<const N: usize> const Saturating for $Int<N> {
+		//crate::nightly::impl_const! {
+			impl<const N: usize> Saturating for $Int<N> {
 				#[inline]
 				fn saturating_add(self, rhs: Self) -> Self {
 					Self::saturating_add(self, rhs)
@@ -150,7 +152,7 @@ macro_rules! impls {
 					Self::saturating_sub(self, rhs)
 				}
 			}
-		}
+		//}
 
 		crate::int::numtraits::as_primitive_impl!($Int; u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64);
 
@@ -170,26 +172,26 @@ macro_rules! impls {
 			}
 		}
 
-		crate::nightly::impl_const! {
-			impl<const N: usize, const M: usize> const AsPrimitive<$BUint<M>> for $Int<N> {
+		//crate::nightly::impl_const! {
+			impl<const N: usize, const M: usize> AsPrimitive<$BUint<M>> for $Int<N> {
 				#[inline]
 				fn as_(self) -> crate::$BUint<M> {
 					crate::$BUint::<M>::cast_from(self)
 				}
 			}
-		}
+		//}
 
-		crate::nightly::impl_const! {
-			impl<const N: usize, const M: usize> const AsPrimitive<$BInt<M>> for $Int<N> {
+		//crate::nightly::impl_const! {
+			impl<const N: usize, const M: usize> AsPrimitive<$BInt<M>> for $Int<N> {
 				#[inline]
 				fn as_(self) -> crate::$BInt<M> {
 					crate::$BInt::<M>::cast_from(self)
 				}
 			}
-		}
+		//}
 
-		crate::nightly::impl_const! {
-			impl<const N: usize> const MulAdd for $Int<N> {
+		//crate::nightly::impl_const! {
+			impl<const N: usize> MulAdd for $Int<N> {
 				type Output = Self;
 
 				#[inline]
@@ -197,16 +199,16 @@ macro_rules! impls {
 					(self * a) + b
 				}
 			}
-		}
+		//}
 
-		crate::nightly::impl_const! {
-			impl<const N: usize> const MulAddAssign for $Int<N> {
+		//crate::nightly::impl_const! {
+			impl<const N: usize> MulAddAssign for $Int<N> {
 				#[inline]
 				fn mul_add_assign(&mut self, a: Self, b: Self) {
 					*self = self.mul_add(a, b);
 				}
 			}
-		}
+		//}
 
 		impl<const N: usize> Num for $Int<N> {
 			type FromStrRadixErr = crate::errors::ParseIntError;
@@ -217,16 +219,16 @@ macro_rules! impls {
 			}
 		}
 
-		crate::nightly::impl_const! {
-			impl<const N: usize> const num_traits::NumCast for $Int<N> {
+		//crate::nightly::impl_const! {
+			impl<const N: usize> num_traits::NumCast for $Int<N> {
 				fn from<T: ToPrimitive>(_n: T) -> Option<Self> {
 					panic!(concat!(crate::errors::err_prefix!(), "`num_traits::NumCast` trait is not supported for ", stringify!($Int)))
 				}
 			}
-		}
+		//}
 
-		crate::nightly::impl_const! {
-			impl<const N: usize> const One for $Int<N> {
+		//crate::nightly::impl_const! {
+			impl<const N: usize> One for $Int<N> {
 				#[inline]
 				fn one() -> Self {
 					Self::ONE
@@ -237,10 +239,10 @@ macro_rules! impls {
 					core::cmp::PartialEq::eq(self, &Self::ONE)
 				}
 			}
-		}
+		//}
 
-		crate::nightly::impl_const! {
-			impl<const N: usize> const Zero for $Int<N> {
+		//crate::nightly::impl_const! {
+			impl<const N: usize> Zero for $Int<N> {
 				#[inline]
 				fn zero() -> Self {
 					Self::ZERO
@@ -251,7 +253,7 @@ macro_rules! impls {
 					Self::is_zero(self)
 				}
 			}
-		}
+		//}
 	}
 }
 
