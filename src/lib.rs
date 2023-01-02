@@ -14,15 +14,13 @@
     test,
     feature(
         bigint_helper_methods,
-        int_log,
         int_roundings,
         float_minimum_maximum,
         wrapping_next_power_of_two,
-        mixed_integer_ops,
     )
 )]
 #![doc = include_str!("../README.md")]
-#![no_std]
+//#![no_std]
 
 #[macro_use]
 extern crate alloc;
@@ -42,6 +40,12 @@ pub mod prelude;
 pub mod random;
 
 pub mod types;
+
+#[cfg(feature = "nightly")]
+mod float;
+
+#[cfg(feature = "nightly")]
+pub use float::Float;
 
 #[cfg(test)]
 mod test;

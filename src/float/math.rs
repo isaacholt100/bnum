@@ -1,8 +1,8 @@
 use super::Float;
-use crate::{BUint, Bint};
+use crate::{BUintD8, BIntD8};
 
 /*/// Returns tuple of division and whether u is less than v
-pub const fn div_float<const N: usize>(u: BUint<N>, v: BUint<N>) -> (BUint<N>, bool) {
+pub const fn div_float<const N: usize>(u: BUintD8<N>, v: BUintD8<N>) -> (BUintD8<N>, bool) {
     let gt = if let core::cmp::Ordering::Less = u.cmp(&v) {
         0
     } else {
@@ -21,7 +21,7 @@ pub const fn div_float<const N: usize>(u: BUint<N>, v: BUint<N>) -> (BUint<N>, b
         rest: [Digit; M],
     }
     impl<const M: usize> Remainder<M> {
-        const fn new(uint: BUint<M>, shift: ExpType) -> Self {
+        const fn new(uint: BUintD8<M>, shift: ExpType) -> Self {
             // This shift can be anything from 0 to 64 inclusive.
             // Scenarios:
             // * shift by 0 -> nothing happens, still N trailing zeros.
@@ -63,8 +63,8 @@ pub const fn div_float<const N: usize>(u: BUint<N>, v: BUint<N>) -> (BUint<N>, b
                 self.rest[index - M - 1] = digit;
             }
         }
-        /*const fn to_uint(self, shift: ExpType) -> BUint<M> {
-            let mut out = BUint::ZERO;
+        /*const fn to_uint(self, shift: ExpType) -> BUintD8<M> {
+            let mut out = BUintD8::ZERO;
             let mut i = 0;
             while i < M {
                 out.digits[i] = self.index(i) >> shift;
@@ -111,7 +111,7 @@ pub const fn div_float<const N: usize>(u: BUint<N>, v: BUint<N>) -> (BUint<N>, b
         rest: [Digit; M],
     }
     impl<const M: usize> Mul<M> {
-        const fn new(uint: BUint<M>, rhs: Digit) -> Self {
+        const fn new(uint: BUintD8<M>, rhs: Digit) -> Self {
             let mut rest = [0; M];
             let mut carry: Digit = 0;
             let mut i = 0;
@@ -136,7 +136,7 @@ pub const fn div_float<const N: usize>(u: BUint<N>, v: BUint<N>) -> (BUint<N>, b
     }
     
     let mut u = Remainder::new(u, shift);
-    let mut q = BUint::ZERO;
+    let mut q = BUintD8::ZERO;
     let v_n_1 = v.digits[N - 1];
     let v_n_2 = v.digits[N - 2];
     let gt_half = v_n_1 > digit::HALF;
@@ -147,9 +147,9 @@ pub const fn div_float<const N: usize>(u: BUint<N>, v: BUint<N>) -> (BUint<N>, b
         let u_jn = u.index(j + N);
         let mut q_hat = if u_jn < v_n_1 {
             let (mut q_hat, mut r_hat) = if gt_half {
-                BUint::<N>::div_wide(u_jn, u.index(j + N - 1), v_n_1)
+                BUintD8::<N>::div_wide(u_jn, u.index(j + N - 1), v_n_1)
             } else {
-                BUint::<N>::div_half(u_jn, u.index(j + N - 1), v_n_1)
+                BUintD8::<N>::div_half(u_jn, u.index(j + N - 1), v_n_1)
             };
             loop {
                 let a = ((r_hat as DoubleDigit) << digit::BITS) | u.index(j + N - 2) as DoubleDigit;
@@ -196,42 +196,16 @@ mul_add, div_euclid, rem_euclid, powi, powf, exp, exp2, ln, log, log2, log10, cb
 */
 
 impl<const W: usize, const MB: usize> Float<W, MB> {
-    pub fn scalbn(mut self, mut n: Bint<W>) -> Self where [(); W * 2]:, {
-        let x1p127 = Self::from_bits(BUint::MAX >> 1u8 << (Self::MB + 2)); // 0x1p127f === 2 ^ 127
-        let x1p24 = Self::from_exp_mant(false, BUint::from(MB), BUint::ZERO); // 0x1p24f === 2 ^ 24
-
-        if n > Self::EXP_BIAS {
-            self = self * x1p127;
-            n -= Self::EXP_BIAS;
-            if n > Self::EXP_BIAS {
-                self = self * x1p127;
-                n -= Self::EXP_BIAS;
-                if n > Self::EXP_BIAS {
-                    n = Self::EXP_BIAS;
-                }
-            }
-        } else if n < Self::MIN_EXP {
-            self = self * (Self::MIN_POSITIVE * x1p24);
-            n += Self::EXP_BIAS - Bint::from(MB) - Bint::TWO;
-            if n < Self::MIN_EXP {
-                self = self * (Self::MIN_POSITIVE * x1p24);
-                n += Self::EXP_BIAS - Bint::from(MB) - Bint::TWO;
-                if n < Self::MIN_EXP {
-                    n = Self::MIN_EXP;
-                }
-            }
-        }
-        self * Self::from_bits(((Self::EXP_BIAS + n).to_bits()) << Self::MB)
-    }
-
-    #[inline]
-    pub const fn abs(self) -> Self {
-        if self.is_sign_negative() {
-            -self
-        } else {
-            self
-        }
-    }
+	crate::nightly::const_fns! {
+		#[inline]
+		pub const fn abs(self) -> Self {
+			if self.is_sign_negative() {
+				-self
+			} else {
+				self
+			}
+		}
+	}
 
     pub fn sqrt(self) -> Self {
         handle_nan!(self; self);
@@ -243,27 +217,28 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             return Self::INFINITY;
         }
         if self.is_sign_negative() {
-            let u = BUint::MAX << (Self::MB - 1);
-            return Self::from_bits(u);
+			return Self::NAN;
+            /*let u = BUintD8::MAX << (Self::MB - 1);
+            return Self::from_bits(u);*/
         }
 
-        let tiny = Self::from_bits(BUint::from(0b11011u8) << Self::MB); // TODO: may not work for exponents stored with very few bits
+        let tiny = Self::from_bits(BUintD8::from(0b11011u8) << Self::MB); // TODO: may not work for exponents stored with very few bits
         
-        let mut ix = Bint::from_bits(bits);
-        let mut i: Bint<W>;
+        let mut ix = BIntD8::from_bits(bits);
+        let mut i: BIntD8<W>;
         let mut m = ix >> Self::MB;
         if m.is_zero() {
             /* subnormal x */
-            i = Bint::ZERO;
-            while (ix & (Bint::ONE << Self::MB)).is_zero() {
+            i = BIntD8::ZERO;
+            while (ix & (BIntD8::ONE << Self::MB)).is_zero() {
                 ix <<= 1;
-                i = i + Bint::ONE;
+                i = i + BIntD8::ONE;
             }
-            m -= i - Bint::ONE;
+            m -= i - BIntD8::ONE;
         }
         m -= Self::EXP_BIAS; /* unbias exponent */
-        ix = (ix & Bint::from_bits(BUint::MAX >> (Self::BITS - Self::MB))) | (Bint::ONE << Self::MB);
-        if m & Bint::ONE == Bint::ONE {
+        ix = (ix & BIntD8::from_bits(BUintD8::MAX >> (Self::BITS - Self::MB))) | (BIntD8::ONE << Self::MB);
+        if m & BIntD8::ONE == BIntD8::ONE {
             /* odd m, double x to make it even */
             ix += ix;
         }
@@ -271,17 +246,17 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
         /* generate sqrt(x) bit by bit */
         ix += ix;
-        let mut q = Bint::ZERO;
-        let mut s = Bint::ZERO;
-        let mut r = BUint::ONE << (Self::MB + 1); /* r = moving bit from right to left */
+        let mut q = BIntD8::ZERO;
+        let mut s = BIntD8::ZERO;
+        let mut r = BUintD8::ONE << (Self::MB + 1); /* r = moving bit from right to left */
 
-        let mut t: Bint<W>;
+        let mut t: BIntD8<W>;
         while !r.is_zero() {
-            t = s + Bint::from_bits(r);
+            t = s + BIntD8::from_bits(r);
             if t <= ix {
-                s = t + Bint::from_bits(r);
+                s = t + BIntD8::from_bits(r);
                 ix -= t;
-                q += Bint::from_bits(r);
+                q += BIntD8::from_bits(r);
             }
             ix += ix;
             r = r >> 1u8;
@@ -294,14 +269,14 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             if z >= Self::ONE {
                 z = Self::ONE + tiny;
                 if z > Self::ONE {
-                    q += Bint::TWO;
+                    q += BIntD8::TWO;
                 } else {
-                    q += q & Bint::ONE;
+                    q += q & BIntD8::ONE;
                 }
             }
         }
 
-        ix = (q >> 1u8) + Bint::from_bits((BUint::MAX << (Self::MB + 1 + 2)) >> 2u8);
+        ix = (q >> 1u8) + BIntD8::from_bits((BUintD8::MAX << (Self::MB + 1 + 2)) >> 2u8);
         ix += m << Self::MB;
         Self::from_bits(ix.to_bits())
     }
@@ -317,11 +292,11 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         let mut u = self.to_bits();
         let e = self.exponent() - Self::EXP_BIAS;
 
-        if e >= Bint::from(MB) {
+        if e >= BIntD8::from(MB) {
             return self;
         }
         if !e.is_negative() {
-            let m = (BUint::MAX >> (Self::BITS - Self::MB)) >> e;
+            let m = (BUintD8::MAX >> (Self::BITS - Self::MB)) >> e;
             if (u & m).is_zero() {
                 return self;
             }
@@ -342,11 +317,11 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         let mut bits = self.to_bits();
         let e = self.exponent() - Self::EXP_BIAS;
 
-        if e >= Bint::from(MB) {
+        if e >= BIntD8::from(MB) {
             return self;
         }
         if !e.is_negative() {
-            let m = (BUint::MAX >> (Self::BITS - Self::MB)) >> e;
+            let m = (BUintD8::MAX >> (Self::BITS - Self::MB)) >> e;
             if (bits & m).is_zero() {
                 return self;
             }
@@ -366,16 +341,16 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     pub fn trunc(self) -> Self {
         //return self.fract_trunc().1;
         let mut i = self.to_bits();
-        let exp_bits = Bint::from(Self::BITS - Self::MB);
+        let exp_bits = BIntD8::from(Self::BITS - Self::MB);
         let mut e = self.exponent() - Self::EXP_BIAS + exp_bits;
 
-        if e >= Bint::from(Self::BITS) {
+        if e >= BIntD8::from(Self::BITS) {
             return self;
         }
         if e < exp_bits {
-            e = Bint::ONE;
+            e = BIntD8::ONE;
         }
-        let m = Bint::NEG_ONE.to_bits() >> e;
+        let m = BIntD8::NEG_ONE.to_bits() >> e;
         if (i & m).is_zero() {
             return self;
         }
@@ -399,7 +374,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             return (Self::NEG_NAN, self);
         }
 
-        if e >= Bint::from(MB) {
+        if e >= BIntD8::from(MB) {
             return (Self::ZERO, self);
         }
         if e.is_negative() {
@@ -414,7 +389,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             return (self, trunc);
         }
 
-        let mask = BUint::<W>::MAX >> (e + Bint::from(Self::BITS - Self::MB));
+        let mask = BUintD8::<W>::MAX >> (e + BIntD8::from(Self::BITS - Self::MB));
         if (u & mask).is_zero() {
             return (Self::ZERO, self);
         }
@@ -424,7 +399,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     }
 
     #[inline]
-    pub fn recip(self) -> Self where [(); W * 2]:, {
+    pub fn recip2(self) -> Self where [(); W * 2]:, {
         Self::ONE / self
     }
 
@@ -451,7 +426,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         }
     }
 
-    /*pub fn remquof(mut self, mut y: Self) -> /*(Self, Bint<W>)*/Self where [(); {(W * 2).saturating_sub(W)
+    /*pub fn remquof(mut self, mut y: Self) -> /*(Self, BIntD8<W>)*/Self where [(); {(W * 2).saturating_sub(W)
     }]: Sized, [(); W.saturating_sub(W * 2)]: Sized {
         handle_nan!(self; self);
         handle_nan!(y; y);
@@ -477,76 +452,76 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         let mut i;
         if ex.is_zero() {
             i = uxi << (Self::BITS - Self::MB);
-            while !Bint::from_bits(i).is_negative() {
-                ex -= Bint::ONE;
+            while !BIntD8::from_bits(i).is_negative() {
+                ex -= BIntD8::ONE;
                 i <<= 1u8;
             }
-            uxi <<= -ex + Bint::ONE;
+            uxi <<= -ex + BIntD8::ONE;
         } else {
-            uxi &= BUint::MAX >> (Self::BITS - Self::MB);
-            uxi |= BUint::ONE << Self::MB;
+            uxi &= BUintD8::MAX >> (Self::BITS - Self::MB);
+            uxi |= BUintD8::ONE << Self::MB;
         }
         if ey.is_zero() {
             i = uy << (Self::BITS - Self::MB);
-            while !Bint::from_bits(i).is_negative() {
-                ey -= Bint::ONE;
+            while !BIntD8::from_bits(i).is_negative() {
+                ey -= BIntD8::ONE;
                 i <<= 1u8;
             }
-            uy <<= -ey + Bint::ONE;
+            uy <<= -ey + BIntD8::ONE;
         } else {
-            uy &= BUint::MAX >> (Self::BITS - Self::MB);
-            uy |= BUint::ONE << Self::MB;
+            uy &= BUintD8::MAX >> (Self::BITS - Self::MB);
+            uy |= BUintD8::ONE << Self::MB;
         }
     
-        let mut q = BUint::<W>::ZERO;
-        if ex + Bint::ONE != ey {
+        let mut q = BUintD8::<W>::ZERO;
+        if ex + BIntD8::ONE != ey {
             if ex < ey {
                 return /*(self, 0);*/self;
             }
             /* x mod y */
             while ex > ey {
                 i = uxi.wrapping_sub(uy);
-                if !Bint::from_bits(i).is_negative() {
+                if !BIntD8::from_bits(i).is_negative() {
                     uxi = i;
-                    q += BUint::ONE;
+                    q += BUintD8::ONE;
                 }
                 uxi <<= 1u8;
                 q <<= 1u8;
-                ex -= Bint::ONE;
+                ex -= BIntD8::ONE;
             }
             i = uxi.wrapping_sub(uy);
-            if !Bint::from_bits(i).is_negative() {
+            if !BIntD8::from_bits(i).is_negative() {
                 uxi = i;
-                q += BUint::ONE;
+                q += BUintD8::ONE;
             }
             if uxi.is_zero() {
-                //ex = Bint::TWO - Bint::from(Self::BITS);
-                ex = Bint::from(-60i8);
+                //ex = BIntD8::TWO - BIntD8::from(Self::BITS);
+                ex = BIntD8::from(-60i8);
             } else {
                 while (uxi >> Self::MB).is_zero() {
                     uxi <<= 1u8;
-                    ex -= Bint::ONE;
+                    ex -= BIntD8::ONE;
                 }
             }
         }
     
         /* scale result and decide between |x| and |x|-|y| */
         if ex.is_positive() {
-            uxi -= BUint::ONE << Self::MB;
+            uxi -= BUintD8::ONE << Self::MB;
             uxi |= ex.to_bits() << Self::MB;
         } else {
-            uxi >>= -ex + Bint::ONE;
+            uxi >>= -ex + BIntD8::ONE;
         }
         self = Self::from_bits(uxi);
         if sy {
             y = -y;
         }
-        if ex == ey || (ex + Bint::ONE == ey && (Self::TWO * self > y || (Self::TWO * self == y && !(q % BUint::TWO).is_zero()))) {
+        if ex == ey || (ex + BIntD8::ONE == ey && (Self::TWO * self > y || (Self::TWO * self == y && !(q % BUintD8::TWO).is_zero()))) {
             self = self - y;
-            q += BUint::ONE;
+            q += BUintD8::ONE;
         }
-        q &= BUint::MAX >> 1u8;
-        let quo = if sx ^ sy { -Bint::from_bits(q) } else { Bint::from_bits(q) };
+        q &= BUintD8::MAX >> 1u8;
+        let quo = if sx ^ sy { -BIntD8::from_bits(q) } else { BIntD8::from_bits(q) };
         if sx {
             //(-self, quo)
             -self
@@ -555,57 +530,112 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             self
         }
     }*/
+	pub(crate) fn to_f64(self) -> f64 {
+		use crate::cast::As;
+		f64::from_bits(self.to_bits().as_())
+	}
+}
+
+#[cfg(test)]
+impl super::F64 {
+	#[inline]
+	pub fn recip(self) -> Self {
+		let (e, m) = self.exp_mant();
+		let normalised = Self::from_exp_mant(self.is_sign_negative(), Self::EXP_BIAS.to_bits() + BUintD8::ONE, m);
+		let r = normalised.recip_internal();
+		Self::from_exp_mant(self.is_sign_negative(), e + BUintD8::ONE, r.exp_mant().1)
+	}
+
+	#[inline]
+	pub fn recip_internal(self) -> Self {
+		// solve 1/b - x = 0 so 1/x - b = 0 =: f(x)
+		// x_{n + 1} = x_n - f(x_n) / f'(x_n)
+		// = x_n - (1/x_n - b) / (-1/x_n^2)
+		// = x_n + (x_n - b x_n^2)
+		// = x_n (2 - b x_n)
+		let (e, m) = self.exp_mant();
+		let e = self.exponent() - Self::EXP_BIAS;
+		//println!("{}", e);
+		let e = (-e) + Self::EXP_BIAS;
+		//println!("{}", e);
+		let mut x_n = Self::from_exp_mant(self.is_sign_negative(), e.to_bits(), m) * Self::HALF;
+		//println!("{}", x_n.to_f64());
+		let mut iters = 0;
+		loop {
+			let x_n_1 = x_n * (Self::TWO - self * x_n);
+			if Self::abs(x_n_1 - x_n) < Self::EPSILON || iters == 100 {
+				println!("done: new: {}, old: {}", x_n_1.to_f64(), x_n.to_f64());
+				return x_n_1;
+			}
+			x_n = x_n_1;
+			iters += 1;
+		}
+	}
 }
 
 #[cfg(test)]
 mod tests {
 	use crate::test::test_bignum;
+    use crate::test::types::{ftest, FTEST};
 
     test_bignum! {
-        function: <f64>::abs(f: f64)
+        function: <ftest>::abs(f: ftest)
     }
 
     test_bignum! {
-        function: <f64>::sqrt(f: f64)
+        function: <ftest>::sqrt(f: ftest)
     }
 
     test_bignum! {
-        function: <f64>::ceil(f: f64)
+        function: <ftest>::ceil(f: ftest)
     }
 
     test_bignum! {
-        function: <f64>::floor(f: f64)
+        function: <ftest>::floor(f: ftest)
     }
 
     test_bignum! {
-        function: <f64>::round(f: f64)
+        function: <ftest>::round(f: ftest)
     }
 
     test_bignum! {
-        function: <f64>::trunc(f: f64)
+        function: <ftest>::trunc(f: ftest)
     }
 
     test_bignum! {
-        function: <f64>::fract(f: f64)
+        function: <ftest>::fract(f: ftest)
     }
 
     test_bignum! {
-        function: <f64>::div_euclid(f1: f64, f2: f64)
+        function: <ftest>::div_euclid(f1: ftest, f2: ftest)
     }
 
     test_bignum! {
-        function: <f64>::rem_euclid(f1: f64, f2: f64)
+        function: <ftest>::rem_euclid(f1: ftest, f2: ftest)
     }
 
     #[test]
     fn fmod() {
+		use super::super::F64;
         let f1 = 0.0;
         let f2 = f64::INFINITY;
         //println!("{:064b}", ((-0.0f64).div_euclid(f2)).to_bits());
-        let a = (crate::F64::from(f1) * (crate::F64::from(f2))).to_bits();
+        let a = (F64::from(f1) * (F64::from(f2))).to_bits();
         let b = (f1 * (f2)).to_bits();
         /*println!("{:064b}", a);
         println!("{:064b}", b);*/
         assert!(a == b.into());
     }
+
+	#[test]
+	fn recip2() {
+		use super::super::F64;
+		use crate::cast::As;
+
+		let f1 = 0.1223472348928723f64;
+
+		println!("{}", f1.recip());
+		println!("{}", F64::from(f1).recip_internal().to_f64());
+		panic!("")
+	}
 }

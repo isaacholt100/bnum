@@ -1,10 +1,13 @@
 //! Panic-free casting between numeric types.
 
 /// Backend implementation trait for panic-free casting between numeric types.
+
+#[cfg_attr(feature = "nightly", const_trait)]
 pub trait CastFrom<T> {
     fn cast_from(from: T) -> Self;
 }
 
+#[cfg_attr(feature = "nightly", const_trait)]
 pub(crate) trait CastTo<U> {
     fn cast_to(self) -> U;
 }
@@ -61,6 +64,7 @@ macro_rules! as_trait {
         }
 
         #[doc = as_trait_doc!()]
+		#[const_trait]
         pub trait As {
             #[doc = as_method_doc!()]
             fn as_<T>(self) -> T

@@ -23,13 +23,13 @@ In version `0.1.0`, the `from_be` and `to_be` methods on all integers were imple
 To install and use `bnum`, simply add the following line to your `Cargo.toml` file in the `[dependencies]` section:
 
 ```toml
-bnum = "0.2.0"
+bnum = "0.5.0"
 ```
 
 Or, to enable various `bnum` features as well, add for example this line instead:
 
 ```toml
-bnum = { version = "0.2.0", features = ["rand"] } # enables the "rand" feature
+bnum = { version = "0.5.0", features = ["rand"] } # enables the "rand" feature
 ```
 
 ## Example Usage

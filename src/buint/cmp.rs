@@ -19,9 +19,9 @@ macro_rules! cmp {
             }
         }
 
-        impl_const! {
-            impl<const N: usize> const Eq for $BUint<N> {}
-        }
+        //impl_const! {
+            impl<const N: usize> Eq for $BUint<N> {}
+        //}
 
         impl_const! {
             impl<const N: usize> const PartialOrd for $BUint<N> {

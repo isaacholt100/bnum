@@ -190,8 +190,8 @@ macro_rules! numtraits {
 			from_float!($BUint; from_f64, f64);
 		}
 
-		crate::nightly::impl_const! {
-			impl<const N: usize> const Integer for $BInt<N> {
+		//crate::nightly::impl_const! {
+			impl<const N: usize> Integer for $BInt<N> {
 				#[inline]
 				fn div_floor(&self, other: &Self) -> Self {
 					*self / *other
@@ -242,10 +242,10 @@ macro_rules! numtraits {
 					(self.div_floor(other), self.mod_floor(other))
 				}
 			}
-		}
+		//}
 
-		crate::nightly::impl_const! {
-			impl<const N: usize> const PrimInt for $BInt<N> {
+		//crate::nightly::impl_const! {
+			impl<const N: usize> PrimInt for $BInt<N> {
 				crate::int::numtraits::prim_int_methods!();
 
 				#[inline]
@@ -268,7 +268,7 @@ macro_rules! numtraits {
 					Self::from_bits(self.to_bits() >> n)
 				}
 			}
-		}
+		//}
 
 		impl<const N: usize> Roots for $BInt<N> {
 			#[inline]
@@ -344,8 +344,8 @@ macro_rules! numtraits {
 		}
 		//}
 
-		crate::nightly::impl_const! {
-			impl<const N: usize> const Signed for $BInt<N> {
+		//crate::nightly::impl_const! {
+			impl<const N: usize> Signed for $BInt<N> {
 				#[inline]
 				fn abs(&self) -> Self {
 					Self::abs(*self)
@@ -375,7 +375,7 @@ macro_rules! numtraits {
 					self.signed_digit().is_negative()
 				}
 			}
-		}
+		//}
 
 		#[cfg(test)]
 		paste::paste! {
