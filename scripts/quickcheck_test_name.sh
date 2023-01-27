@@ -1,7 +1,7 @@
 iters=0
 while true
 do
-	cargo test --all-features --quiet -- --nocapture $1
+	cargo test --all-features --lib --quiet -- --nocapture $1
 	if [ $? -ne 0 ]
 	then
 		exit 1

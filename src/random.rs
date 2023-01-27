@@ -57,9 +57,11 @@ impl<T> DerefMut for Slice<T> {
 ///
 /// use bnum::types::I256;
 /// use bnum::random;
+/// use rand::rngs::StdRng;
+/// use rand::SeedableRng;
 ///
 /// let mut v = vec![I256::ZERO; 10];
-/// let mut rng = rand::thread_rng();
+/// let mut rng = StdRng::seed_from_u64(0);
 ///
 /// random::try_fill_slice(&mut v, &mut rng).unwrap();
 /// // each initial `I256::ZERO` is replaced with a random `I256`
