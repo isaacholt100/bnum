@@ -1,9 +1,8 @@
 macro_rules! assert_range {
     ($radix: expr, $max: expr) => {
         assert!(
-            (2..=$max).contains(&$radix),
-            crate::errors::err_msg!("Radix must be in range [2, {}]"),
-            $max
+            $radix >= 2 && $radix <= $max,
+            crate::errors::err_msg!(concat!("Radix must be in range [2, ", stringify!($max), "]"))
         )
     };
 }

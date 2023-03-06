@@ -15,7 +15,7 @@ impl ParseIntError {
         &self.kind
     }
 
-    const fn description(&self) -> &str {
+    pub(crate) const fn description(&self) -> &str {
         match &self.kind {
             IntErrorKind::Empty => "attempt to parse integer from empty string",
             IntErrorKind::InvalidDigit => {

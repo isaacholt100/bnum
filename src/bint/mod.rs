@@ -124,29 +124,29 @@ macro_rules! mod_impl {
 				Self::from_bits(self.bits.reverse_bits())
 			}
 
+			#[doc = doc::unsigned_abs!(I)]
+			#[must_use = doc::must_use_op!()]
+			#[inline]
+			pub const fn unsigned_abs(self) -> $BUint<N> {
+				if self.is_negative() {
+					self.wrapping_neg().bits
+				} else {
+					self.bits
+				}
+			}
+			
+			#[doc = doc::pow!(I 256)]
+			#[must_use = doc::must_use_op!()]
+			#[inline]
+			pub const fn pow(self, exp: ExpType) -> Self {
+				#[cfg(debug_assertions)]
+				return option_expect!(self.checked_pow(exp), errors::err_msg!("attempt to calculate power with overflow"));
+				
+				#[cfg(not(debug_assertions))]
+				self.wrapping_pow(exp)
+			}
+			
 			crate::nightly::const_fns! {
-				#[doc = doc::unsigned_abs!(I)]
-				#[must_use = doc::must_use_op!()]
-				#[inline]
-				pub const fn unsigned_abs(self) -> $BUint<N> {
-					if self.is_negative() {
-						self.wrapping_neg().bits
-					} else {
-						self.bits
-					}
-				}
-
-				#[doc = doc::pow!(I 256)]
-				#[must_use = doc::must_use_op!()]
-				#[inline]
-				pub const fn pow(self, exp: ExpType) -> Self {
-					#[cfg(debug_assertions)]
-					return option_expect!(self.checked_pow(exp), errors::err_msg!("attempt to calculate power with overflow"));
-
-					#[cfg(not(debug_assertions))]
-					self.wrapping_pow(exp)
-				}
-
 				#[doc = doc::div_euclid!(I)]
 				#[must_use = doc::must_use_op!()]
 				#[inline]
@@ -162,19 +162,19 @@ macro_rules! mod_impl {
 					assert!(self != Self::MIN || rhs != Self::NEG_ONE, errors::err_msg!("attempt to calculate remainder with overflow"));
 					self.wrapping_rem_euclid(rhs)
 				}
+			}
 
-				#[doc = doc::abs!(I)]
-				#[must_use = doc::must_use_op!()]
-				#[inline]
-				pub const fn abs(self) -> Self {
-					#[cfg(debug_assertions)]
-					return option_expect!(self.checked_abs(), errors::err_msg!("attempt to negate with overflow"));
+			#[doc = doc::abs!(I)]
+			#[must_use = doc::must_use_op!()]
+			#[inline]
+			pub const fn abs(self) -> Self {
+				#[cfg(debug_assertions)]
+				return option_expect!(self.checked_abs(), errors::err_msg!("attempt to negate with overflow"));
 
-					#[cfg(not(debug_assertions))]
-					match self.checked_abs() {
-						Some(int) => int,
-						None => Self::MIN,
-					}
+				#[cfg(not(debug_assertions))]
+				match self.checked_abs() {
+					Some(int) => int,
+					None => Self::MIN,
 				}
 			}
 
@@ -219,11 +219,7 @@ macro_rules! mod_impl {
 			#[must_use]
 			#[inline]
 			pub const fn is_power_of_two(self) -> bool {
-				if self.is_negative() {
-					false
-				} else {
-					self.bits.is_power_of_two()
-				}
+				!self.is_negative() &&self.bits.is_power_of_two()
 			}
 
 			ilog!(ilog, base: Self);

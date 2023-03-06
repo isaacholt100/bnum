@@ -7,14 +7,18 @@ test_integer_info () {
 
 run_test () {
 	test_integer_info "$1"
-	RUSTFLAGS="--cfg test_int_bits=\"$1\"" cargo test int --lib --quiet --all-features
+	RUSTFLAGS="--cfg test_int_bits=\"$1\"" cargo test int --lib --quiet $2
 	if [ $? -ne 0 ]
 	then
 		exit 1
 	fi
 }
 
-for bits in 128 64
+for flags in "" "--all-features"
 do
-	run_test $bits
+	echo "\n${CYAN_COLOR}info${RESET_FORMAT}: running tests with flags '$flags'..."
+	for bits in 64 128
+	do
+		run_test $bits $flags
+	done
 done

@@ -1,5 +1,6 @@
 use super::Float;
 use crate::{BUintD8, BIntD8};
+use crate::cast::As;
 
 /*/// Returns tuple of division and whether u is less than v
 pub const fn div_float<const N: usize>(u: BUintD8<N>, v: BUintD8<N>) -> (BUintD8<N>, bool) {
@@ -366,12 +367,15 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     #[inline]
     pub fn fract_trunc(self) -> (Self, Self) {
         handle_nan!((self, self); self);
+		if self.is_infinite() {
+			return (Self::NAN, self);
+		}
 
         let mut u = self.to_bits();
         let e = self.exponent() - Self::EXP_BIAS;
 
         if self.is_infinite() {
-            return (Self::NEG_NAN, self);
+            return (Self::NAN, self);
         }
 
         if e >= BIntD8::from(MB) {
@@ -389,7 +393,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             return (self, trunc);
         }
 
-        let mask = BUintD8::<W>::MAX >> (e + BIntD8::from(Self::BITS - Self::MB));
+        let mask = BUintD8::<W>::MAX >> (e + (Self::BITS - Self::MB).as_::<BIntD8<W>>());
         if (u & mask).is_zero() {
             return (Self::ZERO, self);
         }
@@ -426,19 +430,39 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         }
     }
 
-    /*pub fn remquof(mut self, mut y: Self) -> /*(Self, BIntD8<W>)*/Self where [(); {(W * 2).saturating_sub(W)
-    }]: Sized, [(); W.saturating_sub(W * 2)]: Sized {
+	#[inline]
+	pub fn powi(mut self, n: i32) -> Self where [(); W * 2]:, {
+		if n == 0 {
+			return Self::ONE;
+		}
+		let mut n_abs = n.abs();
+		let mut x = Self::ONE;
+		while n_abs != 0 {
+			if n_abs & 1 == 1 {
+				x = x * self;
+			}
+			self = self * self;
+			n_abs >>= 1;
+		}
+		if n.is_negative() {
+			Self::ONE / (self * x)
+		} else {
+			self * x
+		}
+	}
+
+    /*pub fn remquof(mut self, mut y: Self) -> /*(Self, BIntD8<W>)*/(Self, Self) {
         handle_nan!(self; self);
         handle_nan!(y; y);
         if self.is_infinite() || y.is_infinite() {
-            return Self::NAN;
+            return (Self::NAN, Self::NAN);
         }
 
         if y.is_zero() {
-            return Self::QNAN;
+            return (Self::QNAN, Self::QNAN);
         }
         if self.is_zero() {
-            return self;
+            return (self, self);
         }
         let ux = self.to_bits();
         let mut uy = y.to_bits();
@@ -476,7 +500,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         let mut q = BUintD8::<W>::ZERO;
         if ex + BIntD8::ONE != ey {
             if ex < ey {
-                return /*(self, 0);*/self;
+                return (self, 0);
             }
             /* x mod y */
             while ex > ey {
@@ -523,49 +547,91 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         q &= BUintD8::MAX >> 1u8;
         let quo = if sx ^ sy { -BIntD8::from_bits(q) } else { BIntD8::from_bits(q) };
         if sx {
-            //(-self, quo)
-            -self
+            (-self, quo)
         } else {
-            //(self, quo)
-            self
+            (self, quo)
         }
     }*/
+
+	#[cfg(test)]
 	pub(crate) fn to_f64(self) -> f64 {
-		use crate::cast::As;
 		f64::from_bits(self.to_bits().as_())
+	}
+
+	#[cfg(test)]
+	pub(crate) fn to_f32(self) -> f32 {
+		f32::from_bits(self.to_bits().as_())
 	}
 }
 
 #[cfg(test)]
-impl super::F64 {
+impl super::F32 {
 	#[inline]
 	pub fn recip(self) -> Self {
-		let (e, m) = self.exp_mant();
-		let normalised = Self::from_exp_mant(self.is_sign_negative(), Self::EXP_BIAS.to_bits() + BUintD8::ONE, m);
+		/*let (e, m) = self.exp_mant();
+		let normalised = Self::from_exp_mant(self.is_sign_negative(), Self::EXP_BIAS.to_bits() - BUintD8::ONE, m);
+		println!("norm: {}", normalised.to_f64());
 		let r = normalised.recip_internal();
-		Self::from_exp_mant(self.is_sign_negative(), e + BUintD8::ONE, r.exp_mant().1)
+		let e = self.exponent() - Self::EXP_BIAS;
+		//println!("{}", e);
+		let e = (-e) + Self::EXP_BIAS;
+		Self::from_exp_mant(self.is_sign_negative(), e.to_bits() - BUintD8::ONE, r.exp_mant().1)*/
+		self.recip_internal()
 	}
 
 	#[inline]
 	pub fn recip_internal(self) -> Self {
+		if self.is_zero() {
+			return Self::NAN;
+		}
 		// solve 1/b - x = 0 so 1/x - b = 0 =: f(x)
 		// x_{n + 1} = x_n - f(x_n) / f'(x_n)
 		// = x_n - (1/x_n - b) / (-1/x_n^2)
 		// = x_n + (x_n - b x_n^2)
 		// = x_n (2 - b x_n)
 		let (e, m) = self.exp_mant();
-		let e = self.exponent() - Self::EXP_BIAS;
+		let e = BIntD8::from_bits(e) - Self::EXP_BIAS;
+		let inv_e = (-e + Self::EXP_BIAS).to_bits() - BUintD8::ONE;
 		//println!("{}", e);
-		let e = (-e) + Self::EXP_BIAS;
-		//println!("{}", e);
-		let mut x_n = Self::from_exp_mant(self.is_sign_negative(), e.to_bits(), m) * Self::HALF;
-		//println!("{}", x_n.to_f64());
+		let normalised = Self::from_exp_mant(false, Self::EXP_BIAS.to_bits() - BUintD8::ONE, m);
+		if normalised == Self::ONE {
+			return Self::from_exp_mant(self.is_sign_negative(), inv_e + 1, BUintD8::ZERO);
+		}
+		//println!("norm init: {:064b}", normalised.to_bits());
+		let mut x_n = Self::from_bits((normalised * Self::HALF).to_bits() ^ (BUintD8::MAX >> (Self::BITS - Self::MB)));
+
+		let mut m_n = x_n.exp_mant().1 << 1;
+
+		/*
+		0.5 <= x_n < 1
+		1 <= normalised < 2
+		so 0.5 <= x_n * normalised < 2
+		1 <= x_n * 2 < 2
+		*/
+
+		//println!("x_n: {}", x_n.to_f32());
 		let mut iters = 0;
 		loop {
-			let x_n_1 = x_n * (Self::TWO - self * x_n);
-			if Self::abs(x_n_1 - x_n) < Self::EPSILON || iters == 100 {
-				println!("done: new: {}, old: {}", x_n_1.to_f64(), x_n.to_f64());
-				return x_n_1;
+			let a1 = x_n * Self::TWO;
+			let a2 = x_n * normalised * x_n;
+			let x_n_1 = a1 - a2;
+			assert!(a1.to_f32() >= 1.0 && a1.to_f32() <= 2.0);
+			assert!(a2.to_f32() >= 0.5 && a2.to_f32() <= 1.0);
+
+			let ma1 = m_n << 1;
+			let xnf = x_n_1.to_f32();
+			assert!(0.5 <= xnf && xnf < 1.0, "{}, norm: {}", xnf, normalised.to_f32());
+			// x_n * (2 - norm * x_n)
+			if x_n_1 == x_n || iters == 100 {
+				//println!("done: new: {}, old: {}", x_n_1.to_f64(), x_n.to_f64());
+				//println!("norm: {:064b}", x_n_1.to_bits());
+				let mut m = x_n_1.exp_mant().1;
+				if m.bit(Self::MB) {
+					m ^= BUintD8::ONE << Self::MB;
+				}
+				let unnormalised = Self::from_exp_mant(self.is_sign_negative(), inv_e, m);
+				println!("iters: {}", iters);
+				return unnormalised;
 			}
 			x_n = x_n_1;
 			iters += 1;
@@ -614,6 +680,10 @@ mod tests {
         function: <ftest>::rem_euclid(f1: ftest, f2: ftest)
     }
 
+	test_bignum! {
+		function: <ftest>::powi(f: ftest, n: i32)
+	}
+
     #[test]
     fn fmod() {
 		use super::super::F64;
@@ -627,15 +697,67 @@ mod tests {
         assert!(a == b.into());
     }
 
+	quickcheck::quickcheck! {
+		fn qc_recip(u: u32) -> quickcheck::TestResult {
+			let f = f32::from_bits(u);
+			if !f.is_finite() || f >= 2.0 || f <= 1.0 {
+				return quickcheck::TestResult::discard();
+			}
+
+			let b1 = f.recip().to_bits();
+			let b2 = super::super::F32::from(f).recip().to_f32().to_bits();
+			return quickcheck::TestResult::from_bool(b1 == b2 || b1 + 1 == b2);
+		}
+	}
+
 	#[test]
 	fn recip2() {
-		use super::super::F64;
-		use crate::cast::As;
+		assert!((0.0 as ftest).to_bits().count_zeros() == 32);
+		use super::super::F32;
 
-		let f1 = 0.1223472348928723f64;
+		let f1 = 1.7517333f32; //f32::from_bits(0b0_01111110_01001000000000000000000u32);
+		println!("{}", f1);
 
-		println!("{}", f1.recip());
-		println!("{}", F64::from(f1).recip_internal().to_f64());
+		println!("{:032b}", f1.recip().to_bits());
+		println!("{:032b}", F32::from(f1).recip_internal().to_f32().to_bits());
+		panic!("")
+	}
+
+	test_bignum! {
+		function: <ftest>::recip(f: ftest),
+		skip: !f.is_finite() || f == 0.0 || f >= 2.0 || f <= 1.0
+	}
+
+	#[test]
+	fn recip_u8() {
+		let mut g = true;
+		let mut close = true;
+		for i in 1..=u8::MAX {
+			let u = 0b0_01111110_00000000000000000000000u32 | ((i as u32) << 15);
+			let f = f32::from_bits(u);
+
+			let b1 = f.recip().to_bits();
+			let b2 = super::super::F32::from(f).recip_internal().to_f32().to_bits();
+			let eq = b1 == b2;
+			if !eq {
+				println!("{:08b}", i);
+				if b2 - b1 != 1 {
+					close = false;
+				}
+			}
+			if b1 > b2 {
+				if b1 > b2 {
+					g = false;
+				}
+			}
+		}
+		println!("all greater: {}", g);
+		println!("all close: {}", close);
 		panic!("")
 	}
 }
+//0011111111101001100110011001100110011001100111110001100011111001
+//0011111111100000000000000000000000000000000000110110111110011100
+
+//0011111111110011111111111111111111111111111110111011010001111101
+// 0011111111111111111111111111111111111111111110010010000011001000

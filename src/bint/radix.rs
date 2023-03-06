@@ -15,28 +15,36 @@ macro_rules! radix {
             ///
             /// Returns `None` if the conversion of the byte slice to string slice fails or if a digit is larger than or equal to the given radix, otherwise the integer is wrapped in `Some`.
             #[inline]
-            pub fn parse_bytes(buf: &[u8], radix: u32) -> Option<Self> {
-                let s = core::str::from_utf8(buf).ok()?;
-                Self::from_str_radix(s, radix).ok()
+            pub const fn parse_bytes(buf: &[u8], radix: u32) -> Option<Self> {
+                let s = crate::nightly::option_try!(crate::nightly::ok!(core::str::from_utf8(buf)));
+                crate::nightly::ok!(Self::from_str_radix(s, radix))
             }
 
-            /// Converts a slice of big-endian digits in the given radix to an integer. The digits are first converted to an unsigned integer, then this is transmuted to a signed integer. Each `u8` of the slice is interpreted as one digit of base `radix` of the number, so this function will return `None` if any digit is greater than or equal to `radix`, otherwise the integer is wrapped in `Some`.
-            ///
-            /// For examples, see the
-			#[doc = concat!("[`from_radix_be`](crate::", stringify!($BUint), "::from_radix_be) method documentation for [`", stringify!($BUint), "`](crate::", stringify!($BUint), ").")]
-            #[inline]
-            pub fn from_radix_be(buf: &[u8], radix: u32) -> Option<Self> {
-                $BUint::from_radix_be(buf, radix).map(Self::from_bits)
-            }
+			crate::nightly::const_fns! {
+				/// Converts a slice of big-endian digits in the given radix to an integer. The digits are first converted to an unsigned integer, then this is transmuted to a signed integer. Each `u8` of the slice is interpreted as one digit of base `radix` of the number, so this function will return `None` if any digit is greater than or equal to `radix`, otherwise the integer is wrapped in `Some`.
+				///
+				/// For examples, see the
+				#[doc = concat!("[`from_radix_be`](crate::", stringify!($BUint), "::from_radix_be) method documentation for [`", stringify!($BUint), "`](crate::", stringify!($BUint), ").")]
+				#[inline]
+				pub const fn from_radix_be(buf: &[u8], radix: u32) -> Option<Self> {
+					match $BUint::from_radix_be(buf, radix) { // TODO: use Option::map when stable
+						Some(uint) => Some(Self::from_bits(uint)),
+						None => None,
+					}
+				}
 
-            /// Converts a slice of big-endian digits in the given radix to an integer. The digits are first converted to an unsigned integer, then this is transmuted to a signed integer. Each `u8` of the slice is interpreted as one digit of base `radix` of the number, so this function will return `None` if any digit is greater than or equal to `radix`, otherwise the integer is wrapped in `Some`.
-            ///
-            /// For examples, see the
-			#[doc = concat!("[`from_radix_le`](crate::", stringify!($BUint), "::from_radix_le) method documentation for [`", stringify!($BUint), "`](crate::", stringify!($BUint), ").")]
-            #[inline]
-            pub fn from_radix_le(buf: &[u8], radix: u32) -> Option<Self> {
-                $BUint::from_radix_le(buf, radix).map(Self::from_bits)
-            }
+				/// Converts a slice of big-endian digits in the given radix to an integer. The digits are first converted to an unsigned integer, then this is transmuted to a signed integer. Each `u8` of the slice is interpreted as one digit of base `radix` of the number, so this function will return `None` if any digit is greater than or equal to `radix`, otherwise the integer is wrapped in `Some`.
+				///
+				/// For examples, see the
+				#[doc = concat!("[`from_radix_le`](crate::", stringify!($BUint), "::from_radix_le) method documentation for [`", stringify!($BUint), "`](crate::", stringify!($BUint), ").")]
+				#[inline]
+				pub const fn from_radix_le(buf: &[u8], radix: u32) -> Option<Self> {
+					match $BUint::from_radix_le(buf, radix) { // TODO: use Option::map when stable
+						Some(uint) => Some(Self::from_bits(uint)),
+						None => None,
+					}
+				}
+			}
 
             /// Converts a string slice in a given base to an integer.
             ///
@@ -53,25 +61,27 @@ macro_rules! radix {
             /// For examples, see the
 			#[doc = concat!("[`from_str_radix`](crate::", stringify!($BUint), "::from_str_radix) method documentation for [`", stringify!($BUint), "`](crate::", stringify!($BUint), ").")]
             #[inline]
-            pub fn from_str_radix(mut src: &str, radix: u32) -> Result<Self, ParseIntError> {
-                assert_range!(radix, 36);
-
-                let mut negative = false;
-                if src.starts_with('-') {
-                    src = &src[1..];
-                    negative = true;
-                    if src.starts_with('+') {
-                        return Err(ParseIntError {
-                            kind: IntErrorKind::InvalidDigit,
-                        });
-                    }
-                } else if src.starts_with('+') {
-                    src = &src[1..];
-                }
-                match $BUint::from_str_radix(src, radix) {
+            pub const fn from_str_radix(src: &str, radix: u32) -> Result<Self, ParseIntError> {
+				assert_range!(radix, 36);
+				if src.is_empty() {
+					return Err(ParseIntError {
+						kind: IntErrorKind::Empty,
+					});
+				}
+				let mut negative = false;
+				let mut leading_sign = false;
+				let buf = src.as_bytes();
+				if buf[0] == b'-' {
+					negative = true;
+					leading_sign = true;
+				} else if buf[0] == b'+' {
+					leading_sign = true;
+				}
+				
+                match $BUint::from_buf_radix_internal::<true, true>(buf, radix, leading_sign) {
                     Ok(uint) => {
                         if negative {
-                            if uint > Self::MIN.to_bits() {
+							if uint.bit(Self::BITS - 1) && uint.trailing_zeros() != Self::BITS - 1 {
                                 Err(ParseIntError {
                                     kind: IntErrorKind::NegOverflow,
                                 })
@@ -90,16 +100,26 @@ macro_rules! radix {
                         }
                     }
                     Err(err) => {
-                        if err.kind() == &IntErrorKind::PosOverflow && negative {
-                            Err(ParseIntError {
-                                kind: IntErrorKind::NegOverflow,
-                            })
-                        } else {
-                            Err(err)
+                        if let IntErrorKind::PosOverflow = err.kind() {
+                            if negative {
+								return Err(ParseIntError {
+									kind: IntErrorKind::NegOverflow,
+								});
+							}
                         }
+						return Err(err)
                     }
                 }
             }
+
+			#[doc = doc::radix::parse_str!($BUint)]
+			#[inline]
+			pub const fn parse_str(src: &str, radix: u32) -> Self {
+				match Self::from_str_radix(src, radix) {
+					Ok(n) => n,
+					Err(e) => panic!("{}", e.description()),
+				}
+			}
 
             /// Returns the integer as a string in the given radix.
             ///
@@ -149,23 +169,37 @@ macro_rules! radix {
 		paste::paste! {
 			mod [<$Digit _digit_tests>] {
 				use crate::test::types::big_types::$Digit::*;
-				use crate::test::{quickcheck_from_to_radix, test_bignum};
+				use crate::test::{quickcheck_from_to_radix, test_bignum, self};
 				use crate::$BInt;
+				use crate::test::types::itest;
 
 				test_bignum! {
 					function: <itest>::from_str_radix,
 					cases: [
 						("-14359abcasdhfkdgdfgsde", 34u32),
-						("23797984569ahgkhhjdskjdfiu", 32u32),
+						("+23797984569ahgkhhjdskjdfiu", 32u32),
 						("-253613132341435345", 7u32),
-						("23467abcad47790809ef37", 16u32),
-						("-712930769245766867875986646", 10u32)
+						("+23467abcad47790809ef37", 16u32),
+						("-712930769245766867875986646", 10u32),
+						("-😱234292", 36u32),
+						("-+345934758", 13u32),
+						("12💯12", 15u32),
+						("gap gap", 36u32),
+						("-9223372036854775809", 10u32),
+						("-1000000000000000000001", 8u32),
+						("+1000000000000000000001", 8u32),
+						("-8000000000000001", 16u32),
+						("+-23459374", 15u32),
+						("8000000000000000", 16u32)
 					]
 				}
 
-				quickcheck_from_to_radix!(itest, radix_be, 255);
-				quickcheck_from_to_radix!(itest, radix_le, 255);
+				quickcheck_from_to_radix!(itest, radix_be, 256);
+				quickcheck_from_to_radix!(itest, radix_le, 256);
 				quickcheck_from_to_radix!(itest, str_radix, 36);
+
+				test::quickcheck_from_str_radix!(itest, "+" | "-");
+				test::quickcheck_from_str!(itest);
 
 				#[test]
 				fn from_to_radix_le() {

@@ -7,7 +7,7 @@ macro_rules! err_prefix {
 pub(crate) use err_prefix;
 
 macro_rules! err_msg {
-    ($msg: literal) => {
+    ($msg: expr) => {
         concat!(crate::errors::err_prefix!(), " ", $msg)
     };
 }

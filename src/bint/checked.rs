@@ -1,6 +1,6 @@
 macro_rules! checked_ilog {
 	($method: ident $(, $base: ident: $ty: ty)?) => {
-		const_fn! {
+		crate::nightly::const_fn! {
 			#[doc = doc::checked::$method!(I)]
 			#[must_use = doc::must_use_op!()]
 			#[inline]
@@ -17,7 +17,6 @@ macro_rules! checked_ilog {
 
 use crate::doc;
 use crate::int::checked::tuple_to_option;
-use crate::nightly::{const_fn, const_fns};
 use crate::ExpType;
 
 macro_rules! checked {
@@ -52,14 +51,14 @@ macro_rules! checked {
                 tuple_to_option(self.overflowing_sub_unsigned(rhs))
             }
 
-            const_fns! {
-                #[doc = doc::checked::checked_mul!(I)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn checked_mul(self, rhs: Self) -> Option<Self> {
-                    tuple_to_option(self.overflowing_mul(rhs))
-                }
-
+			#[doc = doc::checked::checked_mul!(I)]
+			#[must_use = doc::must_use_op!()]
+			#[inline]
+			pub const fn checked_mul(self, rhs: Self) -> Option<Self> {
+				tuple_to_option(self.overflowing_mul(rhs))
+			}
+			
+			crate::nightly::const_fns! {
                 #[doc = doc::checked::checked_div!(I)]
                 #[must_use = doc::must_use_op!()]
                 #[inline]
@@ -103,14 +102,16 @@ macro_rules! checked {
                         tuple_to_option(self.overflowing_rem_euclid(rhs))
                     }
                 }
+			}
 
-                #[doc = doc::checked::checked_neg!(I)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn checked_neg(self) -> Option<Self> {
-                    tuple_to_option(self.overflowing_neg())
-                }
+			#[doc = doc::checked::checked_neg!(I)]
+			#[must_use = doc::must_use_op!()]
+			#[inline]
+			pub const fn checked_neg(self) -> Option<Self> {
+				tuple_to_option(self.overflowing_neg())
+			}
 
+			crate::nightly::const_fns! {
                 #[doc = doc::checked::checked_shl!(I)]
                 #[must_use = doc::must_use_op!()]
                 #[inline]
@@ -124,41 +125,43 @@ macro_rules! checked {
                 pub const fn checked_shr(self, rhs: ExpType) -> Option<Self> {
                     tuple_to_option(self.overflowing_shr(rhs))
                 }
+			}
 
-                #[doc = doc::checked::checked_abs!(I)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn checked_abs(self) -> Option<Self> {
-                    tuple_to_option(self.overflowing_abs())
-                }
+			#[doc = doc::checked::checked_abs!(I)]
+			#[must_use = doc::must_use_op!()]
+			#[inline]
+			pub const fn checked_abs(self) -> Option<Self> {
+				tuple_to_option(self.overflowing_abs())
+			}
 
-                #[doc = doc::checked::checked_pow!(I)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn checked_pow(self, pow: ExpType) -> Option<Self> {
-                    match self.unsigned_abs().checked_pow(pow) {
-                        Some(u) => {
-                            let out = Self::from_bits(u);
-                            let neg = self.is_negative();
-                            if !neg || pow & 1 == 0 {
-                                if out.is_negative() {
-                                    None
-                                } else {
-                                    Some(out)
-                                }
-                            } else {
-                                let out = out.wrapping_neg();
-                                if !out.is_negative() {
-                                    None
-                                } else {
-                                    Some(out)
-                                }
-                            }
-                        },
-                        None => None,
-                    }
-                }
+			#[doc = doc::checked::checked_pow!(I)]
+			#[must_use = doc::must_use_op!()]
+			#[inline]
+			pub const fn checked_pow(self, pow: ExpType) -> Option<Self> {
+				match self.unsigned_abs().checked_pow(pow) {
+					Some(u) => {
+						let out = Self::from_bits(u);
+						let neg = self.is_negative();
+						if !neg || pow & 1 == 0 {
+							if out.is_negative() {
+								None
+							} else {
+								Some(out)
+							}
+						} else {
+							let out = out.wrapping_neg();
+							if !out.is_negative() {
+								None
+							} else {
+								Some(out)
+							}
+						}
+					},
+					None => None,
+				}
+			}
 
+			crate::nightly::const_fns! {
                 #[doc = doc::checked::checked_next_multiple_of!(I)]
                 #[must_use = doc::must_use_op!()]
                 #[inline]

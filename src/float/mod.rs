@@ -28,6 +28,7 @@ mod convert;
 mod endian;
 mod math;
 mod ops;
+mod to_str;
 
 #[cfg(feature = "serde")]
 use serde::{Serialize, Deserialize};
@@ -73,8 +74,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
     #[inline]
     const fn exponent(self) -> BIntD8<W> {
-        let u: BUintD8<W> = (self.to_bits() & BIntD8::MAX.to_bits()).wrapping_shr(Self::MB);
-        BIntD8::from_bits(u)
+        BIntD8::from_bits(self.exp_mant().0)
     }
     
     /*const fn actual_exponent(self) -> BIntD8<W> {
@@ -115,6 +115,46 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         handle_nan!(Self::NAN; self);
         Self::ONE.copysign(self)
     }
+
+	#[inline]
+	pub const fn next_up(self) -> Self {
+		use core::num::FpCategory;
+
+		match self.classify() {
+			FpCategory::Nan => self,
+			FpCategory::Infinite => if self.is_sign_negative() {
+				Self::MIN
+			} else {
+				self
+			},
+			FpCategory::Zero => Self::MIN_POSITIVE_SUBNORMAL,
+			_ => if self.is_sign_negative() {
+				Self::from_bits(self.to_bits() - BUintD8::ONE)
+			} else {
+				Self::from_bits(self.to_bits() + BUintD8::ONE)
+			},
+		}
+	}
+
+	#[inline]
+	pub const fn next_down(self) -> Self {
+		use core::num::FpCategory;
+
+		match self.classify() {
+			FpCategory::Nan => self,
+			FpCategory::Infinite => if self.is_sign_negative() {
+				self
+			} else {
+				Self::MAX
+			},
+			FpCategory::Zero => Self::MAX_NEGATIVE_SUBNORMAL,
+			_ => if self.is_sign_negative() {
+				Self::from_bits(self.to_bits() + BUintD8::ONE)
+			} else {
+				Self::from_bits(self.to_bits() - BUintD8::ONE)
+			}
+		}
+	}
 }
 
 impl<const W: usize, const MB: usize> Default for Float<W, MB> {
@@ -158,9 +198,6 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             bits = bits | BIntD8::MIN.to_bits();
         }
         let f = Self::from_bits(bits);
-        if negative {
-            debug_assert!(f.is_sign_negative());
-        }
         f
     }
 }
@@ -185,7 +222,6 @@ impl From<f32> for F32 {
 mod tests {
 	use crate::test::test_bignum;
 	use crate::test::types::{ftest, FTEST};
-    use super::F64;
 
     test_bignum! {
         function: <ftest>::copysign(f1: ftest, f2: ftest)
@@ -195,9 +231,11 @@ mod tests {
         function: <ftest>::signum(f: ftest)
     }
 
-    #[test]
-    fn test_from_exp_mant() {
-        let f = F64::from_exp_mant(true, crate::BUintD8::ZERO, crate::BUintD8::ZERO);
-        assert!(f.is_sign_negative());
-    }
+    test_bignum! {
+		function: <ftest>::next_up(f: ftest)
+	}
+
+    test_bignum! {
+		function: <ftest>::next_down(f: ftest)
+	}
 }

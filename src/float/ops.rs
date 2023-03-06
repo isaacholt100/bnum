@@ -160,7 +160,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         let mut a_exp = BIntD8::from_bits(a_exp);
     
         let sticky_bit2 = !exp_diff.is_zero() && exp_diff < BUintD8::<W>::BITS.into() && b_mant.bit(exp_diff.as_::<ExpType>() - 1);
-        let all_zeros = !exp_diff.is_zero() && b_mant.trailing_zeros() + 1 == exp_diff.as_();
+        let all_zeros = !exp_diff.is_zero() && b_mant.trailing_zeros() + 1 == exp_diff.as_::<ExpType>();
     
     
         // Append extra bits to the mantissas to ensure correct rounding
@@ -251,15 +251,15 @@ impl<const W: usize, const MB: usize> Sub for Float<W, MB> {
     fn sub(self, rhs: Self) -> Self {
 		//println!("{:064b} {:064b}", self.to_bits(), rhs.to_bits());
         match (self.classify(), rhs.classify()) {
-            (FpCategory::Nan, _) => return self,
+            (FpCategory::Nan, _) => self,
             (_, FpCategory::Nan) => rhs,
-            (FpCategory::Infinite, FpCategory::Infinite) => return if self.is_sign_negative() && !rhs.is_sign_negative() {
-				Self::NEG_NAN
-			} else {
-				Self::NAN
+            (FpCategory::Infinite, FpCategory::Infinite) => match (self.is_sign_negative(), rhs.is_sign_negative()) {
+				(true, false) => Self::NEG_INFINITY,
+				(false, true) => Self::INFINITY,
+				_ => Self::NAN,
 			},
-            (FpCategory::Infinite, _) => return self,
-            (_, FpCategory::Infinite) => return rhs.neg(),
+            (FpCategory::Infinite, _) => self,
+            (_, FpCategory::Infinite) => rhs.neg(),
             (_, _) => {
                 let self_negative = self.is_sign_negative();
                 let rhs_negative = rhs.is_sign_negative();
@@ -277,7 +277,7 @@ impl<const W: usize, const MB: usize> Sub for Float<W, MB> {
 
 impl<const W: usize, const MB: usize> Float<W, MB> {
     #[inline]
-    fn mul_internal(self, rhs: Self, negative: bool) -> Self where [(); W * 2]:, {
+    fn _mul_internal_old(self, rhs: Self, negative: bool) -> Self where [(); W * 2]:, {
         let (a, b) = (self, rhs);
         let (exp_a, mant_a) = a.exp_mant();
         let (exp_b, mant_b) = b.exp_mant();
@@ -343,7 +343,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
 
     #[inline]
-    fn mul_internal2(self, rhs: Self, negative: bool) -> Self {
+    fn mul_internal(self, rhs: Self, negative: bool) -> Self {
         let (a, b) = (self, rhs);
         let (exp_a, mant_a) = a.exp_mant();
         let (exp_b, mant_b) = b.exp_mant();
@@ -465,7 +465,7 @@ impl<const W: usize, const MB: usize> Mul for Float<W, MB> {
                 Self::INFINITY
             },
             (_, _) => {
-                self.mul_internal2(rhs, negative)
+                self.mul_internal(rhs, negative)
             },
         }
     }
@@ -560,14 +560,8 @@ impl<const W: usize, const MB: usize> Div for Float<W, MB> where [(); W * 2]:, {
         let negative = self.is_sign_negative() ^ rhs.is_sign_negative();
         match (self.classify(), rhs.classify()) {
             (FpCategory::Nan, _) | (_, FpCategory::Nan) => Self::NAN,
-            (FpCategory::Infinite, FpCategory::Infinite) => Self::NEG_NAN,
-            (FpCategory::Zero, FpCategory::Zero) => {
-                if negative {
-					Self::NEG_NAN
-				} else {
-					Self::NAN
-				}
-            },
+            (FpCategory::Infinite, FpCategory::Infinite) => Self::NAN,
+            (FpCategory::Zero, FpCategory::Zero) => Self::NAN,
             (FpCategory::Infinite, _) | (_, FpCategory::Zero) => if negative {
                 Self::NEG_INFINITY
             } else {
@@ -729,31 +723,15 @@ crate::nightly::impl_const! {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use super::super::F64;
-	use crate::test::{test_bignum, TestConvert};
+	use crate::test::test_bignum;
 	use crate::test::types::{ftest, FTEST};
-
-    /*trait ToBits {
-        fn to_bits(self) -> u64;
-    }
-    impl ToBits for F64 {
-        fn to_bits(self) -> u64 {
-            self.to_bits().as_()
-        }
-    }
-    impl ToBits for ftest {
-        fn to_bits(self) -> u64 {
-            self.to_bits()
-        }
-    }*/
     
     test_bignum! {
         function: <ftest as Add>::add(a: ftest, b: ftest)
     }
     
     test_bignum! {
-        function: <ftest as Sub>::sub(a: ftest, b: ftest),
-		skip: !b.is_finite() || !a.is_finite()
+        function: <ftest as Sub>::sub(a: ftest, b: ftest)
     }
     
     test_bignum! {
@@ -771,41 +749,4 @@ mod tests {
 	test_bignum! {
         function: <ftest as Neg>::neg(f: ftest)
     }
-
-    #[test]
-    fn sub3() {
-		//1111111111110000000000000000000000000000000000000000000000000000 0111111111110000000000000000000000000000000000000000000000000000
-        let f1 = f64::from_bits(0b1111111111110000000000000000000000000000000000000000000000000000 );
-        let f2 = f64::from_bits(0b0111111111110000000000000000000000000000000000000000000000000000);
-        //println!("{:064b}", ((-0.0f64).div_euclid(f2)).to_bits());
-        let a = (F64::from(f1) + (F64::from(f2))).to_bits();
-        let b = (f1 + (f2)).to_bits();
-        println!("{:064b}", a);
-        println!("{:064b}", b);
-		panic!("");
-    }
-
-    #[test]
-    fn sub2() {
-		//1111111111101111111111111111111111111111111111111111111111111111 1100001111100000000000000000000000000000000000000000000000000000
-        let f1 = f64::from_bits(0b1111111111101111111111111111111111111111111111111111111111111111);
-        let f2 = f64::from_bits(0b1100001111100000000000000000000000000000000000000000000000000000);
-        //println!("{:064b}", ((-0.0f64).div_euclid(f2)).to_bits());
-        let a = (F64::from(f1) + F64::from(f2)).to_bits();
-        let b = (f1 + f2).to_bits();
-        println!("{:064b}", b);
-        println!("{:064b}", a);
-        assert!(false && TestConvert::into(a) == TestConvert::into(b));
-    }
-
-	#[test]
-	fn sub1() {
-		// 1111111011001100010100110111011010010100011011000110011111000110 1100001111100000000000000000000000000000000000000000000000000000
-		let f1 = -0f64;
-		let f2 = -0f64;
-
-		println!("{:064b}", (f1 / f2).to_bits());
-		println!("{:064b}", (F64::from(f1) / F64::from(f2)).to_bits());
-		panic!("")
-	}
 }

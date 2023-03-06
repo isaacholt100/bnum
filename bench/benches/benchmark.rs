@@ -173,31 +173,26 @@ criterion_group!(benches, bench_ops);
 
 criterion_main!(benches);
 */
-
-#![feature(portable_simd)]
+use bnum::types::U128;
 
 use criterion::{Criterion, BenchmarkId, criterion_group, criterion_main, black_box};
 
-fn bench_and(c: &mut Criterion) {
-    let mut group = c.benchmark_group("div");
-
-	use std::simd::Simd;
-
-	let a = 2349852439572957999u64;
-	let c = 2934859437589439834u64;
-
-	let a_s = Simd::from([a]);
-	let c_s = Simd::from([c]);
-
-	group.bench_with_input(BenchmarkId::new("simd", "simd"), &(a_s, c_s), |b, &(a_s, c_s)| b.iter(|| black_box({
-		for _ in 0..10000 { black_box(a_s) & black_box(c_s); }
-	})));
-
-	group.bench_with_input(BenchmarkId::new("prim", "prim"), &(a, c), |b, &(a, c)| b.iter(|| black_box({
-		for _ in 0..10000 { black_box(a) & black_box(c); }
-	})));
+fn bench_from_le_slice(c: &mut Criterion) {
+    let mut group = c.benchmark_group("from_le_slice");
+	let slice1: &[u8] = &[234, 123, 85, 3, 132, 200, 23, 4];
+	let slice2: &[u8] = &[102, 57, 84];
+	let slice3: &[u8] = &[84, 235, 43, 8, 8, 44, 103, 176, 244, 207];
+	for (index, s) in [slice1, slice2, slice3].iter().enumerate() {
+		group.bench_with_input(BenchmarkId::new("original", index), s, |b, i| {
+			b.iter(|| U128::from_le_slice(i))
+		});
+		group.bench_with_input(BenchmarkId::new("new", index), s, |b, i| {
+			b.iter(|| U128::from_le_slice(i))
+		});
+	}
+	group.finish();
 }
 
-criterion_group!(benches, bench_and);
+criterion_group!(benches, bench_from_le_slice);
 
 criterion_main!(benches);

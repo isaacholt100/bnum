@@ -1,0 +1,68 @@
+Floats:
+* Conversions from and to:
+	* primitive ints
+	* bnum ints
+	* primitve floats
+* FromStr trait
+* Display, debug, upper exp, lower exp traits
+* Transcendental functions:
+	* exp
+	* exp2
+	* ln
+	* log
+	* log2
+	* log10
+	* cbrt
+	* hypot
+	* sin
+	* cos
+	* tan
+	* asin
+	* acos
+	* atan
+	* atan2
+	* sin_cos
+	* exp_m1
+	* ln_1p
+	* sinh
+	* cosh
+	* tanh
+	* asinh
+	* acosh
+	* atanh
+	* to_degrees
+	* to_radians
+* Optimised division algorithm depending on size of mantissa
+* recip
+* Optimised multiplication algorithm depending on size of mantissa
+* Fused multiply add
+* Constants:
+	* DIGITS
+	* MIN_10_EXP
+	* MAX_10_EXP
+* Maths constants:
+	* E
+	* FRAC_1_PI
+	* FRAC_1_SQRT_2
+	* FRAC_2_PI
+	* FRAC_PI_2
+	* FRAC_PI_3
+	* FRAC_PI_4
+	* FRAC_PI_6
+	* FRAC_PI_8
+	* LN_2
+	* LN_10
+	* LOG2_10
+	* LOG2_E
+	* LOG10_2
+	* LOG10_E
+	* PI
+	* SQRT_2
+	* TAU
+* FloatToInt trait
+* From/TryFrom trait for ints, other floats
+* Float type aliases from IEEE standard: f16, f32, f64, f80, f128. (Include f32 and f64 as allows const methods which aren't available on the primitives)
+
+Ints:
+Faster mulitplication algorithm for larger integers
+Faster division algorithms for larger integers

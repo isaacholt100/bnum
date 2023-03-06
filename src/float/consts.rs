@@ -142,8 +142,15 @@ mod tests {
 	}
 
 	test_constants! {
-		NAN, INFINITY, NEG_INFINITY, MAX, MIN, MIN_POSITIVE, EPSILON, /*MIN_EXP, MAX_EXP,*/RADIX, MANTISSA_DIGITS, DIGITS
+		/*NAN, */INFINITY, NEG_INFINITY, MAX, MIN, MIN_POSITIVE, EPSILON, MIN_EXP, MAX_EXP, RADIX, MANTISSA_DIGITS, DIGITS
 	}
+	// don't test NAN as Rust f64/f32 NAN bit pattern not guaranteed to be stable across version
+
+	#[test]
+	fn nan_consts_is_nan() {
+		assert!(FTEST::NAN.is_nan());
+		assert!(FTEST::QNAN.is_nan());
+	}	
 
 	test_numeric_constants![
 		(ZERO, 0.0), (NEG_ZERO, -0.0), (ONE, 1.0), (QUARTER, 0.25), (HALF, 0.5), (NEG_ONE, -1)
