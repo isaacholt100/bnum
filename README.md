@@ -10,7 +10,7 @@ This crate uses Rust's const generics to allow creation of integers of arbitrary
 
 `bnum` defines 4 unsigned integer types: each uses a different primitive integer as its digit type. `BUint` uses `u64` as its digit, `BUintD32` uses `u32`, `BUintD16` uses `u16` and `BUintD8` uses `u8`. The signed integer types, `BInt`, `BIntD32`, `BIntD16` and `BIntD8` are represented by these unsigned integers respectively.
 
-`BUint` and `BInt` are the fastest as they store (and so operate on) the least number of digits for a given bit size. However, the drawback is that the bit size must be a multiple of `64` (`bitsize = N * 64`). This is why other integer types are provided as well, as they allow the bit size to be a multiple of `32`, `16`, or `8` instead. When choosing which of these types to use, determine which of `64, 32, 16, 8` is the largest multiple of the desired bit size, and use the corresponding type. For example, if you wanted a 96-bit unsigned integer, 32 is the largest multiple of 96 out of these, so use `BUintD32<3>`. A 40-bit signed integer would be `BIntD32<5>`.
+`BUint` and `BInt` are the fastest as they store (and so operate on) the least number of digits for a given bit size. However, the drawback is that the bit size must be a multiple of `64` (`bitsize = N * 64`). This is why other integer types are provided as well, as they allow the bit size to be a multiple of `32`, `16`, or `8` instead. When choosing which of these types to use, determine which of `64, 32, 16, 8` is the largest multiple of the desired bit size, and use the corresponding type. For example, if you wanted a 96-bit unsigned integer, 32 is the largest multiple of 96 out of these, so use `BUintD32<3>`. A 40-bit signed integer would be `BIntD8<5>`.
 
 `bnum` can be used in `no_std` environments, provided a global default allocator is configured.
 
@@ -23,18 +23,33 @@ In version `0.1.0`, the `from_be` and `to_be` methods on all integers were imple
 To install and use `bnum`, simply add the following line to your `Cargo.toml` file in the `[dependencies]` section:
 
 ```toml
-bnum = "0.5.0"
+bnum = "0.6.0"
 ```
 
 Or, to enable various `bnum` features as well, add for example this line instead:
 
 ```toml
-bnum = { version = "0.5.0", features = ["rand"] } # enables the "rand" feature
+bnum = { version = "0.6.0", features = ["rand"] } # enables the "rand" feature
 ```
 
 ## Example Usage
 
 **NB: the examples in the documentation use specific type aliases (e.g. `U256`, `U512`,  or `I256`, `I512`) to give examples of correct usage for most methods. There is nothing special about these types in particular: all methods that are shown with these are implemented for all unsigned/signed bnum integers for any value of `N`.**
+
+```rust
+// As of version 0.6.0, you can now parse integers from string slices at compile time with the const methods `from_str_radix` or `parse_str_radix`:
+use bnum::types::{U256, I256};
+use bnum::errors::ParseIntError;
+
+// `parse_str_radix` returns an integer, and panics if the string fails to parse
+const UINT_FROM_DECIMAL_STR: U256 = U256::parse_str_radix("12345678901234567890", 10);
+
+// If you are not sure that the string will successfully parse, you can use `from_str_radix` which returns a `Result`
+const RESULT_INT_FROM_HEXA_STR: Result<I256, ParseIntError> = I256::from_str_radix("-1234567890abcdef", 16);
+
+assert_eq!(format!("{}", UINT_FROM_DECIMAL_STR), "12345678901234567890");
+assert_eq!(format!("{:x}", RESULT_INT_FROM_HEXA_STR.unwrap().abs()), "1234567890abcdef");
+```
 
 ```rust
 // Calculate the `n`th Fibonacci number, using the type alias `U512`.
@@ -91,7 +106,7 @@ The `numtraits` feature includes implementations of traits from the [`num_traits
 
 ### Nightly features
 
-Some functionality in this crate currently only works with the Nightly Rust compiler. The `nightly` feature enables this functionality, at the cost of only being able to compile on nightly. The nightly features that this crate uses are [`generic_const_exprs`](https://github.com/rust-lang/rust/issues/76560), [`const_mut_refs`](https://github.com/rust-lang/rust/issues/57349), [`const_maybe_uninit_as_mut_ptr`](https://github.com/rust-lang/rust/issues/75251), [`const_trait_impl`](https://github.com/rust-lang/rust/issues/67792), [`const_num_from_num`](https://github.com/rust-lang/rust/issues/87852), [`const_swap`](https://github.com/rust-lang/rust/issues/83163).
+Some functionality in this crate currently only works with the Nightly Rust compiler. The `nightly` feature enables this functionality, at the cost of only being able to compile on nightly. The nightly features that this crate uses are [`generic_const_exprs`](https://github.com/rust-lang/rust/issues/76560), [`const_mut_refs`](https://github.com/rust-lang/rust/issues/57349), [`const_maybe_uninit_as_mut_ptr`](https://github.com/rust-lang/rust/issues/75251), [`const_trait_impl`](https://github.com/rust-lang/rust/issues/67792), [`const_num_from_num`](https://github.com/rust-lang/rust/issues/87852), [`const_swap`](https://github.com/rust-lang/rust/issues/83163) and [`const_option_ext`](https://github.com/rust-lang/rust/issues/91930).
 
 Activating the `nightly` feature will make nearly every method defined in the library `const`, and will enable the `from_be_bytes`, `from_le_bytes`, `from_ne_bytes`, `to_be_bytes`, `to_le_bytes` and `to_ne_bytes` methods on bnum's unsigned and signed integers.
 

@@ -26,7 +26,6 @@ num-traits = { version = "0.2.15", optional = true, default-features = false }
 serde = { version = "1.0.152", features = ["derive"], optional = true, default-features = false }
 serde-big-array = { version = "0.4.1", optional = true, default-features = false }
 rand = { version = "0.8.5", features = ["min_const_gen", "small_rng", "std_rng"], optional = true, default-features = false }
-serde_json = "1.0"
 
 [dev-dependencies]
 quickcheck = "1.0.3"

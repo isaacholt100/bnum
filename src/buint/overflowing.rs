@@ -1,6 +1,5 @@
 use crate::digit;
 use crate::doc;
-use crate::nightly::const_fns;
 use crate::ExpType;
 
 macro_rules! overflowing {
@@ -91,7 +90,7 @@ macro_rules! overflowing {
                 self.long_mul(rhs)
             }
 
-            const_fns! {
+            crate::nightly::const_fns! {
                 #[doc = doc::overflowing::overflowing_div!(U)]
                 #[must_use = doc::must_use_op!()]
                 #[inline]

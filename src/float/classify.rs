@@ -7,7 +7,7 @@ type Digit = u8;
 struct Masks<const W: usize, const MB: usize>;
 
 impl<const W: usize, const MB: usize> Masks<W, MB> {
-    const Q_NAN_MASK: BUintD8<W> = Float::<W, MB>::NAN.to_bits();
+    //const Q_NAN_MASK: BUintD8<W> = Float::<W, MB>::NAN.to_bits();
     const FINITE_MASK: BUintD8<W> = Float::<W, MB>::INFINITY.to_bits();
 }
 
@@ -35,10 +35,10 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 			bits.trailing_zeros() == Self::MB && bits.count_ones() == Self::EXPONENT_BITS as ExpType*/
 		}
 
-		#[inline]
+		/*#[inline]
 		pub const fn is_quiet_indefinite_nan(self) -> bool {
 			self == Self::NAN
-		}
+		}*/
 	}
 
     #[inline]
@@ -48,7 +48,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     }
 
 	crate::nightly::const_fns! {
-		#[inline]
+		/*#[inline]
 		pub const fn is_quiet_nan(self) -> bool {
 			self.to_bits() & Masks::<W, MB>::Q_NAN_MASK == Masks::<W, MB>::Q_NAN_MASK
 		}
@@ -56,7 +56,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 		#[inline] 
 		pub const fn is_signalling_nan(self) -> bool {
 			self.to_bits() & Masks::<W, MB>::Q_NAN_MASK == Self::INFINITY.to_bits()
-		}
+		}*/
 	}
 
     #[inline]

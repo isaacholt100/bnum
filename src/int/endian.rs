@@ -6,34 +6,38 @@ macro_rules! test_from_endian_slice {
 			quickcheck::quickcheck! {
 				fn [<quickcheck_ $int _from_ $endian _slice>](int: $int, pad_length: u8) -> quickcheck::TestResult {
 					type Big = [<$int:upper>];
-					type Small = crate::test::types::$int;
+					type Primitive = crate::test::types::$int;
 
 					use crate::test::TestConvert;
 					use crate::int::endian;
 
-					if pad_length >= Small::BITS as u8 / 8 {
+					// pad_length is greater than the size of the integer in bytes
+					if pad_length >= Primitive::BITS as u8 / 8 {
 						return quickcheck::TestResult::discard();
 					}
 					let pad_length = pad_length as usize;
 
 					#[allow(unused_comparisons)]
 					let mut pad_bits = if int < 0 {
-						u8::MAX
+						u8::MAX // 1111...
 					} else {
-						u8::MIN
+						u8::MIN // 0000...
 					};
 
-					let mut bytes = int.[<to_ $endian _bytes>]();
+					let mut bytes = int.[<to_ $endian _bytes>](); // random input bytes
+					// first, test that the original bytes as slice is converted back to the same integer
 					let mut passed = TestConvert::into(Big::[<from_ $endian _slice>](&bytes[..])) == Some(int);
 
-					let bytes_vec = endian::[<$endian _bytes_vec>](&bytes[..], pad_bits, pad_length);
+					let bytes_vec = endian::[<$endian _bytes_vec>](&bytes[..], pad_bits, pad_length); // random vector padded with a random amount of bytes
+					// test that the padded bytes are still converted back to the same integer
 					passed &= TestConvert::into(Big::[<from_ $endian _slice>](&bytes_vec[..])) == Some(int);
 
-					let (msb, pad_range, slice_range) = endian::[<$endian _pad>](pad_length, Small::BITS);
+					// most significant byte position, range of bytes indices to change to padding bits, range of bytes indices that will result in the same integer without the padding bits
+					let (msb, pad_range, slice_range) = endian::[<$endian _pad>](pad_length, Primitive::BITS);
 
 					pad_bits = {
 						#[allow(unused_comparisons)]
-						if Small::MIN < 0 && (bytes[msb] as i8).is_negative() {
+						if Primitive::MIN < 0 && (bytes[msb] as i8).is_negative() {
 							u8::MAX
 						} else {
 							u8::MIN
@@ -44,6 +48,7 @@ macro_rules! test_from_endian_slice {
 						*item = pad_bits;
 					}
 					let correct = Some(Big::[<from_ $endian _bytes>](bytes));
+					// test that a shortened slice of bytes is converted to the same integer as the shortened slice that is padded to be the same number of bytes as the size of the integer
 					passed &= Big::[<from_ $endian _slice>](&bytes[slice_range]) == correct;
 
 					let bytes_vec = endian::[<$endian _bytes_vec>](&bytes[..], pad_bits, pad_length);
@@ -70,6 +75,7 @@ use core::ops::{Range, RangeFrom};
 
 #[cfg(feature = "nightly")]
 #[cfg(test)]
+/// Pad a slice of bytes with leading pad bits so that the resulting vector of bytes represents the same integer as the original slice
 pub fn be_bytes_vec(bytes: &[u8], pad_bits: u8, pad_length: usize) -> Vec<u8> {
     let mut bytes_vec = vec![pad_bits; pad_length];
     bytes_vec.append(&mut bytes.to_vec());
@@ -84,6 +90,7 @@ pub fn be_pad(pad_length: usize, _bits: u32) -> (usize, Range<usize>, RangeFrom<
 
 #[cfg(feature = "nightly")]
 #[cfg(test)]
+/// Pad a slice of bytes with trailing pad bits so that the resulting vector of bytes represents the same integer as the original slice
 pub fn le_bytes_vec(bytes: &[u8], pad_bits: u8, pad_length: usize) -> Vec<u8> {
     let mut bytes_vec = bytes.to_vec();
     bytes_vec.append(&mut vec![pad_bits; pad_length]);

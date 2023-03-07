@@ -67,7 +67,8 @@ impl TestConvert for f32 {
     }
 }
 
-/*impl TestConvert for crate::float::F64 {
+/*#[cfg(feature = "nightly")]
+impl TestConvert for crate::float::F64 {
 	type Output = u64;
 
 	#[inline]
@@ -78,6 +79,7 @@ impl TestConvert for f32 {
 	}
 }
 
+#[cfg(feature = "nightly")]
 impl TestConvert for crate::float::F32 {
 	type Output = u32;
 
