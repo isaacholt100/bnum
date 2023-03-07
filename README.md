@@ -37,12 +37,12 @@ bnum = { version = "0.6.0", features = ["rand"] } # enables the "rand" feature
 **NB: the examples in the documentation use specific type aliases (e.g. `U256`, `U512`,  or `I256`, `I512`) to give examples of correct usage for most methods. There is nothing special about these types in particular: all methods that are shown with these are implemented for all unsigned/signed bnum integers for any value of `N`.**
 
 ```rust
-// As of version 0.6.0, you can now parse integers from string slices at compile time with the const methods `from_str_radix` or `parse_str`:
+// As of version 0.6.0, you can now parse integers from string slices at compile time with the const methods `from_str_radix` or `parse_str_radix`:
 use bnum::types::{U256, I256};
 use bnum::errors::ParseIntError;
 
-// `parse_str` returns an integer, and panics if the string fails to parse
-const UINT_FROM_DECIMAL_STR: U256 = U256::parse_str("12345678901234567890", 10);
+// `parse_str_radix` returns an integer, and panics if the string fails to parse
+const UINT_FROM_DECIMAL_STR: U256 = U256::parse_str_radix("12345678901234567890", 10);
 
 // If you are not sure that the string will successfully parse, you can use `from_str_radix` which returns a `Result`
 const RESULT_INT_FROM_HEXA_STR: Result<I256, ParseIntError> = I256::from_str_radix("-1234567890abcdef", 16);

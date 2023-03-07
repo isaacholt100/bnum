@@ -198,9 +198,9 @@ macro_rules! radix {
 				Self::from_buf_radix_internal::<true, true>(buf, radix, leading_plus)
 			}
 
-			#[doc = doc::radix::parse_str!($BUint)]
+			#[doc = doc::radix::parse_str_radix!($BUint)]
 			#[inline]
-			pub const fn parse_str(src: &str, radix: u32) -> Self {
+			pub const fn parse_str_radix(src: &str, radix: u32) -> Self {
 				match Self::from_str_radix(src, radix) {
 					Ok(n) => n,
 					Err(e) => panic!("{}", e.description()),
