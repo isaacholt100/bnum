@@ -32,6 +32,9 @@ use core::default::Default;
 
 use core::iter::{Iterator, Product, Sum};
 
+#[cfg(feature = "fuzzing")]
+use arbitrary::Arbitrary;
+
 macro_rules! mod_impl {
 	($BUint: ident, $BInt: ident, $Digit: ident) => {
 		/// Big signed integer type, of fixed size which must be known at compile time.
@@ -47,6 +50,7 @@ macro_rules! mod_impl {
 		#[allow(clippy::derive_hash_xor_eq)]
 		#[derive(Clone, Copy, Hash)]
 		#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+		#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 		pub struct $BInt<const N: usize> {
 			pub(crate) bits: $BUint<N>,
 		}
@@ -134,18 +138,18 @@ macro_rules! mod_impl {
 					self.bits
 				}
 			}
-			
+
 			#[doc = doc::pow!(I 256)]
 			#[must_use = doc::must_use_op!()]
 			#[inline]
 			pub const fn pow(self, exp: ExpType) -> Self {
 				#[cfg(debug_assertions)]
 				return option_expect!(self.checked_pow(exp), errors::err_msg!("attempt to calculate power with overflow"));
-				
+
 				#[cfg(not(debug_assertions))]
 				self.wrapping_pow(exp)
 			}
-			
+
 			crate::nightly::const_fns! {
 				#[doc = doc::div_euclid!(I)]
 				#[must_use = doc::must_use_op!()]

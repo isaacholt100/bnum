@@ -8,7 +8,7 @@ use crate::ExpType;
 use core::mem::MaybeUninit;
 
 #[cfg(feature = "serde")]
-use ::{
+use {
     serde::{Deserialize, Serialize},
     serde_big_array::BigArray,
 };
@@ -16,6 +16,9 @@ use ::{
 use core::default::Default;
 
 use core::iter::{Iterator, Product, Sum};
+
+#[cfg(feature = "fuzzing")]
+use arbitrary::Arbitrary;
 
 macro_rules! mod_impl {
 	($BUint: ident, $BInt: ident, $Digit: ident) => {
@@ -33,6 +36,7 @@ macro_rules! mod_impl {
 		#[allow(clippy::derive_hash_xor_eq)]
 		#[derive(Clone, Copy, Hash)]
 		#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+		#[cfg_attr(feature = "fuzzing", derive(Arbitrary))]
 		pub struct $BUint<const N: usize> {
 			#[cfg_attr(feature = "serde", serde(with = "BigArray"))]
 			pub(crate) digits: [$Digit; N],
@@ -671,11 +675,11 @@ macro_rules! mod_impl {
 
 crate::main_impl!(mod_impl);
 
-mod consts;
 mod bigint_helpers;
 mod cast;
 mod checked;
 mod cmp;
+mod consts;
 mod convert;
 mod endian;
 mod fmt;
