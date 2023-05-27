@@ -118,15 +118,17 @@ macro_rules! overflowing {
                 pub const fn overflowing_rem_euclid(self, rhs: Self) -> (Self, bool) {
                     self.overflowing_rem(rhs)
                 }
+			}
 
-                #[doc = doc::overflowing::overflowing_neg!(U)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn overflowing_neg(self) -> (Self, bool) {
-                    let (a, b) = (!self).overflowing_add(Self::ONE);
-                    (a, !b)
-                }
+			#[doc = doc::overflowing::overflowing_neg!(U)]
+			#[must_use = doc::must_use_op!()]
+			#[inline]
+			pub const fn overflowing_neg(self) -> (Self, bool) {
+				let (a, b) = (self.not()).overflowing_add(Self::ONE);
+				(a, !b)
+			}
 
+			crate::nightly::const_fns! {
                 #[doc = doc::overflowing::overflowing_shl!(U)]
                 #[must_use = doc::must_use_op!()]
                 #[inline]

@@ -351,14 +351,14 @@ macro_rules! checked {
 				#[inline]
 				const fn iilog(m: ExpType, b: Self, k: Self) -> (ExpType, Self) {
 					// https://people.csail.mit.edu/jaffer/III/iilog.pdf
-					if b > k {
+					if b.gt(k) {
 						(m, k)
 					} else {
-						let (new, q) = Self::iilog(m << 1, b * b, k.div_rem_unchecked(b).0);
-						if b > q {
+						let (new, q) = Self::iilog(m << 1, b.mul(b), k.div_rem_unchecked(b).0);
+						if b.gt(q) {
 							(new, q)
 						} else {
-							(new + m, q / b)
+							(new + m, q.div(b))
 						}
 					}
 				}
@@ -370,7 +370,7 @@ macro_rules! checked {
 					if self.is_zero() {
 						return None;
 					}
-					if Self::TEN > self {
+					if Self::TEN.gt(self) {
 						return Some(0);
 					}
 					Some(Self::iilog(1, Self::TEN, self.div_rem_digit(10).0).0)
@@ -388,10 +388,10 @@ macro_rules! checked {
 							if self.is_zero() {
 								return None;
 							}
-							if base > self {
+							if base.gt(self) {
 								return Some(0);
 							}
-							Some(Self::iilog(1, base, self / base).0)
+							Some(Self::iilog(1, base, self.div(base)).0)
 						}
 					}
 				}
@@ -407,7 +407,7 @@ macro_rules! checked {
 								Some(self)
 							} else {
 								// `next_multiple = floor(self / rhs) * rhs + rhs = (self - rem) + rhs`
-								self.checked_add(rhs - rem)
+								self.checked_add(rhs.sub(rem))
 							}
 						},
 						None => None,

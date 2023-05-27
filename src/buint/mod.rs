@@ -3,7 +3,6 @@ use crate::errors::{self, option_expect};
 
 use crate::digit;
 use crate::doc;
-use crate::nightly::const_fn;
 use crate::ExpType;
 use core::mem::MaybeUninit;
 
@@ -332,18 +331,18 @@ macro_rules! mod_impl {
 				}
 			}
 
-			crate::nightly::const_fns! {
-				#[doc = doc::abs_diff!(U)]
-				#[must_use = doc::must_use_op!()]
-				#[inline]
-				pub const fn abs_diff(self, other: Self) -> Self {
-					if self < other {
-						other.wrapping_sub(self)
-					} else {
-						self.wrapping_sub(other)
-					}
+			#[doc = doc::abs_diff!(U)]
+			#[must_use = doc::must_use_op!()]
+			#[inline]
+			pub const fn abs_diff(self, other: Self) -> Self {
+				if self.lt(other) {
+					other.wrapping_sub(self)
+				} else {
+					self.wrapping_sub(other)
 				}
-
+			}
+			
+			crate::nightly::const_fns! {
 				#[doc = doc::next_multiple_of!(U)]
 				#[must_use = doc::must_use_op!()]
 				#[inline]
@@ -352,7 +351,7 @@ macro_rules! mod_impl {
 					if rem.is_zero() {
 						self
 					} else {
-						self + (rhs - rem)
+						self.add(rhs.sub(rem))
 					}
 				}
 
@@ -371,14 +370,14 @@ macro_rules! mod_impl {
 					if rem.is_zero() {
 						div
 					} else {
-						div + Self::ONE
+						div.add(Self::ONE)
 					}
 				}
 			}
 		}
 
 		impl<const N: usize> $BUint<N> {
-			const_fn! {
+			crate::nightly::const_fn! {
 				#[inline]
 				pub(crate) const unsafe fn unchecked_shl_internal(u: $BUint<N>, rhs: ExpType) -> $BUint<N> {
 					let mut out = $BUint::ZERO;
@@ -406,7 +405,7 @@ macro_rules! mod_impl {
 				}
 			}
 
-			const_fn! {
+			crate::nightly::const_fn! {	
 				#[inline]
 				pub(crate) const unsafe fn unchecked_shr_pad_internal<const PAD: $Digit>(u: $BUint<N>, rhs: ExpType) -> $BUint<N> {
 					let mut out = $BUint::from_digits([PAD; N]);
@@ -438,7 +437,7 @@ macro_rules! mod_impl {
 				}
 			}
 
-			const_fn! {
+			crate::nightly::const_fn! {	
 				pub(crate) const unsafe fn unchecked_shr_internal(u: $BUint<N>, rhs: ExpType) -> $BUint<N> {
 					Self::unchecked_shr_pad_internal::<{$Digit::MIN}>(u, rhs)
 				}
@@ -676,6 +675,7 @@ mod bigint_helpers;
 mod cast;
 mod checked;
 mod cmp;
+mod const_trait_fillers;
 mod convert;
 mod endian;
 mod fmt;
@@ -687,16 +687,3 @@ mod radix;
 mod saturating;
 mod unchecked;
 mod wrapping;
-
-/*macro_rules! break_compiler {
-    ($($B: ident), *) => {
-        $(
-            pub mod $B {
-                pub struct $B<const N: usize> {
-                    digits: [u64; N]
-                }
-            }
-        )*
-    };
-}
-break_compiler!(A, B, C, D, E, F, G, H, I, J, K, L, M, O, P, Q, R, S, T, U, V, W, X, Y, Z, QQ, WW, EE, RR, TT, YY, UU, II, OO, PP, AA, SS, DD, FF, GG, HH, JJ, KK, LL, ZZ, XX, CC, VV, BB, NN, MM);*/

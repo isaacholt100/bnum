@@ -151,7 +151,7 @@ macro_rules! mod_impl {
 				#[must_use = doc::must_use_op!()]
 				#[inline]
 				pub const fn div_euclid(self, rhs: Self) -> Self {
-					assert!(self != Self::MIN || rhs != Self::NEG_ONE, errors::err_msg!("attempt to divide with overflow"));
+					assert!(self.ne(&Self::MIN) || rhs.ne(&Self::NEG_ONE), errors::err_msg!("attempt to divide with overflow"));
 					self.wrapping_div_euclid(rhs)
 				}
 
@@ -159,7 +159,7 @@ macro_rules! mod_impl {
 				#[must_use = doc::must_use_op!()]
 				#[inline]
 				pub const fn rem_euclid(self, rhs: Self) -> Self {
-					assert!(self != Self::MIN || rhs != Self::NEG_ONE, errors::err_msg!("attempt to calculate remainder with overflow"));
+					assert!(self.ne(&Self::MIN) || rhs.ne(&Self::NEG_ONE), errors::err_msg!("attempt to calculate remainder with overflow"));
 					self.wrapping_rem_euclid(rhs)
 				}
 			}
@@ -226,18 +226,18 @@ macro_rules! mod_impl {
 			ilog!(ilog2);
 			ilog!(ilog10);
 
-			crate::nightly::const_fns! {
-				#[doc = doc::abs_diff!(I)]
-				#[must_use = doc::must_use_op!()]
-				#[inline]
-				pub const fn abs_diff(self, other: Self) -> $BUint<N> {
-					if self < other {
-						other.wrapping_sub(self).to_bits()
-					} else {
-						self.wrapping_sub(other).to_bits()
-					}
+			#[doc = doc::abs_diff!(I)]
+			#[must_use = doc::must_use_op!()]
+			#[inline]
+			pub const fn abs_diff(self, other: Self) -> $BUint<N> {
+				if self.lt(other) {
+					other.wrapping_sub(self).to_bits()
+				} else {
+					self.wrapping_sub(other).to_bits()
 				}
-
+			}
+			
+			crate::nightly::const_fns! {
 				#[doc = doc::next_multiple_of!(I)]
 				#[must_use = doc::must_use_op!()]
 				#[inline]
@@ -247,9 +247,9 @@ macro_rules! mod_impl {
 						return self;
 					}
 					if rem.is_negative() == rhs.is_negative() {
-						self + (rhs - rem)
+						self.add(rhs.sub(rem))
 					} else {
-						self - rem
+						self.sub(rem)
 					}
 				}
 
@@ -264,7 +264,7 @@ macro_rules! mod_impl {
 					if rem.is_zero() || self.is_negative() == rhs.is_negative() {
 						div
 					} else {
-						div - Self::ONE
+						div.sub(Self::ONE)
 					}
 				}
 
@@ -279,7 +279,7 @@ macro_rules! mod_impl {
 					if rem.is_zero() || self.is_negative() != rhs.is_negative() {
 						div
 					} else {
-						div + Self::ONE
+						div.add(Self::ONE)
 					}
 				}
 			}
@@ -474,6 +474,7 @@ crate::macro_impl!(mod_impl);
 mod cast;
 mod checked;
 mod cmp;
+mod const_trait_fillers;
 mod consts;
 mod convert;
 mod endian;

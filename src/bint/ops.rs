@@ -1,4 +1,3 @@
-use crate::errors;
 use crate::ExpType;
 use core::ops::{
     Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Div, DivAssign,
@@ -13,11 +12,7 @@ macro_rules! ops {
 
 				#[inline]
 				fn neg(self) -> Self {
-					#[cfg(debug_assertions)]
-					return errors::option_expect!(self.checked_neg(), errors::err_msg!("attempt to negate with overflow"));
-
-					#[cfg(not(debug_assertions))]
-					self.wrapping_neg()
+					Self::neg(self)
 				}
 			}
 		}
@@ -28,7 +23,7 @@ macro_rules! ops {
 
 				#[inline]
 				fn neg(self) -> $BInt<N> {
-					(*self).neg()
+					$BInt::neg(*self)
 				}
 			}
 		}
@@ -39,7 +34,7 @@ macro_rules! ops {
 
 				#[inline]
 				fn bitand(self, rhs: Self) -> Self {
-					Self::from_bits(self.bits & rhs.bits)
+					Self::bitand(self, rhs)
 				}
 			}
 		}
@@ -50,7 +45,7 @@ macro_rules! ops {
 
 				#[inline]
 				fn bitor(self, rhs: Self) -> Self {
-					Self::from_bits(self.bits | rhs.bits)
+					Self::bitor(self, rhs)
 				}
 			}
 		}
@@ -61,7 +56,7 @@ macro_rules! ops {
 
 				#[inline]
 				fn bitxor(self, rhs: Self) -> Self {
-					Self::from_bits(self.bits ^ rhs.bits)
+					Self::bitxor(self, rhs)
 				}
 			}
 		}
@@ -70,15 +65,9 @@ macro_rules! ops {
 			impl<const N: usize> const Div for $BInt<N> {
 				type Output = Self;
 
+				#[inline]
 				fn div(self, rhs: Self) -> Self {
-					if self.eq(&Self::MIN) && rhs.eq(&Self::NEG_ONE) {
-						panic!(crate::errors::err_msg!("attempt to divide with overflow"))
-					} else {
-						if rhs.is_zero() {
-							errors::div_zero!()
-						}
-						self.div_rem_unchecked(rhs).0
-					}
+					Self::div(self, rhs)
 				}
 			}
 		}
@@ -87,10 +76,9 @@ macro_rules! ops {
 			impl<const N: usize> const Not for $BInt<N> {
 				type Output = Self;
 
-				#[inline]
 				fn not(self) -> Self {
-					Self::from_bits(!self.bits)
-				}
+					Self::not(self)
+				}				
 			}
 		}
 
@@ -98,15 +86,9 @@ macro_rules! ops {
 			impl<const N: usize> const Rem for $BInt<N> {
 				type Output = Self;
 
+				#[inline]
 				fn rem(self, rhs: Self) -> Self {
-					if self.eq(&Self::MIN) && rhs.eq(&Self::NEG_ONE) {
-						panic!(crate::errors::err_msg!("attempt to calculate remainder with overflow"))
-					} else {
-						if rhs.is_zero() {
-							errors::rem_zero!()
-						}
-						self.div_rem_unchecked(rhs).1
-					}
+					Self::rem(self, rhs)
 				}
 			}
 		}

@@ -100,7 +100,7 @@ macro_rules! overflowing {
 			crate::nightly::const_fns! {
                 #[inline]
                 pub(crate) const fn div_rem_unchecked(self, rhs: Self) -> (Self, Self) {
-                    if self == Self::MIN && rhs.is_one() {
+                    if self.eq(&Self::MIN) && rhs.is_one() {
                         return (self, Self::ZERO);
                     }
                     //println!("unchecked - self: {}, rhs: {}", self, rhs);
@@ -109,9 +109,9 @@ macro_rules! overflowing {
 
                     match (self.is_negative(), rhs.is_negative()) {
                         (false, false) => (div, rem),
-                        (false, true) => (-div, rem),
-                        (true, false) => (-div, -rem),
-                        (true, true) => (div, -rem),
+                        (false, true) => (div.neg(), rem),
+                        (true, false) => (div.neg(), rem.neg()),
+                        (true, true) => (div, rem.neg()),
                     }
                 }
 
@@ -122,8 +122,8 @@ macro_rules! overflowing {
                     if rhs.is_zero() {
                         div_zero!()
                     }
-                    if self == Self::MIN {
-                        if rhs == Self::NEG_ONE {
+                    if self.eq(&Self::MIN) {
+                        if rhs.eq(&Self::NEG_ONE) {
                             return (self, true);
                         } else if rhs.is_one() {
                             return (self, false);
@@ -139,8 +139,8 @@ macro_rules! overflowing {
                     if rhs.is_zero() {
                         div_zero!()
                     }
-                    if self == Self::MIN {
-                        if rhs == Self::NEG_ONE {
+                    if self.eq(&Self::MIN) {
+                        if rhs.eq(&Self::NEG_ONE) {
                             return (self, true);
                         } else if rhs.is_one() {
                             return (self, false);
@@ -151,9 +151,9 @@ macro_rules! overflowing {
                         let r_neg = rhs.is_negative();
                         if !rem.is_zero() {
                             if r_neg {
-                                return (div + Self::ONE, false)
+                                return (div.add(Self::ONE), false)
                             } else {
-                                return (div - Self::ONE, false)
+                                return (div.sub(Self::ONE), false)
                             };
                         }
                     }
@@ -167,7 +167,7 @@ macro_rules! overflowing {
                     if rhs.is_zero() {
                         div_zero!()
                     }
-                    if self == Self::MIN && rhs == Self::NEG_ONE {
+                    if self.eq(&Self::MIN) && rhs.eq(&Self::NEG_ONE) {
                         (Self::ZERO, true)
                     } else {
                         (self.div_rem_unchecked(rhs).1, false)
@@ -181,7 +181,7 @@ macro_rules! overflowing {
                     if rhs.is_zero() {
                         div_zero!()
                     }
-                    if self == Self::MIN && rhs == Self::NEG_ONE {
+                    if self.eq(&Self::MIN) && rhs.eq(&Self::NEG_ONE) {
                         (Self::ZERO, true)
                     } else {
                         let mut rem = self.div_rem_unchecked(rhs).1;
