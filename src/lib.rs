@@ -4,7 +4,6 @@
     feature(
         generic_const_exprs,
         const_trait_impl,
-        const_num_from_num,
         const_mut_refs,
         const_maybe_uninit_as_mut_ptr,
         const_swap,

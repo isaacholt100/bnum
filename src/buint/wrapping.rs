@@ -62,6 +62,7 @@ macro_rules! wrapping {
 				pub const fn wrapping_rem_euclid(self, rhs: Self) -> Self {
 					self.wrapping_rem(rhs)
 				}
+			}
 
 				#[doc = doc::wrapping::wrapping_neg!(U)]
 				#[must_use = doc::must_use_op!()]
@@ -70,6 +71,7 @@ macro_rules! wrapping {
 					self.overflowing_neg().0
 				}
 
+			crate::nightly::const_fns! {
 				#[doc = doc::wrapping::wrapping_shl!(U)]
 				#[must_use = doc::must_use_op!()]
 				#[inline]

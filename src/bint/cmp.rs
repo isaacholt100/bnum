@@ -7,14 +7,12 @@ macro_rules! cmp {
             impl<const N: usize> const PartialEq for $BInt<N> {
                 #[inline]
                 fn eq(&self, other: &Self) -> bool {
-                    $BUint::eq(&self.bits, &other.bits)
+                    Self::eq(self, other)
                 }
             }
         }
 
-        //impl_const! {
-            impl<const N: usize> Eq for $BInt<N> {}
-        //}
+		impl<const N: usize> Eq for $BInt<N> {}
 
         impl_const! {
             impl<const N: usize> const PartialOrd for $BInt<N> {
@@ -29,46 +27,22 @@ macro_rules! cmp {
             impl<const N: usize> const Ord for $BInt<N> {
                 #[inline]
                 fn cmp(&self, other: &Self) -> Ordering {
-                    let s1 = self.signed_digit();
-                    let s2 = other.signed_digit();
-
-                    // Don't use match here as `cmp` is not yet const for primitive integers
-                    #[allow(clippy::comparison_chain)]
-                    if s1 == s2 {
-                        $BUint::cmp(&self.bits, &other.bits)
-                    } else if s1 > s2 {
-                        Ordering::Greater
-                    } else {
-                        Ordering::Less
-                    }
+                    Self::cmp(self, other)
                 }
 
                 #[inline]
                 fn max(self, other: Self) -> Self {
-                    match self.cmp(&other) {
-                        Ordering::Less | Ordering::Equal => other,
-                        _ => self,
-                    }
+                    Self::max(self, other)
                 }
 
                 #[inline]
                 fn min(self, other: Self) -> Self {
-                    match self.cmp(&other) {
-                        Ordering::Less | Ordering::Equal => self,
-                        _ => other,
-                    }
-                }
+					Self::min(self, other)
+				}
 
                 #[inline]
                 fn clamp(self, min: Self, max: Self) -> Self {
-                    assert!(min <= max);
-                    if let Ordering::Less = self.cmp(&min) {
-                        min
-                    } else if let Ordering::Greater = self.cmp(&max) {
-                        max
-                    } else {
-                        self
-                    }
+                    Self::clamp(self, min, max)
                 }
             }
         }

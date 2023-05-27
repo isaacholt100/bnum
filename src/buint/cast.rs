@@ -130,14 +130,14 @@ macro_rules! as_buint {
 
 use crate::cast::CastFrom;
 use crate::doc;
-use crate::nightly::{const_fn, impl_const};
+use crate::nightly::impl_const;
 use crate::ExpType;
 use core::mem::MaybeUninit;
 
 macro_rules! cast {
 	($BUint: ident, $BInt: ident, $Digit: ident) => {
 		impl<const N: usize> $BUint<N> {
-			const_fn! {
+			crate::nightly::const_fn! {
 				#[inline]
 				const fn cast_up<const M: usize>(self, digit: $Digit) -> $BUint<M> {
 					let mut digits = [digit; M];
@@ -149,7 +149,7 @@ macro_rules! cast {
 					}
 				}
 			}
-			const_fn! {
+			crate::nightly::const_fn! {
 				#[inline]
 				const fn cast_down<const M: usize>(self) -> $BUint<M> {
 					let mut digits = MaybeUninit::<[$Digit; M]>::uninit();

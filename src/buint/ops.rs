@@ -36,13 +36,7 @@ macro_rules! ops {
 
                 #[inline]
                 fn bitand(self, rhs: Self) -> Self {
-                    let mut out = Self::ZERO;
-                    let mut i = 0;
-                    while i < N {
-                        out.digits[i] = self.digits[i] & rhs.digits[i];
-                        i += 1;
-                    }
-                    out
+                    Self::bitand(self, rhs)
                 }
             }
         }
@@ -53,13 +47,7 @@ macro_rules! ops {
 
                 #[inline]
                 fn bitor(self, rhs: Self) -> Self {
-                    let mut out = Self::ZERO;
-                    let mut i = 0;
-                    while i < N {
-                        out.digits[i] = self.digits[i] | rhs.digits[i];
-                        i += 1;
-                    }
-                    out
+                    Self::bitor(self, rhs)
                 }
             }
         }
@@ -70,13 +58,7 @@ macro_rules! ops {
 
                 #[inline]
                 fn bitxor(self, rhs: Self) -> Self {
-                    let mut out = Self::ZERO;
-                    let mut i = 0;
-                    while i < N {
-                        out.digits[i] = self.digits[i] ^ rhs.digits[i];
-                        i += 1;
-                    }
-                    out
+                    Self::bitxor(self, rhs)
                 }
             }
         }
@@ -87,7 +69,7 @@ macro_rules! ops {
 
                 #[inline]
                 fn div(self, rhs: Self) -> Self {
-                    self.wrapping_div(rhs)
+                    Self::div(self, rhs)
                 }
             }
         }
@@ -101,46 +83,40 @@ macro_rules! ops {
                     self.div_rem_digit(rhs).0
                 }
             }
-        }
-
-        impl_const! {
-            impl<const N: usize> const Rem<$Digit> for $BUint<N> {
-                type Output = $Digit;
-
-                #[inline]
-                fn rem(self, rhs: $Digit) -> $Digit {
-                    self.div_rem_digit(rhs).1
-                }
-            }
-        }
-
-        impl_const! {
-            impl<const N: usize> const Not for $BUint<N> {
-                type Output = Self;
-
-                #[inline]
-                fn not(self) -> Self {
-                    let mut out = Self::ZERO;
-                    let mut i = 0;
-                    while i < N {
-                        out.digits[i] = !self.digits[i];
-                        i += 1;
-                    }
-                    out
-                }
-            }
-        }
-
-        impl_const! {
-            impl<const N: usize> const Rem for $BUint<N> {
-                type Output = Self;
-
-                #[inline]
-                fn rem(self, rhs: Self) -> Self {
-                    self.wrapping_rem(rhs)
-                }
-            }
-        }
+			
+			impl_const! {
+				impl<const N: usize> const Not for $BUint<N> {
+					type Output = Self;
+					
+					#[inline]
+					fn not(self) -> Self {
+						Self::not(self)
+					}
+				}
+			}
+			
+			impl_const! {
+				impl<const N: usize> const Rem for $BUint<N> {
+					type Output = Self;
+					
+					#[inline]
+					fn rem(self, rhs: Self) -> Self {
+						Self::rem(self, rhs)
+					}
+				}
+			}
+	
+			impl_const! {
+				impl<const N: usize> const Rem<$Digit> for $BUint<N> {
+					type Output = $Digit;
+	
+					#[inline]
+					fn rem(self, rhs: $Digit) -> $Digit {
+						self.div_rem_digit(rhs).1
+					}
+				}
+			}
+		}
 
         crate::int::ops::impls!($BUint, $BUint, $BInt);
 

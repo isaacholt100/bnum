@@ -6,7 +6,7 @@ macro_rules! op_ref_impl {
 
 				#[inline]
 				fn $method(self, rhs: &$rhs) -> Self::Output {
-					self.$method(*rhs)
+					$tr::<$rhs>::$method(self, *rhs)
 				}
 			}
 		}
@@ -17,7 +17,7 @@ macro_rules! op_ref_impl {
 
 				#[inline]
 				fn $method(self, rhs: &$rhs) -> Self::Output {
-					(*self).$method(*rhs)
+					$tr::<$rhs>::$method(*self, *rhs)
 				}
 			}
 		}
@@ -28,7 +28,7 @@ macro_rules! op_ref_impl {
 
 				#[inline]
 				fn $method(self, rhs: $rhs) -> Self::Output {
-					(*self).$method(rhs)
+					$tr::<$rhs>::$method(*self, rhs)
 				}
 			}
 		}
@@ -42,7 +42,7 @@ macro_rules! assign_op_impl {
 			impl<const N: usize> const $AssignTrait<$rhs> for $Struct<N> {
 				#[inline]
 				fn $assign(&mut self, rhs: $rhs) {
-					*self = (*self).$op(rhs);
+					*self = $OpTrait::$op(*self, rhs);
 				}
 			}
 		}
@@ -121,7 +121,7 @@ macro_rules! shift_self_impl {
 
 				#[inline]
 				fn $method(self, rhs: &$rhs<M>) -> Self::Output {
-					self.$method(*rhs)
+					$tr::<$rhs<M>>::$method(self, *rhs)
 				}
 			}
 		}
@@ -132,7 +132,7 @@ macro_rules! shift_self_impl {
 
 				#[inline]
 				fn $method(self, rhs: &$rhs<M>) -> Self::Output {
-					(*self).$method(*rhs)
+					$tr::<$rhs<M>>::$method(*self, *rhs)
 				}
 			}
 		}
@@ -143,7 +143,7 @@ macro_rules! shift_self_impl {
 
 				#[inline]
 				fn $method(self, rhs: $rhs<M>) -> Self::Output {
-					(*self).$method(rhs)
+					$tr::<$rhs<M>>::$method(*self, rhs)
 				}
 			}
 		}
@@ -152,7 +152,7 @@ macro_rules! shift_self_impl {
 			impl<const N: usize, const M: usize> const $assign_tr<$rhs<M>> for $Struct<N> {
 				#[inline]
 				fn $assign_method(&mut self, rhs: $rhs<M>) {
-					*self = (*self).$method(rhs);
+					*self = $tr::<$rhs<M>>::$method(*self, rhs);
 				}
 			}
 		}
@@ -306,6 +306,59 @@ macro_rules! shift_assign_ops {
 }
 pub(crate) use shift_assign_ops;
 
+macro_rules! trait_fillers {
+	() => {
+		#[inline]
+		pub const fn add(self, rhs: Self) -> Self {
+			#[cfg(debug_assertions)]
+			return crate::errors::option_expect!(self.checked_add(rhs), "attempt to add with overflow");
+
+			#[cfg(not(debug_assertions))]
+			self.wrapping_add(rhs)
+		}
+
+		#[inline]
+		pub const fn mul(self, rhs: Self) -> Self {
+			#[cfg(debug_assertions)]
+			return crate::errors::option_expect!(self.checked_mul(rhs), "attempt to multiply with overflow");
+
+			#[cfg(not(debug_assertions))]
+			self.wrapping_mul(rhs)
+		}
+
+		crate::nightly::const_fns! {
+			#[inline]
+			pub const fn shl(self, rhs: ExpType) -> Self {
+				#[cfg(debug_assertions)]
+				return crate::errors::option_expect!(self.checked_shl(rhs), "attempt to shift left with overflow");
+
+				#[cfg(not(debug_assertions))]
+				self.wrapping_shl(rhs)
+			}
+
+			#[inline]
+			pub const fn shr(self, rhs: ExpType) -> Self {
+				#[cfg(debug_assertions)]
+				return crate::errors::option_expect!(self.checked_shr(rhs), "attempt to shift left with overflow");
+
+				#[cfg(not(debug_assertions))]
+				self.wrapping_shr(rhs)
+			}
+		}
+			
+		#[inline]
+		pub const fn sub(self, rhs: Self) -> Self {
+			#[cfg(debug_assertions)]
+			return crate::errors::option_expect!(self.checked_sub(rhs), "attempt to subtract with overflow");
+
+			#[cfg(not(debug_assertions))]
+			self.wrapping_sub(rhs)
+		}
+	};
+}
+
+pub(crate) use trait_fillers;
+
 macro_rules! impls {
     ($Struct: ident, $BUint: ident, $BInt: ident) => {
 		crate::nightly::impl_const! {
@@ -314,11 +367,7 @@ macro_rules! impls {
 
 				#[inline]
 				fn add(self, rhs: Self) -> Self {
-					#[cfg(debug_assertions)]
-					return crate::errors::option_expect!(self.checked_add(rhs), "attempt to add with overflow");
-
-					#[cfg(not(debug_assertions))]
-					self.wrapping_add(rhs)
+					Self::add(self, rhs)
 				}
 			}
 		}
@@ -329,11 +378,7 @@ macro_rules! impls {
 
 				#[inline]
 				fn mul(self, rhs: Self) -> Self {
-					#[cfg(debug_assertions)]
-					return crate::errors::option_expect!(self.checked_mul(rhs), "attempt to multiply with overflow");
-
-					#[cfg(not(debug_assertions))]
-					self.wrapping_mul(rhs)
+					Self::mul(self, rhs)
 				}
 			}
 		}
@@ -344,7 +389,7 @@ macro_rules! impls {
 
 				#[inline]
 				fn not(self) -> $Struct<N> {
-					!(*self)
+					(*self).not() // TODO: maybe use separate impl for this as well
 				}
 			}
 		}
@@ -355,11 +400,7 @@ macro_rules! impls {
 
 				#[inline]
 				fn shl(self, rhs: ExpType) -> Self {
-					#[cfg(debug_assertions)]
-					return crate::errors::option_expect!(self.checked_shl(rhs), "attempt to shift left with overflow");
-
-					#[cfg(not(debug_assertions))]
-					self.wrapping_shl(rhs)
+					Self::shl(self, rhs)
 				}
 			}
 		}
@@ -370,11 +411,7 @@ macro_rules! impls {
 
 				#[inline]
 				fn shr(self, rhs: ExpType) -> Self {
-					#[cfg(debug_assertions)]
-					return crate::errors::option_expect!(self.checked_shr(rhs), "attempt to shift left with overflow");
-
-					#[cfg(not(debug_assertions))]
-					self.wrapping_shr(rhs)
+					Self::shr(self, rhs)
 				}
 			}
 		}
@@ -387,11 +424,7 @@ macro_rules! impls {
 
 				#[inline]
 				fn sub(self, rhs: Self) -> Self {
-					#[cfg(debug_assertions)]
-					return crate::errors::option_expect!(self.checked_sub(rhs), "attempt to subtract with overflow");
-
-					#[cfg(not(debug_assertions))]
-					self.wrapping_sub(rhs)
+					Self::sub(self, rhs)
 				}
 			}
 		}
