@@ -7,7 +7,7 @@
         const_mut_refs,
         const_maybe_uninit_as_mut_ptr,
         const_swap,
-		const_option_ext
+        const_option_ext
     )
 )]
 #![cfg_attr(
@@ -17,11 +17,11 @@
         int_roundings,
         float_minimum_maximum,
         wrapping_next_power_of_two,
-		float_next_up_down,
+        float_next_up_down,
     )
 )]
 #![doc = include_str!("../README.md")]
-#![no_std]
+#![cfg_attr(not(feature = "arbitrary"), no_std)]
 
 #[macro_use]
 extern crate alloc;
@@ -33,10 +33,10 @@ pub mod cast;
 mod digit;
 mod doc;
 pub mod errors;
+pub mod helpers;
 mod int;
 mod nightly;
 pub mod prelude;
-pub mod helpers;
 
 #[cfg(feature = "rand")]
 pub mod random;
@@ -48,7 +48,6 @@ mod float;
 
 #[cfg(feature = "nightly")]
 pub use float::Float;*/
-
 
 #[cfg(test)]
 mod test;
@@ -83,8 +82,8 @@ macro_rules! main_impl {
 pub(crate) use main_impl;
 
 mod bigints {
-	pub use crate::bint::{BInt, BIntD16, BIntD32, BIntD8};
-	pub use crate::buint::{BUint, BUintD16, BUintD32, BUintD8};
+    pub use crate::bint::{BInt, BIntD16, BIntD32, BIntD8};
+    pub use crate::buint::{BUint, BUintD16, BUintD32, BUintD8};
 }
 
 pub use bigints::*;

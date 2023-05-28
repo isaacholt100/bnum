@@ -83,46 +83,46 @@ macro_rules! ops {
                     self.div_rem_digit(rhs).0
                 }
             }
-			
-			impl_const! {
-				impl<const N: usize> const Not for $BUint<N> {
-					type Output = Self;
-					
-					#[inline]
-					fn not(self) -> Self {
-						Self::not(self)
-					}
-				}
-			}
-			
-			impl_const! {
-				impl<const N: usize> const Rem for $BUint<N> {
-					type Output = Self;
-					
-					#[inline]
-					fn rem(self, rhs: Self) -> Self {
-						Self::rem(self, rhs)
-					}
-				}
-			}
-	
-			impl_const! {
-				impl<const N: usize> const Rem<$Digit> for $BUint<N> {
-					type Output = $Digit;
-	
-					#[inline]
-					fn rem(self, rhs: $Digit) -> $Digit {
-						self.div_rem_digit(rhs).1
-					}
-				}
-			}
-		}
+
+            impl_const! {
+                impl<const N: usize> const Not for $BUint<N> {
+                    type Output = Self;
+
+                    #[inline]
+                    fn not(self) -> Self {
+                        Self::not(self)
+                    }
+                }
+            }
+
+            impl_const! {
+                impl<const N: usize> const Rem for $BUint<N> {
+                    type Output = Self;
+
+                    #[inline]
+                    fn rem(self, rhs: Self) -> Self {
+                        Self::rem(self, rhs)
+                    }
+                }
+            }
+
+            impl_const! {
+                impl<const N: usize> const Rem<$Digit> for $BUint<N> {
+                    type Output = $Digit;
+
+                    #[inline]
+                    fn rem(self, rhs: $Digit) -> $Digit {
+                        self.div_rem_digit(rhs).1
+                    }
+                }
+            }
+        }
 
         crate::int::ops::impls!($BUint, $BUint, $BInt);
 
         #[cfg(test)]
         paste::paste! {
-			mod [<$Digit _digit_tests>] {
+            mod [<$Digit _digit_tests>] {
                 use super::*;
                 use crate::test::{test_bignum, types::utest};
                 use crate::test::types::big_types::$Digit::*;

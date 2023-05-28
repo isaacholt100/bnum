@@ -23,13 +23,13 @@ In version `0.1.0`, the `from_be` and `to_be` methods on all integers were imple
 To install and use `bnum`, simply add the following line to your `Cargo.toml` file in the `[dependencies]` section:
 
 ```toml
-bnum = "0.6.0"
+bnum = "0.7.0"
 ```
 
 Or, to enable various `bnum` features as well, add for example this line instead:
 
 ```toml
-bnum = { version = "0.6.0", features = ["rand"] } # enables the "rand" feature
+bnum = { version = "0.7.0", features = ["rand"] } # enables the "rand" feature
 ```
 
 ## Example Usage
@@ -91,6 +91,10 @@ assert_eq!(neg_one.count_ones(), 80); // signed integers are stored in two's com
 ```
 
 ## Features
+
+### Fuzzing
+
+The `arbitrary` feature derives the [`Arbitrary`](https://docs.rs/arbitrary/latest/arbitrary/trait.Arbitrary.html) trait from the [`arbitrary`](https://docs.rs/arbitrary/latest/arbitrary/) crate. **Note: currently, this feature cannot be used with `no_std`.**
 
 ### Random Number Generation
 

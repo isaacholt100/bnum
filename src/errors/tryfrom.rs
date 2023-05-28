@@ -6,7 +6,10 @@ use core::fmt::{self, Display, Formatter};
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub struct TryFromIntError(pub(crate) ());
 
-const ERROR_MESSAGE: &str = concat!(super::err_prefix!(), "out of range integral type conversion attempted");
+const ERROR_MESSAGE: &str = concat!(
+    super::err_prefix!(),
+    "out of range integral type conversion attempted"
+);
 
 impl Display for TryFromIntError {
     #[inline]

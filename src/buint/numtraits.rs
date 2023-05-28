@@ -1,45 +1,45 @@
 macro_rules! to_int {
-	{ $Digit: ident; $($name: ident -> $int: ty), * }  => {
-		$(
-			#[inline]
-			fn $name(&self) -> Option<$int> {
-				let mut out = 0;
-				let mut i = 0;
-				if $Digit::BITS > <$int>::BITS {
-					let small = self.digits[i] as $int;
-					let trunc = small as $Digit;
-					if self.digits[i] != trunc {
-						return None;
-					}
-					out = small;
-					i = 1;
-				} else {
-					loop {
-						let shift = i << crate::digit::$Digit::BIT_SHIFT;
-						if i >= N || shift >= <$int>::BITS as usize {
-							break;
-						}
-						out |= self.digits[i] as $int << shift;
-						i += 1;
-					}
-				}
+    { $Digit: ident; $($name: ident -> $int: ty), * }  => {
+        $(
+            #[inline]
+            fn $name(&self) -> Option<$int> {
+                let mut out = 0;
+                let mut i = 0;
+                if $Digit::BITS > <$int>::BITS {
+                    let small = self.digits[i] as $int;
+                    let trunc = small as $Digit;
+                    if self.digits[i] != trunc {
+                        return None;
+                    }
+                    out = small;
+                    i = 1;
+                } else {
+                    loop {
+                        let shift = i << crate::digit::$Digit::BIT_SHIFT;
+                        if i >= N || shift >= <$int>::BITS as usize {
+                            break;
+                        }
+                        out |= self.digits[i] as $int << shift;
+                        i += 1;
+                    }
+                }
 
-				#[allow(unused_comparisons)]
-				if out < 0 {
-					return None;
-				}
+                #[allow(unused_comparisons)]
+                if out < 0 {
+                    return None;
+                }
 
-				while i < N {
-					if self.digits[i] != 0 {
-						return None;
-					}
-					i += 1;
-				}
+                while i < N {
+                    if self.digits[i] != 0 {
+                        return None;
+                    }
+                    i += 1;
+                }
 
-				Some(out)
-			}
-		)*
-	};
+                Some(out)
+            }
+        )*
+    };
 }
 
 use crate::buint::cast::{decode_f32, decode_f64, u32_bits, u64_bits};
@@ -152,114 +152,112 @@ macro_rules! numtraits {
         //}
 
         //impl_const! {
-            impl<const N: usize> Integer for $BUint<N> {
-                #[inline]
-                fn div_floor(&self, other: &Self) -> Self {
-                    *self / *other
+        impl<const N: usize> Integer for $BUint<N> {
+            #[inline]
+            fn div_floor(&self, other: &Self) -> Self {
+                *self / *other
+            }
+
+            #[inline]
+            fn mod_floor(&self, other: &Self) -> Self {
+                *self % *other
+            }
+
+            #[inline]
+            fn gcd(&self, other: &Self) -> Self {
+                // Paul E. Black, "binary GCD", in Dictionary of Algorithms and Data Structures [online], Paul E. Black, ed. 2 November 2020. (accessed 15th June 2022) Available from: https://www.nist.gov/dads/HTML/binaryGCD.html
+                // https://en.wikipedia.org/wiki/Binary_GCD_algorithm#Implementation
+
+                let (mut a, mut b) = (*self, *other);
+                if a.is_zero() {
+                    return b;
+                }
+                if b.is_zero() {
+                    return a;
+                }
+                let mut a_tz = a.trailing_zeros();
+                let mut b_tz = b.trailing_zeros();
+                // Normalise `a` and `b` so that both of them has no leading zeros, so both must be odd.
+                unsafe {
+                    a = Self::unchecked_shr_internal(a, a_tz);
+                    b = Self::unchecked_shr_internal(b, b_tz);
                 }
 
-                #[inline]
-                fn mod_floor(&self, other: &Self) -> Self {
-                    *self % *other
+                if b_tz > a_tz {
+                    // Ensure `a_tz >= b_tz`
+                    core::mem::swap(&mut a_tz, &mut b_tz);
                 }
-
-                #[inline]
-                fn gcd(&self, other: &Self) -> Self {
-                    // Paul E. Black, "binary GCD", in Dictionary of Algorithms and Data Structures [online], Paul E. Black, ed. 2 November 2020. (accessed 15th June 2022) Available from: https://www.nist.gov/dads/HTML/binaryGCD.html
-                    // https://en.wikipedia.org/wiki/Binary_GCD_algorithm#Implementation
-
-                    let (mut a, mut b) = (*self, *other);
+                loop {
+                    if a < b {
+                        // Ensure `a >= b`
+                        core::mem::swap(&mut a, &mut b);
+                    }
+                    a -= b;
                     if a.is_zero() {
-                        return b;
+                        return unsafe { Self::unchecked_shl_internal(b, b_tz) };
                     }
-                    if b.is_zero() {
-                        return a;
-                    }
-                    let mut a_tz = a.trailing_zeros();
-                    let mut b_tz = b.trailing_zeros();
-                    // Normalise `a` and `b` so that both of them has no leading zeros, so both must be odd.
                     unsafe {
-                        a = Self::unchecked_shr_internal(a, a_tz);
-                        b = Self::unchecked_shr_internal(b, b_tz);
+                        a = Self::unchecked_shr_internal(a, a.trailing_zeros());
                     }
-
-                    if b_tz > a_tz {
-                        // Ensure `a_tz >= b_tz`
-                        core::mem::swap(&mut a_tz, &mut b_tz);
-                    }
-                    loop {
-                        if a < b {
-                            // Ensure `a >= b`
-                            core::mem::swap(&mut a, &mut b);
-                        }
-                        a -= b;
-                        if a.is_zero() {
-                            return unsafe {
-                                Self::unchecked_shl_internal(b, b_tz)
-                            };
-                        }
-                        unsafe {
-                            a = Self::unchecked_shr_internal(a, a.trailing_zeros());
-                        }
-                    }
-                }
-
-                #[inline]
-                fn lcm(&self, other: &Self) -> Self {
-                    self.div_floor(&self.gcd(other)) * *other
-                }
-
-                #[inline]
-                fn divides(&self, other: &Self) -> bool {
-                    self.is_multiple_of(other)
-                }
-
-                #[inline]
-                fn is_multiple_of(&self, other: &Self) -> bool {
-                    self.mod_floor(other).is_zero()
-                }
-
-                #[inline]
-                fn is_even(&self) -> bool {
-                    self.digits[0] & 1 == 0
-                }
-
-                #[inline]
-                fn is_odd(&self) -> bool {
-                    self.digits[0] & 1 == 1
-                }
-
-                #[inline]
-                fn div_rem(&self, rhs: &Self) -> (Self, Self) {
-                    Self::div_rem(*self, *rhs)
                 }
             }
+
+            #[inline]
+            fn lcm(&self, other: &Self) -> Self {
+                self.div_floor(&self.gcd(other)) * *other
+            }
+
+            #[inline]
+            fn divides(&self, other: &Self) -> bool {
+                self.is_multiple_of(other)
+            }
+
+            #[inline]
+            fn is_multiple_of(&self, other: &Self) -> bool {
+                self.mod_floor(other).is_zero()
+            }
+
+            #[inline]
+            fn is_even(&self) -> bool {
+                self.digits[0] & 1 == 0
+            }
+
+            #[inline]
+            fn is_odd(&self) -> bool {
+                self.digits[0] & 1 == 1
+            }
+
+            #[inline]
+            fn div_rem(&self, rhs: &Self) -> (Self, Self) {
+                Self::div_rem(*self, *rhs)
+            }
+        }
         //}
 
         //impl_const! {
-            impl<const N: usize> PrimInt for $BUint<N> {
-                crate::int::numtraits::prim_int_methods!();
+        impl<const N: usize> PrimInt for $BUint<N> {
+            crate::int::numtraits::prim_int_methods!();
 
-                #[inline]
-                fn signed_shl(self, n: u32) -> Self {
-                    self << n
-                }
-
-                #[inline]
-                fn signed_shr(self, n: u32) -> Self {
-                    ($BInt::from_bits(self) >> n).to_bits()
-                }
-
-                #[inline]
-                fn unsigned_shl(self, n: u32) -> Self {
-                    self << n
-                }
-
-                #[inline]
-                fn unsigned_shr(self, n: u32) -> Self {
-                    self >> n
-                }
+            #[inline]
+            fn signed_shl(self, n: u32) -> Self {
+                self << n
             }
+
+            #[inline]
+            fn signed_shr(self, n: u32) -> Self {
+                ($BInt::from_bits(self) >> n).to_bits()
+            }
+
+            #[inline]
+            fn unsigned_shl(self, n: u32) -> Self {
+                self << n
+            }
+
+            #[inline]
+            fn unsigned_shr(self, n: u32) -> Self {
+                self >> n
+            }
+        }
         //}
 
         macro_rules! check_zero_or_one {
@@ -423,9 +421,9 @@ macro_rules! numtraits {
         paste::paste! {
             mod [<$Digit _digit_tests>] {
                 use crate::test::types::big_types::$Digit::*;
-				use crate::test::types::utest;
+                use crate::test::types::utest;
 
-        		crate::int::numtraits::tests!(utest);
+                crate::int::numtraits::tests!(utest);
             }
         }
     };

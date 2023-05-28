@@ -108,60 +108,60 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 #[cfg(test)]
 mod tests {
     use super::super::{F64, F32};
-	use crate::test::TestConvert;
-	use crate::test::types::{ftest, FTEST};
-	use crate::ExpType;
+    use crate::test::TestConvert;
+    use crate::test::types::{ftest, FTEST};
+    use crate::ExpType;
 
     macro_rules! test_constant {
         ($big: ident :: $constant: ident == $primitive: expr) => {
-			paste::paste! {
-				#[test]
-				fn [<test_ $big:lower _constant_ $constant:lower>]() {
-					assert_eq!(TestConvert::into($big::$constant), TestConvert::into($primitive), "constant `{}` not equal to the primitive equivalent", stringify!($constant));
-				}
-			}
+            paste::paste! {
+                #[test]
+                fn [<test_ $big:lower _constant_ $constant:lower>]() {
+                    assert_eq!(TestConvert::into($big::$constant), TestConvert::into($primitive), "constant `{}` not equal to the primitive equivalent", stringify!($constant));
+                }
+            }
         }
     }
 
-	macro_rules! test_constants {
-		{$($constant: ident), *} => {
+    macro_rules! test_constants {
+        {$($constant: ident), *} => {
             $(
-				test_constant!(FTEST::$constant == ftest::$constant);
-			)*
-		};
-	}
+                test_constant!(FTEST::$constant == ftest::$constant);
+            )*
+        };
+    }
 
-	macro_rules! test_numeric_constants {
-		[$(($constant: ident, $value: expr)), *] => {
-			$(
-				paste::paste! {
-					test_constant!(FTEST::$constant == $value as ftest);
-				}
-			)*
-		};
-	}
+    macro_rules! test_numeric_constants {
+        [$(($constant: ident, $value: expr)), *] => {
+            $(
+                paste::paste! {
+                    test_constant!(FTEST::$constant == $value as ftest);
+                }
+            )*
+        };
+    }
 
-	test_constants! {
-		/*NAN, */INFINITY, NEG_INFINITY, MAX, MIN, MIN_POSITIVE, EPSILON, MIN_EXP, MAX_EXP, RADIX, MANTISSA_DIGITS, DIGITS
-	}
-	// don't test NAN as Rust f64/f32 NAN bit pattern not guaranteed to be stable across version
+    test_constants! {
+        /*NAN, */INFINITY, NEG_INFINITY, MAX, MIN, MIN_POSITIVE, EPSILON, MIN_EXP, MAX_EXP, RADIX, MANTISSA_DIGITS, DIGITS
+    }
+    // don't test NAN as Rust f64/f32 NAN bit pattern not guaranteed to be stable across version
 
-	#[test]
-	fn nan_consts_is_nan() {
-		assert!(FTEST::NAN.is_nan());
-		assert!(FTEST::QNAN.is_nan());
-	}	
+    #[test]
+    fn nan_consts_is_nan() {
+        assert!(FTEST::NAN.is_nan());
+        assert!(FTEST::QNAN.is_nan());
+    }    
 
-	test_numeric_constants![
-		(ZERO, 0.0), (NEG_ZERO, -0.0), (ONE, 1.0), (QUARTER, 0.25), (HALF, 0.5), (NEG_ONE, -1)
-	];
+    test_numeric_constants![
+        (ZERO, 0.0), (NEG_ZERO, -0.0), (ONE, 1.0), (QUARTER, 0.25), (HALF, 0.5), (NEG_ONE, -1)
+    ];
 
-	test_constant!(F64::BITS == 64 as ExpType);
-	test_constant!(F32::BITS == 32 as ExpType);
-	test_constant!(F64::EXPONENT_BITS == 11 as ExpType);
-	test_constant!(F32::EXPONENT_BITS == 8 as ExpType);
-	test_constant!(F64::EXP_BIAS == 1023i64);
-	test_constant!(F32::EXP_BIAS == 127i32);
-	test_constant!(F64::MAX_UNBIASED_EXP == 2046u64);
-	test_constant!(F32::MAX_UNBIASED_EXP == 254u32);
+    test_constant!(F64::BITS == 64 as ExpType);
+    test_constant!(F32::BITS == 32 as ExpType);
+    test_constant!(F64::EXPONENT_BITS == 11 as ExpType);
+    test_constant!(F32::EXPONENT_BITS == 8 as ExpType);
+    test_constant!(F64::EXP_BIAS == 1023i64);
+    test_constant!(F32::EXP_BIAS == 127i32);
+    test_constant!(F64::MAX_UNBIASED_EXP == 2046u64);
+    test_constant!(F32::MAX_UNBIASED_EXP == 254u32);
 }

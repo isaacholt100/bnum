@@ -11,8 +11,8 @@ macro_rules! impl_desc {
 pub(crate) use impl_desc;
 
 macro_rules! parse_str_radix {
-	($ty: ty) => {
-		concat!(
+    ($ty: ty) => {
+        concat!(
 "This function works the same as `from_str_radix` except that it returns a `",
 stringify!($ty),
 "` instead of a `Result<",
@@ -34,8 +34,8 @@ use bnum::types::U256;
 const DOESNT_COMPILE: U256 = U256::parse_str_radix(\"a13423\", 10);
 // Gives a compile error of \"error[E0080]: evaluation of constant value failed... the evaluated program panicked at 'attempt to parse integer from string containing invalid digit'\", 
 ```"
-		)
-	}
+        )
+    }
 }
 
 pub(crate) use parse_str_radix;
