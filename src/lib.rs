@@ -21,7 +21,7 @@
     )
 )]
 #![doc = include_str!("../README.md")]
-#![no_std]
+#![cfg_attr(not(feature = "arbitrary"), no_std)]
 
 #[macro_use]
 extern crate alloc;

@@ -16,6 +16,9 @@ use core::default::Default;
 
 use core::iter::{Iterator, Product, Sum};
 
+#[cfg(feature = "arbitrary")]
+use arbitrary::Arbitrary;
+
 macro_rules! mod_impl {
 	($BUint: ident, $BInt: ident, $Digit: ident) => {
 		/// Unsigned integer type composed of
@@ -32,6 +35,7 @@ macro_rules! mod_impl {
 		#[allow(clippy::derive_hash_xor_eq)]
 		#[derive(Clone, Copy, Hash)]
 		#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+        #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
 		pub struct $BUint<const N: usize> {
 			#[cfg_attr(feature = "serde", serde(with = "BigArray"))]
 			pub(crate) digits: [$Digit; N],
