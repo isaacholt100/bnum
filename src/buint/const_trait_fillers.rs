@@ -1,8 +1,10 @@
 use core::cmp::Ordering;
 use crate::ExpType;
+use crate::doc;
 
 macro_rules! const_trait_fillers {
 	($BUint: ident, $BInt: ident, $Digit: ident) => {
+		#[doc = doc::const_trait_fillers::impl_desc!()]
 		impl<const N: usize> $BUint<N> {
 			#[inline]
 			pub const fn bitand(self, rhs: Self) -> Self {

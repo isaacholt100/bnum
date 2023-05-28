@@ -1,5 +1,6 @@
 pub mod bigint_helpers;
 pub mod checked;
+pub mod const_trait_fillers;
 pub mod consts;
 pub mod endian;
 pub mod overflowing;
