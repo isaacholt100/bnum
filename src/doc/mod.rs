@@ -11,9 +11,9 @@ pub mod unchecked;
 pub mod wrapping;
 
 macro_rules! arithmetic_doc {
-	($Int: ty) => {
+    ($Int: ty) => {
 concat!("`", stringify!($Int), "` implements all the arithmetic traits from the [`core::ops`](https://doc.rust-lang.org/core/ops/) module. The behaviour of the implementation of these traits is the same as for Rust's primitive integers - i.e. in debug mode it panics on overflow, and in release mode it performs two's complement wrapping (see <https://doc.rust-lang.org/book/ch03-02-data-types.html#integer-overflow>). However, an attempt to divide by zero or calculate a remainder with a divisor of zero will always panic, unless the [`checked_`](#method.checked_div) methods are used, which never panic.")
-	}
+    }
 }
 
 pub(crate) use arithmetic_doc;
@@ -96,31 +96,31 @@ macro_rules! doc_comment {
     { $(# $method: ident, )? $sign: ident $bits: literal, $($($desc: expr)+)? $(, $($code: expr)+)? } => {
         concat!(
             $($("\n\n", $desc), +,)?
-			$("\n\n", "See also: <https://doc.rust-lang.org/std/primitive.", doc::small_sign!($sign), "64.html#method.", stringify!($method), ">.", )?
+            $("\n\n", "See also: <https://doc.rust-lang.org/std/primitive.", doc::small_sign!($sign), "64.html#method.", stringify!($method), ">.", )?
             $(
-				doc::example_header!($sign $bits),
-				$($code), +,
-            	"\n```"
-			)?
+                doc::example_header!($sign $bits),
+                $($code), +,
+                "\n```"
+            )?
         )
     }
 }
 
 macro_rules! link_doc_comment {
-	($($name: ident), *) => {
-		$(
-			macro_rules! $name {
-				($sign: ident) => {
-					doc::doc_comment! {
-						#$name,
-						$sign 256,
-					}
-				};
-			}
+    ($($name: ident), *) => {
+        $(
+            macro_rules! $name {
+                ($sign: ident) => {
+                    doc::doc_comment! {
+                        #$name,
+                        $sign 256,
+                    }
+                };
+            }
 
-			pub(crate) use $name;
-		)*
-	}
+            pub(crate) use $name;
+        )*
+    }
 }
 
 pub(crate) use link_doc_comment;
@@ -219,7 +219,7 @@ pub(crate) use trailing_ones;
 macro_rules! rotate_left {
     ($sign: ident $bits: literal, $u: literal) => {
         doc::doc_comment! {
-			#rotate_left,
+            #rotate_left,
             $sign $bits,
             "Shifts the bits to the left by a specified amount, `n`, wrapping the truncated bits to the end of the resulting integer."
             "Please note this isn't the same operation as the `<<` shifting operator!"
@@ -232,7 +232,7 @@ pub(crate) use rotate_left;
 macro_rules! rotate_right {
     ($sign: ident $bits: literal, $u: literal) => {
         doc::doc_comment! {
-			#rotate_right,
+            #rotate_right,
             $sign $bits,
             "Shifts the bits to the left by a specified amount, `n`, wrapping the truncated bits to the end of the resulting integer."
             "Please note this isn't the same operation as the `>>` shifting operator!"
@@ -246,12 +246,12 @@ pub(crate) use rotate_right;
 macro_rules! swap_bytes {
     ($sign: ident $bits: literal, $u: literal) => {
         doc::doc_comment! {
-			#swap_bytes,
+            #swap_bytes,
             $sign $bits,
             "Reverses the byte order of the integer.",
 
             "let n = " doc::type_str!($sign $bits) "::from(0x12345678901234567890123456789012" $u "128);\n"
-			"assert_eq!(n.swap_bytes().swap_bytes(), n);"
+            "assert_eq!(n.swap_bytes().swap_bytes(), n);"
         }
     }
 }
@@ -261,12 +261,12 @@ pub(crate) use swap_bytes;
 macro_rules! reverse_bits {
     ($sign: ident $bits: literal, $u: literal) => {
         doc::doc_comment! {
-			#reverse_bits,
+            #reverse_bits,
             $sign $bits,
             "Reverses the order of bits in the integer. The least significant bit becomes the most significant bit, second least-significant bit becomes second most-significant bit, etc.",
 
             "let n = " doc::type_str!($sign $bits) "::from(0x12345678901234567890123456789012" $u "128);\n"
-			"assert_eq!(n.reverse_bits().reverse_bits(), n);"
+            "assert_eq!(n.reverse_bits().reverse_bits(), n);"
         }
     };
 }
@@ -291,7 +291,7 @@ pub(crate) use pow;
 macro_rules! next_power_of_two {
     ($sign: ident $bits: literal, $wrap: literal, $small: literal) => {
         doc::doc_comment! {
-			#next_power_of_two,
+            #next_power_of_two,
             $sign $bits,
             concat!("When return value overflows, it panics in debug mode and the return value is wrapped to ", $wrap, " in release mode (the only situation in which method can return ", $wrap, ")."),
 
@@ -374,7 +374,7 @@ macro_rules! is_one {
 pub(crate) use is_one;
 
 crate::doc::link_doc_comment! {
-	unsigned_abs,
+    unsigned_abs,
     div_euclid,
     rem_euclid,
     ilog2,

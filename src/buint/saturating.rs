@@ -74,7 +74,7 @@ macro_rules! saturating {
 
         #[cfg(test)]
         paste::paste! {
-			mod [<$Digit _digit_tests>] {
+            mod [<$Digit _digit_tests>] {
                 use crate::test::{test_bignum, types::*};
                 use crate::test::types::big_types::$Digit::*;
 

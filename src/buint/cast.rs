@@ -29,23 +29,23 @@ decode_float!(decode_f32, f32, u32);
 decode_float!(decode_f64, f64, u64);
 
 macro_rules! buint_as_int {
-	($BUint: ident, $Digit: ident; $($int: ty), *) => {
-		$(impl_const! {
-			impl<const N: usize> const CastFrom<$BUint<N>> for $int {
-				#[must_use = doc::must_use_op!()]
-				#[inline]
-				fn cast_from(from: $BUint<N>) -> Self {
-					let mut out = 0;
-					let mut i = 0;
-					while i << crate::digit::$Digit::BIT_SHIFT < <$int>::BITS as usize && i < N {
-						out |= from.digits[i] as $int << (i << crate::digit::$Digit::BIT_SHIFT);
-						i += 1;
-					}
-					out
-				}
-			}
-		})*
-	};
+    ($BUint: ident, $Digit: ident; $($int: ty), *) => {
+        $(impl_const! {
+            impl<const N: usize> const CastFrom<$BUint<N>> for $int {
+                #[must_use = doc::must_use_op!()]
+                #[inline]
+                fn cast_from(from: $BUint<N>) -> Self {
+                    let mut out = 0;
+                    let mut i = 0;
+                    while i << crate::digit::$Digit::BIT_SHIFT < <$int>::BITS as usize && i < N {
+                        out |= from.digits[i] as $int << (i << crate::digit::$Digit::BIT_SHIFT);
+                        i += 1;
+                    }
+                    out
+                }
+            }
+        })*
+    };
 }
 
 macro_rules! buint_as_float {
@@ -98,34 +98,34 @@ macro_rules! buint_as_float {
 }
 
 macro_rules! as_buint {
-	($BUint: ident, $Digit: ident; $($ty: ty), *) => {
-		$(impl_const! {
-			impl<const N: usize> const CastFrom<$ty> for $BUint<N> {
-				#[must_use = doc::must_use_op!()]
-				#[inline]
-				fn cast_from(mut from: $ty) -> Self {
-					#[allow(unused_comparisons)]
-					let mut out = if from < 0 {
-						Self::MAX
-					} else {
-						Self::MIN
-					};
-					let mut i = 0;
-					while from != 0 && i < N {
-						let masked = from as $Digit & $Digit::MAX;
-						out.digits[i] = masked;
-						if <$ty>::BITS <= $Digit::BITS {
-							from = 0;
-						} else {
-							from = from.wrapping_shr($Digit::BITS);
-						}
-						i += 1;
-					}
-					out
-				}
-			}
-		})*
-	};
+    ($BUint: ident, $Digit: ident; $($ty: ty), *) => {
+        $(impl_const! {
+            impl<const N: usize> const CastFrom<$ty> for $BUint<N> {
+                #[must_use = doc::must_use_op!()]
+                #[inline]
+                fn cast_from(mut from: $ty) -> Self {
+                    #[allow(unused_comparisons)]
+                    let mut out = if from < 0 {
+                        Self::MAX
+                    } else {
+                        Self::MIN
+                    };
+                    let mut i = 0;
+                    while from != 0 && i < N {
+                        let masked = from as $Digit & $Digit::MAX;
+                        out.digits[i] = masked;
+                        if <$ty>::BITS <= $Digit::BITS {
+                            from = 0;
+                        } else {
+                            from = from.wrapping_shr($Digit::BITS);
+                        }
+                        i += 1;
+                    }
+                    out
+                }
+            }
+        })*
+    };
 }
 
 use crate::cast::CastFrom;
@@ -135,146 +135,146 @@ use crate::ExpType;
 use core::mem::MaybeUninit;
 
 macro_rules! cast {
-	($BUint: ident, $BInt: ident, $Digit: ident) => {
-		impl<const N: usize> $BUint<N> {
-			crate::nightly::const_fn! {
-				#[inline]
-				const fn cast_up<const M: usize>(self, digit: $Digit) -> $BUint<M> {
-					let mut digits = [digit; M];
-					let digits_ptr = digits.as_mut_ptr() as *mut $Digit;
-					let self_ptr = self.digits.as_ptr();
-					unsafe {
-						self_ptr.copy_to_nonoverlapping(digits_ptr, N);
-						$BUint::from_digits(digits)
-					}
-				}
-			}
-			crate::nightly::const_fn! {
-				#[inline]
-				const fn cast_down<const M: usize>(self) -> $BUint<M> {
-					let mut digits = MaybeUninit::<[$Digit; M]>::uninit();
-					let digits_ptr = digits.as_mut_ptr() as *mut $Digit;
-					let self_ptr = self.digits.as_ptr();
+    ($BUint: ident, $BInt: ident, $Digit: ident) => {
+        impl<const N: usize> $BUint<N> {
+            crate::nightly::const_fn! {
+                #[inline]
+                const fn cast_up<const M: usize>(self, digit: $Digit) -> $BUint<M> {
+                    let mut digits = [digit; M];
+                    let digits_ptr = digits.as_mut_ptr() as *mut $Digit;
+                    let self_ptr = self.digits.as_ptr();
+                    unsafe {
+                        self_ptr.copy_to_nonoverlapping(digits_ptr, N);
+                        $BUint::from_digits(digits)
+                    }
+                }
+            }
+            crate::nightly::const_fn! {
+                #[inline]
+                const fn cast_down<const M: usize>(self) -> $BUint<M> {
+                    let mut digits = MaybeUninit::<[$Digit; M]>::uninit();
+                    let digits_ptr = digits.as_mut_ptr() as *mut $Digit;
+                    let self_ptr = self.digits.as_ptr();
 
-					unsafe {
-						self_ptr.copy_to_nonoverlapping(digits_ptr, M);
-						$BUint::from_digits(digits.assume_init())
-					}
-				}
-			}
-		}
+                    unsafe {
+                        self_ptr.copy_to_nonoverlapping(digits_ptr, M);
+                        $BUint::from_digits(digits.assume_init())
+                    }
+                }
+            }
+        }
 
-		buint_as_int!($BUint, $Digit; u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
+        buint_as_int!($BUint, $Digit; u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
 
-		buint_as_float!($BUint, $Digit; f32, u32);
-		buint_as_float!($BUint, $Digit; f64, u64);
+        buint_as_float!($BUint, $Digit; f32, u32);
+        buint_as_float!($BUint, $Digit; f64, u64);
 
-		as_buint!($BUint, $Digit; u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
+        as_buint!($BUint, $Digit; u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
 
-		impl_const! {
-			impl<const N: usize> const CastFrom<bool> for $BUint<N> {
-				#[must_use = doc::must_use_op!()]
-				#[inline]
-				fn cast_from(from: bool) -> Self {
-					if from {
-						Self::ONE
-					} else {
-						Self::ZERO
-					}
-				}
-			}
-		}
+        impl_const! {
+            impl<const N: usize> const CastFrom<bool> for $BUint<N> {
+                #[must_use = doc::must_use_op!()]
+                #[inline]
+                fn cast_from(from: bool) -> Self {
+                    if from {
+                        Self::ONE
+                    } else {
+                        Self::ZERO
+                    }
+                }
+            }
+        }
 
-		impl_const! {
-			impl<const N: usize> const CastFrom<char> for $BUint<N> {
-				#[must_use = doc::must_use_op!()]
-				#[inline]
-				fn cast_from(from: char) -> Self {
-					Self::cast_from(from as u32)
-				}
-			}
-		}
+        impl_const! {
+            impl<const N: usize> const CastFrom<char> for $BUint<N> {
+                #[must_use = doc::must_use_op!()]
+                #[inline]
+                fn cast_from(from: char) -> Self {
+                    Self::cast_from(from as u32)
+                }
+            }
+        }
 
-		impl_const! {
-			impl<const N: usize, const M: usize> const CastFrom<$BUint<M>> for $BUint<N> {
-				#[must_use = doc::must_use_op!()]
-				#[inline]
-				fn cast_from(from: $BUint<M>) -> Self {
-					if M < N {
-						from.cast_up(0)
-					} else {
-						from.cast_down()
-					}
-				}
-			}
-		}
+        impl_const! {
+            impl<const N: usize, const M: usize> const CastFrom<$BUint<M>> for $BUint<N> {
+                #[must_use = doc::must_use_op!()]
+                #[inline]
+                fn cast_from(from: $BUint<M>) -> Self {
+                    if M < N {
+                        from.cast_up(0)
+                    } else {
+                        from.cast_down()
+                    }
+                }
+            }
+        }
 
-		impl_const! {
-			impl<const N: usize, const M: usize> const CastFrom<$BInt<M>> for $BUint<N> {
-				#[must_use = doc::must_use_op!()]
-				#[inline]
-				fn cast_from(from: $BInt<M>) -> Self {
-					if M < N {
-						let padding_digit = if from.is_negative() {
-							$Digit::MAX
-						} else {
-							0
-						};
-						from.to_bits().cast_up(padding_digit)
-					} else {
-						from.to_bits().cast_down()
-					}
-				}
-			}
-		}
+        impl_const! {
+            impl<const N: usize, const M: usize> const CastFrom<$BInt<M>> for $BUint<N> {
+                #[must_use = doc::must_use_op!()]
+                #[inline]
+                fn cast_from(from: $BInt<M>) -> Self {
+                    if M < N {
+                        let padding_digit = if from.is_negative() {
+                            $Digit::MAX
+                        } else {
+                            0
+                        };
+                        from.to_bits().cast_up(padding_digit)
+                    } else {
+                        from.to_bits().cast_down()
+                    }
+                }
+            }
+        }
 
-		macro_rules! cast_from_float {
-			($f: ty, $exp_type: ty, $decoder: expr, $mant_bits: expr) => {
-				#[must_use = doc::must_use_op!()]
-				#[inline]
-				fn cast_from(from: $f) -> Self {
-					if from.is_nan() {
-						return Self::ZERO;
-					}
-					if from.is_sign_negative() {
-						return Self::MIN;
-					}
-					if from.is_infinite() {
-						return Self::MAX;
-					}
-					let (mut mant, exp) = $decoder(from);
-					if exp.is_negative() {
-						mant = mant.checked_shr((-exp) as $exp_type).unwrap_or(0);
-						if $mant_bits(mant) > Self::BITS {
-							return Self::MAX;
-						}
-						Self::cast_from(mant)
-					} else {
-						if $mant_bits(mant) + exp as ExpType > Self::BITS {
-							return Self::MAX;
-						}
-						Self::cast_from(mant) << exp
-					}
-				}
-			};
-		}
+        macro_rules! cast_from_float {
+            ($f: ty, $exp_type: ty, $decoder: expr, $mant_bits: expr) => {
+                #[must_use = doc::must_use_op!()]
+                #[inline]
+                fn cast_from(from: $f) -> Self {
+                    if from.is_nan() {
+                        return Self::ZERO;
+                    }
+                    if from.is_sign_negative() {
+                        return Self::MIN;
+                    }
+                    if from.is_infinite() {
+                        return Self::MAX;
+                    }
+                    let (mut mant, exp) = $decoder(from);
+                    if exp.is_negative() {
+                        mant = mant.checked_shr((-exp) as $exp_type).unwrap_or(0);
+                        if $mant_bits(mant) > Self::BITS {
+                            return Self::MAX;
+                        }
+                        Self::cast_from(mant)
+                    } else {
+                        if $mant_bits(mant) + exp as ExpType > Self::BITS {
+                            return Self::MAX;
+                        }
+                        Self::cast_from(mant) << exp
+                    }
+                }
+            };
+        }
 
-		impl<const N: usize> CastFrom<f32> for $BUint<N> {
-			cast_from_float!(f32, u32, decode_f32, u32_bits);
-		}
+        impl<const N: usize> CastFrom<f32> for $BUint<N> {
+            cast_from_float!(f32, u32, decode_f32, u32_bits);
+        }
 
-		impl<const N: usize> CastFrom<f64> for $BUint<N> {
-			cast_from_float!(f64, u32, decode_f64, u64_bits);
-		}
+        impl<const N: usize> CastFrom<f64> for $BUint<N> {
+            cast_from_float!(f64, u32, decode_f64, u64_bits);
+        }
 
-		#[cfg(test)]
-		paste::paste! {
-			mod [<$Digit _digit_tests>] {
-				use crate::test::types::big_types::$Digit::*;
-				crate::int::cast::tests!(utest);
-			}
-		}
-	};
+        #[cfg(test)]
+        paste::paste! {
+            mod [<$Digit _digit_tests>] {
+                use crate::test::types::big_types::$Digit::*;
+                crate::int::cast::tests!(utest);
+            }
+        }
+    };
 }
 
 crate::macro_impl!(cast);

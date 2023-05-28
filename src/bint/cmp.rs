@@ -12,7 +12,7 @@ macro_rules! cmp {
             }
         }
 
-		impl<const N: usize> Eq for $BInt<N> {}
+        impl<const N: usize> Eq for $BInt<N> {}
 
         impl_const! {
             impl<const N: usize> const PartialOrd for $BInt<N> {
@@ -37,8 +37,8 @@ macro_rules! cmp {
 
                 #[inline]
                 fn min(self, other: Self) -> Self {
-					Self::min(self, other)
-				}
+                    Self::min(self, other)
+                }
 
                 #[inline]
                 fn clamp(self, min: Self, max: Self) -> Self {

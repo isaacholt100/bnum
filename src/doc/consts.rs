@@ -85,9 +85,9 @@ macro_rules! bytes {
 pub(crate) use bytes;
 
 macro_rules! value_desc {
-	($($lit: literal) +) => {
-		concat!("The value of `", $($lit,)+ "` represented by this type.")
-	}
+    ($($lit: literal) +) => {
+        concat!("The value of `", $($lit,)+ "` represented by this type.")
+    }
 }
 
 pub(crate) use value_desc;

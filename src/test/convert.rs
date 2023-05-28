@@ -11,28 +11,28 @@ pub trait TestConvert {
 macro_rules! test_convert_big {
     ($($big: ty), *; $output: ty) => {
         $(
-			impl TestConvert for $big {
-				type Output = $output;
+            impl TestConvert for $big {
+                type Output = $output;
 
-				#[inline]
-				fn into(self) -> Self::Output {
-					Self::Output::cast_from(self)
-				}
-			}
-		)*
+                #[inline]
+                fn into(self) -> Self::Output {
+                    Self::Output::cast_from(self)
+                }
+            }
+        )*
     };
 }
 
 macro_rules! test_convert_bigints {
-	($($bits: literal), *) => {
-		paste::paste! {
-			$(
-				test_convert_big!(BUint<{$bits / 64}>, BUintD32<{$bits / 32}>, BUintD16<{$bits / 16}>, BUintD8<{$bits / 8}>; [<u $bits>]);
+    ($($bits: literal), *) => {
+        paste::paste! {
+            $(
+                test_convert_big!(BUint<{$bits / 64}>, BUintD32<{$bits / 32}>, BUintD16<{$bits / 16}>, BUintD8<{$bits / 8}>; [<u $bits>]);
 
-				test_convert_big!(BInt<{$bits / 64}>, BIntD32<{$bits / 32}>, BIntD16<{$bits / 16}>, BIntD8<{$bits / 8}>; [<i $bits>]);
-			)*
-		}
-	};
+                test_convert_big!(BInt<{$bits / 64}>, BIntD32<{$bits / 32}>, BIntD16<{$bits / 16}>, BIntD8<{$bits / 8}>; [<i $bits>]);
+            )*
+        }
+    };
 }
 
 test_convert_bigints!(128, 64);
@@ -69,26 +69,26 @@ impl TestConvert for f32 {
 
 /*#[cfg(feature = "nightly")]
 impl TestConvert for crate::float::F64 {
-	type Output = u64;
+    type Output = u64;
 
-	#[inline]
-	fn into(self) -> Self::Output {
-		use crate::cast::As;
-		
-		self.to_bits().as_()
-	}
+    #[inline]
+    fn into(self) -> Self::Output {
+        use crate::cast::As;
+
+        self.to_bits().as_()
+    }
 }
 
 #[cfg(feature = "nightly")]
 impl TestConvert for crate::float::F32 {
-	type Output = u32;
+    type Output = u32;
 
-	#[inline]
-	fn into(self) -> Self::Output {
-		use crate::cast::As;
-		
-		self.to_bits().as_()
-	}
+    #[inline]
+    fn into(self) -> Self::Output {
+        use crate::cast::As;
+
+        self.to_bits().as_()
+    }
 }*/
 
 impl<T: TestConvert, U: TestConvert> TestConvert for (T, U) {

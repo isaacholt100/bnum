@@ -33,10 +33,10 @@ macro_rules! tests {
             function: <$int>::trailing_ones(a: $int)
         }
         test_bignum! {
-            function: <$int>::rotate_left(a: $int, b: u16)
+            function: <$int>::rotate_left(a: $int, b: u8)
         }
         test_bignum! {
-            function: <$int>::rotate_right(a: $int, b: u16)
+            function: <$int>::rotate_right(a: $int, b: u8)
         }
         test_bignum! {
             function: <$int>::swap_bytes(a: $int)

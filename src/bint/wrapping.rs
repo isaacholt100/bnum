@@ -48,7 +48,7 @@ macro_rules! wrapping {
                 }
 
                 #[doc = doc::wrapping::wrapping_div_euclid!(I)]
-				#[must_use = doc::must_use_op!()]
+                #[must_use = doc::must_use_op!()]
                 #[inline]
                 pub const fn wrapping_div_euclid(self, rhs: Self) -> Self {
                     self.overflowing_div_euclid(rhs).0
@@ -67,37 +67,35 @@ macro_rules! wrapping {
                 pub const fn wrapping_rem_euclid(self, rhs: Self) -> Self {
                     self.overflowing_rem_euclid(rhs).0
                 }
-			}
+            }
 
-			#[doc = doc::wrapping::wrapping_neg!(I)]
-			#[must_use = doc::must_use_op!()]
-			#[inline]
-			pub const fn wrapping_neg(self) -> Self {
-				self.overflowing_neg().0
-			}
+            #[doc = doc::wrapping::wrapping_neg!(I)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn wrapping_neg(self) -> Self {
+                self.overflowing_neg().0
+            }
 
-			crate::nightly::const_fns! {
-                #[doc = doc::wrapping::wrapping_shl!(I)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn wrapping_shl(self, rhs: ExpType) -> Self {
-                    self.overflowing_shl(rhs).0
-                }
+            #[doc = doc::wrapping::wrapping_shl!(I)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn wrapping_shl(self, rhs: ExpType) -> Self {
+                self.overflowing_shl(rhs).0
+            }
 
-                #[doc = doc::wrapping::wrapping_shr!(I)]
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                pub const fn wrapping_shr(self, rhs: ExpType) -> Self {
-                    self.overflowing_shr(rhs).0
-                }
-			}
+            #[doc = doc::wrapping::wrapping_shr!(I)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn wrapping_shr(self, rhs: ExpType) -> Self {
+                self.overflowing_shr(rhs).0
+            }
 
-			#[doc = doc::wrapping::wrapping_abs!(I)]
-			#[must_use = doc::must_use_op!()]
-			#[inline]
-			pub const fn wrapping_abs(self) -> Self {
-				self.overflowing_abs().0
-			}
+            #[doc = doc::wrapping::wrapping_abs!(I)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn wrapping_abs(self) -> Self {
+                self.overflowing_abs().0
+            }
 
             #[doc = doc::wrapping::wrapping_pow!(I)]
             #[must_use = doc::must_use_op!()]
@@ -110,8 +108,8 @@ macro_rules! wrapping {
 
         #[cfg(test)]
         paste::paste! {
-			mod [<$Digit _digit_tests>] {
-				use crate::test::types::big_types::$Digit::*;
+            mod [<$Digit _digit_tests>] {
+                use crate::test::types::big_types::$Digit::*;
                 use crate::test::{test_bignum, types::itest};
 
                 test_bignum! {

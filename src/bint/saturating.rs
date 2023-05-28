@@ -56,23 +56,23 @@ macro_rules! saturating {
                 }
             }
 
-			#[doc = doc::saturating::saturating_mul!(I)]
-			#[must_use = doc::must_use_op!()]
-			#[inline]
-			pub const fn saturating_mul(self, rhs: Self) -> Self {
-				match self.checked_mul(rhs) {
-					Some(mul) => mul,
-					None => {
-						if self.is_negative() == rhs.is_negative() {
-							Self::MAX
-						} else {
-							Self::MIN
-						}
-					}
-				}
-			}
-			
-			crate::nightly::const_fns! {
+            #[doc = doc::saturating::saturating_mul!(I)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn saturating_mul(self, rhs: Self) -> Self {
+                match self.checked_mul(rhs) {
+                    Some(mul) => mul,
+                    None => {
+                        if self.is_negative() == rhs.is_negative() {
+                            Self::MAX
+                        } else {
+                            Self::MIN
+                        }
+                    }
+                }
+            }
+
+            crate::nightly::const_fns! {
                 #[doc = doc::saturating::saturating_div!(I)]
                 #[must_use = doc::must_use_op!()]
                 #[inline]
@@ -84,49 +84,49 @@ macro_rules! saturating {
                         div
                     }
                 }
-			}
+            }
 
-			#[doc = doc::saturating::saturating_neg!(I)]
-			#[must_use = doc::must_use_op!()]
-			#[inline]
-			pub const fn saturating_neg(self) -> Self {
-				match self.checked_neg() {
-					Some(abs) => abs,
-					None => Self::MAX,
-				}
-			}
+            #[doc = doc::saturating::saturating_neg!(I)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn saturating_neg(self) -> Self {
+                match self.checked_neg() {
+                    Some(abs) => abs,
+                    None => Self::MAX,
+                }
+            }
 
-			#[doc = doc::saturating::saturating_abs!(I)]
-			#[must_use = doc::must_use_op!()]
-			#[inline]
-			pub const fn saturating_abs(self) -> Self {
-				match self.checked_abs() {
-					Some(abs) => abs,
-					None => Self::MAX,
-				}
-			}
+            #[doc = doc::saturating::saturating_abs!(I)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn saturating_abs(self) -> Self {
+                match self.checked_abs() {
+                    Some(abs) => abs,
+                    None => Self::MAX,
+                }
+            }
 
-			#[doc = doc::saturating::saturating_pow!(I)]
-			#[must_use = doc::must_use_op!()]
-			#[inline]
-			pub const fn saturating_pow(self, exp: ExpType) -> Self {
-				match self.checked_pow(exp) {
-					Some(pow) => pow,
-					None => {
-						if self.is_negative() && exp & 1 != 0 {
-							Self::MIN
-						} else {
-							Self::MAX
-						}
-					},
-				}
-			}
+            #[doc = doc::saturating::saturating_pow!(I)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn saturating_pow(self, exp: ExpType) -> Self {
+                match self.checked_pow(exp) {
+                    Some(pow) => pow,
+                    None => {
+                        if self.is_negative() && exp & 1 != 0 {
+                            Self::MIN
+                        } else {
+                            Self::MAX
+                        }
+                    }
+                }
+            }
         }
 
         #[cfg(test)]
         paste::paste! {
-			mod [<$Digit _digit_tests>] {
-				use crate::test::types::big_types::$Digit::*;
+            mod [<$Digit _digit_tests>] {
+                use crate::test::types::big_types::$Digit::*;
                 use crate::test::{test_bignum, types::*};
 
                 test_bignum! {

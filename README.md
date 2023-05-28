@@ -92,6 +92,10 @@ assert_eq!(neg_one.count_ones(), 80); // signed integers are stored in two's com
 
 ## Features
 
+### Fuzzing
+
+The `arbitrary` feature derives the [`Arbitrary`](https://docs.rs/arbitrary/latest/arbitrary/trait.Arbitrary.html) trait from the [`arbitrary`](https://docs.rs/arbitrary/latest/arbitrary/) crate. **Note: currently, this feature cannot be used with `no_std`.**
+
 ### Random Number Generation
 
 The `rand` feature allows creation of random bnum integers via the [`rand`](https://docs.rs/rand/latest/rand/) crate.

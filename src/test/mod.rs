@@ -20,13 +20,13 @@ impl<const N: usize> From<U8ArrayWrapper<N>> for [u8; N] {
 use quickcheck::{Arbitrary, Gen};
 
 impl<const N: usize> Arbitrary for U8ArrayWrapper<N> {
-	fn arbitrary(g: &mut Gen) -> Self {
-		let mut arr = [0u8; N];
-		for x in arr.iter_mut() {
-			*x = u8::arbitrary(g);
-		}
-		Self(arr)
-	}
+    fn arbitrary(g: &mut Gen) -> Self {
+        let mut arr = [0u8; N];
+        for x in arr.iter_mut() {
+            *x = u8::arbitrary(g);
+        }
+        Self(arr)
+    }
 }
 
 use core::fmt::{self, Debug, Formatter};

@@ -210,52 +210,52 @@ macro_rules! uniform_int_impl {
 
 #[cfg(test)]
 macro_rules! test_random {
-	($int: ty; $($Rng: ty), *) => {
-		paste::paste! {
-			$(
-				quickcheck::quickcheck! {
-					#[allow(non_snake_case)]
-					fn [<quickcheck_ $Rng _gen_ $int>](seed: u64) -> bool {
-						use crate::test::TestConvert;
-						use crate::test::types::*;
-						use rand::Rng;
-						use rand::rngs::$Rng;
+    ($int: ty; $($Rng: ty), *) => {
+        paste::paste! {
+            $(
+                quickcheck::quickcheck! {
+                    #[allow(non_snake_case)]
+                    fn [<quickcheck_ $Rng _gen_ $int>](seed: u64) -> bool {
+                        use crate::test::TestConvert;
+                        use crate::test::types::*;
+                        use rand::Rng;
+                        use rand::rngs::$Rng;
 
-						let (mut rng, mut rng2) = seeded_rngs::<$Rng>(seed);
+                        let (mut rng, mut rng2) = seeded_rngs::<$Rng>(seed);
 
-						let big = rng.gen::<[<$int:upper>]>();
-						let primitive = rng2.gen::<$int>();
+                        let big = rng.gen::<[<$int:upper>]>();
+                        let primitive = rng2.gen::<$int>();
 
-						TestConvert::into(big) == TestConvert::into(primitive)
-					}
+                        TestConvert::into(big) == TestConvert::into(primitive)
+                    }
 
-					#[allow(non_snake_case)]
-					fn [<quickcheck_ $Rng _fill_ $int _slice>](seed: u64) -> bool {
-						use crate::test::TestConvert;
-						use rand::Fill;
-						use rand::rngs::$Rng;
+                    #[allow(non_snake_case)]
+                    fn [<quickcheck_ $Rng _fill_ $int _slice>](seed: u64) -> bool {
+                        use crate::test::TestConvert;
+                        use rand::Fill;
+                        use rand::rngs::$Rng;
 
-						const SLICE_LENGTH: usize = 20;
+                        const SLICE_LENGTH: usize = 20;
 
-						let (mut rng, mut rng2) = seeded_rngs::<$Rng>(seed);
+                        let (mut rng, mut rng2) = seeded_rngs::<$Rng>(seed);
 
-						let mut big_array = [<[<$int:upper>]>::MIN; SLICE_LENGTH];
-						let mut primitive_array = [<$int>::MIN; SLICE_LENGTH];
+                        let mut big_array = [<[<$int:upper>]>::MIN; SLICE_LENGTH];
+                        let mut primitive_array = [<$int>::MIN; SLICE_LENGTH];
 
-						crate::random::try_fill_slice(&mut big_array, &mut rng).unwrap();
+                        crate::random::try_fill_slice(&mut big_array, &mut rng).unwrap();
 
-						primitive_array.try_fill(&mut rng2).unwrap();
+                        primitive_array.try_fill(&mut rng2).unwrap();
 
-						big_array
-							.into_iter()
-							.zip(primitive_array.into_iter())
-							.all(|(big, primitive)| {
-								TestConvert::into(big) == TestConvert::into(primitive)
-							})
-					}
+                        big_array
+                            .into_iter()
+                            .zip(primitive_array.into_iter())
+                            .all(|(big, primitive)| {
+                                TestConvert::into(big) == TestConvert::into(primitive)
+                            })
+                    }
 
-					#[allow(non_snake_case)]
-					fn [<quickcheck_ $Rng _gen_range_ $int>](seed: u64, min: $int, max: $int) -> quickcheck::TestResult {
+                    #[allow(non_snake_case)]
+            		fn [<quickcheck_ $Rng _gen_range_ $int>](seed: u64, min: $int, max: $int) -> quickcheck::TestResult {
 						if min >= max {
 							return quickcheck::TestResult::discard();
 						}
@@ -324,8 +324,8 @@ macro_rules! random {
 
         #[cfg(test)]
         paste::paste! {
-			mod [<$Digit _digit_tests>] {
-				use crate::test::types::big_types::$Digit::*;
+            mod [<$Digit _digit_tests>] {
+                use crate::test::types::big_types::$Digit::*;
                 use crate::test::types::*;
                 use rand::SeedableRng;
 

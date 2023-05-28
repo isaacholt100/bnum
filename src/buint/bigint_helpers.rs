@@ -83,11 +83,11 @@ macro_rules! bigint_helpers {
 
         #[cfg(test)]
         paste::paste! {
-			mod [<$Digit _digit_tests>] {
+            mod [<$Digit _digit_tests>] {
                 use crate::test::{test_bignum, types::*};
                 use crate::test::types::big_types::$Digit::*;
 
-				type U64 = crate::$BUint::<{64 / $Digit::BITS as usize}>;
+                type U64 = crate::$BUint::<{64 / $Digit::BITS as usize}>;
 
                 test_bignum! {
                     function: <utest>::carrying_add(a: utest, rhs: utest, carry: bool),
