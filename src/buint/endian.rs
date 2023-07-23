@@ -241,7 +241,7 @@ macro_rules! endian {
                 let arr_ptr = bytes.as_ptr();
                 let mut i = 0;
                 while i < N {
-                    let mut uninit = MaybeUninit::<[u8; digit::$Digit::BYTES as usize]>::uninit();
+                    let uninit = MaybeUninit::<[u8; digit::$Digit::BYTES as usize]>::uninit();
                     let ptr = uninit.as_ptr().cast_mut() as *mut u8; // TODO: can change to as_mut_ptr() when const_mut_refs is stabilised
                     let digit_bytes = unsafe {
                         arr_ptr
@@ -265,7 +265,7 @@ macro_rules! endian {
                 let arr_ptr = bytes.as_ptr();
                 let mut i = 0;
                 while i < N {
-                    let mut uninit = MaybeUninit::<[u8; digit::$Digit::BYTES as usize]>::uninit();
+                    let uninit = MaybeUninit::<[u8; digit::$Digit::BYTES as usize]>::uninit();
                     let ptr = uninit.as_ptr().cast_mut() as *mut u8; // TODO: can change to as_mut_ptr() when const_mut_refs is stabilised
                     let digit_bytes = unsafe {
                         arr_ptr

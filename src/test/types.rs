@@ -48,7 +48,7 @@ mod small_types {
 pub use core::primitive::*;
 pub use small_types::*;
 
-#[cfg(test_int_bits = "64")]
+/*#[cfg(test_int_bits = "64")]
 #[allow(non_camel_case_types)]
 pub type ftest = f64;
 
@@ -63,3 +63,4 @@ pub type FTEST = crate::float::Float<8, 52>;
 #[cfg(feature = "nightly")]
 #[cfg(not(test_int_bits = "64"))]
 pub type FTEST = crate::float::Float<4, 23>;
+*/

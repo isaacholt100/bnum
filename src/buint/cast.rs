@@ -141,7 +141,7 @@ macro_rules! cast {
             crate::nightly::const_fn! {
                 #[inline]
                 const fn cast_up<const M: usize>(self, digit: $Digit) -> $BUint<M> {
-                    let mut digits = [digit; M];
+                    let digits = [digit; M];
                     let digits_ptr = digits.as_ptr().cast_mut() as *mut $Digit; // TODO: can change to as_mut_ptr() when const_mut_refs is stabilised
                     let self_ptr = self.digits.as_ptr();
                     unsafe {
@@ -153,7 +153,7 @@ macro_rules! cast {
             crate::nightly::const_fn! {
                 #[inline]
                 const fn cast_down<const M: usize>(self) -> $BUint<M> {
-                    let mut digits = MaybeUninit::<[$Digit; M]>::uninit();
+                    let digits = MaybeUninit::<[$Digit; M]>::uninit();
                     let digits_ptr = digits.as_ptr().cast_mut() as *mut $Digit; // TODO: can change to as_mut_ptr() when const_mut_refs is stabilised
                     let self_ptr = self.digits.as_ptr();
 

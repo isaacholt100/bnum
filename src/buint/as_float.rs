@@ -205,7 +205,7 @@ macro_rules! impl_mantissa_for_uint {
 
 impl_mantissa_for_uint!(u32, u64);
 
-macro_rules! impl_mantissa_for_buint {
+/*macro_rules! impl_mantissa_for_buint {
     ($BUint: ident, $BInt: ident, $Digit: ident) => {
         impl<const N: usize> Mantissa for $BUint<N> {
             const ONE: Self = Self::ONE;
@@ -258,7 +258,7 @@ macro_rules! impl_mantissa_for_buint {
 
 pub(crate) use impl_mantissa_for_buint;
 
-crate::macro_impl!(impl_mantissa_for_buint);
+crate::macro_impl!(impl_mantissa_for_buint);*/
 
 pub fn cast_float_from_uint<F, U>(from: U) -> F
 where

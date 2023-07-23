@@ -43,11 +43,11 @@ pub mod random;
 
 pub mod types;
 
-#[cfg(feature = "nightly")]
+/*#[cfg(feature = "nightly")]
 mod float;
 
 #[cfg(feature = "nightly")]
-pub use float::Float;
+pub use float::Float;*/
 
 #[cfg(test)]
 mod test;
@@ -55,9 +55,9 @@ mod test;
 #[cfg(test)]
 use test::types::*;
 
-#[cfg(feature = "usize_exptype")]
+/*#[cfg(feature = "usize_exptype")]
 type ExpType = usize;
-#[cfg(not(feature = "usize_exptype"))]
+#[cfg(not(feature = "usize_exptype"))]*/
 type ExpType = u32;
 
 macro_rules! macro_impl {
