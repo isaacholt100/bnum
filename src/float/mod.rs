@@ -1,8 +1,6 @@
-use crate::{ExpType, BUintD8};
 use crate::bint::BIntD8;
 use crate::digit::u8 as digit;
-//use crate::ExpType;
-use crate::cast::As;
+use crate::{BUintD8, ExpType};
 
 type Digit = u8;
 
@@ -31,7 +29,7 @@ mod ops;
 mod to_str;
 
 #[cfg(feature = "serde")]
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -44,7 +42,7 @@ pub struct Float<const W: usize, const MB: usize> {
 impl<const W: usize, const MB: usize> Float<W, MB> {
     const MB: ExpType = MB as _;
     const BITS: ExpType = BUintD8::<W>::BITS;
-    
+
     const EXPONENT_BITS: ExpType = Self::BITS - Self::MB - 1;
 
     /*const MANTISSA_WORDS: (usize, usize) = (MB / digit::BITS as usize, MB % digit::BITS as usize);
@@ -53,15 +51,6 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 }
 
 impl<const W: usize, const MB: usize> Float<W, MB> {
-    #[inline]
-    pub const fn from_parts(negative: bool, exponent: BUintD8<W>, mantissa: BUintD8<W>) -> Self {
-        let mut words = *(exponent | mantissa).digits();
-        if negative {
-            words[W - 1] |= 1 << (digit::BITS - 1);
-        }
-        Self::from_words(words)
-    }
-
     #[inline(always)]
     const fn from_words(words: [Digit; W]) -> Self {
         Self::from_bits(BUintD8::from_digits(words))
@@ -76,7 +65,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     const fn exponent(self) -> BIntD8<W> {
         BIntD8::from_bits(self.exp_mant().0)
     }
-    
+
     /*const fn actual_exponent(self) -> BIntD8<W> {
         self.exponent() - Self::EXP_BIAS
     }
@@ -122,17 +111,21 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
         match self.classify() {
             FpCategory::Nan => self,
-            FpCategory::Infinite => if self.is_sign_negative() {
-                Self::MIN
-            } else {
-                self
-            },
+            FpCategory::Infinite => {
+                if self.is_sign_negative() {
+                    Self::MIN
+                } else {
+                    self
+                }
+            }
             FpCategory::Zero => Self::MIN_POSITIVE_SUBNORMAL,
-            _ => if self.is_sign_negative() {
-                Self::from_bits(self.to_bits() - BUintD8::ONE)
-            } else {
-                Self::from_bits(self.to_bits() + BUintD8::ONE)
-            },
+            _ => {
+                if self.is_sign_negative() {
+                    Self::from_bits(self.to_bits().sub(BUintD8::ONE))
+                } else {
+                    Self::from_bits(self.to_bits().add(BUintD8::ONE))
+                }
+            }
         }
     }
 
@@ -142,16 +135,20 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
         match self.classify() {
             FpCategory::Nan => self,
-            FpCategory::Infinite => if self.is_sign_negative() {
-                self
-            } else {
-                Self::MAX
-            },
+            FpCategory::Infinite => {
+                if self.is_sign_negative() {
+                    self
+                } else {
+                    Self::MAX
+                }
+            }
             FpCategory::Zero => Self::MAX_NEGATIVE_SUBNORMAL,
-            _ => if self.is_sign_negative() {
-                Self::from_bits(self.to_bits() + BUintD8::ONE)
-            } else {
-                Self::from_bits(self.to_bits() - BUintD8::ONE)
+            _ => {
+                if self.is_sign_negative() {
+                    Self::from_bits(self.to_bits().add(BUintD8::ONE))
+                } else {
+                    Self::from_bits(self.to_bits().sub(BUintD8::ONE))
+                }
             }
         }
     }
@@ -165,37 +162,88 @@ impl<const W: usize, const MB: usize> Default for Float<W, MB> {
 }
 
 impl<const W: usize, const MB: usize> Float<W, MB> {
+    // split into sign, exponent and mantissa
     #[inline]
-    const fn exp_mant(&self) -> (BUintD8<W>, BUintD8<W>) {
-        let bits = self.bits;
-        let exp = (bits << 1u8) >> (Self::MB + 1);
-        let mant = bits & Self::MANTISSA_MASK;
-        
+    const fn to_raw_parts(self) -> (bool, BUintD8<W>, BUintD8<W>) {
+        let sign = self.is_sign_negative();
+        let exp = self.bits.bitand(BIntD8::<W>::MAX.to_bits()).shr(Self::MB);
+        let mant = self.bits.bitand(Self::MANTISSA_MASK);
+
+        (sign, exp, mant)
+    }
+
+    // split into sign, exponent and mantissa and adjust to reflect actual numerical represenation, but without taking exponent bias into account
+    #[inline]
+    const fn to_parts_biased(self) -> (bool, BUintD8<W>, BUintD8<W>) {
+        let (sign, exp, mant) = self.to_raw_parts();
         if exp.is_zero() {
-            (BUintD8::ONE, mant)
+            (sign, BUintD8::ONE, mant)
         } else {
-            (exp, mant | (BUintD8::ONE << Self::MB))
+            (sign, exp, mant.bitor(BUintD8::ONE.shl(Self::MB)))
         }
     }
 
+    /*// split into sign, exponent and mantissa and adjust to reflect actual numerical represenation
     #[inline]
+    const fn to_parts(self) -> (bool, BIntD8<W>, BUintD8<W>) {
+        let (sign, exp, mant) = self.to_parts_biased();
+        (sign, BIntD8::from_bits(exp).sub(Self::EXP_BIAS), mant)
+    }*/
+
+    // construct float from sign, exponent and mantissa
+    #[inline]
+    const fn from_raw_parts(sign: bool, exp: BUintD8<W>, mant: BUintD8<W>) -> Self {
+        debug_assert!(
+            exp.shl(Self::MB).bitand(mant).is_zero(),
+            "mantissa and exponent overlap"
+        );
+        let mut bits = exp.shl(Self::MB).bitor(mant);
+        if sign {
+            bits.digits[W - 1] |= 1 << (digit::BITS - 1);
+        }
+        Self::from_bits(bits)
+    }
+
+    /*// construct float from sign, exponent and mantissa, adjusted to reflect actual numerical representation
+    #[inline]
+    const fn from_parts(sign: bool, exp: BIntD8<W>, mant: BUintD8<W>) -> Self {
+        let exp = exp.add(Self::EXP_BIAS);
+        todo!()
+    }*/
+
+    #[inline]
+    const fn exp_mant(&self) -> (BUintD8<W>, BUintD8<W>) {
+        let bits = self.bits;
+        let exp = (bits.shl(1)).shr(Self::MB + 1);
+        let mant = bits.bitand(Self::MANTISSA_MASK);
+
+        if exp.is_zero() {
+            (BUintD8::ONE, mant)
+        } else {
+            (exp, mant.bitor(BUintD8::ONE.shl(Self::MB)))
+        }
+    }
+
+    /*#[inline]
     pub(super) const fn decode(self) -> (BUintD8<W>, BIntD8<W>) {
         let bits = self.bits;
-        let exp = (bits << 1u8) >> (Self::MB + 1);
+        let exp = (bits.shl(1)).shr(Self::MB + 1);
         let mant = if exp.is_zero() {
-            (bits & Self::MANTISSA_MASK) << 1 as ExpType
+            (bits.bitand(Self::MANTISSA_MASK)).shl(1)
         } else {
-            (bits & Self::MANTISSA_MASK) | (BUintD8::power_of_two(MB as ExpType))
+            (bits.bitand(Self::MANTISSA_MASK)).bitor((BUintD8::power_of_two(Self::MB)))
         };
-        let exp = BIntD8::from_bits(exp) - Self::EXP_BIAS + MB.as_::<BIntD8<W>>();
+        let exp = BIntD8::from_bits(exp)
+            .sub(Self::EXP_BIAS)
+            .add(MB.as_::<BIntD8<W>>());
         (mant, exp)
-    }
+    }*/
 
     #[inline]
     const fn from_exp_mant(negative: bool, exp: BUintD8<W>, mant: BUintD8<W>) -> Self {
-        let mut bits = (exp << Self::MB) | mant;
+        let mut bits = (exp.shl(Self::MB)).bitor(mant);
         if negative {
-            bits = bits | BIntD8::MIN.to_bits();
+            bits = bits.bitor(BIntD8::MIN.to_bits());
         }
         let f = Self::from_bits(bits);
         f

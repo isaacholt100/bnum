@@ -21,7 +21,7 @@
     )
 )]
 #![doc = include_str!("../README.md")]
-#![cfg_attr(not(feature = "arbitrary"), no_std)]
+//#![cfg_attr(not(feature = "arbitrary"), no_std)]
 
 #[macro_use]
 extern crate alloc;
@@ -43,11 +43,11 @@ pub mod random;
 
 pub mod types;
 
-/*#[cfg(feature = "nightly")]
+#[cfg(feature = "nightly")]
 mod float;
 
 #[cfg(feature = "nightly")]
-pub use float::Float;*/
+pub use float::Float;
 
 #[cfg(test)]
 mod test;
@@ -79,6 +79,19 @@ macro_rules! main_impl {
     };
 }
 
+use crate::buint::cast::buint_as_different_digit_bigint;
+use crate::bint::cast::bint_as_different_digit_bigint;
+
+buint_as_different_digit_bigint!(BUint, BInt, u64; (BUintD32, u32), (BUintD16, u16), (BUintD8, u8));
+buint_as_different_digit_bigint!(BUintD32, BIntD32, u32; (BUint, u64), (BUintD16, u16), (BUintD8, u8));
+buint_as_different_digit_bigint!(BUintD16, BIntD16, u16; (BUint, u64), (BUintD32, u32), (BUintD8, u8));
+buint_as_different_digit_bigint!(BUintD8, BIntD8, u8; (BUint, u64), (BUintD32, u32), (BUintD16, u16));
+
+bint_as_different_digit_bigint!(BUint, BInt, u64; (BIntD32, u32), (BIntD16, u16), (BIntD8, u8));
+bint_as_different_digit_bigint!(BUintD32, BIntD32, u32; (BInt, u64), (BIntD16, u16), (BIntD8, u8));
+bint_as_different_digit_bigint!(BUintD16, BIntD16, u16; (BInt, u64), (BIntD32, u32), (BIntD8, u8));
+bint_as_different_digit_bigint!(BUintD8, BIntD8, u8; (BInt, u64), (BIntD32, u32), (BIntD16, u16));
+
 pub(crate) use main_impl;
 
 mod bigints {
@@ -87,3 +100,15 @@ mod bigints {
 }
 
 pub use bigints::*;
+
+#[cfg(feature = "numtraits")]
+#[cfg(test)]
+quickcheck::quickcheck! {
+    fn test_f32_parse(f: f32) -> quickcheck::TestResult {
+        if !f.is_finite() {
+            return quickcheck::TestResult::discard();
+        }
+        let s = f.to_string();
+        quickcheck::TestResult::from_bool(<f32 as num_traits::Num>::from_str_radix(&s, 10).unwrap() == <f32 as core::str::FromStr>::from_str(&s).unwrap())
+    }
+}

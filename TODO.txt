@@ -2,7 +2,8 @@ Floats:
 * Conversions from and to:
 	* primitive ints
 	* bnum ints
-	* primitve floats
+	* primitive floats
+    * bnum floats
 * FromStr trait
 * Display, debug, upper exp, lower exp traits
 * Transcendental functions:
@@ -62,7 +63,12 @@ Floats:
 * FloatToInt trait
 * From/TryFrom trait for ints, other floats
 * Float type aliases from IEEE standard: f16, f32, f64, f80, f128. (Include f32 and f64 as allows const methods which aren't available on the primitives)
+* Serde
+* Rand
+* num_traits::{Bounded, Float, FloatConst, AsPrimitive, FromPrimitive, ToPrimitive, One, Zero, Inv, MulAdd, MulAddAssign, Pow, Signed, Euclid, Num}
+* Division algorithm which doesn't need where clause
 
 Ints:
 Faster mulitplication algorithm for larger integers
 Faster division algorithms for larger integers
+Update serde to use decimal string instead of struct debug - but CHECK that all serde options serialise primitive ints as decimal strings
