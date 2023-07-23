@@ -2,7 +2,8 @@ name: Rust
 
 on:
     push:
-        branches: "!master"
+        branches-ignore:
+            - master # master is a protected branch so tests will be run when we create a PR
     pull_request:
         branches: "**"
     workflow_call:
