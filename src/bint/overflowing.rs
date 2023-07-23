@@ -103,7 +103,6 @@ macro_rules! overflowing {
                 if self.eq(&Self::MIN) && rhs.is_one() {
                     return (self, Self::ZERO);
                 }
-                //println!("unchecked - self: {}, rhs: {}", self, rhs);
                 let (div, rem) = self.unsigned_abs().div_rem_unchecked(rhs.unsigned_abs());
                 let (div, rem) = (Self::from_bits(div), Self::from_bits(rem));
 

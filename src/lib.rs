@@ -4,9 +4,6 @@
     feature(
         generic_const_exprs,
         const_trait_impl,
-        const_mut_refs,
-        const_maybe_uninit_as_mut_ptr,
-        const_swap,
         const_option_ext
     )
 )]
@@ -15,13 +12,14 @@
     feature(
         bigint_helper_methods,
         int_roundings,
-        float_minimum_maximum,
+        //float_minimum_maximum,
         wrapping_next_power_of_two,
-        float_next_up_down,
+        //float_next_up_down,
     )
 )]
 #![doc = include_str!("../README.md")]
-//#![cfg_attr(not(feature = "arbitrary"), no_std)]
+#![cfg_attr(not(feature = "arbitrary"), no_std)]
+// TODO: MAKE SURE NO_STD IS ENABLED WHEN PUBLISHING NEW VERSION
 
 #[macro_use]
 extern crate alloc;
