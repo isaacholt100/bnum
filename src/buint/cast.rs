@@ -124,7 +124,6 @@ macro_rules! as_buint {
 use crate::cast::CastFrom;
 use crate::doc;
 use crate::nightly::impl_const;
-use crate::ExpType;
 use core::mem::MaybeUninit;
 
 macro_rules! cast {
