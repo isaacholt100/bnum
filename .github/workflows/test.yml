@@ -19,7 +19,7 @@ jobs:
         - name: Install latest stable Rust
           run: rustup install stable
         - name: Check crate builds on stable
-          run: cargo build --features serde,numtraits,rand && cargo build
+          run: cargo build --features serde,numtraits,rand,arbitrary && cargo build
   test_nightly:
     runs-on: ubuntu-latest
     steps:
