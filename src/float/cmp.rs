@@ -1,6 +1,6 @@
 use super::Float;
 use crate::{BIntD8, BUintD8};
-use core::cmp::{PartialOrd, PartialEq, Ordering};
+use core::cmp::{Ordering, PartialEq, PartialOrd};
 
 impl<const W: usize, const MB: usize> Float<W, MB> {
     crate::nightly::const_fns! {
@@ -49,20 +49,20 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         }
     }
 
-    crate::nightly::const_fns! {
-        #[inline]
-        pub const fn clamp(self, min: Self, max: Self) -> Self {
-            assert!(min <= max);
-            let mut x = self;
-            if x < min {
-                x = min;
-            }
-            if x > max {
-                x = max;
-            }
-            x
+    //crate::nightly::const_fns! {
+    #[inline]
+    pub fn clamp(self, min: Self, max: Self) -> Self {
+        assert!(min <= max);
+        let mut x = self;
+        if x < min {
+            x = min;
         }
+        if x > max {
+            x = max;
+        }
+        x
     }
+    //}
 
     #[inline]
     pub const fn total_cmp(&self, other: &Self) -> Ordering {

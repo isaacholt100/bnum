@@ -174,25 +174,22 @@ criterion_group!(benches, bench_ops);
 criterion_main!(benches);
 */
 use bnum::types::U128;
+use rand::prelude::*;
 
 use criterion::{Criterion, BenchmarkId, criterion_group, criterion_main, black_box};
 
-fn bench_from_le_slice(c: &mut Criterion) {
-    let mut group = c.benchmark_group("from_le_slice");
-	let slice1: &[u8] = &[234, 123, 85, 3, 132, 200, 23, 4];
-	let slice2: &[u8] = &[102, 57, 84];
-	let slice3: &[u8] = &[84, 235, 43, 8, 8, 44, 103, 176, 244, 207];
-	for (index, s) in [slice1, slice2, slice3].iter().enumerate() {
-		group.bench_with_input(BenchmarkId::new("original", index), s, |b, i| {
-			b.iter(|| U128::from_le_slice(i))
-		});
-		group.bench_with_input(BenchmarkId::new("new", index), s, |b, i| {
-			b.iter(|| U128::from_le_slice(i))
-		});
-	}
-	group.finish();
+fn bench_div(c: &mut Criterion) {
+    let mut group = c.benchmark_group("div");
+    group.bench_with_input(BenchmarkId::new("prim", "div"), &0, |b, _i| {
+        b.iter(|| rand::random::<u128>() / rand::random::<u128>())
+    });
+    group.bench_with_input(BenchmarkId::new("bnum", "div"), &U128::ZERO, |b, _i| {
+        b.iter(|| rand::random::<U128>() / rand::random::<U128>())
+    });
+    group.finish();
+    //c.bench_function("div", |b| b.iter(|| U128::from(black_box(rand::random::<U128>())).div(black_box(rand::random::<U128>()))));
 }
 
-criterion_group!(benches, bench_from_le_slice);
+criterion_group!(benches, bench_div);
 
 criterion_main!(benches);

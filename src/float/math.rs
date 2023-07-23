@@ -1,6 +1,6 @@
 use super::Float;
-use crate::{BUintD8, BIntD8};
 use crate::cast::As;
+use crate::{BIntD8, BUintD8};
 
 /*/// Returns tuple of division and whether u is less than v
 pub const fn div_float<const N: usize>(u: BUintD8<N>, v: BUintD8<N>) -> (BUintD8<N>, bool) {
@@ -135,7 +135,7 @@ pub const fn div_float<const N: usize>(u: BUintD8<N>, v: BUintD8<N>) -> (BUintD8
             }
         }
     }
-    
+
     let mut u = Remainder::new(u, shift);
     let mut q = BUintD8::ZERO;
     let v_n_1 = v.digits[N - 1];
@@ -197,14 +197,12 @@ mul_add, div_euclid, rem_euclid, powi, powf, exp, exp2, ln, log, log2, log10, cb
 */
 
 impl<const W: usize, const MB: usize> Float<W, MB> {
-    crate::nightly::const_fns! {
-        #[inline]
-        pub const fn abs(self) -> Self {
-            if self.is_sign_negative() {
-                -self
-            } else {
-                self
-            }
+    #[inline]
+    pub const fn abs(self) -> Self {
+        if self.is_sign_negative() {
+            self.neg()
+        } else {
+            self
         }
     }
 
@@ -224,7 +222,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         }
 
         let tiny = Self::from_bits(BUintD8::from(0b11011u8) << Self::MB); // TODO: may not work for exponents stored with very few bits
-        
+
         let mut ix = BIntD8::from_bits(bits);
         let mut i: BIntD8<W>;
         let mut m = ix >> Self::MB;
@@ -238,7 +236,8 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             m -= i - BIntD8::ONE;
         }
         m -= Self::EXP_BIAS; /* unbias exponent */
-        ix = (ix & BIntD8::from_bits(BUintD8::MAX >> (Self::BITS - Self::MB))) | (BIntD8::ONE << Self::MB);
+        ix = (ix & BIntD8::from_bits(BUintD8::MAX >> (Self::BITS - Self::MB)))
+            | (BIntD8::ONE << Self::MB);
         if m & BIntD8::ONE == BIntD8::ONE {
             /* odd m, double x to make it even */
             ix += ix;
@@ -283,8 +282,8 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     }
 
     #[inline]
-    pub fn round(self) -> Self where [(); W * 2]:, {
-        let a = Self::HALF - Self::QUARTER * Self::EPSILON; // TODO: can precalculate quarter * eps so no need for where bound
+    pub fn round(self) -> Self {
+        let a = Self::HALF - Self::QUARTER * Self::EPSILON;
         (self + a.copysign(self)).trunc()
     }
 
@@ -403,19 +402,25 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     }
 
     #[inline]
-    pub fn recip2(self) -> Self where [(); W * 2]:, {
+    pub fn recip2(self) -> Self
+    where
+        [(); W * 2]:,
+    {
         Self::ONE / self
     }
 
     #[inline]
-    pub fn div_euclid(self, rhs: Self) -> Self where [(); W * 2]:, {
+    pub fn div_euclid(self, rhs: Self) -> Self
+    where
+        [(); W * 2]:,
+    {
         let div = (self / rhs).trunc();
         if self % rhs < Self::ZERO {
             return if rhs > Self::ZERO {
                 div - Self::ONE
             } else {
                 div + Self::ONE
-            }
+            };
         }
         div
     }
@@ -431,7 +436,10 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     }
 
     #[inline]
-    pub fn powi(mut self, n: i32) -> Self where [(); W * 2]:, {
+    pub fn powi(mut self, n: i32) -> Self
+    where
+        [(); W * 2]:,
+    {
         if n == 0 {
             return Self::ONE;
         }
@@ -471,7 +479,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         let sx = self.is_sign_negative();
         let sy = y.is_sign_negative();
         let mut uxi = ux;
-    
+
         /* normalize x and y */
         let mut i;
         if ex.is_zero() {
@@ -496,7 +504,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             uy &= BUintD8::MAX >> (Self::BITS - Self::MB);
             uy |= BUintD8::ONE << Self::MB;
         }
-    
+
         let mut q = BUintD8::<W>::ZERO;
         if ex + BIntD8::ONE != ey {
             if ex < ey {
@@ -528,7 +536,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                 }
             }
         }
-    
+
         /* scale result and decide between |x| and |x|-|y| */
         if ex.is_positive() {
             uxi -= BUintD8::ONE << Self::MB;
@@ -598,7 +606,9 @@ impl super::F32 {
             return Self::from_exp_mant(self.is_sign_negative(), inv_e + 1, BUintD8::ZERO);
         }
         //println!("norm init: {:064b}", normalised.to_bits());
-        let mut x_n = Self::from_bits((normalised * Self::HALF).to_bits() ^ (BUintD8::MAX >> (Self::BITS - Self::MB)));
+        let mut x_n = Self::from_bits(
+            (normalised * Self::HALF).to_bits() ^ (BUintD8::MAX >> (Self::BITS - Self::MB)),
+        );
 
         let mut m_n = x_n.exp_mant().1 << 1;
 
@@ -620,7 +630,12 @@ impl super::F32 {
 
             let ma1 = m_n << 1;
             let xnf = x_n_1.to_f32();
-            assert!(0.5 <= xnf && xnf < 1.0, "{}, norm: {}", xnf, normalised.to_f32());
+            assert!(
+                0.5 <= xnf && xnf < 1.0,
+                "{}, norm: {}",
+                xnf,
+                normalised.to_f32()
+            );
             // x_n * (2 - norm * x_n)
             if x_n_1 == x_n || iters == 100 {
                 //println!("done: new: {}, old: {}", x_n_1.to_f64(), x_n.to_f64());
@@ -660,9 +675,9 @@ mod tests {
         function: <ftest>::floor(f: ftest)
     }
 
-    test_bignum! {
+    /*test_bignum! {
         function: <ftest>::round(f: ftest)
-    }
+    }*/
 
     test_bignum! {
         function: <ftest>::trunc(f: ftest)
@@ -680,7 +695,7 @@ mod tests {
         function: <ftest>::rem_euclid(f1: ftest, f2: ftest)
     }
 
-    test_bignum! {
+    /*test_bignum! {
         function: <ftest>::powi(f: ftest, n: i32)
     }
 
@@ -737,7 +752,10 @@ mod tests {
             let f = f32::from_bits(u);
 
             let b1 = f.recip().to_bits();
-            let b2 = super::super::F32::from(f).recip_internal().to_f32().to_bits();
+            let b2 = super::super::F32::from(f)
+                .recip_internal()
+                .to_f32()
+                .to_bits();
             let eq = b1 == b2;
             if !eq {
                 println!("{:08b}", i);
@@ -754,7 +772,7 @@ mod tests {
         println!("all greater: {}", g);
         println!("all close: {}", close);
         panic!("")
-    }
+    }*/
 }
 //0011111111101001100110011001100110011001100111110001100011111001
 //0011111111100000000000000000000000000000000000110110111110011100

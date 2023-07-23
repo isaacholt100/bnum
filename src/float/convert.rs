@@ -9,17 +9,15 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
     #[inline(always)]
     pub const fn from_bits(v: BUintD8<W>) -> Self {
-        Self {
-            bits: v,
-        }
+        Self { bits: v }
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use super::super::{F32, F64};
     use crate::test::test_bignum;
     use crate::test::types::{ftest, FTEST};
-    use super::super::{F64, F32};
 
     test_bignum! {
         function: <ftest>::to_bits(a: ftest)
