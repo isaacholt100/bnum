@@ -1,7 +1,0 @@
-[[language]]
-name = "rust"
-
-[language.config]
-cargo.features = "all"
-rustfmt.extraArgs = ["+nightly"]
-server.extraEnv = { "RUSTUP_TOOLCHAIN" = "nightly" }

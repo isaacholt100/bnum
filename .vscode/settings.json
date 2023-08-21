@@ -5,13 +5,6 @@
     "rust-analyzer.cargo.features": "all",
     "rust-analyzer.linkedProjects": [
         "./Cargo.toml",
-        "./Cargo.toml",
-        "./Cargo.toml",
-        "./Cargo.toml",
-        "./Cargo.toml",
-        "./Cargo.toml",
-        "./Cargo.toml",
-        "./Cargo.toml",
-        "./Cargo.toml"
+        "./bench/Cargo.toml"
     ]
 }

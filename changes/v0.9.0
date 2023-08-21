@@ -1,0 +1,5 @@
+- Add optional zeroize support
+- Add optional quickcheck support
+- Add optional valuable support
+- Make integers #[repr(transparent)]
+- Performance enhancement for `shr` methods

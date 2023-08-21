@@ -16,9 +16,6 @@ use core::default::Default;
 
 use core::iter::{Iterator, Product, Sum};
 
-#[cfg(feature = "arbitrary")]
-use arbitrary::Arbitrary;
-
 macro_rules! mod_impl {
     ($BUint: ident, $BInt: ident, $Digit: ident) => {
         /// Unsigned integer type composed of
@@ -35,11 +32,16 @@ macro_rules! mod_impl {
         #[allow(clippy::derive_hash_xor_eq)]
         #[derive(Clone, Copy, Hash)]
         #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-        #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+        #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+        #[cfg_attr(feature = "valuable", derive(valuable::Valuable))]
+        #[repr(transparent)]
         pub struct $BUint<const N: usize> {
             #[cfg_attr(feature = "serde", serde(with = "BigArray"))]
             pub(crate) digits: [$Digit; N],
         }
+
+        #[cfg(feature = "zeroize")]
+        impl<const N: usize> zeroize::DefaultIsZeroes for $BUint<N> {}
 
         impl<const N: usize> $BUint<N> {
             #[doc = doc::count_ones!(U 1024)]
@@ -398,28 +400,34 @@ macro_rules! mod_impl {
             }
 
             #[inline]
-            pub(crate) const unsafe fn unchecked_shr_pad_internal<const PAD: $Digit>(u: $BUint<N>, rhs: ExpType) -> $BUint<N> {
-                let mut out = $BUint::from_digits([PAD; N]);
+            pub(crate) const unsafe fn unchecked_shr_pad_internal<const NEG: bool>(u: $BUint<N>, rhs: ExpType) -> $BUint<N> {
+                let mut out = if NEG {
+                    $BUint::MAX
+                } else {
+                    $BUint::ZERO
+                };
                 let digit_shift = (rhs >> digit::$Digit::BIT_SHIFT) as usize;
                 let bit_shift = rhs & digit::$Digit::BITS_MINUS_1;
 
                 let num_copies = N - digit_shift;
 
                 u.digits.as_ptr().add(digit_shift).copy_to_nonoverlapping(out.digits.as_ptr().cast_mut(), num_copies); // TODO: can change to out.digits.as_mut_ptr() when const_mut_refs is stabilised
+                // u.digits.as_ptr().copy_to_nonoverlapping(out.digits.as_ptr().cast_mut().add(digit_shift), num_copies); // TODO: can change to out.digits.as_mut_ptr() when const_mut_refs is stabilised
 
                 if bit_shift != 0 {
                     let carry_shift = digit::$Digit::BITS - bit_shift;
                     let mut carry = 0;
 
-                    let mut i = num_copies;
-                    while i > 0 {
-                        i -= 1;
-                        let current_digit = out.digits[i];
-                        out.digits[i] = (current_digit >> bit_shift) | carry;
+                    let mut i = digit_shift;
+                    while i < N { // we use an increment while loop because the compiler can elide the array bounds check, which results in big performance gains
+                        let index = N - 1 - i;
+                        let current_digit = out.digits[index];
+                        out.digits[index] = (current_digit >> bit_shift) | carry;
                         carry = current_digit << carry_shift;
+                        i += 1;
                     }
 
-                    if PAD == $Digit::MAX {
+                    if NEG {
                         out.digits[num_copies - 1] |= $Digit::MAX << carry_shift;
                     }
                 }
@@ -428,7 +436,7 @@ macro_rules! mod_impl {
             }
 
             pub(crate) const unsafe fn unchecked_shr_internal(u: $BUint<N>, rhs: ExpType) -> $BUint<N> {
-                Self::unchecked_shr_pad_internal::<{$Digit::MIN}>(u, rhs)
+                Self::unchecked_shr_pad_internal::<false>(u, rhs)
             }
 
             #[doc = doc::bits!(U 256)]
@@ -597,7 +605,7 @@ macro_rules! mod_impl {
             }
         }
 
-        #[cfg(test)]
+        #[cfg(any(test, feature = "quickcheck"))]
         impl<const N: usize> quickcheck::Arbitrary for $BUint<N> {
             fn arbitrary(g: &mut quickcheck::Gen) -> Self {
                 let mut out = Self::ZERO;

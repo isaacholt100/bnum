@@ -30,9 +30,6 @@ use core::default::Default;
 
 use core::iter::{Iterator, Product, Sum};
 
-#[cfg(feature = "arbitrary")]
-use arbitrary::Arbitrary;
-
 macro_rules! mod_impl {
     ($BUint: ident, $BInt: ident, $Digit: ident) => {
         /// Big signed integer type, of fixed size which must be known at compile time.
@@ -48,10 +45,15 @@ macro_rules! mod_impl {
         #[allow(clippy::derived_hash_with_manual_eq)]
         #[derive(Clone, Copy, Hash)]
         #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-        #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+        #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+        #[cfg_attr(feature = "valuable", derive(valuable::Valuable))]
+        #[repr(transparent)]
         pub struct $BInt<const N: usize> {
             pub(crate) bits: $BUint<N>,
         }
+
+        #[cfg(feature = "zeroize")]
+        impl<const N: usize> zeroize::DefaultIsZeroes for $BInt<N> {}
 
         impl<const N: usize> $BInt<N> {
             #[doc = doc::count_ones!(I 256)]
@@ -387,7 +389,7 @@ macro_rules! mod_impl {
             }
         }
 
-        #[cfg(test)]
+        #[cfg(any(test, feature = "quickcheck"))]
         impl<const N: usize> quickcheck::Arbitrary for $BInt<N> {
             #[inline]
             fn arbitrary(g: &mut quickcheck::Gen) -> Self {

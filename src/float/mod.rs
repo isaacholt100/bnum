@@ -1,4 +1,5 @@
 use crate::bint::BIntD8;
+use crate::cast::{As, CastFrom};
 use crate::digit::u8 as digit;
 use crate::{BUintD8, ExpType};
 
@@ -33,6 +34,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[repr(transparent)]
 pub struct Float<const W: usize, const MB: usize> {
     bits: BUintD8<W>,
 }
@@ -48,6 +50,46 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     /*const MANTISSA_WORDS: (usize, usize) = (MB / digit::BITS as usize, MB % digit::BITS as usize);
 
     const EXPONENT_MASK: BUintD8<W> = BUintD8::MAX.wrapping_shl(Self::MB) ^ BIntD8::MIN.to_bits();*/
+
+    pub fn parse(digits: &[u8], exp: i32) -> Self where [u8; W * 2]: {
+        let one = Self::ONE;
+        let two = Self::TWO;
+        let three: Self = 3u8.as_();
+        let four: Self = 4u8.as_();
+        let five: Self = 5u8.as_();
+        let six: Self = 6u8.as_();
+        let seven: Self = 7u8.as_();
+        let eight: Self = 8u8.as_();
+        let nine: Self = 9u8.as_();
+        let ten: Self = 10u8.as_();
+
+        let mut out = Self::ZERO;
+        let mut pow = Self::ONE;
+        for d in digits {
+            let a = Self::cast_from(*d) * pow;
+
+            out = out + a;
+            pow = pow / ten;
+        }
+        out.powi(exp)
+    }
+}
+
+#[test]
+fn test_parse() {
+    use core::str::FromStr;
+
+    let digits = [3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 8];
+    let parsed = F32::parse(&digits, 0);
+    let mut s = unsafe { String::from_utf8_unchecked(digits.into_iter().map(|d| d + 48).collect()) };
+    s.insert(1, '.');
+    s.push_str("");
+    println!("{}", s);
+    println!("{:032b}", parsed.to_bits());
+    println!("{:032b}", f32::from_str(&s).unwrap().to_bits());
+    println!("F: {}", parsed.to_f32());
+    println!("f: {}", f32::from_str(&s).unwrap());
+    println!("n: {}", <f32 as num_traits::Num>::from_str_radix(&s, 10).unwrap());
 }
 
 impl<const W: usize, const MB: usize> Float<W, MB> {

@@ -239,9 +239,9 @@ macro_rules! overflowing {
                 };
                 let u = unsafe {
                     if self.is_negative() {
-                        $BUint::unchecked_shr_pad_internal::<{ $Digit::MAX }>(bits, shift)
+                        $BUint::unchecked_shr_pad_internal::<true>(bits, shift)
                     } else {
-                        $BUint::unchecked_shr_pad_internal::<{ $Digit::MIN }>(bits, shift)
+                        $BUint::unchecked_shr_pad_internal::<false>(bits, shift)
                     }
                 };
                 (Self::from_bits(u), overflow)

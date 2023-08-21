@@ -1,7 +1,5 @@
 Floats:
 * Conversions from and to:
-	* primitive ints
-	* bnum ints
 	* primitive floats
     * bnum floats
 * FromStr trait

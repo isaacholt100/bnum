@@ -205,61 +205,6 @@ macro_rules! impl_mantissa_for_uint {
 
 impl_mantissa_for_uint!(u32, u64);
 
-/*macro_rules! impl_mantissa_for_buint {
-    ($BUint: ident, $BInt: ident, $Digit: ident) => {
-        impl<const N: usize> Mantissa for $BUint<N> {
-            const ONE: Self = Self::ONE;
-            const TWO: Self = Self::TWO;
-            const MAX: Self = Self::MAX;
-            const BITS: ExpType = Self::BITS;
-
-            #[inline]
-            fn bit(&self, n: ExpType) -> bool {
-                Self::bit(&self, n)
-            }
-
-            #[inline]
-            fn shl(self, n: ExpType) -> Self {
-                Self::shl(self, n)
-            }
-
-            #[inline]
-            fn shr(self, n: ExpType) -> Self {
-                Self::shr(self, n)
-            }
-
-            #[inline]
-            fn add(self, rhs: Self) -> Self {
-                Self::add(self, rhs)
-            }
-
-            #[inline]
-            fn sub(self, rhs: Self) -> Self {
-                Self::sub(self, rhs)
-            }
-
-            #[inline]
-            fn leading_zeros(self) -> ExpType {
-                Self::leading_zeros(self)
-            }
-
-            #[inline]
-            fn bitand(self, rhs: Self) -> Self {
-                Self::bitand(self, rhs)
-            }
-
-            #[inline]
-            fn gt(&self, rhs: &Self) -> bool {
-                Self::gt(&self, &rhs)
-            }
-        }
-    };
-}
-
-pub(crate) use impl_mantissa_for_buint;
-
-crate::macro_impl!(impl_mantissa_for_buint);*/
-
 pub fn cast_float_from_uint<F, U>(from: U) -> F
 where
     F: CastToFloatConsts,
