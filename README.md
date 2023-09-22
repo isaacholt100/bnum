@@ -4,7 +4,7 @@
 [![doc.rs](https://img.shields.io/docsrs/bnum)](https://docs.rs/bnum/latest/bnum)
 [![Crates.io](https://img.shields.io/crates/d/bnum?logo=rust)
 ](https://crates.io/crates/bnum)
-[![dependency status](https://deps.rs/crate/bnum/0.8.0/status.svg)](https://deps.rs/crate/bnum/0.8.0)
+[![dependency status](https://deps.rs/repo/github/isaacholt100/bnum/status.svg)](https://deps.rs/repo/github/isaacholt100/bnum)
 [![license](https://img.shields.io/crates/l/bnum)](https://github.com/isaacholt100/bnum)
 
 Arbitrary precision, fixed-size signed and unsigned integer types for Rust.
@@ -31,13 +31,13 @@ This crate uses Rust's const generics to allow creation of integers of arbitrary
 To install and use `bnum`, simply add the following line to your `Cargo.toml` file in the `[dependencies]` section:
 
 ```toml
-bnum = "0.8.0"
+bnum = "0.9.0"
 ```
 
 Or, to enable various `bnum` features as well, add for example this line instead:
 
 ```toml
-bnum = { version = "0.8.0", features = ["rand"] } # enables the "rand" feature
+bnum = { version = "0.9.0", features = ["rand"] } # enables the "rand" feature
 ```
 
 ## Example Usage

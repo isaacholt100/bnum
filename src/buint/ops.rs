@@ -136,7 +136,7 @@ macro_rules! ops {
                         let c: utest = b.as_();
                         match a.checked_add(c) {
                             None => quickcheck::TestResult::discard(),
-                            Some(d) => {
+                            Some(_d) => {
                                 let e: UTEST = b.as_();
                                 let f: UTEST = a.as_();
                                 quickcheck::TestResult::from_bool(f + e == f + b)

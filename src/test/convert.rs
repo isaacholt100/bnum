@@ -8,6 +8,7 @@ pub trait TestConvert {
     fn into(self) -> Self::Output;
 }
 
+#[allow(unused)] // since this is only used with certain crate feature but these are likely to change often
 pub fn test_eq<T, U>(t: T, u: U) -> bool
 where
 T: TestConvert,

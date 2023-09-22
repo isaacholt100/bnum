@@ -634,13 +634,13 @@ macro_rules! radix {
                 // }
 
                 #[test]
-                #[should_panic(expected = "(bnum) attempt to parse integer from empty string")]
+                #[should_panic(expected = "attempt to parse integer from empty string")]
                 fn parse_str_radix_empty() {
                     let _ = UTEST::parse_str_radix("", 10);
                 }
 
                 #[test]
-                #[should_panic(expected = "(bnum) attempt to parse integer from string containing invalid digit")]
+                #[should_panic(expected = "attempt to parse integer from string containing invalid digit")]
                 fn parse_str_radix_invalid_char() {
                     let _ = UTEST::parse_str_radix("a", 10);
                 }
