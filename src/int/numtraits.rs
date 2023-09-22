@@ -180,21 +180,7 @@ macro_rules! impls {
 
         crate::int::numtraits::as_primitive_impl!($Int; u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64);
 
-        crate::int::numtraits::as_bigint_impl!([u8, u16, u32, usize, u64, u128, i8, i16, i32, isize, i64, i128, char, bool] as $Int);
-
-        impl<const N: usize> AsPrimitive<$Int<N>> for f32 {
-            #[inline]
-            fn as_(self) -> $Int<N> {
-                $Int::cast_from(self)
-            }
-        }
-
-        impl<const N: usize> AsPrimitive<$Int<N>> for f64 {
-            #[inline]
-            fn as_(self) -> $Int<N> {
-                $Int::cast_from(self)
-            }
-        }
+        crate::int::numtraits::as_bigint_impl!([u8, u16, u32, usize, u64, u128, i8, i16, i32, isize, i64, i128, char, bool, f32, f64] as $Int);
 
         //crate::nightly::impl_const! {
             impl<const N: usize, const M: usize> AsPrimitive<$BUint<M>> for $Int<N> {
@@ -373,77 +359,200 @@ pub(crate) use test_from_primitive;
 #[cfg(test)]
 macro_rules! tests {
     ($int: ty) => {
-            use super::*;
-            use num_traits::PrimInt;
-            use crate::test::test_bignum;
+        use super::*;
+        use num_traits::PrimInt;
+        use crate::test::{test_bignum, TestConvert};
+        
+        crate::test::test_into! {
+            function: <$int as AsPrimitive>::as_,
+            into_types: (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64)
+        }
 
-            test_bignum! {
-                function: <$int>::sqrt(a: ref &$int),
-                skip: {
-                    #[allow(unused_comparisons)]
-                    let cond = a < 0;
+        test_bignum! {
+            function: <$int as CheckedAdd>::checked_add(a: ref &$int, b: ref &$int)
+        }
+        test_bignum! {
+            function: <$int as CheckedSub>::checked_sub(a: ref &$int, b: ref &$int)
+        }
+        test_bignum! {
+            function: <$int as CheckedMul>::checked_mul(a: ref &$int, b: ref &$int)
+        }
+        test_bignum! {
+            function: <$int as CheckedDiv>::checked_div(a: ref &$int, b: ref &$int)
+        }
+        test_bignum! {
+            function: <$int as CheckedRem>::checked_rem(a: ref &$int, b: ref &$int)
+        }
+        test_bignum! {
+            function: <$int as CheckedNeg>::checked_neg(a: ref &$int)
+        }
+        test_bignum! {
+            function: <$int as CheckedShl>::checked_shl(a: ref &$int, b: u8)
+        }
+        test_bignum! {
+            function: <$int as CheckedShr>::checked_shr(a: ref &$int, b: u8)
+        }
+        test_bignum! {
+            function: <$int as CheckedEuclid>::checked_div_euclid(a: ref &$int, b: ref &$int)
+        }
+        test_bignum! {
+            function: <$int as CheckedEuclid>::checked_rem_euclid(a: ref &$int, b: ref &$int)
+        }
 
-                    cond
-                }
-            }
-            test_bignum! {
-                function: <$int>::cbrt(a: ref &$int)
-            }
-            test_bignum! {
-                function: <$int>::nth_root(a: ref &$int, n: u32),
-                skip: n == 0 || {
-                    #[allow(unused_comparisons)]
-                    let cond = a < 0;
+        test_bignum! {
+            function: <$int as Euclid>::div_euclid(a: ref &$int, b: ref &$int),
+            skip: a.checked_div_euclid(b).is_none()
+        }
+        test_bignum! {
+            function: <$int as Euclid>::rem_euclid(a: ref &$int, b: ref &$int),
+            skip: a.checked_rem_euclid(b).is_none()
+        }
 
-                    n & 1 == 0 && cond || (n == 1 && cond && a == <$int>::MIN) // second condition is due to an error in the num_integer crate, which incorrectly panics when calculating the first root of i128::MIN
-                }
+        test_bignum! {
+            function: <$int as SaturatingAdd>::saturating_add(a: ref &$int, b: ref &$int)
+        }
+        test_bignum! {
+            function: <$int as SaturatingSub>::saturating_sub(a: ref &$int, b: ref &$int)
+        }
+        test_bignum! {
+            function: <$int as SaturatingMul>::saturating_mul(a: ref &$int, b: ref &$int)
+        }
+
+        test_bignum! {
+            function: <$int as Saturating>::saturating_add(a: $int, b: $int)
+        }
+        test_bignum! {
+            function: <$int as Saturating>::saturating_sub(a: $int, b: $int)
+        }
+
+        test_bignum! {
+            function: <$int as WrappingAdd>::wrapping_add(a: ref &$int, b: ref &$int)
+        }
+        test_bignum! {
+            function: <$int as WrappingSub>::wrapping_sub(a: ref &$int, b: ref &$int)
+        }
+        test_bignum! {
+            function: <$int as WrappingMul>::wrapping_mul(a: ref &$int, b: ref &$int)
+        }
+        test_bignum! {
+            function: <$int as WrappingNeg>::wrapping_neg(a: ref &$int)
+        }
+        test_bignum! {
+            function: <$int as WrappingShl>::wrapping_shl(a: ref &$int, b: u16)
+        }
+        test_bignum! {
+            function: <$int as WrappingShr>::wrapping_shr(a: ref &$int, b: u16)
+        }
+
+        test_bignum! {
+            function: <$int as One>::is_one(a: ref &$int)
+        }
+        test_bignum! {
+            function: <$int as Zero>::is_zero(a: ref &$int)
+        }
+
+        test_bignum! {
+            function: <$int as MulAdd>::mul_add(a: $int, b: $int, c: $int),
+            skip: a.checked_mul(b).map(|d| d.checked_add(c)).flatten().is_none()
+        }
+
+        paste::paste! {
+            #[test]
+            fn one() {
+                assert_eq!(1 as $int, TestConvert::into([<$int:upper>]::one()));
             }
 
-            use crate::int::numtraits::{test_to_primitive, test_from_primitive};
-
-            test_to_primitive!($int; u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64);
-
-            test_from_primitive!($int; u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64);
-
-            test_bignum! {
-                function: <$int as Integer>::gcd(a: ref &$int, b: ref &$int),
-                skip: {
-                    #[allow(unused_comparisons)]
-                    let cond = <$int>::MIN < 0 && (a == <$int>::MIN && (b == <$int>::MIN || b == 0)) || (b == <$int>::MIN && (a == <$int>::MIN || a == 0));
-                    cond
-                }
-            }
-            test_bignum! {
-                function: <$int as Integer>::is_multiple_of(a: ref &$int, b: ref &$int),
-                skip: {
-                    #[allow(unused_comparisons)]
-                    let cond = b == 0 || a < 0 && a == <$int>::MIN && b == -1i8 as $int;
-                    cond
-                }
-            }
-            test_bignum! {
-                function: <$int as Integer>::is_even(a: ref &$int)
-            }
-            test_bignum! {
-                function: <$int as Integer>::is_odd(a: ref &$int)
+            #[test]
+            fn zero() {
+                assert_eq!(0 as $int, TestConvert::into([<$int:upper>]::zero()));
             }
 
-            test_bignum! {
-                function: <$int as PrimInt>::unsigned_shl(a: $int, n: u8),
-                skip: n >= <$int>::BITS as u8
+            #[test]
+            fn min_value() {
+                assert_eq!(<$int>::min_value(), TestConvert::into([<$int:upper>]::min_value()));
             }
-            test_bignum! {
-                function: <$int as PrimInt>::unsigned_shr(a: $int, n: u8),
-                skip: n >= <$int>::BITS as u8
+
+            #[test]
+            fn max_value() {
+                assert_eq!(<$int>::max_value(), TestConvert::into([<$int:upper>]::max_value()));
             }
-            test_bignum! {
-                function: <$int as PrimInt>::signed_shl(a: $int, n: u8),
-                skip: n >= <$int>::BITS as u8
+        }
+        
+        test_bignum! {
+            function: <$int>::sqrt(a: ref &$int),
+            skip: {
+                #[allow(unused_comparisons)]
+                let cond = a < 0;
+
+                cond
             }
-            test_bignum! {
-                function: <$int as PrimInt>::signed_shr(a: $int, n: u8),
-                skip: n >= <$int>::BITS as u8
+        }
+        test_bignum! {
+            function: <$int>::cbrt(a: ref &$int)
+        }
+        test_bignum! {
+            function: <$int>::nth_root(a: ref &$int, n: u32),
+            skip: n == 0 || {
+                #[allow(unused_comparisons)]
+                let cond = a < 0;
+
+                n & 1 == 0 && cond || (n == 1 && cond && a == <$int>::MIN) // second condition is due to an error in the num_integer crate, which incorrectly panics when calculating the first root of i128::MIN
             }
+        }
+
+        use crate::int::numtraits::{test_to_primitive, test_from_primitive};
+
+        test_to_primitive!($int; u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64);
+
+        test_from_primitive!($int; u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64);
+
+        test_bignum! {
+            function: <$int as Integer>::lcm(a: ref &$int, b: ref &$int),
+            skip: {
+                #[allow(unused_comparisons)]
+                let cond = a.checked_mul(b).is_none() || (a < 0 && a == <$int>::MIN) || (b < 0 && b == <$int>::MIN); // lcm(a, b) <= a * b
+                cond
+            }
+        }
+        test_bignum! {
+            function: <$int as Integer>::gcd(a: ref &$int, b: ref &$int),
+            skip: {
+                #[allow(unused_comparisons)]
+                let cond = <$int>::MIN < 0 && (a == <$int>::MIN && (b == <$int>::MIN || b == 0)) || (b == <$int>::MIN && (a == <$int>::MIN || a == 0));
+                cond
+            }
+        }
+        test_bignum! {
+            function: <$int as Integer>::is_multiple_of(a: ref &$int, b: ref &$int),
+            skip: {
+                #[allow(unused_comparisons)]
+                let cond = b == 0 || (a < 0 && a == <$int>::MIN && b == -1i8 as $int);
+                cond
+            }
+        }
+        test_bignum! {
+            function: <$int as Integer>::is_even(a: ref &$int)
+        }
+        test_bignum! {
+            function: <$int as Integer>::is_odd(a: ref &$int)
+        }
+
+        test_bignum! {
+            function: <$int as PrimInt>::unsigned_shl(a: $int, n: u8),
+            skip: n >= <$int>::BITS as u8
+        }
+        test_bignum! {
+            function: <$int as PrimInt>::unsigned_shr(a: $int, n: u8),
+            skip: n >= <$int>::BITS as u8
+        }
+        test_bignum! {
+            function: <$int as PrimInt>::signed_shl(a: $int, n: u8),
+            skip: n >= <$int>::BITS as u8
+        }
+        test_bignum! {
+            function: <$int as PrimInt>::signed_shr(a: $int, n: u8),
+            skip: n >= <$int>::BITS as u8
+        }
     };
 }
 

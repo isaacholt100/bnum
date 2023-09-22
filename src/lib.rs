@@ -15,6 +15,7 @@
         float_minimum_maximum,
         wrapping_next_power_of_two,
         float_next_up_down,
+        unchecked_math,
     )
 )]
 #![doc = include_str!("../README.md")]
@@ -31,7 +32,6 @@ pub mod cast;
 mod digit;
 mod doc;
 pub mod errors;
-pub mod helpers;
 mod int;
 mod nightly;
 pub mod prelude;
@@ -41,11 +41,11 @@ pub mod random;
 
 pub mod types;
 
-#[cfg(feature = "nightly")]
-mod float;
+// #[cfg(feature = "nightly")]
+// mod float;
 
-#[cfg(feature = "nightly")]
-pub use float::Float;
+// #[cfg(feature = "nightly")]
+// pub use float::Float;
 
 #[cfg(test)]
 mod test;
@@ -99,122 +99,145 @@ mod bigints {
 
 pub use bigints::*;
 
-#[cfg(feature = "numtraits")]
-#[cfg(test)]
-quickcheck::quickcheck! {
-    fn test_f32_parse(f: f32) -> quickcheck::TestResult {
-        if !f.is_finite() {
-            return quickcheck::TestResult::discard();
-        }
-        let s = f.to_string();
-        quickcheck::TestResult::from_bool(<f32 as num_traits::Num>::from_str_radix(&s, 10).unwrap() == <f32 as core::str::FromStr>::from_str(&s).unwrap())
-    }
-}
-
 // TODO: create round-to-nearest ties-to-even function, it could take a uint and a target bit width, and return the correctly rounded result in the target precision, as well as the overflow, and whether a round up occurred
-fn f64_as_f32(f: f64) -> f32 {
-    if f.is_infinite() {
-        return if f.is_sign_negative() {
-            f32::NEG_INFINITY
-        } else {
-            f32::INFINITY
-        };
-    }
-    if f == 0.0 && f.is_sign_positive() {
-        return 0.0;
-    }
-    if f == 0.0 && f.is_sign_negative() {
-        return -0.0;
-    }
-    let bits = f.to_bits();
-    let mut mant = bits & 0xfffffffffffff;
-    let mut exp = ((bits & (i64::MAX as u64)) >> 52) as i32;
-    if exp != 0 {
-        mant |= 0x10000000000000;
+// #[allow(unused)]
+// fn f64_as_f32(f: f64) -> f32 {
+//     if f.is_infinite() {
+//         return if f.is_sign_negative() {
+//             f32::NEG_INFINITY
+//         } else {
+//             f32::INFINITY
+//         };
+//     }
+//     if f == 0.0 && f.is_sign_positive() {
+//         return 0.0;
+//     }
+//     if f == 0.0 && f.is_sign_negative() {
+//         return -0.0;
+//     }
+//     let bits = f.to_bits();
+//     let mut mant = bits & 0xfffffffffffff;
+//     let mut exp = ((bits & (i64::MAX as u64)) >> 52) as i32;
+//     if exp != 0 {
+//         mant |= 0x10000000000000;
 
-    } else {
-        exp = 1;
-    }
-    exp -= 1023;
-    //println!("exp: {}", exp);
-    let mut mantissa_shift = 52 - 23;
-    /*if mant.leading_zeros() != 64 - (52 + 1) {
-        exp 
-    }*/
-    if exp >= f32::MAX_EXP {
-        return if f.is_sign_negative() {
-            f32::NEG_INFINITY
-        } else {
-            f32::INFINITY
-        };
-    }
-    if exp < f32::MIN_EXP - 1 {
-        let diff = (f32::MIN_EXP - 1) - exp;
-        mantissa_shift += diff;
-        exp = -(f32::MAX_EXP - 1);
-    }
-    let new_mant = mant.checked_shr(mantissa_shift as u32).unwrap_or(0);
-    //println!("{:025b}", new_mant);
+//     } else {
+//         exp = 1;
+//     }
+//     exp -= 1023;
+//     //println!("exp: {}", exp);
+//     let mut mantissa_shift = 52 - 23;
+//     /*if mant.leading_zeros() != 64 - (52 + 1) {
+//         exp 
+//     }*/
+//     if exp >= f32::MAX_EXP {
+//         return if f.is_sign_negative() {
+//             f32::NEG_INFINITY
+//         } else {
+//             f32::INFINITY
+//         };
+//     }
+//     if exp < f32::MIN_EXP - 1 {
+//         let diff = (f32::MIN_EXP - 1) - exp;
+//         mantissa_shift += diff;
+//         exp = -(f32::MAX_EXP - 1);
+//     }
+//     let new_mant = mant.checked_shr(mantissa_shift as u32).unwrap_or(0);
+//     //println!("{:025b}", new_mant);
 
-    let shifted_back = new_mant.checked_shl(mantissa_shift as u32).unwrap_or(0);
-    let overflow = mant ^ shifted_back;
-    /*println!("overflow: {:029b}", overflow);
-    println!("mant: {:053b}", mant);
-    println!("shbk: {:053b}", shifted_back);
-    println!("lz: {}", overflow.leading_zeros());*/
-    if overflow.leading_zeros() as i32 == 64 - mantissa_shift { // this means there is a one at the overflow bit
-        if overflow.count_ones() == 1 { // this means the overflowing is 100...00 so apply ties-to-even rounding
-            if new_mant & 1 == 1 { // if the last bit is 1, then we round up
-                mant = new_mant + 1;
-                //println!("updated mant: {:025b}", mant);
-            } else { // otherwise we round down
-                mant = new_mant;
-            }
-        } else {
-            mant = new_mant + 1; // round up
-        }
-    } else {
-        mant = new_mant;
-    }
-    //1111111111111111111111111
-    //111111111111111111111111
-    if mant.leading_zeros() < 64 - (23 + 1) {
-       // println!("mant overflow");
-        mant >>= 1;
-        exp += 1;
-    }
-    if exp > f32::MAX_EXP {
-        return if f.is_sign_negative() {
-            f32::NEG_INFINITY
-        } else {
-            f32::INFINITY
-        };
-    }
-    mant ^= 0x800000;
-    let sign = (bits >> 63) as u32;
-    let exp = (exp + (f32::MAX_EXP - 1)) as u32;
-    let mant = mant as u32;
-    let bits = (sign << 31) | (exp << 23) | mant;
-    f32::from_bits(bits)
-}
+//     let shifted_back = new_mant.checked_shl(mantissa_shift as u32).unwrap_or(0);
+//     let overflow = mant ^ shifted_back;
+//     /*println!("overflow: {:029b}", overflow);
+//     println!("mant: {:053b}", mant);
+//     println!("shbk: {:053b}", shifted_back);
+//     println!("lz: {}", overflow.leading_zeros());*/
+//     if overflow.leading_zeros() as i32 == 64 - mantissa_shift { // this means there is a one at the overflow bit
+//         if overflow.count_ones() == 1 { // this means the overflowing is 100...00 so apply ties-to-even rounding
+//             if new_mant & 1 == 1 { // if the last bit is 1, then we round up
+//                 mant = new_mant + 1;
+//                 //println!("updated mant: {:025b}", mant);
+//             } else { // otherwise we round down
+//                 mant = new_mant;
+//             }
+//         } else {
+//             mant = new_mant + 1; // round up
+//         }
+//     } else {
+//         mant = new_mant;
+//     }
+//     //1111111111111111111111111
+//     //111111111111111111111111
+//     if mant.leading_zeros() < 64 - (23 + 1) {
+//        // println!("mant overflow");
+//         mant >>= 1;
+//         exp += 1;
+//     }
+//     if exp > f32::MAX_EXP {
+//         return if f.is_sign_negative() {
+//             f32::NEG_INFINITY
+//         } else {
+//             f32::INFINITY
+//         };
+//     }
+//     mant ^= 0x800000;
+//     let sign = (bits >> 63) as u32;
+//     let exp = (exp + (f32::MAX_EXP - 1)) as u32;
+//     let mant = mant as u32;
+//     let bits = (sign << 31) | (exp << 23) | mant;
+//     f32::from_bits(bits)
+// }
 
-#[test]
-fn test_f64_as_f32() {
-    let f1 = 6.580751401135405e38f64;
-   // println!("{:064b}", f1.to_bits());
-    let f2 = f64_as_f32(f1);
-    let f3 = f1 as f32;
-    //println!("{} {}", f2, f3);
-}
+// #[cfg(test)]
+// quickcheck::quickcheck! {
+//     fn qc_test_f64_as_f32(f: f64) -> quickcheck::TestResult {
+//         if !f.is_finite() {
+//             return quickcheck::TestResult::discard();
+//         }
+//         let f2 = f64_as_f32(f);
+//         let f3 = f as f32;
+//         quickcheck::TestResult::from_bool(f2 == f3)
+//     }
+// }
 
-#[cfg(test)]
-quickcheck::quickcheck! {
-    fn qc_test_f64_as_f32(f: f64) -> quickcheck::TestResult {
-        if !f.is_finite() {
-            return quickcheck::TestResult::discard();
-        }
-        let f2 = f64_as_f32(f);
-        let f3 = f as f32;
-        quickcheck::TestResult::from_bool(f2 == f3)
-    }
-}
+// type U32 = BUintD32::<1>;
+// fn parse(s: &str) -> (types::U128, U32) {
+//     let mut radix = 10;
+//     let mut custom_radix = false;
+//     let mut src = s;
+//     let bytes = s.as_bytes();
+//     let len = bytes.len();
+//     let mut first_char_zero = false;
+//     let mut bit_width = U32::power_of_two(7);
+//     let mut i = 0;
+//     while i < len {
+//         let byte = bytes[i];
+//         if i == 0 && byte == b'0' {
+//             first_char_zero = true;
+//         } else if i == 1 && first_char_zero && (byte == b'b' || byte == b'o' || byte == b'x') {
+//             let ptr = unsafe { src.as_ptr().add(2) };
+//             let new = core::ptr::slice_from_raw_parts(ptr, src.len() - 2);
+//             src = unsafe { &*(new as *const str) };
+//             radix = match byte {
+//                 b'b' => 2,
+//                 b'o' => 8,
+//                 b'x' => 16,
+//                 _ => unreachable!(),
+//             };
+//             custom_radix = true;
+//         }
+//         if i != 0 && i != len - 1 && byte == b'u' {
+//             let old_len = src.len();
+//             let ptr = src.as_ptr();
+            
+//             let new_len = if custom_radix { i - 2 } else { i };
+//             let bit_width_ptr = core::ptr::slice_from_raw_parts(unsafe { ptr.add(new_len + 1) }, old_len - new_len - 1);
+//             let new = core::ptr::slice_from_raw_parts(ptr, new_len);
+//             src = unsafe { &*(new as *const str) };
+//             let bit_width_str = unsafe { &*(bit_width_ptr as *const str) };
+//             bit_width = U32::parse_str_radix(bit_width_str, 10);
+//             break;
+//         }
+//         i += 1;
+//     }
+//     (types::U128::parse_str_radix(src, radix), bit_width)
+// }

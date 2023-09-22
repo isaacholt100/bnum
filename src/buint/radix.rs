@@ -589,7 +589,8 @@ macro_rules! radix {
                         ("398475394875230495745"),
                         ("3984753948752304957423490785029749572977970985"),
                         ("12345💩👍"),
-                        ("1234567890a")
+                        ("1234567890a"),
+                        ("")
                     ]
                 }
 
@@ -618,7 +619,8 @@ macro_rules! radix {
                         ("1234", 4u32),
                         ("010120101", 2u32),
                         ("10000000000000000", 16u32),
-                        ("p8hrbe0mo0084i6vckj1tk7uvacnn4cm", 32u32)
+                        ("p8hrbe0mo0084i6vckj1tk7uvacnn4cm", 32u32),
+                        ("", 10u32)
                     ]
                 }
 
@@ -626,75 +628,32 @@ macro_rules! radix {
                 quickcheck_from_to_radix!(utest, radix_le, 256);
                 quickcheck_from_to_radix!(utest, str_radix, 36);
 
+                // #[test]
+                // fn parse_str_radix() {
+                //     assert_eq!(UTEST::parse_str_radix())
+                // }
+
+                #[test]
+                #[should_panic(expected = "(bnum) attempt to parse integer from empty string")]
+                fn parse_str_radix_empty() {
+                    let _ = UTEST::parse_str_radix("", 10);
+                }
+
+                #[test]
+                #[should_panic(expected = "(bnum) attempt to parse integer from string containing invalid digit")]
+                fn parse_str_radix_invalid_char() {
+                    let _ = UTEST::parse_str_radix("a", 10);
+                }
+
+                #[test]
+                fn parse_empty() {
+                    assert_eq!(UTEST::from_radix_be(&[], 10), Some(UTEST::ZERO));
+                    assert_eq!(UTEST::from_radix_le(&[], 10), Some(UTEST::ZERO));
+                }
+
                 test::quickcheck_from_str_radix!(utest, "+" | "");
                 test::quickcheck_from_str!(utest);
 
-                #[test]
-                fn from_to_radix_le() {
-                    let buf = &[
-                        23, 100, 45, 58, 44, 56, 55, 100, 76, 54, 10, 100, 100, 100, 100, 100, 200,
-                        200, 200, 200, 255, 255, 255, 255, 255, 100, 100, 44, 60, 56, 48, 69, 160, 59,
-                        50, 50, 200, 250, 250, 250, 250, 250, 240, 120,
-                    ];
-                    let u = $BUint::<100>::from_radix_le(buf, 256).unwrap();
-                    let v = u.to_radix_le(256);
-                    assert_eq!(v, buf);
-
-                    let buf = &[34, 45, 32, 100, 53, 54, 65, 53, 0, 53];
-                    let option = $BUint::<100>::from_radix_le(buf, 99);
-                    assert!(option.is_none());
-
-                    let buf = &[
-                        1, 0, 2, 3, 1, 0, 0, 2, 3, 1, 2, 3, 1, 0, 1, 2, 3, 1, 3, 1, 3, 1, 3, 2, 3, 2,
-                        3, 1, 3, 2, 3, 1, 3, 2, 3, 2, 3, 1, 2, 3, 0, 0, 0, 2, 3,
-                    ];
-                    let u = $BUint::<100>::from_radix_le(buf, 4).unwrap();
-                    let v = u.to_radix_le(4);
-                    assert_eq!(v, buf);
-                }
-                #[test]
-                fn from_to_radix_be() {
-                    let buf = &[34, 57, 100, 184, 54, 40, 78, 10, 5, 200, 45, 67];
-                    let u = $BUint::<100>::from_radix_be(buf, 201).unwrap();
-                    let v = u.to_radix_be(201);
-                    assert_eq!(v, buf);
-
-                    let buf = &[
-                        1, 0, 2, 3, 1, 0, 0, 2, 3, 1, 2, 3, 1, 0, 1, 2, 3, 1, 3, 1, 3, 1, 3, 2, 3, 2,
-                        3, 1, 3, 2, 3, 1, 3, 2, 3, 2, 3, 1, 2, 3, 0, 0, 0, 2, 3,
-                    ];
-                    let u = $BUint::<100>::from_radix_be(buf, 4).unwrap();
-                    let v = u.to_radix_be(4);
-                    assert_eq!(v, buf);
-
-                    let buf = &[100, 4, 0, 54, 45, 20, 200, 43];
-                    let option = $BUint::<100>::from_radix_le(buf, 150);
-                    assert!(option.is_none());
-
-                    let buf = &[
-                        9, 5, 1, 5, 5, 1, 5, 9, 8, 7, 6, 4, 2, 5, 4, 2, 3, 4, 9, 0, 1, 2, 3, 4, 5, 1,
-                        6, 6, 1, 6, 7, 1, 6, 5, 1, 5, 1, 6, 1, 7, 1, 6, 1, 6, 1, 6, 1, 6, 1, 7, 1, 1,
-                        7, 1, 7, 1, 7, 1, 7, 5,
-                    ];
-                    let u = $BUint::<100>::from_radix_be(buf, 10).unwrap();
-                    let v = u.to_radix_be(10);
-                    assert_eq!(v, buf);
-                }
-                #[test]
-                fn from_to_str_radix() {
-                    let src = "34985789aasdfhoehdghjkh93485797df";
-                    let u = $BUint::<100>::from_str_radix(src, 32).unwrap();
-                    let v = u.to_str_radix(32);
-                    assert_eq!(v, src);
-
-                    let src = "934579gfhjh394hdkg9845798";
-                    let result = $BUint::<100>::from_str_radix(src, 18);
-                    assert!(result.is_err());
-
-                    let src = "120102301230102301230102030120321012";
-                    let u = $BUint::<100>::from_str_radix(src, 4).unwrap();
-                    assert_eq!(u.to_str_radix(4), src);
-                }
                 #[test]
                 fn parse_bytes() {
                     let src = "134957dkbhadoinegrhi983475hdgkhgdhiu3894hfd";

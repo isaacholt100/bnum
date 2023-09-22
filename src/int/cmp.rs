@@ -68,12 +68,25 @@ pub(crate) use impls;
 macro_rules! tests {
     ($int: ty) => {
         use crate::test::{test_bignum, types::*};
+        use core::cmp::Ord;
 
         test_bignum! {
             function: <$int>::eq(a: ref &$int, b: ref &$int)
         }
         test_bignum! {
             function: <$int>::partial_cmp(a: ref &$int, b: ref &$int)
+        }
+        test_bignum! {
+            function: <$int as PartialOrd>::lt(a: ref &$int, b: ref &$int)
+        }
+        test_bignum! {
+            function: <$int as PartialOrd>::le(a: ref &$int, b: ref &$int)
+        }
+        test_bignum! {
+            function: <$int as PartialOrd>::gt(a: ref &$int, b: ref &$int)
+        }
+        test_bignum! {
+            function: <$int as PartialOrd>::ge(a: ref &$int, b: ref &$int)
         }
 
         test_bignum! {
@@ -87,6 +100,20 @@ macro_rules! tests {
         }
         test_bignum! {
             function: <$int>::clamp(a: $int, min: $int, max: $int),
+            skip: min > max
+        }
+
+        test_bignum! {
+            function: <$int as Ord>::cmp(a: ref &$int, b: ref &$int)
+        }
+        test_bignum! {
+            function: <$int as Ord>::max(a: $int, b: $int)
+        }
+        test_bignum! {
+            function: <$int as Ord>::min(a: $int, b: $int)
+        }
+        test_bignum! {
+            function: <$int as Ord>::clamp(a: $int, min: $int, max: $int),
             skip: min > max
         }
     };

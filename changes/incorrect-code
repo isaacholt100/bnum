@@ -1,0 +1,4 @@
+<= v0.1.0: from_be, to_be
+<= v0.8.0: unchecked_shl, unchecked_shr (only for BUint with 64 bit digits)
+<= v0.8.0: Add<$Digit> for all BUints
+<= v0.8.0: lcm incorrectly panics when self is zero

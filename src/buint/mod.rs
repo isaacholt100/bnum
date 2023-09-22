@@ -374,14 +374,14 @@ macro_rules! mod_impl {
 
         impl<const N: usize> $BUint<N> {
             #[inline]
-            pub(crate) const unsafe fn unchecked_shl_internal(u: $BUint<N>, rhs: ExpType) -> $BUint<N> {
+            pub(crate) const unsafe fn unchecked_shl_internal(self, rhs: ExpType) -> $BUint<N> {
                 let mut out = $BUint::ZERO;
                 let digit_shift = (rhs >> digit::$Digit::BIT_SHIFT) as usize;
                 let bit_shift = rhs & digit::$Digit::BITS_MINUS_1;
 
-                let num_copies = N - digit_shift;
+                let num_copies = N.saturating_sub(digit_shift); // TODO: use unchecked_ methods from primitives when these are stablised and constified
 
-                u.digits.as_ptr().copy_to_nonoverlapping(out.digits.as_ptr().cast_mut().add(digit_shift), num_copies); // TODO: can change to out.digits.as_mut_ptr() when const_mut_refs is stabilised
+                self.digits.as_ptr().copy_to_nonoverlapping(out.digits.as_ptr().cast_mut().add(digit_shift), num_copies); // TODO: can change to out.digits.as_mut_ptr() when const_mut_refs is stabilised
 
                 if bit_shift != 0 {
                     let carry_shift = digit::$Digit::BITS - bit_shift;
@@ -409,10 +409,9 @@ macro_rules! mod_impl {
                 let digit_shift = (rhs >> digit::$Digit::BIT_SHIFT) as usize;
                 let bit_shift = rhs & digit::$Digit::BITS_MINUS_1;
 
-                let num_copies = N - digit_shift;
+                let num_copies = N.saturating_sub(digit_shift); // TODO: use unchecked_ methods from primitives when these are stablised and constified
 
                 u.digits.as_ptr().add(digit_shift).copy_to_nonoverlapping(out.digits.as_ptr().cast_mut(), num_copies); // TODO: can change to out.digits.as_mut_ptr() when const_mut_refs is stabilised
-                // u.digits.as_ptr().copy_to_nonoverlapping(out.digits.as_ptr().cast_mut().add(digit_shift), num_copies); // TODO: can change to out.digits.as_mut_ptr() when const_mut_refs is stabilised
 
                 if bit_shift != 0 {
                     let carry_shift = digit::$Digit::BITS - bit_shift;
@@ -543,24 +542,6 @@ macro_rules! mod_impl {
                 index
             }
 
-            #[inline]
-            pub(crate) const fn to_exp_type(self) -> Option<ExpType> {
-                let last_index = self.last_digit_index();
-                if self.digits[last_index] == 0 {
-                    return Some(0);
-                }
-                if last_index >= ExpType::BITS as usize >> digit::$Digit::BIT_SHIFT {
-                    return None;
-                }
-                let mut out = 0;
-                let mut i = 0;
-                while i <= last_index {
-                    out |= (self.digits[i] as ExpType) << (i << digit::$Digit::BIT_SHIFT);
-                    i += 1;
-                }
-                Some(out)
-            }
-
             #[allow(unused)]
             #[inline]
             fn square(self) -> Self {
@@ -634,6 +615,13 @@ macro_rules! mod_impl {
                 }
 
                 #[test]
+                fn digits() {
+                    let a = UTEST::MAX;
+                    let digits = *a.digits();
+                    assert_eq!(a, UTEST::from_digits(digits));
+                }
+
+                #[test]
                 fn bit() {
                     let u = UTEST::from(0b001010100101010101u64);
                     assert!(u.bit(0));
@@ -655,6 +643,10 @@ macro_rules! mod_impl {
                     assert!(UTEST::ONE.is_one());
                     assert!(!UTEST::MAX.is_one());
                     assert!(!UTEST::ZERO.is_one());
+                    let mut digits = *super::$BUint::<2>::MAX.digits();
+                    digits[0] = 1;
+                    let b = super::$BUint::<2>::from_digits(digits);
+                    assert!(!b.is_one());
                 }
 
                 #[test]
@@ -669,6 +661,20 @@ macro_rules! mod_impl {
                 #[test]
                 fn default() {
                     assert_eq!(UTEST::default(), utest::default().into());
+                }
+
+                #[test]
+                fn sum() {
+                    let v = vec![&UTEST::ZERO, &UTEST::ONE, &UTEST::TWO, &UTEST::THREE, &UTEST::FOUR];
+                    assert_eq!(UTEST::TEN, v.iter().copied().sum());
+                    assert_eq!(UTEST::TEN, v.into_iter().sum());
+                }
+
+                #[test]
+                fn product() {
+                    let v = vec![&UTEST::ONE, &UTEST::TWO, &UTEST::THREE];
+                    assert_eq!(UTEST::SIX, v.iter().copied().sum());
+                    assert_eq!(UTEST::SIX, v.into_iter().sum());
                 }
             }
         }

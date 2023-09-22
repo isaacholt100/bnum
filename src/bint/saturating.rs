@@ -140,6 +140,13 @@ macro_rules! saturating {
                     function: <itest>::saturating_sub_unsigned(a: itest, b: utest)
                 }
                 test_bignum! {
+                    function: <itest>::saturating_div(a: itest, b: itest),
+                    skip: b == 0,
+                    cases: [
+                        (itest::MIN, -1i8)
+                    ]
+                }
+                test_bignum! {
                     function: <itest>::saturating_neg(a: itest),
                     cases: [
                         (itest::MIN)

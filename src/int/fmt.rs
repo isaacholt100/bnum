@@ -1,12 +1,10 @@
 #[cfg(test)]
 macro_rules! format_trait {
     ($($method: ident), *) => {
-        use alloc::string::String;
-
         // This trait allows us to use the default tester macro instead of creating a custom one
         pub trait Format {
             $(
-                fn $method(&self, width: Option<u8>, extra: bool) -> String;
+                fn $method(&self, width: Option<u8>, extra: bool) -> alloc::string::String;
             )*
         }
     };
@@ -26,12 +24,10 @@ macro_rules! impl_format_method {
                     } else {
                         format!(concat!("{:width$", $format, "}"), self, width = width as usize)
                     }
+                } else if extra {
+                    format!(concat!("{:+#", $format, "}"), self)
                 } else {
-                    if extra {
-                        format!(concat!("{:+#", $format, "}"), self)
-                    } else {
-                        format!(concat!("{:", $format, "}"), self)
-                    }
+                    format!(concat!("{:", $format, "}"), self)
                 }
             }
         )*
@@ -69,7 +65,7 @@ macro_rules! test_formats {
     ($ty: ty; $($name: ident), *) => {
         $(
             test_bignum! {
-                function: <$ty as Format>::$name(a: ref &$ty, width: u8, extra: bool)
+                function: <$ty as Format>::$name(a: ref &$ty, width: Option<u8>, extra: bool)
             }
         )*
     };

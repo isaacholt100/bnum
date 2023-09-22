@@ -1,6 +1,20 @@
 # bnum
 
+[![GitHub](https://img.shields.io/badge/GitHub-isaacholt100/bnum-default?logo=github)](https://github.com/isaacholt100/bnum)
+[![doc.rs](https://img.shields.io/docsrs/bnum)](https://docs.rs/bnum/latest/bnum)
+[![Crates.io](https://img.shields.io/crates/d/bnum?logo=rust)
+](https://crates.io/crates/bnum)
+[![dependency status](https://deps.rs/crate/bnum/0.8.0/status.svg)](https://deps.rs/crate/bnum/0.8.0)
+[![license](https://img.shields.io/crates/l/bnum)](https://github.com/isaacholt100/bnum)
+
 Arbitrary precision, fixed-size signed and unsigned integer types for Rust.
+
+## Why bnum?
+
+- **Zero dependencies by default**: `bnum` does not depend on any other crates by default. Support for crates such as [`rand`](https://docs.rs/rand/latest/rand/) and [`serde`](https://docs.rs/serde/latest/serde/) can be enabled with crate [features](#features).
+- **`no-std` compatible**: `bnum` can be used in `no_std` environments, provided that the [`arbitrary`](#fuzzing) and [`quickcheck`](#quickcheck) features are not enabled.
+- **Compile-time integer parsing**: the `from_str_radix` and `parse_str_radix` methods on bnum integers are `const`, which allows parsing of integers from string slices at compile time. Note that this is more powerful than compile-time parsing of integer literals. This is because it allows parsing of strings in all radices from `2` to `36` inclusive instead of just `2`, `8`, `10` and `16`. Additionally, the string to be parsed does not have to be a literal: it could, for example, be obtained via `include_str!("...")`, or `option_env!("...")`.
+- **`const` evaluation**: nearly all methods defined on bnum integers are `const`, which allows complex compile-time calculations.
 
 ## Overview
 
@@ -11,12 +25,6 @@ This crate uses Rust's const generics to allow creation of integers of arbitrary
 `bnum` defines 4 unsigned integer types: each uses a different primitive integer as its digit type. `BUint` uses `u64` as its digit, `BUintD32` uses `u32`, `BUintD16` uses `u16` and `BUintD8` uses `u8`. The signed integer types, `BInt`, `BIntD32`, `BIntD16` and `BIntD8` are represented by these unsigned integers respectively.
 
 `BUint` and `BInt` are the fastest as they store (and so operate on) the least number of digits for a given bit size. However, the drawback is that the bit size must be a multiple of `64` (`bitsize = N * 64`). This is why other integer types are provided as well, as they allow the bit size to be a multiple of `32`, `16`, or `8` instead. When choosing which of these types to use, determine which of `64, 32, 16, 8` is the largest multiple of the desired bit size, and use the corresponding type. For example, if you wanted a 96-bit unsigned integer, 32 is the largest multiple of 96 out of these, so use `BUintD32<3>`. A 40-bit signed integer would be `BIntD8<5>`.
-
-`bnum` can be used in `no_std` environments, provided a global default allocator is configured.
-
-### Important: bug in v0.1.0
-
-In version `0.1.0`, the `from_be` and `to_be` methods on all integers were implemented incorrectly. This problem was fixed in `0.2.0` (the next version). If you are using `0.1.0`, either update to a later version or do not use these methods.
 
 ## Installation
 
@@ -108,11 +116,21 @@ The `serde` feature enables serialization and deserialization of bnum integers v
 
 The `numtraits` feature includes implementations of traits from the [`num_traits`](https://docs.rs/num-traits/latest/num_traits/) and [`num_integer`](https://docs.rs/num-integer/latest/num_integer/) crates, e.g. [`AsPrimitive`](https://docs.rs/num-traits/latest/num_traits/cast/trait.AsPrimitive.html), [`Signed`](https://docs.rs/num-traits/latest/num_traits/sign/trait.Signed.html), [`Integer`](https://docs.rs/num-integer/latest/num_integer/trait.Integer.html) and [`Roots`](https://docs.rs/num-integer/latest/num_integer/trait.Roots.html).
 
+### Quickcheck
+
+The `quickcheck` feature enables the [`Arbitrary`](https://docs.rs/quickcheck/latest/quickcheck/trait.Arbitrary.html) trait from the [`quickcheck`](https://docs.rs/quickcheck/latest/quickcheck/) crate. **Note: currently, this feature cannot be used with `no_std` (see <https://github.com/rust-fuzz/arbitrary/issues/38>).**
+
+### Zeroize
+
+The `zeroize` feature enables the [`Zeroize`](https://docs.rs/zeroize/latest/zeroize/trait.Zeroize.html) trait from the [`zeroize`](https://docs.rs/zeroize/latest/zeroize/) crate.
+
+### Valuable
+
+The `valuable` feature enables the [`Valuable`](https://docs.rs/valuable/latest/valuable/trait.Valuable.html) trait from the [`valuable`](https://docs.rs/valuable/latest/valuable/) crate.
+
 ### Nightly features
 
-Some functionality in this crate currently only works with the Nightly Rust compiler. The `nightly` feature enables this functionality, at the cost of only being able to compile on nightly. The nightly features that this crate uses are [`generic_const_exprs`](https://github.com/rust-lang/rust/issues/76560), [`const_trait_impl`](https://github.com/rust-lang/rust/issues/67792) and [`const_option_ext`](https://github.com/rust-lang/rust/issues/91930).
-
-Activating the `nightly` feature will enable the `from_be_bytes`, `from_le_bytes`, `from_ne_bytes`, `to_be_bytes`, `to_le_bytes` and `to_ne_bytes` methods on bnum's unsigned and signed integers and will make nearly every method defined in the library `const` (although as of `v0.8.0`, most methods are already `const` on stable).
+Activating the `nightly` feature will enable the `from_be_bytes`, `from_le_bytes`, `from_ne_bytes`, `to_be_bytes`, `to_le_bytes` and `to_ne_bytes` methods on bnum's unsigned and signed integers and will make the `unchecked_...` methods `const`. This comes at the cost of only being able to compile on nightly. The nightly features that this uses are [`generic_const_exprs`](https://github.com/rust-lang/rust/issues/76560), [`const_trait_impl`](https://github.com/rust-lang/rust/issues/67792) and [`const_option_ext`](https://github.com/rust-lang/rust/issues/91930).
 
 ## Testing
 

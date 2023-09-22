@@ -14,13 +14,13 @@ macro_rules! ops {
 
                 #[inline]
                 fn add(self, rhs: $Digit) -> Self {
-                    let mut out = Self::ZERO;
-                    let result = digit::$Digit::carrying_add(self.digits[0], rhs, false);
+                    let mut out = self;
+                    let result = digit::$Digit::carrying_add(out.digits[0], rhs, false);
                     out.digits[0] = result.0;
                     let mut carry = result.1;
                     let mut i = 1;
-                    while i < N {
-                        let result = digit::$Digit::carrying_add(self.digits[0], 0, carry);
+                    while i < N && carry {
+                        let result = out.digits[i].overflowing_add(1);
                         out.digits[i] = result.0;
                         carry = result.1;
                         i += 1;
@@ -128,6 +128,22 @@ macro_rules! ops {
                 use crate::test::types::big_types::$Digit::*;
 
                 crate::int::ops::tests!(utest);
+
+                quickcheck::quickcheck! {
+                    fn add_digit(a: utest, b: $Digit) -> quickcheck::TestResult {
+                        use crate::cast::As;
+
+                        let c: utest = b.as_();
+                        match a.checked_add(c) {
+                            None => quickcheck::TestResult::discard(),
+                            Some(d) => {
+                                let e: UTEST = b.as_();
+                                let f: UTEST = a.as_();
+                                quickcheck::TestResult::from_bool(f + e == f + b)
+                            }
+                        }
+                    }                    
+                }
             }
         }
     };

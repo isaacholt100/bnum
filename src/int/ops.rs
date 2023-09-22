@@ -69,8 +69,7 @@ macro_rules! shift_impl {
 
                 #[inline]
                 fn $method(self, rhs: $rhs) -> Self {
-                    use crate::ExpType;
-                    self.$method(rhs as ExpType)
+                    self.$method(rhs as crate::ExpType)
                 }
             }
         })*

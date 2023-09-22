@@ -211,7 +211,11 @@ macro_rules! numtraits {
 
             #[inline]
             fn lcm(&self, other: &Self) -> Self {
-                self.div_floor(&self.gcd(other)) * *other
+                if self.is_zero() || other.is_zero() {
+                    Self::ZERO
+                } else {
+                    self.div_floor(&self.gcd(other)) * *other
+                }
             }
 
             #[inline]

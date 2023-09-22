@@ -50,11 +50,11 @@ macro_rules! tests {
         }
         test_bignum! {
             function: <$int>::div_euclid(a: $int, b: $int),
-            skip: a.checked_div(b).is_none()
+            skip: a.checked_div_euclid(b).is_none()
         }
         test_bignum! {
             function: <$int>::rem_euclid(a: $int, b: $int),
-            skip: a.checked_rem(b).is_none()
+            skip: a.checked_rem_euclid(b).is_none()
         }
         test_bignum! {
             function: <$int>::abs_diff(a: $int, b: $int)

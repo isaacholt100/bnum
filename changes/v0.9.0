@@ -1,5 +1,11 @@
 - Add optional zeroize support
 - Add optional quickcheck support
 - Add optional valuable support
-- Make integers #[repr(transparent)]
+- Make integers #[repr(transparent)].
+- Make Slice struct #[repr(transparent)].
 - Performance enhancement for `shr` methods
+- Make wrapping_rem panic message same as for primitives
+- Breaking: make unchecked_shl, unchecked_shr take u32 as shift argument, not Self.
+- **NOTE**: the previous implementation of unchecked_shl, unchecked_shr for 64 digit integers was incorrect, it has now been fixed.
+- Fixed incorrect implementation of Add<Digit> for all BUints
+- Fixed lcm implementation to not panic if self is zero

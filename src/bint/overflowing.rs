@@ -294,7 +294,8 @@ macro_rules! overflowing {
                     function: <itest>::overflowing_div(a: itest, b: itest),
                     skip: b == 0,
                     cases: [
-                        (itest::MIN, -1i8)
+                        (itest::MIN, -1i8),
+                        (itest::MIN, 1i8)
                     ]
                 }
                 test_bignum! {

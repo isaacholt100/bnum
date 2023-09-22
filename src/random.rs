@@ -18,6 +18,7 @@ use core::ops::{Deref, DerefMut};
 /// Wrapper type designed to be filled with random big integers.
 ///
 /// This type exists because [`rand::Fill`](https://docs.rs/rand/latest/rand/trait.Fill.html) can't be implemented for `[BUint<N>]` (or any other slice of bnum integers) due to Rust's orphan rules. Instead, it is implemented for `Slice<BUint<N>>`, etc. The underlying slice can then be accessed by calling [`AsRef::as_ref`](https://doc.rust-lang.org/core/convert/trait.AsRef.html#tymethod.as_ref) or [`AsMut::as_mut`](https://doc.rust-lang.org/core/convert/trait.AsMut.html#tymethod.as_mut) on the wrapper, or deferencing it. An alternative way of filling a slice with random big integers is using the [`try_fill_slice`] method in this crate's [`random`](crate::random) module.
+#[repr(transparent)]
 pub struct Slice<T>(pub [T]);
 
 impl<T> AsRef<[T]> for Slice<T> {
@@ -216,7 +217,7 @@ macro_rules! test_random {
                 quickcheck::quickcheck! {
                     #[allow(non_snake_case)]
                     fn [<quickcheck_ $Rng _gen_ $int>](seed: u64) -> bool {
-                        use crate::test::TestConvert;
+                        use crate::test::convert;
                         use crate::test::types::*;
                         use rand::Rng;
                         use rand::rngs::$Rng;
@@ -226,12 +227,12 @@ macro_rules! test_random {
                         let big = rng.gen::<[<$int:upper>]>();
                         let primitive = rng2.gen::<$int>();
 
-                        TestConvert::into(big) == TestConvert::into(primitive)
+                        convert::test_eq(big, primitive)
                     }
 
                     #[allow(non_snake_case)]
                     fn [<quickcheck_ $Rng _fill_ $int _slice>](seed: u64) -> bool {
-                        use crate::test::TestConvert;
+                        use crate::test::convert;
                         use rand::Fill;
                         use rand::rngs::$Rng;
 
@@ -249,9 +250,7 @@ macro_rules! test_random {
                         big_array
                             .into_iter()
                             .zip(primitive_array.into_iter())
-                            .all(|(big, primitive)| {
-                                TestConvert::into(big) == TestConvert::into(primitive)
-                            })
+                            .all(|(big, primitive)| convert::test_eq(big, primitive))
                     }
 
                     #[allow(non_snake_case)]
@@ -259,7 +258,7 @@ macro_rules! test_random {
 						if min >= max {
 							return quickcheck::TestResult::discard();
 						}
-						use crate::test::TestConvert;
+						use crate::test::convert;
 						use rand::Rng;
 						use rand::rngs::$Rng;
 
@@ -271,7 +270,14 @@ macro_rules! test_random {
 						let big = rng.gen_range(min_big..max_big);
 						let primitive = rng2.gen_range(min..max);
 
-						quickcheck::TestResult::from_bool(TestConvert::into(big) == TestConvert::into(primitive))
+                        let mut result = convert::test_eq(big, primitive);
+
+						let big = rng.gen_range(min_big..=max_big);
+						let primitive = rng2.gen_range(min..=max);
+
+                        result &= convert::test_eq(big, primitive);
+
+						quickcheck::TestResult::from_bool(result)
 					}
 				}
 			)*
