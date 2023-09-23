@@ -25,6 +25,10 @@ jobs:
               run: cargo install cargo-tarpaulin
             - name: Run cargo-tarpaulin
               run: cargo tarpaulin --all-features
+            - name: Upload coverage reports to Codecov
+              uses: codecov/codecov-action@v3
+              env:
+                CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
     build_stable:
         runs-on: ubuntu-latest
         steps:
@@ -33,10 +37,6 @@ jobs:
               run: rustup install stable
             - name: Check crate builds on stable
               run: cargo build --features serde,numtraits,rand,arbitrary && cargo build
-            - name: Upload to codecov
-              uses: codecov/codecov-action@v1
-              with:
-                token: ${{ secrets.CODECOV_TOKEN }}
     test_nightly:
         runs-on: ubuntu-latest
         steps:
