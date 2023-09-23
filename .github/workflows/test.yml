@@ -21,10 +21,10 @@ jobs:
               with:
                 toolchain: nightly
                 override: true
+            - name: Install cargo-tarpaulin
+              run: cargo install cargo-tarpaulin
             - name: Run cargo-tarpaulin
-              uses: actions-rs/tarpaulin@v0.1
-              with:
-                args: "--all-features"
+              run: cargo tarpaulin --all-features
     build_stable:
         runs-on: ubuntu-latest
         steps:
