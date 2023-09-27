@@ -24,8 +24,8 @@ This crate uses Rust's const generics to allow creation of integers of arbitrary
 
 - **Zero dependencies by default**: `bnum` does not depend on any other crates by default. Support for crates such as [`rand`](https://docs.rs/rand/latest/rand/) and [`serde`](https://docs.rs/serde/latest/serde/) can be enabled with crate [features](#features).
 - **`no-std` compatible**: `bnum` can be used in `no_std` environments, provided that the [`arbitrary`](#fuzzing) and [`quickcheck`](#quickcheck) features are not enabled.
-- **Compile-time integer parsing**: the `from_str_radix` and `parse_str_radix` methods on bnum integers are `const`, which allows parsing of integers from string slices at compile time. Note that this is more powerful than compile-time parsing of integer literals. This is because it allows parsing of strings in all radices from `2` to `36` inclusive instead of just `2`, `8`, `10` and `16`. Additionally, the string to be parsed does not have to be a literal: it could, for example, be obtained via `include_str!("...")`, or `env!("...")`.
-- **`const` evaluation**: nearly all methods defined on bnum integers are `const`, which allows complex compile-time calculations.
+- **Compile-time integer parsing**: the `from_str_radix` and `parse_str_radix` methods on `bnum` integers are `const`, which allows parsing of integers from string slices at compile time. Note that this is more powerful than compile-time parsing of integer literals. This is because it allows parsing of strings in all radices from `2` to `36` inclusive instead of just `2`, `8`, `10` and `16`. Additionally, the string to be parsed does not have to be a literal: it could, for example, be obtained via `include_str!("...")`, or `env!("...")`.
+- **`const` evaluation**: nearly all methods defined on `bnum` integers are `const`, which allows complex compile-time calculations.
 
 ## Installation
 
@@ -43,10 +43,10 @@ bnum = { version = "0.9.0", features = ["rand"] } # enables the "rand" feature
 
 ## Example Usage
 
-**NB: the examples in the documentation use specific type aliases (e.g. `U256`, `U512`,  or `I256`, `I512`) to give examples of correct usage for most methods. There is nothing special about these types in particular: all methods that are shown with these are implemented for all unsigned/signed bnum integers for any value of `N`.**
+**NB: the examples in the documentation use specific type aliases (e.g. `U256`, `U512`,  or `I256`, `I512`) to give examples of correct usage for most methods. There is nothing special about these types in particular: all methods that are shown with these are implemented for all unsigned/signed `bnum` integers for any value of `N`.**
 
 ```rust
-// As of version 0.6.0, you can now parse integers from string slices at compile time with the const methods `from_str_radix` or `parse_str_radix`:
+// As of version 0.6.0, you can parse integers from string slices at compile time with the const methods `from_str_radix` or `parse_str_radix`:
 use bnum::types::{U256, I256};
 use bnum::errors::ParseIntError;
 
@@ -107,11 +107,11 @@ The `arbitrary` feature derives the [`Arbitrary`](https://docs.rs/arbitrary/late
 
 ### Random Number Generation
 
-The `rand` feature allows creation of random bnum integers via the [`rand`](https://docs.rs/rand/latest/rand/) crate.
+The `rand` feature allows creation of random `bnum` integers via the [`rand`](https://docs.rs/rand/latest/rand/) crate.
 
 ### Serialization and Deserialization
 
-The `serde` feature enables serialization and deserialization of bnum integers via the [`serde`](https://docs.rs/serde/latest/serde/) and [`serde_big_array`](https://docs.rs/serde-big-array/latest/serde_big_array/) crates.
+The `serde` feature enables serialization and deserialization of `bnum` integers via the [`serde`](https://docs.rs/serde/latest/serde/) and [`serde_big_array`](https://docs.rs/serde-big-array/latest/serde_big_array/) crates.
 
 ### `num_traits` and `num_integer` trait implementations
 
@@ -131,7 +131,7 @@ The `valuable` feature enables the [`Valuable`](https://docs.rs/valuable/latest/
 
 ### Nightly features
 
-Activating the `nightly` feature will enable the `from_be_bytes`, `from_le_bytes`, `from_ne_bytes`, `to_be_bytes`, `to_le_bytes` and `to_ne_bytes` methods on bnum's unsigned and signed integers and will make the `unchecked_...` methods `const`. This comes at the cost of only being able to compile on nightly. The nightly features that this uses are [`generic_const_exprs`](https://github.com/rust-lang/rust/issues/76560), [`const_trait_impl`](https://github.com/rust-lang/rust/issues/67792) and [`const_option_ext`](https://github.com/rust-lang/rust/issues/91930).
+Activating the `nightly` feature will enable the `from_be_bytes`, `from_le_bytes`, `from_ne_bytes`, `to_be_bytes`, `to_le_bytes` and `to_ne_bytes` methods on `bnum`'s unsigned and signed integers and will make the `unchecked_...` methods `const`. This comes at the cost of only being able to compile on nightly. The nightly features that this uses are [`generic_const_exprs`](https://github.com/rust-lang/rust/issues/76560), [`const_trait_impl`](https://github.com/rust-lang/rust/issues/67792) and [`const_option_ext`](https://github.com/rust-lang/rust/issues/91930).
 
 ## Testing
 
@@ -145,9 +145,9 @@ If a method is not documented explicitly, it will have a link to the equivalent 
 
 ## Known Issues
 
-At the moment, the [`From`](https://doc.rust-lang.org/core/convert/trait.From.html) trait is implemented for bnum's integers, from all the Rust primitive integers. However, this behaviour is not quite correct. For example, if a 24-bit wide unsigned integer were created (`BUintD8<3>`), this should not implement `From<u32>`, etc. and should implement `TryFrom<u32>` instead. To ensure correct behaviour, the [`FromPrimitive`](https://docs.rs/num-traits/latest/num_traits/cast/trait.FromPrimitive.html) trait from the [`num_traits`](https://docs.rs/num-traits/latest/num_traits/index.html) crate can be used instead, as this will always return an `Option` rather than the integer itself.
+At the moment, the [`From`](https://doc.rust-lang.org/core/convert/trait.From.html) trait is implemented for `bnum`'s integers, from all the Rust primitive integers. However, this behaviour is not quite correct. For example, if a 24-bit wide unsigned integer were created (`BUintD8<3>`), this should not implement `From<u32>`, etc. and should implement `TryFrom<u32>` instead. To ensure correct behaviour, the [`FromPrimitive`](https://docs.rs/num-traits/latest/num_traits/cast/trait.FromPrimitive.html) trait from the [`num_traits`](https://docs.rs/num-traits/latest/num_traits/index.html) crate can be used instead, as this will always return an `Option` rather than the integer itself.
 
-The [`num_traits::NumCast`](https://docs.rs/num-traits/latest/num_traits/cast/trait.NumCast.html) trait is implemented for bnum's integers but will panic if its method [`from`](https://docs.rs/num-traits/latest/num_traits/cast/trait.NumCast.html#tymethod.from) is called, as it is not possible to guarantee a correct conversion, due to trait bounds enforced by [`NumCast`](https://docs.rs/num-traits/latest/num_traits/cast/trait.NumCast.html). This trait should therefore never be used on bnum's integers. The implementation exists only to allow implementation of the [`num_traits::PrimInt`](https://docs.rs/num-traits/latest/num_traits/int/trait.PrimInt.html) trait for bnum's integers.
+The [`num_traits::NumCast`](https://docs.rs/num-traits/latest/num_traits/cast/trait.NumCast.html) trait is implemented for `bnum`'s integers but will panic if its method [`from`](https://docs.rs/num-traits/latest/num_traits/cast/trait.NumCast.html#tymethod.from) is called, as it is not possible to guarantee a correct conversion, due to trait bounds enforced by [`NumCast`](https://docs.rs/num-traits/latest/num_traits/cast/trait.NumCast.html). This trait should therefore never be used on `bnum`'s integers. The implementation exists only to allow implementation of the [`num_traits::PrimInt`](https://docs.rs/num-traits/latest/num_traits/int/trait.PrimInt.html) trait for `bnum`'s integers.
 
 ## Prior bugs
 
@@ -159,8 +159,8 @@ This library aims to provide arbitrary, fixed precision equivalents of Rust's 3 
 
 Currently, arbitrary precision fixed size floats are being worked on but are incomplete. Most of the basic methods, such as arithmetic and classification, have been implemented, but at the moment there is no implementation of the transcendental floating point methods such as `sin`, `exp`, `log`, etc.
 
-Additionally, a proc macro for parsing numeric values will be developed at some point, which will allow easier creation of large constant values for bnum's numeric types.
+Additionally, a proc macro for parsing numeric values will be developed at some point, which will allow easier creation of large constant values for `bnum`'s numeric types.
 
 ## Licensing
 
-bnum is licensed under either the MIT license or the Apache License 2.0.
+`bnum` is licensed under either the MIT license or the Apache License 2.0.

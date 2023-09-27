@@ -99,9 +99,9 @@ mod bigints {
 
 pub use bigints::*;
 
-/// Trait for fallible conversions between bnum integer types.
+/// Trait for fallible conversions between `bnum` integer types.
 /// 
-/// Unfortunately, [`TryFrom`] cannot currently be used for conversions between bnum integers, since `TryFrom<T> for T` is already implemented by the standard library. When the `generic_const_exprs` feature becomes stabilised, it may be possible to use `TryFrom` instead of `BTryFrom`. `BTryFrom` is designed to have the same behaviour as `TryFrom` for conversions between two primitive types, and conversions between a primitive type and a bnum type. `BTryFrom` is a workaround for the issue described above, and so you should not implement it yourself.
+/// Unfortunately, [`TryFrom`] cannot currently be used for conversions between `bnum` integers, since `TryFrom<T> for T` is already implemented by the standard library (and so it is not possible to implement `TryFrom<BUint<M>> for BUint<N>`). When the `generic_const_exprs` feature becomes stabilised, it may be possible to use `TryFrom` instead of `BTryFrom`. `BTryFrom` is designed to have the same behaviour as `TryFrom` for conversions between two primitive types, and conversions between a primitive type and a bnum type. `BTryFrom` is a workaround for the issue described above, and so you should not implement it yourself. It is only meant for conversions between `bnum` integers.
 pub trait BTryFrom<T>: Sized {
     type Error;
 

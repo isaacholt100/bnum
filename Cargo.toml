@@ -12,7 +12,7 @@ readme = "README.md"
 keywords = ["uint", "int", "bignum", "maths", "arbitrary"]
 categories = ["algorithms", "mathematics", "cryptography", "no-std"]
 
-exclude = ["src/float/*", "src/tests", "TODO.txt", "lit-parser/*"]
+exclude = ["src/float/*", "src/tests", "TODO.txt", "lit-parser/*"] # TODO: make sure to include these when they are ready
 
 [features]
 default = []
