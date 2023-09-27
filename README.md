@@ -5,16 +5,10 @@
 [![Crates.io](https://img.shields.io/crates/d/bnum?logo=rust)
 ](https://crates.io/crates/bnum)
 [![dependency status](https://deps.rs/repo/github/isaacholt100/bnum/status.svg)](https://deps.rs/repo/github/isaacholt100/bnum)
+[![codecov](https://codecov.io/gh/isaacholt100/bnum/branch/v0.9.0/graph/badge.svg)](https://codecov.io/gh/isaacholt100/bnum)
 [![license](https://img.shields.io/crates/l/bnum)](https://github.com/isaacholt100/bnum)
 
 Arbitrary precision, fixed-size signed and unsigned integer types for Rust.
-
-## Why bnum?
-
-- **Zero dependencies by default**: `bnum` does not depend on any other crates by default. Support for crates such as [`rand`](https://docs.rs/rand/latest/rand/) and [`serde`](https://docs.rs/serde/latest/serde/) can be enabled with crate [features](#features).
-- **`no-std` compatible**: `bnum` can be used in `no_std` environments, provided that the [`arbitrary`](#fuzzing) and [`quickcheck`](#quickcheck) features are not enabled.
-- **Compile-time integer parsing**: the `from_str_radix` and `parse_str_radix` methods on bnum integers are `const`, which allows parsing of integers from string slices at compile time. Note that this is more powerful than compile-time parsing of integer literals. This is because it allows parsing of strings in all radices from `2` to `36` inclusive instead of just `2`, `8`, `10` and `16`. Additionally, the string to be parsed does not have to be a literal: it could, for example, be obtained via `include_str!("...")`, or `option_env!("...")`.
-- **`const` evaluation**: nearly all methods defined on bnum integers are `const`, which allows complex compile-time calculations.
 
 ## Overview
 
@@ -25,6 +19,13 @@ This crate uses Rust's const generics to allow creation of integers of arbitrary
 `bnum` defines 4 unsigned integer types: each uses a different primitive integer as its digit type. `BUint` uses `u64` as its digit, `BUintD32` uses `u32`, `BUintD16` uses `u16` and `BUintD8` uses `u8`. The signed integer types, `BInt`, `BIntD32`, `BIntD16` and `BIntD8` are represented by these unsigned integers respectively.
 
 `BUint` and `BInt` are the fastest as they store (and so operate on) the least number of digits for a given bit size. However, the drawback is that the bit size must be a multiple of `64` (`bitsize = N * 64`). This is why other integer types are provided as well, as they allow the bit size to be a multiple of `32`, `16`, or `8` instead. When choosing which of these types to use, determine which of `64, 32, 16, 8` is the largest multiple of the desired bit size, and use the corresponding type. For example, if you wanted a 96-bit unsigned integer, 32 is the largest multiple of 96 out of these, so use `BUintD32<3>`. A 40-bit signed integer would be `BIntD8<5>`.
+
+## Why bnum?
+
+- **Zero dependencies by default**: `bnum` does not depend on any other crates by default. Support for crates such as [`rand`](https://docs.rs/rand/latest/rand/) and [`serde`](https://docs.rs/serde/latest/serde/) can be enabled with crate [features](#features).
+- **`no-std` compatible**: `bnum` can be used in `no_std` environments, provided that the [`arbitrary`](#fuzzing) and [`quickcheck`](#quickcheck) features are not enabled.
+- **Compile-time integer parsing**: the `from_str_radix` and `parse_str_radix` methods on bnum integers are `const`, which allows parsing of integers from string slices at compile time. Note that this is more powerful than compile-time parsing of integer literals. This is because it allows parsing of strings in all radices from `2` to `36` inclusive instead of just `2`, `8`, `10` and `16`. Additionally, the string to be parsed does not have to be a literal: it could, for example, be obtained via `include_str!("...")`, or `env!("...")`.
+- **`const` evaluation**: nearly all methods defined on bnum integers are `const`, which allows complex compile-time calculations.
 
 ## Installation
 
@@ -147,6 +148,10 @@ If a method is not documented explicitly, it will have a link to the equivalent 
 At the moment, the [`From`](https://doc.rust-lang.org/core/convert/trait.From.html) trait is implemented for bnum's integers, from all the Rust primitive integers. However, this behaviour is not quite correct. For example, if a 24-bit wide unsigned integer were created (`BUintD8<3>`), this should not implement `From<u32>`, etc. and should implement `TryFrom<u32>` instead. To ensure correct behaviour, the [`FromPrimitive`](https://docs.rs/num-traits/latest/num_traits/cast/trait.FromPrimitive.html) trait from the [`num_traits`](https://docs.rs/num-traits/latest/num_traits/index.html) crate can be used instead, as this will always return an `Option` rather than the integer itself.
 
 The [`num_traits::NumCast`](https://docs.rs/num-traits/latest/num_traits/cast/trait.NumCast.html) trait is implemented for bnum's integers but will panic if its method [`from`](https://docs.rs/num-traits/latest/num_traits/cast/trait.NumCast.html#tymethod.from) is called, as it is not possible to guarantee a correct conversion, due to trait bounds enforced by [`NumCast`](https://docs.rs/num-traits/latest/num_traits/cast/trait.NumCast.html). This trait should therefore never be used on bnum's integers. The implementation exists only to allow implementation of the [`num_traits::PrimInt`](https://docs.rs/num-traits/latest/num_traits/int/trait.PrimInt.html) trait for bnum's integers.
+
+## Prior bugs
+
+The short list of bugs in previous versions can be found at [`changes/prior-bugs.md`](https://github.com/isaacholt100/bnum/blob/master/changes/prior-bugs.md).
 
 ## Future Work
 

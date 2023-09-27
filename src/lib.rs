@@ -99,6 +99,15 @@ mod bigints {
 
 pub use bigints::*;
 
+/// Trait for fallible conversions between bnum integer types.
+/// 
+/// Unfortunately, [`TryFrom`] cannot currently be used for conversions between bnum integers, since `TryFrom<T> for T` is already implemented by the standard library. When the `generic_const_exprs` feature becomes stabilised, it may be possible to use `TryFrom` instead of `BTryFrom`. `BTryFrom` is designed to have the same behaviour as `TryFrom` for conversions between two primitive types, and conversions between a primitive type and a bnum type. `BTryFrom` is a workaround for the issue described above, and so you should not implement it yourself.
+pub trait BTryFrom<T>: Sized {
+    type Error;
+
+    fn try_from(from: T) -> Result<Self, Self::Error>;
+}
+
 // TODO: create round-to-nearest ties-to-even function, it could take a uint and a target bit width, and return the correctly rounded result in the target precision, as well as the overflow, and whether a round up occurred
 // #[allow(unused)]
 // fn f64_as_f32(f: f64) -> f32 {

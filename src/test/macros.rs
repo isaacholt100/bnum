@@ -95,6 +95,25 @@ macro_rules! results {
 
 pub(crate) use results;
 
+macro_rules! test_btryfrom {
+    ($primitive: ty; $($From: ty), *) => {
+        paste::paste! {
+            $(
+                quickcheck::quickcheck! {
+                    #[allow(non_snake_case)]
+                    fn [<quickcheck_ $primitive _BTryFrom_ $From _try_from>](from: $From) -> bool {
+                        let big: Result<[<$primitive:upper>], _> = <[<$primitive:upper>] as BTryFrom<_>>::try_from(from);
+                        let primitive: Result<$primitive, _> = <$primitive>::try_from(from);
+                        test::convert::test_eq(big, primitive)
+                    }
+                }
+            )*
+        }
+    };
+}
+
+pub(crate) use test_btryfrom;
+
 macro_rules! test_from {
     {
         function: <$primitive: ty as $Trait: ident>:: $name: ident,

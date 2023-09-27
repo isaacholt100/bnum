@@ -74,6 +74,9 @@ macro_rules! tests {
             function: <$int>::eq(a: ref &$int, b: ref &$int)
         }
         test_bignum! {
+            function: <$int as PartialEq>::eq(a: ref &$int, b: ref &$int)
+        }
+        test_bignum! {
             function: <$int>::partial_cmp(a: ref &$int, b: ref &$int)
         }
         test_bignum! {

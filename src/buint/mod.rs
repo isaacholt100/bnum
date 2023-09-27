@@ -28,9 +28,7 @@ macro_rules! mod_impl {
         ///
         #[doc = doc::arithmetic_doc!($BUint)]
 
-        // Clippy: we can allow derivation of `Hash` and manual implementation of `PartialEq` as the derived `PartialEq` would be the same except we make our implementation const.
-        #[allow(clippy::derive_hash_xor_eq)]
-        #[derive(Clone, Copy, Hash)]
+        #[derive(Clone, Copy, Hash, PartialEq, Eq)]
         #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
         #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
         #[cfg_attr(feature = "valuable", derive(valuable::Valuable))]

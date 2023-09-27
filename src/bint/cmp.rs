@@ -1,18 +1,18 @@
 use crate::nightly::impl_const;
-use core::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
+use core::cmp::{Ord, Ordering, PartialOrd};
 
 macro_rules! cmp {
     ($BUint: ident, $BInt: ident, $Digit: ident) => {
-        impl_const! {
-            impl<const N: usize> const PartialEq for $BInt<N> {
-                #[inline]
-                fn eq(&self, other: &Self) -> bool {
-                    Self::eq(self, other)
-                }
-            }
-        }
+        // impl_const! {
+        //     impl<const N: usize> const PartialEq for $BInt<N> {
+        //         #[inline]
+        //         fn eq(&self, other: &Self) -> bool {
+        //             Self::eq(self, other)
+        //         }
+        //     }
+        // }
 
-        impl<const N: usize> Eq for $BInt<N> {}
+        // impl<const N: usize> Eq for $BInt<N> {}
 
         impl_const! {
             impl<const N: usize> const PartialOrd for $BInt<N> {
