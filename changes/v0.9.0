@@ -11,3 +11,4 @@
 - Fixed lcm implementation to not panic if self is zero
 - Changed to #[derive(PartialEq, Eq)] to allow pattern matching on const values.
 - Added trait `BTryFrom` for fallible conversions between bnum integers (`TryFrom` can't be used due to the automatic implementation of `TryFrom<T> for T`).
+- Don't require `std_rng` and `small_rng` features of rand crate except when testing.
