@@ -1,7 +1,7 @@
 #![feature(wrapping_next_power_of_two, int_roundings)]
 
 use bnum::types::{U128 as BU128, U512};
-use bnum::prelude::*;
+// use bnum::prelude::*;
 use core::iter::Iterator;
 use criterion::black_box;
 use rand::prelude::*;
@@ -31,7 +31,7 @@ macro_rules! unzip {
     };
 }
 
-unzip!(fn unzip3<T1, T2, T3>);
+// unzip!(fn unzip3<T1, T2, T3>);
 unzip!(fn unzip2<T1, T2>);
 
 mod uuint {
