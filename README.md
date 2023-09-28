@@ -5,7 +5,7 @@
 [![Crates.io](https://img.shields.io/crates/d/bnum?logo=rust)
 ](https://crates.io/crates/bnum)
 [![dependency status](https://deps.rs/repo/github/isaacholt100/bnum/status.svg)](https://deps.rs/repo/github/isaacholt100/bnum)
-[![codecov](https://codecov.io/gh/isaacholt100/bnum/branch/v0.9.0/graph/badge.svg)](https://codecov.io/gh/isaacholt100/bnum)
+[![codecov](https://codecov.io/gh/isaacholt100/bnum/branch/master/graph/badge.svg)](https://codecov.io/gh/isaacholt100/bnum)
 [![license](https://img.shields.io/crates/l/bnum)](https://github.com/isaacholt100/bnum)
 
 Arbitrary precision, fixed-size signed and unsigned integer types for Rust.
