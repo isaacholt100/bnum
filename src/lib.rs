@@ -12,13 +12,14 @@
     feature(
         bigint_helper_methods,
         int_roundings,
-        //float_minimum_maximum,
+        float_minimum_maximum,
         wrapping_next_power_of_two,
-        //float_next_up_down,
+        float_next_up_down,
+        unchecked_math,
     )
 )]
 #![doc = include_str!("../README.md")]
-#![cfg_attr(not(feature = "arbitrary"), no_std)]
+#![cfg_attr(not(any(feature = "arbitrary", feature = "quickcheck")), no_std)]
 // TODO: MAKE SURE NO_STD IS ENABLED WHEN PUBLISHING NEW VERSION
 
 #[macro_use]
@@ -31,7 +32,6 @@ pub mod cast;
 mod digit;
 mod doc;
 pub mod errors;
-pub mod helpers;
 mod int;
 mod nightly;
 pub mod prelude;
@@ -41,11 +41,11 @@ pub mod random;
 
 pub mod types;
 
-/*#[cfg(feature = "nightly")]
-mod float;
+// #[cfg(feature = "nightly")]
+// mod float;
 
-#[cfg(feature = "nightly")]
-pub use float::Float;*/
+// #[cfg(feature = "nightly")]
+// pub use float::Float;
 
 #[cfg(test)]
 mod test;
@@ -53,9 +53,6 @@ mod test;
 #[cfg(test)]
 use test::types::*;
 
-/*#[cfg(feature = "usize_exptype")]
-type ExpType = usize;
-#[cfg(not(feature = "usize_exptype"))]*/
 type ExpType = u32;
 
 macro_rules! macro_impl {
@@ -99,14 +96,11 @@ mod bigints {
 
 pub use bigints::*;
 
-#[cfg(feature = "numtraits")]
-#[cfg(test)]
-quickcheck::quickcheck! {
-    fn test_f32_parse(f: f32) -> quickcheck::TestResult {
-        if !f.is_finite() {
-            return quickcheck::TestResult::discard();
-        }
-        let s = f.to_string();
-        quickcheck::TestResult::from_bool(<f32 as num_traits::Num>::from_str_radix(&s, 10).unwrap() == <f32 as core::str::FromStr>::from_str(&s).unwrap())
-    }
+/// Trait for fallible conversions between `bnum` integer types.
+/// 
+/// Unfortunately, [`TryFrom`] cannot currently be used for conversions between `bnum` integers, since [`TryFrom<T> for T`](https://doc.rust-lang.org/std/convert/trait.TryFrom.html#impl-TryFrom%3CU%3E-for-T) is already implemented by the standard library (and so it is not possible to implement `TryFrom<BUint<M>> for BUint<N>`). When the [`generic_const_exprs`](https://github.com/rust-lang/rust/issues/76560) feature becomes stabilised, it may be possible to use [`TryFrom`] instead of `BTryFrom`. `BTryFrom` is designed to have the same behaviour as [`TryFrom`] for conversions between two primitive types, and conversions between a primitive type and a bnum type. `BTryFrom` is a workaround for the issue described above, and so you should not implement it yourself. It should only be used for conversions between `bnum` integers.
+pub trait BTryFrom<T>: Sized {
+    type Error;
+
+    fn try_from(from: T) -> Result<Self, Self::Error>;
 }

@@ -206,15 +206,16 @@ macro_rules! numtraits {
                 fn gcd(&self, other: &Self) -> Self {
                     let gcd = self.unsigned_abs().gcd(&other.unsigned_abs());
                     let out = Self::from_bits(gcd);
-                    if out == Self::MIN {
-                        panic!("{}", errors::err_msg!("gcd of is too large"));
-                    }
                     out.abs()
                 }
 
                 #[inline]
                 fn lcm(&self, other: &Self) -> Self {
-                    self.div_floor(&self.gcd(other)) * *other
+                    if self.is_zero() || other.is_zero() {
+                        Self::ZERO
+                    } else {
+                        self.div_floor(&self.gcd(other)) * *other
+                    }
                 }
 
                 #[inline]

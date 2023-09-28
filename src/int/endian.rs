@@ -8,7 +8,7 @@ macro_rules! test_from_endian_slice {
                     type Big = [<$int:upper>];
                     type Primitive = crate::test::types::$int;
 
-                    use crate::test::TestConvert;
+                    use crate::test::convert;
                     use crate::int::endian;
 
                     // pad_length is greater than the size of the integer in bytes
@@ -26,11 +26,11 @@ macro_rules! test_from_endian_slice {
 
                     let mut bytes = int.[<to_ $endian _bytes>](); // random input bytes
                     // first, test that the original bytes as slice is converted back to the same integer
-                    let mut passed = TestConvert::into(Big::[<from_ $endian _slice>](&bytes[..])) == Some(int);
+                    let mut passed = convert::test_eq(Big::[<from_ $endian _slice>](&bytes[..]), Some(int));
 
                     let bytes_vec = endian::[<$endian _bytes_vec>](&bytes[..], pad_bits, pad_length); // random vector padded with a random amount of bytes
                     // test that the padded bytes are still converted back to the same integer
-                    passed &= TestConvert::into(Big::[<from_ $endian _slice>](&bytes_vec[..])) == Some(int);
+                    passed &= convert::test_eq(Big::[<from_ $endian _slice>](&bytes_vec[..]), Some(int));
 
                     // most significant byte position, range of bytes indices to change to padding bits, range of bytes indices that will result in the same integer without the padding bits
                     let (msb, pad_range, slice_range) = endian::[<$endian _pad>](pad_length, Primitive::BITS);

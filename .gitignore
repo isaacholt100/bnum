@@ -2,3 +2,10 @@
 Cargo.lock
 
 .DS_Store
+
+/bench/target
+/bench/criterion
+
+lit-parser/target
+lit-parser/bench/target
+lit-parser/bench/criterion

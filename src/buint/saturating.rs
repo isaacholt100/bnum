@@ -89,6 +89,10 @@ macro_rules! saturating {
                     function: <utest>::saturating_mul(a: utest, b: utest)
                 }
                 test_bignum! {
+                    function: <utest>::saturating_div(a: utest, b: utest),
+                    skip: b == 0
+                }
+                test_bignum! {
                     function: <utest>::saturating_pow(a: utest, b: u16)
                 }
             }

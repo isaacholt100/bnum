@@ -150,26 +150,30 @@ macro_rules! convert {
         int_try_from_bint!($BInt, $Digit; i8, i16, i32, i64, i128, isize);
         uint_try_from_bint!($BInt; u8, u16, u32, u64, u128, usize);
 
-        impl_const! {
-            impl<const N: usize> const TryFrom<$BUint<N>> for $BInt<N> {
-                type Error = TryFromIntError;
+        // impl_const! {
+        //     impl<const N: usize> const TryFrom<$BUint<N>> for $BInt<N> {
+        //         type Error = TryFromIntError;
 
-                #[inline]
-                fn try_from(u: $BUint<N>) -> Result<Self, Self::Error> {
-                    if u.leading_ones() != 0 {
-                        Err(TryFromIntError(()))
-                    } else {
-                        Ok(Self::from_bits(u))
-                    }
-                }
-            }
-        }
+        //         #[inline]
+        //         fn try_from(u: $BUint<N>) -> Result<Self, Self::Error> {
+        //             if u.leading_ones() != 0 {
+        //                 Err(TryFromIntError(()))
+        //             } else {
+        //                 Ok(Self::from_bits(u))
+        //             }
+        //         }
+        //     }
+        // }
 
         #[cfg(test)]
         paste::paste! {
             mod [<$Digit _digit_tests>] {
                 use crate::test::types::big_types::$Digit::*;
                 use crate::test::{self, types::itest};
+                use crate::test::cast_types::*;
+                use crate::BTryFrom;
+
+                test::test_btryfrom!(itest; UTESTD8, UTESTD16, UTESTD32, UTESTD64, TestUint1, TestUint2, TestUint3, TestUint4, TestUint5, TestUint6, TestUint7, TestUint8, TestUint9, TestUint10, ITESTD8, ITESTD16, ITESTD32, ITESTD64, TestInt1, TestInt2, TestInt3, TestInt4, TestInt5, TestInt6, TestInt7, TestInt8, TestInt9, TestInt10);
 
                 #[cfg(not(test_int_bits = "64"))]
                 test::test_from! {

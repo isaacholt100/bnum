@@ -108,13 +108,19 @@ macro_rules! wrapping {
         paste::paste! {
             mod [<$Digit _digit_tests>] {
                 use crate::test::types::big_types::$Digit::*;
-                use crate::test::{test_bignum, types::itest};
+                use crate::test::{test_bignum, types::{itest, utest}};
 
                 test_bignum! {
                     function: <itest>::wrapping_add(a: itest, b: itest)
                 }
                 test_bignum! {
+                    function: <itest>::wrapping_add_unsigned(a: itest, b: utest)
+                }
+                test_bignum! {
                     function: <itest>::wrapping_sub(a: itest, b: itest)
+                }
+                test_bignum! {
+                    function: <itest>::wrapping_sub_unsigned(a: itest, b: utest)
                 }
                 test_bignum! {
                     function: <itest>::wrapping_mul(a: itest, b: itest)
@@ -150,6 +156,9 @@ macro_rules! wrapping {
                 }
                 test_bignum! {
                     function: <itest>::wrapping_shr(a: itest, b: u16)
+                }
+                test_bignum! {
+                    function: <itest>::wrapping_abs(a: itest)
                 }
                 test_bignum! {
                     function: <itest>::wrapping_pow(a: itest, b: u16)

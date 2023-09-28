@@ -1,0 +1,4 @@
+- `<= v0.1.0`: incorrect implementation of `from_be`, `to_be` on all integers.
+- `<= v0.8.0`: `unchecked_shl`, `unchecked_shr` (only for `BUint` with `64` bit digits).
+- `<= v0.8.0`: incorrect implementation of `Add<$Digit>` for all `BUint`s (where `$Digit` is the underlying digit type).
+- `<= v0.8.0`: `lcm` incorrectly panics when `self` is zero.

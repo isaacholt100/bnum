@@ -1,0 +1,14 @@
+name: Publish dry run
+
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  publish_dry_run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: publish dry run
+        run: cargo publish --dry-run

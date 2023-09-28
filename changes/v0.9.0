@@ -1,0 +1,14 @@
+- Add optional zeroize support
+- Add optional quickcheck support
+- Add optional valuable support
+- Make integers #[repr(transparent)].
+- Make Slice struct #[repr(transparent)].
+- Performance enhancement for `shr` methods
+- Make wrapping_rem panic message same as for primitives
+- Breaking: make unchecked_shl, unchecked_shr take u32 as shift argument, not Self.
+- Fixed incorrect implementation of unchecked_shl, unchecked_shr for 64 bit digit integers.
+- Fixed incorrect implementation of Add<$Digit> for all BUints
+- Fixed lcm implementation to not panic if self is zero
+- Changed to #[derive(PartialEq, Eq)] to allow pattern matching on const values.
+- Added trait `BTryFrom` for fallible conversions between bnum integers (`TryFrom` can't be used due to the automatic implementation of `TryFrom<T> for T`).
+- Don't require `std_rng` and `small_rng` features of rand crate except when testing.

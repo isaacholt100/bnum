@@ -5,6 +5,7 @@ use crate::doc;
 use crate::{BUintD8, BUintD16, BUintD32, BUint, BIntD8, BIntD16, BIntD32, BInt};
 use crate::ExpType;
 use crate::buint::as_float::{CastToFloatConsts, cast_float_from_uint};
+use crate::buint::as_float;
 
 macro_rules! uint_as_float {
     ($($uint: ident $(<$N: ident>)?), *) => {
@@ -99,6 +100,61 @@ macro_rules! float_as_int {
 }
 
 float_as_int!(i8; u8, i16; u16, i32; u32, i64; u64, i128; u128, isize; usize);
+
+macro_rules! impl_mantissa_for_buint {
+    ($BUint: ident, $BInt: ident, $Digit: ident) => {
+        impl<const N: usize> as_float::Mantissa for $BUint<N> {
+            const ONE: Self = Self::ONE;
+            const TWO: Self = Self::TWO;
+            const MAX: Self = Self::MAX;
+            const BITS: ExpType = Self::BITS;
+
+            #[inline]
+            fn bit(&self, n: ExpType) -> bool {
+                Self::bit(&self, n)
+            }
+
+            #[inline]
+            fn shl(self, n: ExpType) -> Self {
+                Self::shl(self, n)
+            }
+
+            #[inline]
+            fn shr(self, n: ExpType) -> Self {
+                Self::shr(self, n)
+            }
+
+            #[inline]
+            fn add(self, rhs: Self) -> Self {
+                Self::add(self, rhs)
+            }
+
+            #[inline]
+            fn sub(self, rhs: Self) -> Self {
+                Self::sub(self, rhs)
+            }
+
+            #[inline]
+            fn leading_zeros(self) -> ExpType {
+                Self::leading_zeros(self)
+            }
+
+            #[inline]
+            fn bitand(self, rhs: Self) -> Self {
+                Self::bitand(self, rhs)
+            }
+
+            #[inline]
+            fn gt(&self, rhs: &Self) -> bool {
+                Self::gt(&self, &rhs)
+            }
+        }
+    };
+}
+
+pub(crate) use impl_mantissa_for_buint;
+
+crate::macro_impl!(impl_mantissa_for_buint);
 
 use crate::buint::float_as::{uint_cast_from_float, CastUintFromFloatHelper};
 

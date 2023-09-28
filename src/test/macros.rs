@@ -1,6 +1,6 @@
 macro_rules! test_bignum {
     {
-        function: <$primitive: ty $(as $Trait: ident $(<$($gen: ty), *>)?)?> :: $function: ident ($($param: ident : $(ref $re: tt)? $ty: ty), *)
+        function: $($unsafe: ident)? <$primitive: ty $(as $Trait: ident $(<$($gen: ty), *>)?)?> :: $function: ident ($($param: ident : $(ref $re: tt)? $ty: ty), *)
         $(, skip: $skip: expr)?
     } => {
         paste::paste! {
@@ -11,7 +11,9 @@ macro_rules! test_bignum {
                         return quickcheck::TestResult::discard();
                     })?
 
-                    let (big, primitive) = crate::test::results!(<$primitive $(as $Trait $(<$($gen), *>)?)?>::$function ($($($re)? Into::into($param)), *));
+                    let (big, primitive) = $($unsafe)? {
+                        crate::test::results!(<$primitive $(as $Trait $(<$($gen), *>)?)?>::$function ($($($re)? Into::into($param)), *))
+                    };
 
                     quickcheck::TestResult::from_bool(big == primitive)
                 }
@@ -92,6 +94,25 @@ macro_rules! results {
 }
 
 pub(crate) use results;
+
+macro_rules! test_btryfrom {
+    ($primitive: ty; $($From: ty), *) => {
+        paste::paste! {
+            $(
+                quickcheck::quickcheck! {
+                    #[allow(non_snake_case)]
+                    fn [<quickcheck_ $primitive _BTryFrom_ $From _try_from>](from: $From) -> bool {
+                        let big: Result<[<$primitive:upper>], _> = <[<$primitive:upper>] as BTryFrom<_>>::try_from(from);
+                        let primitive: Result<$primitive, _> = <$primitive>::try_from(from);
+                        test::convert::test_eq(big, primitive)
+                    }
+                }
+            )*
+        }
+    };
+}
+
+pub(crate) use test_btryfrom;
 
 macro_rules! test_from {
     {
@@ -194,6 +215,8 @@ macro_rules! quickcheck_from_str_radix {
                 s2.insert_str(0, leading_sign);
 
                 let (big, primitive) = crate::test::results!(<$primitive>::from_str_radix(&s2, radix as u32));
+
+                // let parsed = 
 
                 quickcheck::TestResult::from_bool(big == primitive)
             }

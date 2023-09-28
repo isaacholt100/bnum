@@ -1,7 +1,20 @@
 use super::Float;
 use crate::bint::BIntD8;
 use crate::buint::BUintD8;
-use crate::cast::As;
+
+const fn buint_from_usize<const N: usize>(u: usize) -> BUintD8<N> {
+    const UINT_BITS: usize = <usize>::BITS as usize;
+    let mut out = BUintD8::ZERO;
+    let mut i = 0;
+    while i << crate::digit::u8::BIT_SHIFT < UINT_BITS {
+        let d = (u >> (i << crate::digit::u8::BIT_SHIFT)) as u8;
+        if d != 0 {
+            out.digits[i] = d;
+        }
+        i += 1;
+    }
+    out
+}
 
 impl<const W: usize, const MB: usize> Float<W, MB> {
     pub const RADIX: u32 = 2;
@@ -11,7 +24,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     pub const DIGITS: u32 = BUintD8::<W>::ONE.wrapping_shl(Self::MB).ilog10() as u32;
 
     pub const EPSILON: Self = {
-        let u = Self::EXP_BIAS.to_bits().sub(MB.as_::<BUintD8<W>>());
+        let u = Self::EXP_BIAS.to_bits().sub(buint_from_usize::<W>(MB));
         Self::from_bits(u.shl(Self::MB))
     };
 

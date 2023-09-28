@@ -440,22 +440,24 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     where
         [(); W * 2]:,
     {
+        // println!("{:032b}, {}", self.to_bits(), n);
         if n == 0 {
-            return Self::ONE;
+            return self;
         }
-        let mut n_abs = n.abs();
-        let mut x = Self::ONE;
-        while n_abs != 0 {
+        let mut n_abs = n.unsigned_abs(); // unsigned abs since otherwise overflow could occur (if n == i32::MIN)
+        let mut y = Self::ONE;
+        while n_abs > 1 {
             if n_abs & 1 == 1 {
-                x = x * self;
+                // out = out * self;
+                y = y * self;
             }
             self = self * self;
             n_abs >>= 1;
         }
         if n.is_negative() {
-            Self::ONE / (self * x)
+            Self::ONE / (self * y)
         } else {
-            self * x
+            self * y
         }
     }
 
@@ -695,11 +697,11 @@ mod tests {
         function: <ftest>::rem_euclid(f1: ftest, f2: ftest)
     }
 
-    /*test_bignum! {
+    test_bignum! {
         function: <ftest>::powi(f: ftest, n: i32)
     }
 
-    #[test]
+    /*#[test]
     fn fmod() {
         use super::super::F64;
         let f1 = 0.0;

@@ -513,7 +513,8 @@ macro_rules! checked {
                 test_bignum! {
                     function: <utest>::checked_ilog(a: utest, b: utest),
                     cases: [
-                        (2u8, 60u8)
+                        (2u8, 60u8),
+                        (utest::MAX, 2u8)
                     ]
                 }
                 test_bignum! {

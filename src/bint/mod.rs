@@ -30,12 +30,10 @@ use core::default::Default;
 
 use core::iter::{Iterator, Product, Sum};
 
-#[cfg(feature = "arbitrary")]
-use arbitrary::Arbitrary;
-
 macro_rules! mod_impl {
     ($BUint: ident, $BInt: ident, $Digit: ident) => {
-        /// Big signed integer type, of fixed size which must be known at compile time.
+        /// Big signed integer type, of fixed size which must be known at compile time. Stored as a
+        #[doc = concat!(" [`", stringify!($BUint), "`].")]
         ///
         /// Digits of the underlying
         #[doc = concat!("[`", stringify!($BUint), "`](crate::", stringify!($BUint), ")")]
@@ -44,14 +42,17 @@ macro_rules! mod_impl {
         ///
         #[doc = doc::arithmetic_doc!($BInt)]
 
-        // Clippy: we can allow derivation of `Hash` and manual implementation of `PartialEq` as the derived `PartialEq` would be the same except we make our implementation const.
-        #[allow(clippy::derived_hash_with_manual_eq)]
-        #[derive(Clone, Copy, Hash)]
+        #[derive(Clone, Copy, Hash, PartialEq, Eq)]
         #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-        #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+        #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+        #[cfg_attr(feature = "valuable", derive(valuable::Valuable))]
+        #[repr(transparent)]
         pub struct $BInt<const N: usize> {
             pub(crate) bits: $BUint<N>,
         }
+
+        #[cfg(feature = "zeroize")]
+        impl<const N: usize> zeroize::DefaultIsZeroes for $BInt<N> {}
 
         impl<const N: usize> $BInt<N> {
             #[doc = doc::count_ones!(I 256)]
@@ -340,15 +341,6 @@ macro_rules! mod_impl {
             pub const fn to_bits(self) -> $BUint<N> {
                 self.bits
             }
-
-            #[inline]
-            pub(crate) const fn to_exp_type(self) -> Option<ExpType> {
-                if self.is_negative() {
-                    None
-                } else {
-                    self.bits.to_exp_type()
-                }
-            }
         }
 
         impl<const N: usize> Default for $BInt<N> {
@@ -387,7 +379,7 @@ macro_rules! mod_impl {
             }
         }
 
-        #[cfg(test)]
+        #[cfg(any(test, feature = "quickcheck"))]
         impl<const N: usize> quickcheck::Arbitrary for $BInt<N> {
             #[inline]
             fn arbitrary(g: &mut quickcheck::Gen) -> Self {
@@ -467,6 +459,20 @@ macro_rules! mod_impl {
                     assert!(!ITEST::from(-94956729465i64).is_power_of_two());
                     assert!(!ITEST::from(79458945i32).is_power_of_two());
                     assert!(ITEST::from(1i32 << 17).is_power_of_two());
+                }
+
+                #[test]
+                fn sum() {
+                    let v = vec![&UTEST::ZERO, &UTEST::ONE, &UTEST::TWO, &UTEST::THREE, &UTEST::FOUR];
+                    assert_eq!(UTEST::TEN, v.iter().copied().sum());
+                    assert_eq!(UTEST::TEN, v.into_iter().sum());
+                }
+
+                #[test]
+                fn product() {
+                    let v = vec![&UTEST::ONE, &UTEST::TWO, &UTEST::THREE];
+                    assert_eq!(UTEST::SIX, v.iter().copied().sum());
+                    assert_eq!(UTEST::SIX, v.into_iter().sum());
                 }
             }
         }

@@ -1,195 +1,253 @@
-/*use bnum::types::{U1024, U512};
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
-use rug::Integer;
+#![feature(wrapping_next_power_of_two, int_roundings)]
 
-macro_rules! bench_with_primitive {
-	($primitive: ty, $method: ident ($($param: ident), *), $iterator: expr) => {
-		paste::paste! {
-			fn [<bench_ $method _with_primitive>](c: &mut criterion::Criterion) {
-				type Big = bnum::types::[<$primitive:upper>];
-				type Primitive = $primitive;
-
-				let mut group = c.benchmark_group(stringify!($method));
-
-				#[allow(unused_parens)]
-				for (i, ($($param), *)) in $iterator.enumerate() {
-					group.bench_with_input(
-						BenchmarkId::new("Big Integer", i),
-						&($($param.into()), *),
-						|b, &($($param), *)| b.iter(|| Big::$method($($param), *))
-					);
-					group.bench_with_input(
-						BenchmarkId::new("Primitive Integer", i),
-						&($($param.into()), *),
-						|b, &($($param), *)| b.iter(|| Primitive::$method($($param), *))
-					);
-				}
-
-				group.finish();
-			}
-		}
-	};
-}
-
-bench_with_primitive!(
-    u128,
-    checked_next_power_of_two(a),
-    [0u128, 1, 4, 43, 49, 1, 3, 6, 103409825304503945].into_iter()
-);
-//criterion_group!(benches, bench_checked_next_power_of_two_with_primitive);
-
-fn bench_from_str_radix(c: &mut Criterion) {
-    let mut group = c.benchmark_group("from_str_radix");
-
-    for src in [
-        "2304972034958712347519203945723045928374590234579802345790987",
-        "92374952734059",
-    ] {
-        group.bench_with_input(BenchmarkId::new("rug", src), &src, |b, &s| {
-            b.iter(|| Integer::from_str_radix(s, 16))
-        });
-        group.bench_with_input(BenchmarkId::new("bnum", src), &src, |b, &s| {
-            b.iter(|| U512::from_str_radix(s, 16))
-        });
-        group.bench_with_input(BenchmarkId::new("primitive", src), &src, |b, &s| {
-            b.iter(|| u128::from_str_radix(s, 16))
-        });
-    }
-}
-
-fn bench_to_str_radix(c: &mut Criterion) {
-    let mut group = c.benchmark_group("to_str_radix");
-
-    for src in [
-        "230947523049587103204586710392345793045607203975927348",
-        "2283456978970345",
-    ] {
-        let r = Integer::from_str_radix(src, 10).unwrap();
-        let big = U512::from_str_radix(src, 10).unwrap();
-
-        group.bench_with_input(BenchmarkId::new("rug", src), &r, |b, i| {
-            b.iter(|| format!("{}", i))
-        });
-        group.bench_with_input(BenchmarkId::new("bnum", src), &big, |b, i| {
-            b.iter(|| format!("{}", i))
-        });
-    }
-}
-
-fn bench_add(c: &mut Criterion) {
-    let mut group = c.benchmark_group("add");
-
-    for src in [
-        "230947523049587103204586710392345793045607203975927348",
-        "2283456978970345",
-    ] {
-        let r = Integer::from_str_radix(src, 10).unwrap();
-        let big = U512::from_str_radix(src, 10).unwrap();
-
-        group.bench_with_input(BenchmarkId::new("rug", src), &r, |b, i| {
-            b.iter(|| Integer::from(i + i))
-        });
-        group.bench_with_input(BenchmarkId::new("bnum", src), &big, |b, i| b.iter(|| i + i));
-    }
-}
-
-fn bench_mul(c: &mut Criterion) {
-    let mut group = c.benchmark_group("mul");
-
-    for src in [
-        "230947523049587103204586710392345793045607203975927348",
-        "2283456978970345",
-    ] {
-        let r = Integer::from_str_radix(src, 10).unwrap();
-        let big = U1024::from_str_radix(src, 10).unwrap();
-
-        group.bench_with_input(BenchmarkId::new("rug", src), &r, |b, i| {
-            b.iter(|| Integer::from(i * i))
-        });
-        group.bench_with_input(BenchmarkId::new("bnum", src), &big, |b, i| b.iter(|| i * i));
-    }
-}
-
-fn bench_count_ones(c: &mut Criterion) {
-    let mut group = c.benchmark_group("count_ones");
-
-    for src in [
-        "230947523049587103204586710392345793045607203975927348",
-        "2283456978970345",
-    ] {
-        let r = Integer::from_str_radix(src, 10).unwrap();
-        let big = bnum::types::U2048::from_str_radix(src, 10).unwrap();
-
-        group.bench_with_input(BenchmarkId::new("rug", src), &r, |b, i| {
-            b.iter(|| i.count_ones())
-        });
-        group.bench_with_input(BenchmarkId::new("bnum", src), &big, |b, i| {
-            b.iter(|| i.count_ones())
-        });
-    }
-}
-
-fn bench_ops(c: &mut Criterion) {
-    let mut group = c.benchmark_group("ops");
-
-    let a = u128::MAX;
-	let b = u128::MAX >> 24;
-
-    let c = u64::MAX;
-	let d = u64::MAX >> 24;
-
-    let e = u8::MAX;
-	let f = u8::MAX;
-	
-	group.bench_with_input(BenchmarkId::new("128", "add"), &(a, b), |b, &(a, c)| {
-		b.iter(|| for _ in 0..100000 { black_box(a.wrapping_add(c)); })
-	});
-	group.bench_with_input(BenchmarkId::new("64", "add"), &(c, d), |b, &(a, c)| {
-		b.iter(|| for _ in 0..100000 { black_box(a.wrapping_add(c)); })
-	});
-	group.bench_with_input(BenchmarkId::new("8", "add"), &(e, f), |b, &(a, c)| {
-		b.iter(|| for _ in 0..100000 { black_box(a.wrapping_add(c)); })
-	});
-}
-
-fn bench_div(c: &mut Criterion) {
-    let mut group = c.benchmark_group("div");
-
-    for src in [
-        "230947523049587103204586710392345793045607203975927348",
-        "2283456978970345",
-    ] {
-        let r = Integer::from_str_radix(src, 10).unwrap();
-        let big = U1024::from_str_radix(src, 10).unwrap();
-
-        group.bench_with_input(BenchmarkId::new("rug", src), &r, |b, i| {
-            b.iter(|| Integer::from(i / 10928))
-        });
-        group.bench_with_input(BenchmarkId::new("bnum", src), &big, |b, i| b.iter(|| *i));
-    }
-}
-
-criterion_group!(benches, bench_ops);
-
-criterion_main!(benches);
-*/
-use bnum::types::U128;
+use bnum::types::{U128 as BU128, U512};
+// use bnum::prelude::*;
+use core::iter::Iterator;
+use criterion::black_box;
 use rand::prelude::*;
 
-use criterion::{Criterion, BenchmarkId, criterion_group, criterion_main, black_box};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 
-fn bench_div(c: &mut Criterion) {
-    let mut group = c.benchmark_group("div");
-    group.bench_with_input(BenchmarkId::new("prim", "div"), &0, |b, _i| {
-        b.iter(|| rand::random::<u128>() / rand::random::<u128>())
-    });
-    group.bench_with_input(BenchmarkId::new("bnum", "div"), &U128::ZERO, |b, _i| {
-        b.iter(|| rand::random::<U128>() / rand::random::<U128>())
-    });
-    group.finish();
-    //c.bench_function("div", |b| b.iter(|| U128::from(black_box(rand::random::<U128>())).div(black_box(rand::random::<U128>()))));
+const SAMPLE_SIZE: usize = 10000;
+
+macro_rules! unzip {
+    (fn $name: ident <$($Gen: ident), *>) => {
+        paste::paste! {
+            fn $name<$($Gen), *, I>(i: I) -> ($(Vec<$Gen>), *)
+            where I: Iterator<Item = ($($Gen), *)>
+            {
+                let ($(mut [<vec_ $Gen:lower>]), *) = match i.size_hint().1 {
+                    Some(size) => ($(Vec::<$Gen>::with_capacity(size)), *),
+                    None => ($(Vec::<$Gen>::new()), *),
+                };
+                i.for_each(|($([<$Gen:lower>]), *)| {
+                    $(
+                        [<vec_ $Gen:lower>].push([<$Gen:lower>]);
+                    )*
+                });
+                ($([<vec_ $Gen:lower>]), *)
+            }
+        }
+    };
 }
 
-criterion_group!(benches, bench_div);
+// unzip!(fn unzip3<T1, T2, T3>);
+unzip!(fn unzip2<T1, T2>);
 
-criterion_main!(benches);
+mod uuint {
+    uint::construct_uint! {
+        pub struct UU128(2);
+    }
+    
+    uint::construct_uint! {
+        pub struct UU512(8);
+    }
+}
+
+use uuint::*;
+
+macro_rules! bench_against_primitive {
+    { $primitive: ty; $($method: ident ($($param: ident : $(ref $re: tt)? $ty: ty), *);) * } => {
+        paste::paste! {
+            $(
+                fn [<bench_ $primitive _ $method>](c: &mut Criterion) {
+                    let mut group = c.benchmark_group(stringify!($method));
+                    let mut rng = rand::rngs::StdRng::seed_from_u64(0); // use same seed so can compare between different benchmarks more accurately
+                    #[allow(unused_parens)]
+                    let inputs = unzip2((0..SAMPLE_SIZE)
+                        .map(|_| rng.gen::<($($ty), *)>())
+                        .map(|($($param), *)| (
+                            ($(Into::into($param)), *, ()),
+                            ($(Into::into($param)), *, ()), // TODO: report this as bug in Rust compiler, shouldn't need extra ()
+                            // ($(TryInto::try_into($param).unwrap()), *, ())
+                        )));
+                    let big_inputs = inputs.0;
+                    let prim_inputs = inputs.1;
+                    // let ruint_inputs = inputs.2;
+                    const SIZE_ID: &'static str = stringify!([<$primitive:upper>]);
+                    group.bench_with_input(BenchmarkId::new("bnum", SIZE_ID), &big_inputs, |b, inputs| {
+                        b.iter(|| {
+                            for ($($param), *, ()) in inputs.iter().cloned() {
+                                let _ = [<$primitive:upper>]::$method($($($re)? black_box($param)), *);
+                            }
+                        })
+                    });
+                    group.bench_with_input(BenchmarkId::new("core", SIZE_ID), &prim_inputs, |b, inputs| {
+                        b.iter(|| {
+                            for ($($param), *, ()) in inputs.iter().cloned() {
+                                let _ = [<U $primitive:upper>]::$method($($($re)? black_box($param)), *);
+                            }
+                        })
+                    });
+                    // group.bench_with_input(BenchmarkId::new("ruint", "rand"), &ruint_inputs, |b, inputs| {
+                    //     b.iter(|| {
+                    //         #[allow(unused_parens)]
+                    //         for ($($param), *, ()) in inputs.iter().cloned() {
+                    //             let _ = [<R $primitive:upper>]::$method($($($re)? black_box($param)), *);
+                    //         }
+                    //     })
+                    // });
+                    group.finish();
+                }
+            )*
+            criterion_group!([<$primitive _benches>], $([<bench_ $primitive _ $method>]), *);
+        }
+    };
+}
+
+trait Format {
+    fn display(self) -> String;
+    fn debug(self) -> String;
+    fn binary(self) -> String;
+    fn upper_hex(self) -> String;
+    fn lower_hex(self) -> String;
+    fn octal(self) -> String;
+    fn upper_exp(self) -> String;
+    fn lower_exp(self) -> String;
+}
+
+macro_rules! impl_format {
+    ($($ty: ty), *) => {
+        $(
+            impl Format for $ty {
+                fn display(self) -> String {
+                    format!("{}", self)
+                }
+                fn debug(self) -> String {
+                    format!("{:?}", self)
+                }
+                fn binary(self) -> String {
+                    format!("{:b}", self)
+                }
+                fn upper_hex(self) -> String {
+                    format!("{:X}", self)
+                }
+                fn lower_hex(self) -> String {
+                    format!("{:x}", self)
+                }
+                fn octal(self) -> String {
+                    format!("{:o}", self)
+                }
+                fn upper_exp(self) -> String {
+                    format!("{:E}", self)
+                }
+                fn lower_exp(self) -> String {
+                    format!("{:e}", self)
+                }
+            }
+        )*
+    };
+}
+
+impl_format!(u128, BU128);
+
+use core::cmp::{PartialEq, PartialOrd};
+use core::ops::{BitAnd, BitOr, BitXor, Not};
+
+// use num_traits::PrimInt;
+
+trait BenchFrom<T> {
+    fn from(value: T) -> Self;
+}
+
+impl<'a> BenchFrom<&'a BU128> for &'a UU128 {
+    fn from(value: &'a BU128) -> Self {
+        unsafe {
+            &*(value as *const BU128 as *const UU128)
+        }
+    }
+}
+
+impl BenchFrom<u128> for UU128 {
+    fn from(value: u128) -> Self {
+        From::from(value)
+    }
+}
+
+bench_against_primitive! {
+    u512;
+    checked_add(a: u128, b: u128);
+    // checked_add_signed(a: u128, b: i128);
+    checked_sub(a: u128, b: u128);
+    checked_mul(a: u128, b: u128);
+    checked_div(a: u128, b: u128);
+    // checked_div_euclid(a: u128, b: u128);
+    checked_rem(a: u128, b: u128);
+    // checked_rem_euclid(a: u128, b: u128);
+    checked_neg(a: u128);
+    // checked_shl(a: u128, b: u32);
+    // checked_shr(a: u128, b: u32);
+    checked_pow(a: u128, b: u32);
+    // checked_next_multiple_of(a: u128, b: u128);
+    // checked_ilog2(a: u128);
+    // checked_ilog10(a: u128);
+    // checked_ilog(a: u128, b: u128);
+    // checked_next_power_of_two(a: u128);
+
+    // from_be(a: u128);
+    // from_le(a: u128);
+    // to_be(a: u128);
+    // to_le(a: u128);
+    // to_be_bytes(a: u128);
+    // to_le_bytes(a: u128);
+    // to_ne_bytes(a: u128);
+    // from_be_bytes(a: [u8; 128 / 8]);
+    // from_le_bytes(a: [u8; 128 / 8]);
+    // from_ne_bytes(a: [u8; 128 / 8]);
+
+    overflowing_add(a: u128, b: u128);
+    // overflowing_add_signed(a: u128, b: i128);
+    overflowing_sub(a: u128, b: u128);
+    overflowing_mul(a: u128, b: u128);
+    overflowing_neg(a: u128);
+    // overflowing_shl(a: u128, b: u32);
+    // overflowing_shr(a: u128, b: u32);
+    overflowing_pow(a: u128, b: u32);
+
+    // display(a: u128);
+    // debug(a: u128);
+    // binary(a: u128);
+    // upper_hex(a: u128);
+    // lower_hex(a: u128);
+    // octal(a: u128);
+    // upper_exp(a: u128);
+    // lower_exp(a: u128);
+
+    saturating_add(a: u128, b: u128);
+    // saturating_add_signed(a: u128, b: i128);
+    saturating_sub(a: u128, b: u128);
+    saturating_mul(a: u128, b: u128);
+    // saturating_pow(a: u128, exp: u32);
+
+    // wrapping_add(a: u128, b: u128);
+    // wrapping_add_signed(a: u128, b: i128);
+    // wrapping_sub(a: u128, b: u128);
+    // wrapping_mul(a: u128, b: u128);
+    // wrapping_neg(a: u128);
+    // wrapping_shl(a: u128, rhs: u32);
+    // wrapping_shr(a: u128, rhs: u32);
+    // wrapping_pow(a: u128, exp: u32);
+    // wrapping_next_power_of_two(a: u128);
+
+    // count_ones(a: u128);
+    // count_zeros(a: u128);
+    // leading_zeros(a: u128);
+    // trailing_zeros(a: u128);
+    // leading_ones(a: u128);
+    // trailing_ones(a: u128);
+    // rotate_left(a: u128, b: u32);
+    // rotate_right(a: u128, b: u32);
+    // swap_bytes(a: u128);
+    // reverse_bits(a: u128);
+    // is_power_of_two(a: u128);
+
+    bitand(a: u128, b: u128);
+    bitor(a: u128, b: u128);
+    bitxor(a: u128, b: u128);
+    not(a: u128);
+
+    eq(a: ref &u128, b: ref &u128);
+    partial_cmp(a: ref &u128, b: ref &u128);
+}
+
+criterion_main!(u512_benches);

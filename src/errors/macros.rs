@@ -14,19 +14,33 @@ macro_rules! err_msg {
 
 pub(crate) use err_msg;
 
+macro_rules! div_by_zero_message {
+    () => {
+        "attempt to divide by zero"
+    };
+}
+
+pub(crate) use div_by_zero_message;
+
 macro_rules! div_zero {
     () => {
-        panic!(crate::errors::err_msg!("attempt to divide by zero"))
+        panic!(crate::errors::err_msg!(crate::errors::div_by_zero_message!()))
     };
 }
 
 pub(crate) use div_zero;
 
+macro_rules! rem_by_zero_message {
+    () => {
+        "attempt to calculate the remainder with a divisor of zero"
+    };
+}
+
+pub(crate) use rem_by_zero_message;
+
 macro_rules! rem_zero {
     () => {
-        panic!(crate::errors::err_msg!(
-            "attempt to calculate remainder with a divisor of zero"
-        ))
+        panic!(crate::errors::err_msg!(crate::errors::rem_by_zero_message!()))
     };
 }
 

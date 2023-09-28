@@ -1,12 +1,10 @@
 #[cfg(test)]
 macro_rules! format_trait {
     ($($method: ident), *) => {
-        use alloc::string::String;
-
         // This trait allows us to use the default tester macro instead of creating a custom one
         pub trait Format {
             $(
-                fn $method(&self, width: Option<u8>, extra: bool) -> String;
+                fn $method(&self, width: Option<u8>, extra: bool) -> alloc::string::String;
             )*
         }
     };
@@ -19,19 +17,17 @@ format_trait!(binary, lower_hex, upper_hex, octal, display, debug, lower_exp, up
 macro_rules! impl_format_method {
     { $($name: ident : $format: literal), * } => {
         $(
-            fn $name(&self, width: Option<u8>, extra: bool) -> String {
+            fn $name(&self, width: Option<u8>, extra: bool) -> alloc::string::String {
                 if let Some(width) = width {
                     if extra {
                         format!(concat!("{:+#0width$", $format, "}"), self, width = width as usize)
                     } else {
                         format!(concat!("{:width$", $format, "}"), self, width = width as usize)
                     }
+                } else if extra {
+                    format!(concat!("{:+#", $format, "}"), self)
                 } else {
-                    if extra {
-                        format!(concat!("{:+#", $format, "}"), self)
-                    } else {
-                        format!(concat!("{:", $format, "}"), self)
-                    }
+                    format!(concat!("{:", $format, "}"), self)
                 }
             }
         )*
@@ -69,7 +65,7 @@ macro_rules! test_formats {
     ($ty: ty; $($name: ident), *) => {
         $(
             test_bignum! {
-                function: <$ty as Format>::$name(a: ref &$ty, width: u8, extra: bool)
+                function: <$ty as Format>::$name(a: ref &$ty, width: Option<u8>, extra: bool)
             }
         )*
     };
@@ -83,7 +79,6 @@ macro_rules! tests {
     ($ty: ty) => {
         use crate::int::fmt::{Format, self};
         use crate::test::{test_bignum, types::*};
-        use alloc::string::String;
 
         paste::paste! {
             fmt::impl_format!([<$ty:upper>]);

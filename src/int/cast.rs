@@ -36,7 +36,6 @@ macro_rules! test_cast_to_bigint {
                 $(
                     #[allow(non_snake_case)]
                     fn [<quickcheck_ $primitive _CastTo_ $Int _cast_to>](a: $primitive) -> bool {
-                        // use crate::test::types;
                         use crate::cast::CastTo;
 
                         let primitive = <$primitive as CastTo<$Int>>::cast_to(a);

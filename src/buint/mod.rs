@@ -16,9 +16,6 @@ use core::default::Default;
 
 use core::iter::{Iterator, Product, Sum};
 
-#[cfg(feature = "arbitrary")]
-use arbitrary::Arbitrary;
-
 macro_rules! mod_impl {
     ($BUint: ident, $BInt: ident, $Digit: ident) => {
         /// Unsigned integer type composed of
@@ -31,15 +28,18 @@ macro_rules! mod_impl {
         ///
         #[doc = doc::arithmetic_doc!($BUint)]
 
-        // Clippy: we can allow derivation of `Hash` and manual implementation of `PartialEq` as the derived `PartialEq` would be the same except we make our implementation const.
-        #[allow(clippy::derive_hash_xor_eq)]
-        #[derive(Clone, Copy, Hash)]
+        #[derive(Clone, Copy, Hash, PartialEq, Eq)]
         #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-        #[cfg_attr(feature = "arbitrary", derive(Arbitrary))]
+        #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
+        #[cfg_attr(feature = "valuable", derive(valuable::Valuable))]
+        #[repr(transparent)]
         pub struct $BUint<const N: usize> {
             #[cfg_attr(feature = "serde", serde(with = "BigArray"))]
             pub(crate) digits: [$Digit; N],
         }
+
+        #[cfg(feature = "zeroize")]
+        impl<const N: usize> zeroize::DefaultIsZeroes for $BUint<N> {}
 
         impl<const N: usize> $BUint<N> {
             #[doc = doc::count_ones!(U 1024)]
@@ -372,14 +372,14 @@ macro_rules! mod_impl {
 
         impl<const N: usize> $BUint<N> {
             #[inline]
-            pub(crate) const unsafe fn unchecked_shl_internal(u: $BUint<N>, rhs: ExpType) -> $BUint<N> {
+            pub(crate) const unsafe fn unchecked_shl_internal(self, rhs: ExpType) -> $BUint<N> {
                 let mut out = $BUint::ZERO;
                 let digit_shift = (rhs >> digit::$Digit::BIT_SHIFT) as usize;
                 let bit_shift = rhs & digit::$Digit::BITS_MINUS_1;
 
-                let num_copies = N - digit_shift;
+                let num_copies = N.saturating_sub(digit_shift); // TODO: use unchecked_ methods from primitives when these are stablised and constified
 
-                u.digits.as_ptr().copy_to_nonoverlapping(out.digits.as_ptr().cast_mut().add(digit_shift), num_copies); // TODO: can change to out.digits.as_mut_ptr() when const_mut_refs is stabilised
+                self.digits.as_ptr().copy_to_nonoverlapping(out.digits.as_ptr().cast_mut().add(digit_shift), num_copies); // TODO: can change to out.digits.as_mut_ptr() when const_mut_refs is stabilised
 
                 if bit_shift != 0 {
                     let carry_shift = digit::$Digit::BITS - bit_shift;
@@ -398,12 +398,16 @@ macro_rules! mod_impl {
             }
 
             #[inline]
-            pub(crate) const unsafe fn unchecked_shr_pad_internal<const PAD: $Digit>(u: $BUint<N>, rhs: ExpType) -> $BUint<N> {
-                let mut out = $BUint::from_digits([PAD; N]);
+            pub(crate) const unsafe fn unchecked_shr_pad_internal<const NEG: bool>(u: $BUint<N>, rhs: ExpType) -> $BUint<N> {
+                let mut out = if NEG {
+                    $BUint::MAX
+                } else {
+                    $BUint::ZERO
+                };
                 let digit_shift = (rhs >> digit::$Digit::BIT_SHIFT) as usize;
                 let bit_shift = rhs & digit::$Digit::BITS_MINUS_1;
 
-                let num_copies = N - digit_shift;
+                let num_copies = N.saturating_sub(digit_shift); // TODO: use unchecked_ methods from primitives when these are stablised and constified
 
                 u.digits.as_ptr().add(digit_shift).copy_to_nonoverlapping(out.digits.as_ptr().cast_mut(), num_copies); // TODO: can change to out.digits.as_mut_ptr() when const_mut_refs is stabilised
 
@@ -411,15 +415,16 @@ macro_rules! mod_impl {
                     let carry_shift = digit::$Digit::BITS - bit_shift;
                     let mut carry = 0;
 
-                    let mut i = num_copies;
-                    while i > 0 {
-                        i -= 1;
-                        let current_digit = out.digits[i];
-                        out.digits[i] = (current_digit >> bit_shift) | carry;
+                    let mut i = digit_shift;
+                    while i < N { // we use an increment while loop because the compiler can elide the array bounds check, which results in big performance gains
+                        let index = N - 1 - i;
+                        let current_digit = out.digits[index];
+                        out.digits[index] = (current_digit >> bit_shift) | carry;
                         carry = current_digit << carry_shift;
+                        i += 1;
                     }
 
-                    if PAD == $Digit::MAX {
+                    if NEG {
                         out.digits[num_copies - 1] |= $Digit::MAX << carry_shift;
                     }
                 }
@@ -428,7 +433,7 @@ macro_rules! mod_impl {
             }
 
             pub(crate) const unsafe fn unchecked_shr_internal(u: $BUint<N>, rhs: ExpType) -> $BUint<N> {
-                Self::unchecked_shr_pad_internal::<{$Digit::MIN}>(u, rhs)
+                Self::unchecked_shr_pad_internal::<false>(u, rhs)
             }
 
             #[doc = doc::bits!(U 256)]
@@ -535,24 +540,6 @@ macro_rules! mod_impl {
                 index
             }
 
-            #[inline]
-            pub(crate) const fn to_exp_type(self) -> Option<ExpType> {
-                let last_index = self.last_digit_index();
-                if self.digits[last_index] == 0 {
-                    return Some(0);
-                }
-                if last_index >= ExpType::BITS as usize >> digit::$Digit::BIT_SHIFT {
-                    return None;
-                }
-                let mut out = 0;
-                let mut i = 0;
-                while i <= last_index {
-                    out |= (self.digits[i] as ExpType) << (i << digit::$Digit::BIT_SHIFT);
-                    i += 1;
-                }
-                Some(out)
-            }
-
             #[allow(unused)]
             #[inline]
             fn square(self) -> Self {
@@ -597,7 +584,7 @@ macro_rules! mod_impl {
             }
         }
 
-        #[cfg(test)]
+        #[cfg(any(test, feature = "quickcheck"))]
         impl<const N: usize> quickcheck::Arbitrary for $BUint<N> {
             fn arbitrary(g: &mut quickcheck::Gen) -> Self {
                 let mut out = Self::ZERO;
@@ -626,6 +613,13 @@ macro_rules! mod_impl {
                 }
 
                 #[test]
+                fn digits() {
+                    let a = UTEST::MAX;
+                    let digits = *a.digits();
+                    assert_eq!(a, UTEST::from_digits(digits));
+                }
+
+                #[test]
                 fn bit() {
                     let u = UTEST::from(0b001010100101010101u64);
                     assert!(u.bit(0));
@@ -647,6 +641,10 @@ macro_rules! mod_impl {
                     assert!(UTEST::ONE.is_one());
                     assert!(!UTEST::MAX.is_one());
                     assert!(!UTEST::ZERO.is_one());
+                    let mut digits = *super::$BUint::<2>::MAX.digits();
+                    digits[0] = 1;
+                    let b = super::$BUint::<2>::from_digits(digits);
+                    assert!(!b.is_one());
                 }
 
                 #[test]
@@ -661,6 +659,20 @@ macro_rules! mod_impl {
                 #[test]
                 fn default() {
                     assert_eq!(UTEST::default(), utest::default().into());
+                }
+
+                #[test]
+                fn sum() {
+                    let v = vec![&UTEST::ZERO, &UTEST::ONE, &UTEST::TWO, &UTEST::THREE, &UTEST::FOUR];
+                    assert_eq!(UTEST::TEN, v.iter().copied().sum());
+                    assert_eq!(UTEST::TEN, v.into_iter().sum());
+                }
+
+                #[test]
+                fn product() {
+                    let v = vec![&UTEST::ONE, &UTEST::TWO, &UTEST::THREE];
+                    assert_eq!(UTEST::SIX, v.iter().copied().sum());
+                    assert_eq!(UTEST::SIX, v.into_iter().sum());
                 }
             }
         }

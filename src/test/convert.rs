@@ -8,6 +8,16 @@ pub trait TestConvert {
     fn into(self) -> Self::Output;
 }
 
+#[allow(unused)] // since this is only used with certain crate feature but these are likely to change often
+pub fn test_eq<T, U>(t: T, u: U) -> bool
+where
+T: TestConvert,
+U: TestConvert,
+<T as TestConvert>::Output: PartialEq<<U as TestConvert>::Output>
+{
+    t.into() == u.into()
+}
+
 macro_rules! test_convert_big {
     ($($big: ty), *; $output: ty) => {
         $(
@@ -67,29 +77,29 @@ impl TestConvert for f32 {
     }
 }
 
-/*#[cfg(feature = "nightly")]
-impl TestConvert for crate::float::F64 {
-    type Output = u64;
+// #[cfg(feature = "nightly")]
+// impl TestConvert for crate::float::F64 {
+//     type Output = u64;
 
-    #[inline]
-    fn into(self) -> Self::Output {
-        use crate::cast::As;
+//     #[inline]
+//     fn into(self) -> Self::Output {
+//         use crate::cast::As;
 
-        self.to_bits().as_()
-    }
-}
+//         self.to_bits().as_()
+//     }
+// }
 
-#[cfg(feature = "nightly")]
-impl TestConvert for crate::float::F32 {
-    type Output = u32;
+// #[cfg(feature = "nightly")]
+// impl TestConvert for crate::float::F32 {
+//     type Output = u32;
 
-    #[inline]
-    fn into(self) -> Self::Output {
-        use crate::cast::As;
+//     #[inline]
+//     fn into(self) -> Self::Output {
+//         use crate::cast::As;
 
-        self.to_bits().as_()
-    }
-}*/
+//         self.to_bits().as_()
+//     }
+// }
 
 impl<T: TestConvert, U: TestConvert> TestConvert for (T, U) {
     type Output = (<T as TestConvert>::Output, <U as TestConvert>::Output);
@@ -132,10 +142,9 @@ impl<T: TestConvert, E: TestConvert> TestConvert for Result<T, E> {
 
     #[inline]
     fn into(self) -> Self::Output {
-        match self {
-            Ok(val) => Ok(TestConvert::into(val)),
-            Err(err) => Err(TestConvert::into(err)),
-        }
+        self
+            .map(TestConvert::into)
+            .map_err(TestConvert::into)
     }
 }
 
