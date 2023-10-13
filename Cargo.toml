@@ -11,6 +11,7 @@ repository = "https://github.com/isaacholt100/bnum"
 readme = "README.md"
 keywords = ["uint", "int", "bignum", "maths", "arbitrary"]
 categories = ["algorithms", "mathematics", "cryptography", "no-std"]
+rust-version = "1.65"
 
 exclude = ["src/float/*", "src/tests", "TODO.txt", "lit-parser/*"] # TODO: make sure to include these when they are ready
 
