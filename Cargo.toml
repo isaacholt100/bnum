@@ -1,16 +1,17 @@
 [package]
 name = "bnum"
-version = "0.9.0"
+version = "0.9.1"
 authors = ["isaac-holt <isaac_holt@icloud.com>"]
 edition = "2021"
 license = "MIT OR Apache-2.0"
-description = "Arbitrary, fixed size numeric types that extend the functionality of primitive numeric types in Rust."
+description = "Arbitrary, fixed size numeric types that extend the functionality of primitive numeric types."
 homepage = "https://github.com/isaacholt100/bnum"
 documentation = "https://docs.rs/bnum/latest/bnum"
 repository = "https://github.com/isaacholt100/bnum"
 readme = "README.md"
 keywords = ["uint", "int", "bignum", "maths", "arbitrary"]
 categories = ["algorithms", "mathematics", "cryptography", "no-std"]
+rust-version = "1.65"
 
 exclude = ["src/float/*", "src/tests", "TODO.txt", "lit-parser/*"] # TODO: make sure to include these when they are ready
 
