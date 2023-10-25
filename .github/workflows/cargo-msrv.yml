@@ -19,7 +19,7 @@ jobs:
       - name: Set nightly as default
         run: rustup default nightly
       - name: Install cargo-binstall
-        uses: cargo-bins/cargo-binstall@v1
+        uses: taiki-e/install-action@cargo-binstall
       - name: Install cargo-msrv
         run: cargo binstall cargo-msrv --no-confirm
       - name: verify MSRV
