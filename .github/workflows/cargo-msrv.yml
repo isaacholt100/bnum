@@ -19,8 +19,8 @@ jobs:
       - name: Set nightly as default
         run: rustup default nightly
       - name: Install cargo-binstall
-        uses: cargo-bins/cargo-binstall@v1 --no-confirm
+        uses: cargo-bins/cargo-binstall@v1
       - name: Install cargo-msrv
-        run: cargo binstall cargo-msrv
+        run: cargo binstall cargo-msrv --no-confirm
       - name: verify MSRV
         run: cargo msrv verify
