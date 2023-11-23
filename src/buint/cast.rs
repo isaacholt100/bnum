@@ -132,26 +132,26 @@ macro_rules! cast {
             crate::nightly::const_fn! {
                 #[inline]
                 const fn cast_up<const M: usize>(self, digit: $Digit) -> $BUint<M> {
-                    let digits = [digit; M];
-                    let digits_ptr = digits.as_ptr().cast_mut() as *mut $Digit; // TODO: can change to as_mut_ptr() when const_mut_refs is stabilised
-                    let self_ptr = self.digits.as_ptr();
-                    unsafe {
-                        self_ptr.copy_to_nonoverlapping(digits_ptr, N);
-                        $BUint::from_digits(digits)
+                    let mut digits = [digit; M];
+                    let mut i = M - N;
+                    while i < M {
+                        let index = i - (M - N);
+                        digits[index] = self.digits[index];
+                        i += 1;
                     }
+                    $BUint::from_digits(digits)
                 }
             }
             crate::nightly::const_fn! {
                 #[inline]
                 const fn cast_down<const M: usize>(self) -> $BUint<M> {
-                    let digits = MaybeUninit::<[$Digit; M]>::uninit();
-                    let digits_ptr = digits.as_ptr().cast_mut() as *mut $Digit; // TODO: can change to as_mut_ptr() when const_mut_refs is stabilised
-                    let self_ptr = self.digits.as_ptr();
-
-                    unsafe {
-                        self_ptr.copy_to_nonoverlapping(digits_ptr, M);
-                        $BUint::from_digits(digits.assume_init())
+                    let mut out = $BUint::ZERO;
+                    let mut i = 0;
+                    while i < M {
+                        out.digits[i] = self.digits[i];
+                        i += 1;
                     }
+                    out
                 }
             }
         }

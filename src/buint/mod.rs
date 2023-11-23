@@ -138,13 +138,20 @@ macro_rules! mod_impl {
 
             #[inline]
             const unsafe fn rotate_digits_left(self, n: usize) -> Self {
-                let uninit = MaybeUninit::<[$Digit; N]>::uninit();
-                let digits_ptr = self.digits.as_ptr();
-                let uninit_ptr = uninit.as_ptr().cast_mut() as *mut $Digit; // TODO: can change to as_mut_ptr() when const_mut_refs is stabilised
+                let mut out = Self::ZERO;
+                let mut i = n;
+                while i < N {
+                    out.digits[i] = self.digits[i - n];
+                    i += 1;
+                }
+                let init_index = N - n;
+                let mut i = init_index;
+                while i < N {
+                    out.digits[i - init_index] = self.digits[i];
+                    i += 1;
+                }
 
-                digits_ptr.copy_to_nonoverlapping(uninit_ptr.add(n), N - n);
-                digits_ptr.add(N - n).copy_to_nonoverlapping(uninit_ptr, n);
-                Self::from_digits(uninit.assume_init())
+                out
             }
 
             #[inline]
@@ -372,14 +379,12 @@ macro_rules! mod_impl {
 
         impl<const N: usize> $BUint<N> {
             #[inline]
-            pub(crate) const unsafe fn unchecked_shl_internal(self, rhs: ExpType) -> $BUint<N> {
+            pub(crate) const unsafe fn unchecked_shl_internal(self, rhs: ExpType) -> Self {
                 let mut out = $BUint::ZERO;
                 let digit_shift = (rhs >> digit::$Digit::BIT_SHIFT) as usize;
                 let bit_shift = rhs & digit::$Digit::BITS_MINUS_1;
 
                 let num_copies = N.saturating_sub(digit_shift); // TODO: use unchecked_ methods from primitives when these are stablised and constified
-
-                self.digits.as_ptr().copy_to_nonoverlapping(out.digits.as_ptr().cast_mut().add(digit_shift), num_copies); // TODO: can change to out.digits.as_mut_ptr() when const_mut_refs is stabilised
 
                 if bit_shift != 0 {
                     let carry_shift = digit::$Digit::BITS - bit_shift;
@@ -387,9 +392,15 @@ macro_rules! mod_impl {
 
                     let mut i = digit_shift;
                     while i < N {
-                        let current_digit = out.digits[i];
+                        let current_digit = self.digits[i - digit_shift];
                         out.digits[i] = (current_digit << bit_shift) | carry;
                         carry = current_digit >> carry_shift;
+                        i += 1;
+                    }
+                } else {
+                    let mut i = digit_shift;
+                    while i < N { // we start i at digit_shift, not 0, since the compiler can elide bounds checks when i < N
+                        out.digits[i] = self.digits[i - digit_shift];
                         i += 1;
                     }
                 }
@@ -398,7 +409,7 @@ macro_rules! mod_impl {
             }
 
             #[inline]
-            pub(crate) const unsafe fn unchecked_shr_pad_internal<const NEG: bool>(u: $BUint<N>, rhs: ExpType) -> $BUint<N> {
+            pub(crate) const unsafe fn unchecked_shr_pad_internal<const NEG: bool>(self, rhs: ExpType) -> Self {
                 let mut out = if NEG {
                     $BUint::MAX
                 } else {
@@ -409,8 +420,6 @@ macro_rules! mod_impl {
 
                 let num_copies = N.saturating_sub(digit_shift); // TODO: use unchecked_ methods from primitives when these are stablised and constified
 
-                u.digits.as_ptr().add(digit_shift).copy_to_nonoverlapping(out.digits.as_ptr().cast_mut(), num_copies); // TODO: can change to out.digits.as_mut_ptr() when const_mut_refs is stabilised
-
                 if bit_shift != 0 {
                     let carry_shift = digit::$Digit::BITS - bit_shift;
                     let mut carry = 0;
@@ -418,7 +427,7 @@ macro_rules! mod_impl {
                     let mut i = digit_shift;
                     while i < N { // we use an increment while loop because the compiler can elide the array bounds check, which results in big performance gains
                         let index = N - 1 - i;
-                        let current_digit = out.digits[index];
+                        let current_digit = self.digits[index + digit_shift];
                         out.digits[index] = (current_digit >> bit_shift) | carry;
                         carry = current_digit << carry_shift;
                         i += 1;
@@ -426,6 +435,12 @@ macro_rules! mod_impl {
 
                     if NEG {
                         out.digits[num_copies - 1] |= $Digit::MAX << carry_shift;
+                    }
+                } else {
+                    let mut i = digit_shift;
+                    while i < N { // we start i at digit_shift, not 0, since the compiler can elide bounds checks when i < N
+                        out.digits[i - digit_shift] = self.digits[i];
+                        i += 1;
                     }
                 }
 
