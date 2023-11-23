@@ -1,6 +1,5 @@
 use crate::digit;
 use crate::doc;
-use core::mem::MaybeUninit;
 
 macro_rules! endian {
     ($BUint: ident, $BInt: ident, $Digit: ident) => {
@@ -77,21 +76,15 @@ macro_rules! endian {
                 } else {
                     [0; N]
                 };
-                let slice_ptr = slice.as_ptr();
                 let mut i = 0;
                 let exact = len >> digit::$Digit::BYTE_SHIFT;
                 while i < exact {
-                    let uninit = MaybeUninit::<[u8; digit::$Digit::BYTES as usize]>::uninit();
-                    let ptr = uninit.as_ptr().cast_mut() as *mut u8;
-                    let digit_bytes = unsafe {
-                        slice_ptr
-                            .add(
-                                len - digit::$Digit::BYTES as usize
-                                    - (i << digit::$Digit::BYTE_SHIFT),
-                            )
-                            .copy_to_nonoverlapping(ptr, digit::$Digit::BYTES as usize);
-                        uninit.assume_init()
-                    };
+                    let mut digit_bytes = [0; digit::$Digit::BYTES as usize];
+                    let mut j = 0;
+                    while j < digit::$Digit::BYTES as usize {
+                        digit_bytes[j] = slice[j + (i << digit::$Digit::BYTE_SHIFT)];
+                        j += 1;
+                    }
                     let digit = $Digit::from_be_bytes(digit_bytes);
                     set_digit!(out_digits, i, digit, is_negative, sign_bits);
                     i += 1;
@@ -136,18 +129,15 @@ macro_rules! endian {
                     $Digit::MIN
                 };
                 let mut out_digits = [sign_bits; N];
-                let slice_ptr = slice.as_ptr();
                 let mut i = 0;
                 let exact = len >> digit::$Digit::BYTE_SHIFT;
                 while i < exact {
-                    let uninit = MaybeUninit::<[u8; digit::$Digit::BYTES as usize]>::uninit();
-                    let ptr = uninit.as_ptr().cast_mut() as *mut u8; // TODO: can change to as_mut_ptr() when const_mut_refs is stabilised
-                    let digit_bytes = unsafe {
-                        slice_ptr
-                            .add(i << digit::$Digit::BYTE_SHIFT)
-                            .copy_to_nonoverlapping(ptr, digit::$Digit::BYTES as usize);
-                        uninit.assume_init()
-                    };
+                    let mut digit_bytes = [0; digit::$Digit::BYTES as usize];
+                    let mut j = 0;
+                    while j < digit::$Digit::BYTES as usize {
+                        digit_bytes[j] = slice[j + (i << digit::$Digit::BYTE_SHIFT)];
+                        j += 1;
+                    }
                     let digit = $Digit::from_le_bytes(digit_bytes);
                     set_digit!(out_digits, i, digit, is_negative, sign_bits);
                     i += 1;
