@@ -1,6 +1,6 @@
 #![feature(wrapping_next_power_of_two, int_roundings)]
 
-use bnum::types::{U128 as BU128, U512};
+use bnum::types::{U128, U512};
 // use bnum::prelude::*;
 use core::iter::Iterator;
 use criterion::black_box;
@@ -34,17 +34,17 @@ macro_rules! unzip {
 // unzip!(fn unzip3<T1, T2, T3>);
 unzip!(fn unzip2<T1, T2>);
 
-mod uuint {
-    uint::construct_uint! {
-        pub struct UU128(2);
-    }
+// mod uuint {
+//     uint::construct_uint! {
+//         pub struct UU128(2);
+//     }
     
-    uint::construct_uint! {
-        pub struct UU512(8);
-    }
-}
+//     uint::construct_uint! {
+//         pub struct UU512(8);
+//     }
+// }
 
-use uuint::*;
+// use uuint::*;
 
 macro_rules! bench_against_primitive {
     { $primitive: ty; $($method: ident ($($param: ident : $(ref $re: tt)? $ty: ty), *);) * } => {
@@ -75,7 +75,7 @@ macro_rules! bench_against_primitive {
                     group.bench_with_input(BenchmarkId::new("core", SIZE_ID), &prim_inputs, |b, inputs| {
                         b.iter(|| {
                             for ($($param), *, ()) in inputs.iter().cloned() {
-                                let _ = [<U $primitive:upper>]::$method($($($re)? black_box($param)), *);
+                                let _ = [<$primitive>]::$method($($($re)? black_box($param)), *);
                             }
                         })
                     });
@@ -106,66 +106,67 @@ trait Format {
     fn lower_exp(self) -> String;
 }
 
-macro_rules! impl_format {
-    ($($ty: ty), *) => {
-        $(
-            impl Format for $ty {
-                fn display(self) -> String {
-                    format!("{}", self)
-                }
-                fn debug(self) -> String {
-                    format!("{:?}", self)
-                }
-                fn binary(self) -> String {
-                    format!("{:b}", self)
-                }
-                fn upper_hex(self) -> String {
-                    format!("{:X}", self)
-                }
-                fn lower_hex(self) -> String {
-                    format!("{:x}", self)
-                }
-                fn octal(self) -> String {
-                    format!("{:o}", self)
-                }
-                fn upper_exp(self) -> String {
-                    format!("{:E}", self)
-                }
-                fn lower_exp(self) -> String {
-                    format!("{:e}", self)
-                }
-            }
-        )*
-    };
-}
+// macro_rules! impl_format {
+//     ($($ty: ty), *) => {
+//         $(
+//             impl Format for $ty {
+//                 fn display(self) -> String {
+//                     format!("{}", self)
+//                 }
+//                 fn debug(self) -> String {
+//                     format!("{:?}", self)
+//                 }
+//                 fn binary(self) -> String {
+//                     format!("{:b}", self)
+//                 }
+//                 fn upper_hex(self) -> String {
+//                     format!("{:X}", self)
+//                 }
+//                 fn lower_hex(self) -> String {
+//                     format!("{:x}", self)
+//                 }
+//                 fn octal(self) -> String {
+//                     format!("{:o}", self)
+//                 }
+//                 fn upper_exp(self) -> String {
+//                     format!("{:E}", self)
+//                 }
+//                 fn lower_exp(self) -> String {
+//                     format!("{:e}", self)
+//                 }
+//             }
+//         )*
+//     };
+// }
 
-impl_format!(u128, BU128);
+// impl_format!(u128, BU128);
 
-use core::cmp::{PartialEq, PartialOrd};
-use core::ops::{BitAnd, BitOr, BitXor, Not};
+// use core::cmp::{PartialEq, PartialOrd};
+// use core::ops::{BitAnd, BitOr, BitXor, Not};
 
-// use num_traits::PrimInt;
+// // use num_traits::PrimInt;
 
-trait BenchFrom<T> {
-    fn from(value: T) -> Self;
-}
+// trait BenchFrom<T> {
+//     fn from(value: T) -> Self;
+// }
 
-impl<'a> BenchFrom<&'a BU128> for &'a UU128 {
-    fn from(value: &'a BU128) -> Self {
-        unsafe {
-            &*(value as *const BU128 as *const UU128)
-        }
-    }
-}
+// impl<'a> BenchFrom<&'a BU128> for &'a UU128 {
+//     fn from(value: &'a BU128) -> Self {
+//         unsafe {
+//             &*(value as *const BU128 as *const UU128)
+//         }
+//     }
+// }
 
-impl BenchFrom<u128> for UU128 {
-    fn from(value: u128) -> Self {
-        From::from(value)
-    }
-}
+// impl BenchFrom<u128> for UU128 {
+//     fn from(value: u128) -> Self {
+//         From::from(value)
+//     }
+// }
 
 bench_against_primitive! {
-    u512;
+    u128;
+    from_be_bytes(a: [u8; 16]);
     checked_add(a: u128, b: u128);
     // checked_add_signed(a: u128, b: i128);
     checked_sub(a: u128, b: u128);
@@ -241,13 +242,13 @@ bench_against_primitive! {
     // reverse_bits(a: u128);
     // is_power_of_two(a: u128);
 
-    bitand(a: u128, b: u128);
-    bitor(a: u128, b: u128);
-    bitxor(a: u128, b: u128);
-    not(a: u128);
+    // bitand(a: u128, b: u128);
+    // bitor(a: u128, b: u128);
+    // bitxor(a: u128, b: u128);
+    // not(a: u128);
 
-    eq(a: ref &u128, b: ref &u128);
-    partial_cmp(a: ref &u128, b: ref &u128);
+    // eq(a: ref &u128, b: ref &u128);
+    // partial_cmp(a: ref &u128, b: ref &u128);
 }
 
-criterion_main!(u512_benches);
+criterion_main!(u128_benches);
