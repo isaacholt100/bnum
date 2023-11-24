@@ -148,7 +148,7 @@ macro_rules! bint_as_different_digit_bigint {
                         } else {
                             let mut out = Self::MAX;
                             if $Digit::BITS < $OtherDigit::BITS {
-                                const DIVIDE_COUNT: usize = ($OtherDigit::BITS / $Digit::BITS) as usize;
+                                let DIVIDE_COUNT: usize = ($OtherDigit::BITS / $Digit::BITS) as usize;
                                 let stop_index: usize = if <$OtherBInt<M>>::BITS > <$BUint<N>>::BITS {
                                     N
                                 } else {
@@ -163,7 +163,7 @@ macro_rules! bint_as_different_digit_bigint {
                                     i += 1;
                                 }
                             } else {
-                                const DIVIDE_COUNT: usize = ($Digit::BITS / $OtherDigit::BITS) as usize;
+                                let DIVIDE_COUNT: usize = ($Digit::BITS / $OtherDigit::BITS) as usize;
                                 let stop_index: usize = if <$OtherBInt<M>>::BITS > <$BUint<N>>::BITS {
                                     N * DIVIDE_COUNT
                                 } else {

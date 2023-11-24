@@ -14,6 +14,8 @@
         int_roundings,
         //float_minimum_maximum,
         wrapping_next_power_of_two,
+        int_log,
+        mixed_integer_ops,
         //float_next_up_down,
     )
 )]
