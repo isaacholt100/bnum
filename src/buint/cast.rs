@@ -124,7 +124,7 @@ macro_rules! as_buint {
 use crate::cast::CastFrom;
 use crate::doc;
 use crate::nightly::impl_const;
-use core::mem::MaybeUninit;
+// use core::mem::MaybeUninit;
 
 macro_rules! cast {
     ($BUint: ident, $BInt: ident, $Digit: ident) => {

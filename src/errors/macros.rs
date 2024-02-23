@@ -38,6 +38,22 @@ macro_rules! rem_by_zero_message {
 
 pub(crate) use rem_by_zero_message;
 
+macro_rules! non_positive_log_message {
+    () => {
+        "argument of integer logarithm must be positive"
+    }
+}
+
+pub(crate) use non_positive_log_message;
+
+macro_rules! invalid_log_base {
+    () => {
+        "base of integer logarithm must be at least 2"
+    }
+}
+
+pub(crate) use invalid_log_base;
+
 macro_rules! rem_zero {
     () => {
         panic!(crate::errors::err_msg!(crate::errors::rem_by_zero_message!()))

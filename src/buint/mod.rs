@@ -1,10 +1,9 @@
-#[cfg(debug_assertions)]
 use crate::errors::{self, option_expect};
 
 use crate::digit;
 use crate::doc;
 use crate::ExpType;
-use core::mem::MaybeUninit;
+// use core::mem::MaybeUninit;
 
 #[cfg(feature = "serde")]
 use ::{
@@ -296,42 +295,32 @@ macro_rules! mod_impl {
             #[must_use = doc::must_use_op!()]
             #[inline]
             pub const fn ilog2(self) -> ExpType {
-                #[cfg(debug_assertions)]
-                return option_expect!(
+                option_expect!(
                     self.checked_ilog2(),
-                    errors::err_msg!("attempt to calculate ilog2 of zero")
-                );
-                #[cfg(not(debug_assertions))]
-                match self.checked_ilog2() {
-                    Some(n) => n,
-                    None => 0,
-                }
+                    errors::err_msg!(errors::non_positive_log_message!())
+                )
             }
 
             #[doc = doc::ilog10!(U)]
             #[must_use = doc::must_use_op!()]
             #[inline]
             pub const fn ilog10(self) -> ExpType {
-                #[cfg(debug_assertions)]
-                return option_expect!(self.checked_ilog10(), errors::err_msg!("attempt to calculate ilog10 of zero"));
-                #[cfg(not(debug_assertions))]
-                match self.checked_ilog10() {
-                    Some(n) => n,
-                    None => 0,
-                }
+                option_expect!(
+                    self.checked_ilog10(),
+                    errors::err_msg!(errors::non_positive_log_message!())
+                )
             }
 
             #[doc = doc::ilog!(U)]
             #[must_use = doc::must_use_op!()]
             #[inline]
             pub const fn ilog(self, base: Self) -> ExpType {
-                #[cfg(debug_assertions)]
-                return option_expect!(self.checked_ilog(base), errors::err_msg!("attempt to calculate ilog of zero or ilog with base < 2"));
-                #[cfg(not(debug_assertions))]
-                match self.checked_ilog(base) {
-                    Some(n) => n,
-                    None => 0,
+                if base.le(&Self::ONE) {
+                    panic!("{}", errors::err_msg!(errors::invalid_log_base!()));
                 }
+                option_expect!(
+                    self.checked_ilog(base), errors::err_msg!(errors::non_positive_log_message!())
+                )
             }
 
             #[doc = doc::abs_diff!(U)]
@@ -384,7 +373,7 @@ macro_rules! mod_impl {
                 let digit_shift = (rhs >> digit::$Digit::BIT_SHIFT) as usize;
                 let bit_shift = rhs & digit::$Digit::BITS_MINUS_1;
 
-                let num_copies = N.saturating_sub(digit_shift); // TODO: use unchecked_ methods from primitives when these are stablised and constified
+                // let num_copies = N.saturating_sub(digit_shift); // TODO: use unchecked_ methods from primitives when these are stablised and constified
 
                 if bit_shift != 0 {
                     let carry_shift = digit::$Digit::BITS - bit_shift;

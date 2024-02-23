@@ -1,6 +1,6 @@
 use crate::digit;
 use crate::doc;
-use core::mem::MaybeUninit;
+// use core::mem::MaybeUninit;
 
 macro_rules! endian {
     ($BUint: ident, $BInt: ident, $Digit: ident) => {
@@ -66,7 +66,7 @@ macro_rules! endian {
             pub const fn from_be_slice(slice: &[u8]) -> Option<Self> {
                 let len = slice.len();
                 let mut out = Self::ZERO;
-                let slice_ptr = slice.as_ptr();
+                // let slice_ptr = slice.as_ptr();
                 let mut i = 0;
                 let exact = len >> digit::$Digit::BYTE_SHIFT;
                 while i < exact {
@@ -131,7 +131,7 @@ macro_rules! endian {
             pub const fn from_le_slice(slice: &[u8]) -> Option<Self> {
                 let len = slice.len();
                 let mut out = Self::ZERO;
-                let slice_ptr = slice.as_ptr();
+                // let slice_ptr = slice.as_ptr();
                 let mut i = 0;
                 let exact = len >> digit::$Digit::BYTE_SHIFT;
                 while i < exact {

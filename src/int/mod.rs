@@ -61,22 +61,22 @@ macro_rules! tests {
         }
         test_bignum! {
             function: <$int>::ilog(a: $int, base: $int),
-            skip: crate::test::debug_skip!(a <= 0 || base <= 1)
+            skip: a <= 0 || base <= 1
         }
         test_bignum! {
             function: <$int>::ilog2(a: $int),
-            skip: crate::test::debug_skip!(a <= 0)
+            skip: a <= 0
         }
         test_bignum! {
             function: <$int>::ilog10(a: $int),
-            skip: crate::test::debug_skip!(a <= 0)
+            skip: a <= 0
         }
         test_bignum! {
             function: <$int>::checked_next_multiple_of(a: $int, b: $int)
         }
         test_bignum! {
             function: <$int>::next_multiple_of(a: $int, b: $int),
-            skip: crate::test::debug_skip!(a.checked_next_multiple_of(b).is_none())
+            skip: crate::test::debug_skip!(a.checked_next_multiple_of(b).is_none()) || b == 0
         }
         test_bignum! {
             function: <$int>::div_floor(a: $int, b: $int),

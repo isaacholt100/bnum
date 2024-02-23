@@ -4,11 +4,13 @@ macro_rules! ilog {
         #[must_use = doc::must_use_op!()]
         #[inline]
         pub const fn $method(self, $($base : $ty),*) -> ExpType {
+            $(
+                if $base.le(&<$ty>::ONE) {
+                    panic!(errors::err_msg!(errors::invalid_log_base!()))
+                }
+            ), *
             if self.is_negative() {
-                #[cfg(debug_assertions)]
-                panic!(errors::err_msg!("attempt to calculate ilog of negative number"));
-                #[cfg(not(debug_assertions))]
-                0
+                panic!(errors::err_msg!(errors::non_positive_log_message!()))
             } else {
                 self.bits.$method($($base.bits)?)
             }
@@ -463,16 +465,16 @@ macro_rules! mod_impl {
 
                 #[test]
                 fn sum() {
-                    let v = vec![&UTEST::ZERO, &UTEST::ONE, &UTEST::TWO, &UTEST::THREE, &UTEST::FOUR];
-                    assert_eq!(UTEST::TEN, v.iter().copied().sum());
-                    assert_eq!(UTEST::TEN, v.into_iter().sum());
+                    let v = vec![&ITEST::ZERO, &ITEST::ONE, &ITEST::TWO, &ITEST::THREE, &ITEST::FOUR];
+                    assert_eq!(ITEST::TEN, v.iter().copied().sum());
+                    assert_eq!(ITEST::TEN, v.into_iter().sum());
                 }
 
                 #[test]
                 fn product() {
-                    let v = vec![&UTEST::ONE, &UTEST::TWO, &UTEST::THREE];
-                    assert_eq!(UTEST::SIX, v.iter().copied().sum());
-                    assert_eq!(UTEST::SIX, v.into_iter().sum());
+                    let v = vec![&ITEST::ONE, &ITEST::TWO, &ITEST::THREE];
+                    assert_eq!(ITEST::SIX, v.iter().copied().sum());
+                    assert_eq!(ITEST::SIX, v.into_iter().sum());
                 }
             }
         }
