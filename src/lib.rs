@@ -16,7 +16,7 @@
         wrapping_next_power_of_two,
         float_next_up_down,
         unchecked_math,
-        // unchecked_shifts,
+        unchecked_shifts,
     )
 )]
 #![doc = include_str!("../README.md")]
