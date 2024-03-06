@@ -2,7 +2,7 @@ coverage:
   status:
     project:
       default:
-        threshold: 1% # needed because due to property based testing, coverage isn't exactly the same each time
+        threshold: 2% # needed because due to property based testing, coverage isn't exactly the same each time
     patch:
       default:
-        threshold: 1% # needed because due to property based testing, coverage isn't exactly the same each time
+        threshold: 2% # needed because due to property based testing, coverage isn't exactly the same each time

@@ -1,0 +1,2 @@
+- Make integer ilog methods panic for invalid inputs in release mode as well as debug mode.
+- Match ilog panic message with that of Rust's primitives.

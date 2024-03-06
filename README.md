@@ -32,13 +32,13 @@ This crate uses Rust's const generics to allow creation of integers of arbitrary
 To install and use `bnum`, simply add the following line to your `Cargo.toml` file in the `[dependencies]` section:
 
 ```toml
-bnum = "0.10.0"
+bnum = "0.11.0"
 ```
 
 Or, to enable various `bnum` features as well, add for example this line instead:
 
 ```toml
-bnum = { version = "0.10.0", features = ["rand"] } # enables the "rand" feature
+bnum = { version = "0.11.0", features = ["rand"] } # enables the "rand" feature
 ```
 
 ## Example Usage

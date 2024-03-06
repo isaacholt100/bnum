@@ -1,6 +1,6 @@
 use crate::digit;
 use crate::doc;
-use core::mem::MaybeUninit;
+// use core::mem::MaybeUninit;
 
 macro_rules! endian {
     ($BUint: ident, $BInt: ident, $Digit: ident) => {
@@ -131,7 +131,7 @@ macro_rules! endian {
                     $Digit::MIN
                 };
                 let mut out_digits = [sign_bits; N];
-                let slice_ptr = slice.as_ptr();
+                // let slice_ptr = slice.as_ptr();
                 let mut i = 0;
                 let exact = len >> digit::$Digit::BYTE_SHIFT;
                 while i < exact {
