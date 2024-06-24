@@ -11,6 +11,12 @@ use ::{
     serde_big_array::BigArray,
 };
 
+#[cfg(feature = "borsh")]
+use ::{
+    alloc::string::ToString,
+    borsh::{BorshDeserialize, BorshSchema, BorshSerialize},
+};
+
 use core::default::Default;
 
 use core::iter::{Iterator, Product, Sum};
@@ -29,6 +35,7 @@ macro_rules! mod_impl {
 
         #[derive(Clone, Copy, Hash, PartialEq, Eq)]
         #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+        #[cfg_attr(feature = "borsh", derive(BorshSerialize, BorshDeserialize, BorshSchema))]
         #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
         #[cfg_attr(feature = "valuable", derive(valuable::Valuable))]
         #[repr(transparent)]
