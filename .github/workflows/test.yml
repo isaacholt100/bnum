@@ -19,7 +19,8 @@ jobs:
       - name: Install latest stable Rust
         run: rustup install stable
       - name: Check crate builds on stable
-        run: cargo build --features serde,numtraits,rand,arbitrary && cargo build
+        # NOTE: consider using https://github.com/frewsxcv/cargo-all-features, because all features != their arbitrary combinations
+        run: cargo build --features serde,numtraits,rand,arbitrary,borsh && cargo build
   test_nightly:
     runs-on: ubuntu-latest
     steps:
