@@ -200,37 +200,10 @@ macro_rules! all_shift_impls {
             i128
         );
 
-        #[cfg(feature = "usize_exptype")]
-        crate::int::ops::try_shift_impl!(
-            $Struct, $BUint, $BInt;
-            Shl,
-            shl,
-            ShlAssign,
-            shl_assign,
-            "attempt to shift left with overflow",
-            u32,
-            u64,
-            u128
-        );
-
-        #[cfg(feature = "usize_exptype")]
-        crate::int::ops::try_shift_impl!(
-            $Struct, $BUint, $BInt;
-            Shr,
-            shr,
-            ShrAssign,
-            shr_assign,
-            "attempt to shift right with overflow",
-            u32,
-            u64,
-            u128
-        );
-
         crate::int::ops::shift_impl!($Struct, Shl, shl, ShlAssign, shl_assign, u8, u16);
 
         crate::int::ops::shift_impl!($Struct, Shr, shr, ShrAssign, shr_assign, u8, u16);
 
-        #[cfg(not(feature = "usize_exptype"))]
         crate::int::ops::try_shift_impl!(
             $Struct, $BUint, $BInt;
             Shl,
@@ -243,7 +216,6 @@ macro_rules! all_shift_impls {
             u128
         );
 
-        #[cfg(not(feature = "usize_exptype"))]
         crate::int::ops::try_shift_impl!(
             $Struct, $BUint, $BInt;
             Shr,

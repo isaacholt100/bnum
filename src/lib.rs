@@ -4,7 +4,8 @@
     feature(
         generic_const_exprs,
         const_trait_impl,
-        const_option_ext
+        const_option_ext,
+        effects,
     )
 )]
 #![cfg_attr(
@@ -15,7 +16,6 @@
         float_minimum_maximum,
         wrapping_next_power_of_two,
         float_next_up_down,
-        unchecked_math,
         unchecked_shifts,
     )
 )]
