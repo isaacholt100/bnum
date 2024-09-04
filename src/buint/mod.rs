@@ -491,6 +491,13 @@ macro_rules! mod_impl {
                 &self.digits
             }
 
+            /// Returns the digits stored in `self` as a mutable array. Digits are little endian (least significant digit first).
+            #[must_use]
+            #[inline(always)]
+            pub fn digits_mut(&mut self) -> &mut [$Digit; N] {
+                &mut self.digits
+            }
+
             /// Creates a new unsigned integer from the given array of digits. Digits are stored as little endian (least significant digit first).
             #[must_use]
             #[inline(always)]
