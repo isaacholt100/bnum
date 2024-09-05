@@ -455,7 +455,7 @@ macro_rules! mod_impl {
                 digit & (1 << (index & digit::$Digit::BITS_MINUS_1)) != 0
             }
 
-            #[doc = doc::bit!(U 256)]
+            #[doc = doc::set_bit!(U 256)]
             #[must_use]
             #[inline]
             pub fn set_bit(&mut self, index: ExpType, value: bool) {
