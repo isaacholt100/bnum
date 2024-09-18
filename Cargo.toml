@@ -47,3 +47,6 @@ opt-level = 3 # maximum optimisation level for faster runtime, but slower compil
 
 [package.metadata.docs.rs]
 all-features = true
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(test_int_bits, values("64", "128"))'] }

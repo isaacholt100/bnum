@@ -1,7 +1,7 @@
 use crate::ExpType;
 use crate::cast::CastFrom;
 
-#[cfg_attr(feature = "nightly", const_trait)]
+// #[cfg_attr(feature = "nightly", const_trait)]
 pub trait CastToFloatHelper: Copy {
     const ZERO: Self;
     const BITS: ExpType;
@@ -93,7 +93,7 @@ pub(crate) use impl_helper_buint;
 
 crate::macro_impl!(impl_helper_buint);
 
-#[cfg_attr(feature = "nightly", const_trait)]
+// #[cfg_attr(feature = "nightly", const_trait)]
 pub trait CastToFloatConsts {
     type M: Mantissa;
 
@@ -131,7 +131,7 @@ macro_rules! cast_to_float_consts {
 
 cast_to_float_consts!(f32; u32, f64; u64);
 
-#[cfg_attr(feature = "nightly", const_trait)]
+// #[cfg_attr(feature = "nightly", const_trait)]
 pub trait Mantissa {
     const ONE: Self;
     const TWO: Self;

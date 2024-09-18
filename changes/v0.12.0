@@ -1,0 +1,3 @@
+- Add optional borsh support
+- Add `digits_mut` method to unsigned integers.
+- `As` and `CastFrom` traits no longer const, as const trait support removed from latest nightly.
