@@ -32,13 +32,13 @@ This crate uses Rust's const generics to allow creation of integers of arbitrary
 To install and use `bnum`, simply add the following line to your `Cargo.toml` file in the `[dependencies]` section:
 
 ```toml
-bnum = "0.11.0"
+bnum = "0.12.0"
 ```
 
 Or, to enable various `bnum` features as well, add for example this line instead:
 
 ```toml
-bnum = { version = "0.11.0", features = ["rand"] } # enables the "rand" feature
+bnum = { version = "0.12.0", features = ["rand"] } # enables the "rand" feature
 ```
 
 ## Example Usage
@@ -113,6 +113,8 @@ The `rand` feature allows creation of random `bnum` integers via the [`rand`](ht
 
 The `serde` feature enables serialization and deserialization of `bnum` integers via the [`serde`](https://docs.rs/serde/latest/serde/) and [`serde_big_array`](https://docs.rs/serde-big-array/latest/serde_big_array/) crates.
 
+The `borsh`
+
 ### `num_traits` and `num_integer` trait implementations
 
 The `numtraits` feature includes implementations of traits from the [`num_traits`](https://docs.rs/num-traits/latest/num_traits/) and [`num_integer`](https://docs.rs/num-integer/latest/num_integer/) crates, e.g. [`AsPrimitive`](https://docs.rs/num-traits/latest/num_traits/cast/trait.AsPrimitive.html), [`Signed`](https://docs.rs/num-traits/latest/num_traits/sign/trait.Signed.html), [`Integer`](https://docs.rs/num-integer/latest/num_integer/trait.Integer.html) and [`Roots`](https://docs.rs/num-integer/latest/num_integer/trait.Roots.html).
@@ -131,7 +133,7 @@ The `valuable` feature enables the [`Valuable`](https://docs.rs/valuable/latest/
 
 ### Nightly features
 
-Activating the `nightly` feature will enable the `from_be_bytes`, `from_le_bytes`, `from_ne_bytes`, `to_be_bytes`, `to_le_bytes` and `to_ne_bytes` methods on `bnum`'s unsigned and signed integers and will make the `unchecked_...` methods `const`. This comes at the cost of only being able to compile on nightly. The nightly features that this uses are [`generic_const_exprs`](https://github.com/rust-lang/rust/issues/76560), [`const_trait_impl`](https://github.com/rust-lang/rust/issues/67792), [`effects`](https://github.com/rust-lang/rust/issues/102090) and [`const_option_ext`](https://github.com/rust-lang/rust/issues/91930).
+Activating the `nightly` feature will enable the `from_be_bytes`, `from_le_bytes`, `from_ne_bytes`, `to_be_bytes`, `to_le_bytes` and `to_ne_bytes` methods on `bnum`'s unsigned and signed integers and will make the `unchecked_...` methods `const`. This comes at the cost of only being able to compile on nightly. The nightly features that this uses are [`generic_const_exprs`](https://github.com/rust-lang/rust/issues/76560), [`const_trait_impl`](https://github.com/rust-lang/rust/issues/67792), [`effects`](https://github.com/rust-lang/rust/issues/102090) and [`const_option`](https://github.com/rust-lang/rust/issues/67441).
 
 ## Testing
 

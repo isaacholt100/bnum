@@ -333,7 +333,7 @@ macro_rules! bit {
     ($sign: ident $bits: literal) => {
         doc::doc_comment! {
             $sign $bits,
-            "Returns a boolean representing the bit in the given position (`true` if the bit is set). The least significant bit is at index `0`, the most significant bit is at index `Self::BITS - 1`",
+            "Returns a boolean representing the bit in the given position (`true` if the bit is set). The least significant bit is at index `0`, the most significant bit is at index `Self::BITS - 1`.",
 
             "let n = " doc::type_str!($sign $bits) "::from(0b001010100101010101u32);\n"
             "assert!(n.bit(0));\n"
@@ -349,12 +349,13 @@ macro_rules! set_bit {
     ($sign: ident $bits: literal) => {
         doc::doc_comment! {
             $sign $bits,
-            "Sets/unsets the bit in the given position (`1` if value is true). The least significant bit is at index `0`, the most significant bit is at index `Self::BITS - 1`",
+            "Sets/unsets the bit in the given position (`1` if value is true). The least significant bit is at index `0`, the most significant bit is at index `Self::BITS - 1`.",
 
             "let mut n = " doc::type_str!($sign $bits) "::from(0b001010100101010101u32);\n"
             "assert!(n.bit(2));\n"
-            "n.set_bit(2,false);\n"
+            "n.set_bit(2, false);\n"
             "assert!(!n.bit(2));\n"
+            "assert_eq!(n, " doc::type_str!($sign $bits) "::from(0b001010100101010001u32));"
         }
     };
 }

@@ -4,7 +4,7 @@
     feature(
         generic_const_exprs,
         const_trait_impl,
-        const_option_ext,
+        const_option,
         // effects,
     )
 )]
@@ -41,6 +41,13 @@ pub mod prelude;
 pub mod random;
 
 pub mod types;
+
+#[test]
+fn test_set_bit() {
+    let mut a = types::U128::MAX;
+    a.set_bit(6, false);
+    panic!("{:b}", a);
+}
 
 // #[cfg(feature = "nightly")]
 // mod float;
