@@ -42,13 +42,6 @@ pub mod random;
 
 pub mod types;
 
-#[test]
-fn test_set_bit() {
-    let mut a = types::U128::MAX;
-    a.set_bit(6, false);
-    panic!("{:b}", a);
-}
-
 // #[cfg(feature = "nightly")]
 // mod float;
 
