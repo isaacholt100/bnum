@@ -8,6 +8,7 @@ pub trait CastFrom<T> {
 }
 
 // #[cfg_attr(feature = "nightly", const_trait)]
+#[cfg(test)]
 pub(crate) trait CastTo<U> {
     fn cast_to(self) -> U;
 }
@@ -55,6 +56,7 @@ assert_eq!(b, f.as_());
 macro_rules! as_trait {
     () => {
         // impl<T, U> const CastTo<U> for T
+        #[cfg(test)]
         impl<T, U> CastTo<U> for T
         where
             // U: ~const CastFrom<T>,
@@ -93,6 +95,7 @@ macro_rules! as_trait {
 #[cfg(not(feature = "nightly"))]
 macro_rules! as_trait {
     () => {
+        #[cfg(test)]
         impl<T, U> CastTo<U> for T
         where
             U: CastFrom<T>,

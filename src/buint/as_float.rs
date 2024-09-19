@@ -144,7 +144,7 @@ pub trait Mantissa {
     fn add(self, rhs: Self) -> Self;
     fn sub(self, rhs: Self) -> Self;
     fn leading_zeros(self) -> ExpType;
-    fn bitand(self, rhs: Self) -> Self;
+    // fn bitand(self, rhs: Self) -> Self;
     fn gt(&self, rhs: &Self) -> bool;
 }
 
@@ -188,10 +188,10 @@ macro_rules! impl_mantissa_for_uint {
                         Self::leading_zeros(self) as ExpType
                     }
 
-                    #[inline]
-                    fn bitand(self, rhs: Self) -> Self {
-                        self & rhs
-                    }
+                    // #[inline]
+                    // fn bitand(self, rhs: Self) -> Self {
+                    //     self & rhs
+                    // }
 
                     #[inline]
                     fn gt(&self, rhs: &Self) -> bool {
