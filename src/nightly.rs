@@ -51,7 +51,7 @@ pub(crate) use impl_const;
 #[cfg(feature = "nightly")]
 macro_rules! const_impl {
     { impl $(<$(const $C: ident : $ty: ty), +>)? const $($tt: tt) + } => {
-        impl $(<$(const $C: $ty), +>)? const $($tt) +
+        impl $(<$(const $C: $ty), +>)? $($tt) +
     }
 }
 

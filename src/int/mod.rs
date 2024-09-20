@@ -1,3 +1,4 @@
+pub mod bigint_helpers;
 pub mod cast;
 pub mod checked;
 pub mod cmp;
@@ -9,6 +10,7 @@ pub mod numtraits;
 
 pub mod ops;
 pub mod radix;
+pub mod strict;
 pub mod unchecked;
 
 #[cfg(test)]
@@ -58,6 +60,9 @@ macro_rules! tests {
         }
         test_bignum! {
             function: <$int>::abs_diff(a: $int, b: $int)
+        }
+        test_bignum! {
+            function: <$int>::midpoint(a: $int, b: $int)
         }
         test_bignum! {
             function: <$int>::ilog(a: $int, base: $int),

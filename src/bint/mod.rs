@@ -18,15 +18,18 @@ macro_rules! ilog {
     }
 }
 
-#[cfg(debug_assertions)]
-use crate::errors::option_expect;
-
 use crate::digit;
 use crate::ExpType;
 use crate::{doc, errors};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
+
+#[cfg(feature = "borsh")]
+use ::{
+    alloc::string::ToString,
+    borsh::{BorshDeserialize, BorshSchema, BorshSerialize},
+};
 
 use core::default::Default;
 
@@ -46,6 +49,7 @@ macro_rules! mod_impl {
 
         #[derive(Clone, Copy, Hash, PartialEq, Eq)]
         #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+        #[cfg_attr(feature = "borsh", derive(BorshSerialize, BorshDeserialize, BorshSchema))]                
         #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
         #[cfg_attr(feature = "valuable", derive(valuable::Valuable))]
         #[repr(transparent)]
@@ -99,6 +103,13 @@ macro_rules! mod_impl {
                 self.bits.trailing_ones()
             }
 
+            #[doc = doc::cast_unsigned!(I)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn cast_unsigned(self) -> $BUint<N> {
+                self.to_bits()
+            }
+
             #[doc = doc::rotate_left!(I 256, "i")]
             #[must_use = doc::must_use_op!()]
             #[inline]
@@ -143,7 +154,7 @@ macro_rules! mod_impl {
             #[inline]
             pub const fn pow(self, exp: ExpType) -> Self {
                 #[cfg(debug_assertions)]
-                return option_expect!(self.checked_pow(exp), errors::err_msg!("attempt to calculate power with overflow"));
+                return self.strict_pow(exp);
 
                 #[cfg(not(debug_assertions))]
                 self.wrapping_pow(exp)
@@ -170,7 +181,7 @@ macro_rules! mod_impl {
             #[inline]
             pub const fn abs(self) -> Self {
                 #[cfg(debug_assertions)]
-                return option_expect!(self.checked_abs(), errors::err_msg!("attempt to negate with overflow"));
+                return self.strict_abs();
 
                 #[cfg(not(debug_assertions))]
                 match self.checked_abs() {
@@ -221,6 +232,20 @@ macro_rules! mod_impl {
             #[inline]
             pub const fn is_power_of_two(self) -> bool {
                 !self.is_negative() &&self.bits.is_power_of_two()
+            }
+
+            #[doc = doc::midpoint!(I)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn midpoint(self, rhs: Self) -> Self {
+                let m = Self::from_bits(self.to_bits().midpoint(rhs.to_bits()));
+                if self.is_negative() == rhs.is_negative() {
+                    // signs agree. in the positive case, we can just compute as if they were unsigned. in the negative case, we compute as if unsigned, and the result is 2^(type bits) too large, but this is 0 (modulo 2^(type bits)) so does not affect the bits
+                    m
+                } else {
+                    // result is 2^(type bits - 1) too large, so subtract 2^(type bits - 1) by applying xor
+                    m.bitxor(Self::MIN)
+                }
             }
 
             ilog!(ilog, base: Self);
@@ -420,6 +445,9 @@ macro_rules! mod_impl {
                 test_bignum! {
                     function: <itest>::is_negative(a: itest)
                 }
+                test_bignum! {
+                    function: <itest>::cast_unsigned(a: itest)
+                }
 
                 #[test]
                 fn bit() {
@@ -483,6 +511,7 @@ macro_rules! mod_impl {
 
 crate::macro_impl!(mod_impl);
 
+mod bigint_helpers;
 pub mod cast;
 mod checked;
 mod cmp;
@@ -497,5 +526,6 @@ mod ops;
 mod overflowing;
 mod radix;
 mod saturating;
+mod strict;
 mod unchecked;
 mod wrapping;

@@ -200,37 +200,10 @@ macro_rules! all_shift_impls {
             i128
         );
 
-        #[cfg(feature = "usize_exptype")]
-        crate::int::ops::try_shift_impl!(
-            $Struct, $BUint, $BInt;
-            Shl,
-            shl,
-            ShlAssign,
-            shl_assign,
-            "attempt to shift left with overflow",
-            u32,
-            u64,
-            u128
-        );
-
-        #[cfg(feature = "usize_exptype")]
-        crate::int::ops::try_shift_impl!(
-            $Struct, $BUint, $BInt;
-            Shr,
-            shr,
-            ShrAssign,
-            shr_assign,
-            "attempt to shift right with overflow",
-            u32,
-            u64,
-            u128
-        );
-
         crate::int::ops::shift_impl!($Struct, Shl, shl, ShlAssign, shl_assign, u8, u16);
 
         crate::int::ops::shift_impl!($Struct, Shr, shr, ShrAssign, shr_assign, u8, u16);
 
-        #[cfg(not(feature = "usize_exptype"))]
         crate::int::ops::try_shift_impl!(
             $Struct, $BUint, $BInt;
             Shl,
@@ -243,7 +216,6 @@ macro_rules! all_shift_impls {
             u128
         );
 
-        #[cfg(not(feature = "usize_exptype"))]
         crate::int::ops::try_shift_impl!(
             $Struct, $BUint, $BInt;
             Shr,
@@ -310,10 +282,7 @@ macro_rules! trait_fillers {
         #[inline]
         pub const fn add(self, rhs: Self) -> Self {
             #[cfg(debug_assertions)]
-            return crate::errors::option_expect!(
-                self.checked_add(rhs),
-                "attempt to add with overflow"
-            );
+            return self.strict_add(rhs);
 
             #[cfg(not(debug_assertions))]
             self.wrapping_add(rhs)
@@ -322,10 +291,7 @@ macro_rules! trait_fillers {
         #[inline]
         pub const fn mul(self, rhs: Self) -> Self {
             #[cfg(debug_assertions)]
-            return crate::errors::option_expect!(
-                self.checked_mul(rhs),
-                "attempt to multiply with overflow"
-            );
+            return self.strict_mul(rhs);
 
             #[cfg(not(debug_assertions))]
             self.wrapping_mul(rhs)
@@ -334,10 +300,7 @@ macro_rules! trait_fillers {
         #[inline]
         pub const fn shl(self, rhs: ExpType) -> Self {
             #[cfg(debug_assertions)]
-            return crate::errors::option_expect!(
-                self.checked_shl(rhs),
-                "attempt to shift left with overflow"
-            );
+            return self.strict_shl(rhs);
 
             #[cfg(not(debug_assertions))]
             self.wrapping_shl(rhs)
@@ -346,10 +309,7 @@ macro_rules! trait_fillers {
         #[inline]
         pub const fn shr(self, rhs: ExpType) -> Self {
             #[cfg(debug_assertions)]
-            return crate::errors::option_expect!(
-                self.checked_shr(rhs),
-                "attempt to shift left with overflow"
-            );
+            return self.strict_shr(rhs);
 
             #[cfg(not(debug_assertions))]
             self.wrapping_shr(rhs)
@@ -358,10 +318,7 @@ macro_rules! trait_fillers {
         #[inline]
         pub const fn sub(self, rhs: Self) -> Self {
             #[cfg(debug_assertions)]
-            return crate::errors::option_expect!(
-                self.checked_sub(rhs),
-                "attempt to subtract with overflow"
-            );
+            return self.strict_sub(rhs);
 
             #[cfg(not(debug_assertions))]
             self.wrapping_sub(rhs)

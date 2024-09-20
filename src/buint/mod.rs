@@ -11,6 +11,12 @@ use ::{
     serde_big_array::BigArray,
 };
 
+#[cfg(feature = "borsh")]
+use ::{
+    alloc::string::ToString,
+    borsh::{BorshDeserialize, BorshSchema, BorshSerialize},
+};
+
 use core::default::Default;
 
 use core::iter::{Iterator, Product, Sum};
@@ -29,6 +35,7 @@ macro_rules! mod_impl {
 
         #[derive(Clone, Copy, Hash, PartialEq, Eq)]
         #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+        #[cfg_attr(feature = "borsh", derive(BorshSerialize, BorshDeserialize, BorshSchema))]
         #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
         #[cfg_attr(feature = "valuable", derive(valuable::Valuable))]
         #[repr(transparent)]
@@ -135,6 +142,13 @@ macro_rules! mod_impl {
                 ones
             }
 
+            #[doc = doc::cast_signed!(U)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn cast_signed(self) -> $BInt<N> {
+                $BInt::<N>::from_bits(self)
+            }
+
             #[inline]
             const unsafe fn rotate_digits_left(self, n: usize) -> Self {
                 let mut out = Self::ZERO;
@@ -231,10 +245,8 @@ macro_rules! mod_impl {
             #[inline]
             pub const fn pow(self, exp: ExpType) -> Self {
                 #[cfg(debug_assertions)]
-                return option_expect!(
-                    self.checked_pow(exp),
-                    errors::err_msg!("attempt to calculate power with overflow")
-                );
+                return self.strict_pow(exp);
+
                 #[cfg(not(debug_assertions))]
                 self.wrapping_pow(exp)
             }
@@ -289,6 +301,13 @@ macro_rules! mod_impl {
                 );
                 #[cfg(not(debug_assertions))]
                 self.wrapping_next_power_of_two()
+            }
+
+            #[doc = doc::midpoint!(U)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn midpoint(self, rhs: Self) -> Self {
+                (self.bitxor(rhs).shr(1)).add(self.bitand(rhs))
             }
 
             #[doc = doc::ilog2!(U)]
@@ -455,6 +474,18 @@ macro_rules! mod_impl {
                 digit & (1 << (index & digit::$Digit::BITS_MINUS_1)) != 0
             }
 
+            #[doc = doc::set_bit!(U 256)]
+            #[inline]
+            pub fn set_bit(&mut self, index: ExpType, value: bool) {
+                let digit = &mut self.digits[index as usize >> digit::$Digit::BIT_SHIFT];
+                let shift = index & digit::$Digit::BITS_MINUS_1;
+                if value {
+                    *digit |= (1 << shift);
+                } else {
+                    *digit &= !(1 << shift);
+                }
+            }
+
             /// Returns an integer whose value is `2^power`. This is faster than using a shift left on `Self::ONE`.
             ///
             /// # Panics
@@ -482,6 +513,13 @@ macro_rules! mod_impl {
             #[inline(always)]
             pub const fn digits(&self) -> &[$Digit; N] {
                 &self.digits
+            }
+
+            /// Returns the digits stored in `self` as a mutable array. Digits are little endian (least significant digit first).
+            #[must_use]
+            #[inline(always)]
+            pub fn digits_mut(&mut self) -> &mut [$Digit; N] {
+                &mut self.digits
             }
 
             /// Creates a new unsigned integer from the given array of digits. Digits are stored as little endian (least significant digit first).
@@ -611,9 +649,11 @@ macro_rules! mod_impl {
                     function: <utest>::next_power_of_two(a: utest),
                     skip: debug_skip!(a.checked_next_power_of_two().is_none())
                 }
-
                 test_bignum! {
                     function: <utest>::is_power_of_two(a: utest)
+                }
+                test_bignum! {
+                    function: <utest>::cast_signed(a: utest)
                 }
 
                 #[test]
@@ -683,7 +723,7 @@ macro_rules! mod_impl {
     };
 }
 
-crate::main_impl!(mod_impl);
+crate::macro_impl!(mod_impl);
 
 pub mod float_as;
 mod bigint_helpers;
@@ -702,5 +742,6 @@ mod ops;
 mod overflowing;
 mod radix;
 mod saturating;
+mod strict;
 mod unchecked;
 mod wrapping;

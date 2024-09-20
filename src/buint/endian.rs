@@ -233,7 +233,7 @@ macro_rules! endian {
             #[inline]
             pub const fn from_be_bytes(bytes: [u8; N * digit::$Digit::BYTES as usize]) -> Self {
                 let mut out = Self::ZERO;
-                let arr_ptr = bytes.as_ptr();
+                // let arr_ptr = bytes.as_ptr();
                 let mut i = 0;
                 while i < N {
                     let mut digit_bytes = [0u8; digit::$Digit::BYTES as usize];
@@ -256,7 +256,7 @@ macro_rules! endian {
             #[inline]
             pub const fn from_le_bytes(bytes: [u8; N * digit::$Digit::BYTES as usize]) -> Self {
                 let mut out = Self::ZERO;
-                let arr_ptr = bytes.as_ptr();
+                // let arr_ptr = bytes.as_ptr();
                 let mut i = 0;
                 while i < N {
                     let mut digit_bytes = [0u8; digit::$Digit::BYTES as usize];

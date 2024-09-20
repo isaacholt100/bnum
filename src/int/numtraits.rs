@@ -297,24 +297,9 @@ macro_rules! prim_int_methods {
             fn to_be(self) -> Self;
             fn to_le(self) -> Self;
             fn pow(self, exp: u32) -> Self;
-        }
-
-        #[cfg(has_leading_trailing_ones)]
-        #[inline]
-        fn leading_ones(self) -> u32 {
-            Self::leading_ones(self)
-        }
-
-        #[cfg(has_leading_trailing_ones)]
-        #[inline]
-        fn trailing_ones(self) -> u32 {
-            Self::trailing_ones(self)
-        }
-
-        #[cfg(has_reverse_bits)]
-        #[inline]
-        fn reverse_bits(self) -> Self {
-            Self::reverse_bits(self)
+            fn leading_ones(self) -> u32;
+            fn trailing_ones(self) -> u32;
+            fn reverse_bits(self) -> Self;
         }
     };
 }

@@ -1,0 +1,9 @@
+- Add optional borsh support
+- Add `digits_mut` method to unsigned integers.
+- `As` and `CastFrom` traits no longer const, as const trait support removed from latest nightly.
+- `cast_signed` method for unsigned integers.
+- `cast_unsigned` method for signed integers.
+- `midpoint` method for integers.
+- `carrying_add` and `borrowing_sub` methods for signed integers.
+- strict methods added.
+- added `(bnum) ` prefix to error messages that were lacking it.

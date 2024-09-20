@@ -4,7 +4,8 @@
     feature(
         generic_const_exprs,
         const_trait_impl,
-        const_option_ext
+        const_option,
+        // effects,
     )
 )]
 #![cfg_attr(
@@ -15,8 +16,10 @@
         float_minimum_maximum,
         wrapping_next_power_of_two,
         float_next_up_down,
-        unchecked_math,
         unchecked_shifts,
+        integer_sign_cast,
+        num_midpoint,
+        strict_overflow_ops,
     )
 )]
 #![doc = include_str!("../README.md")]
@@ -56,6 +59,13 @@ use test::types::*;
 
 type ExpType = u32;
 
+mod bigints {
+    pub use crate::bint::{BInt, BIntD16, BIntD32, BIntD8};
+    pub use crate::buint::{BUint, BUintD16, BUintD32, BUintD8};
+}
+
+pub use bigints::*;
+
 macro_rules! macro_impl {
     ($name: ident) => {
         use crate::bigints::*;
@@ -89,13 +99,6 @@ bint_as_different_digit_bigint!(BUintD16, BIntD16, u16; (BInt, u64), (BIntD32, u
 bint_as_different_digit_bigint!(BUintD8, BIntD8, u8; (BInt, u64), (BIntD32, u32), (BIntD16, u16));
 
 pub(crate) use main_impl;
-
-mod bigints {
-    pub use crate::bint::{BInt, BIntD16, BIntD32, BIntD8};
-    pub use crate::buint::{BUint, BUintD16, BUintD32, BUintD8};
-}
-
-pub use bigints::*;
 
 /// Trait for fallible conversions between `bnum` integer types.
 /// 

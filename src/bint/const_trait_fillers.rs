@@ -56,7 +56,7 @@ macro_rules! const_trait_fillers {
             #[inline]
             pub const fn neg(self) -> Self {
                 #[cfg(debug_assertions)]
-                return crate::errors::option_expect!(self.checked_neg(), crate::errors::err_msg!("attempt to negate with overflow"));
+                return self.strict_neg();
 
                 #[cfg(not(debug_assertions))]
                 self.wrapping_neg()
