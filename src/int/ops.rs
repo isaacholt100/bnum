@@ -282,10 +282,7 @@ macro_rules! trait_fillers {
         #[inline]
         pub const fn add(self, rhs: Self) -> Self {
             #[cfg(debug_assertions)]
-            return crate::errors::option_expect!(
-                self.checked_add(rhs),
-                "attempt to add with overflow"
-            );
+            return self.strict_add(rhs);
 
             #[cfg(not(debug_assertions))]
             self.wrapping_add(rhs)
@@ -294,10 +291,7 @@ macro_rules! trait_fillers {
         #[inline]
         pub const fn mul(self, rhs: Self) -> Self {
             #[cfg(debug_assertions)]
-            return crate::errors::option_expect!(
-                self.checked_mul(rhs),
-                "attempt to multiply with overflow"
-            );
+            return self.strict_mul(rhs);
 
             #[cfg(not(debug_assertions))]
             self.wrapping_mul(rhs)
@@ -306,10 +300,7 @@ macro_rules! trait_fillers {
         #[inline]
         pub const fn shl(self, rhs: ExpType) -> Self {
             #[cfg(debug_assertions)]
-            return crate::errors::option_expect!(
-                self.checked_shl(rhs),
-                "attempt to shift left with overflow"
-            );
+            return self.strict_shl(rhs);
 
             #[cfg(not(debug_assertions))]
             self.wrapping_shl(rhs)
@@ -318,10 +309,7 @@ macro_rules! trait_fillers {
         #[inline]
         pub const fn shr(self, rhs: ExpType) -> Self {
             #[cfg(debug_assertions)]
-            return crate::errors::option_expect!(
-                self.checked_shr(rhs),
-                "attempt to shift left with overflow"
-            );
+            return self.strict_shr(rhs);
 
             #[cfg(not(debug_assertions))]
             self.wrapping_shr(rhs)
@@ -330,10 +318,7 @@ macro_rules! trait_fillers {
         #[inline]
         pub const fn sub(self, rhs: Self) -> Self {
             #[cfg(debug_assertions)]
-            return crate::errors::option_expect!(
-                self.checked_sub(rhs),
-                "attempt to subtract with overflow"
-            );
+            return self.strict_sub(rhs);
 
             #[cfg(not(debug_assertions))]
             self.wrapping_sub(rhs)

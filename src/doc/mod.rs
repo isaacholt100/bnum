@@ -6,8 +6,8 @@ pub mod endian;
 pub mod overflowing;
 pub mod radix;
 pub mod saturating;
+pub mod strict;
 pub mod unchecked;
-
 pub mod wrapping;
 
 macro_rules! arithmetic_doc {
@@ -404,5 +404,8 @@ crate::doc::link_doc_comment! {
     abs,
     signum,
     is_positive,
-    is_negative
+    is_negative,
+    cast_signed,
+    cast_unsigned,
+    midpoint
 }

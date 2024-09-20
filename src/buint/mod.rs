@@ -142,6 +142,13 @@ macro_rules! mod_impl {
                 ones
             }
 
+            #[doc = doc::cast_signed!(U)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn cast_signed(self) -> $BInt<N> {
+                $BInt::<N>::from_bits(self)
+            }
+
             #[inline]
             const unsafe fn rotate_digits_left(self, n: usize) -> Self {
                 let mut out = Self::ZERO;
@@ -238,10 +245,8 @@ macro_rules! mod_impl {
             #[inline]
             pub const fn pow(self, exp: ExpType) -> Self {
                 #[cfg(debug_assertions)]
-                return option_expect!(
-                    self.checked_pow(exp),
-                    errors::err_msg!("attempt to calculate power with overflow")
-                );
+                return self.strict_pow(exp);
+
                 #[cfg(not(debug_assertions))]
                 self.wrapping_pow(exp)
             }
@@ -296,6 +301,13 @@ macro_rules! mod_impl {
                 );
                 #[cfg(not(debug_assertions))]
                 self.wrapping_next_power_of_two()
+            }
+
+            #[doc = doc::midpoint!(U)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn midpoint(self, rhs: Self) -> Self {
+                (self.bitxor(rhs).shr(1)).add(self.bitand(rhs))
             }
 
             #[doc = doc::ilog2!(U)]
@@ -637,9 +649,11 @@ macro_rules! mod_impl {
                     function: <utest>::next_power_of_two(a: utest),
                     skip: debug_skip!(a.checked_next_power_of_two().is_none())
                 }
-
                 test_bignum! {
                     function: <utest>::is_power_of_two(a: utest)
+                }
+                test_bignum! {
+                    function: <utest>::cast_signed(a: utest)
                 }
 
                 #[test]
@@ -709,7 +723,7 @@ macro_rules! mod_impl {
     };
 }
 
-crate::main_impl!(mod_impl);
+crate::macro_impl!(mod_impl);
 
 pub mod float_as;
 mod bigint_helpers;
@@ -728,5 +742,6 @@ mod ops;
 mod overflowing;
 mod radix;
 mod saturating;
+mod strict;
 mod unchecked;
 mod wrapping;
