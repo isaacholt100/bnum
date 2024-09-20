@@ -7,7 +7,7 @@ macro_rules! impls {
             let (s1, o1) = self.overflowing_add(rhs);
             if carry {
                 let (s2, o2) = s1.overflowing_add(Self::ONE);
-                (s2, o1 || o2)
+                (s2, o1 ^ o2)
             } else {
                 (s1, o1)
             }
@@ -20,7 +20,7 @@ macro_rules! impls {
             let (s1, o1) = self.overflowing_sub(rhs);
             if borrow {
                 let (s2, o2) = s1.overflowing_sub(Self::ONE);
-                (s2, o1 || o2)
+                (s2, o1 ^ o2)
             } else {
                 (s1, o1)
             }
