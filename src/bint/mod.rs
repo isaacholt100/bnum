@@ -18,9 +18,6 @@ macro_rules! ilog {
     }
 }
 
-// #[cfg(debug_assertions)]
-// use crate::errors::option_expect;
-
 use crate::digit;
 use crate::ExpType;
 use crate::{doc, errors};

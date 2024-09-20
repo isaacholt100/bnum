@@ -113,7 +113,7 @@ The `rand` feature allows creation of random `bnum` integers via the [`rand`](ht
 
 The `serde` feature enables serialization and deserialization of `bnum` integers via the [`serde`](https://docs.rs/serde/latest/serde/) and [`serde_big_array`](https://docs.rs/serde-big-array/latest/serde_big_array/) crates.
 
-The `borsh`
+The `borsh` feature enables serialization and deserialization of `bnum` integers via the [`borsh`](https://docs.rs/borsh/latest/borsh/) crate.
 
 ### `num_traits` and `num_integer` trait implementations
 
