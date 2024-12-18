@@ -160,9 +160,9 @@ use crate::ExpType;
 use num_integer::{Integer, Roots};
 use num_traits::{
     AsPrimitive, Bounded, CheckedAdd, CheckedDiv, CheckedMul, CheckedNeg, CheckedRem, CheckedShl,
-    CheckedShr, CheckedSub, CheckedEuclid, Euclid, FromPrimitive, MulAdd, MulAddAssign, Num, One, Pow, PrimInt,
+    CheckedShr, CheckedSub, CheckedEuclid, Euclid, FromPrimitive, MulAdd, MulAddAssign, Num, One, ConstOne, Pow, PrimInt,
     Saturating, SaturatingAdd, SaturatingMul, SaturatingSub, Signed, ToPrimitive, WrappingAdd,
-    WrappingMul, WrappingNeg, WrappingShl, WrappingShr, WrappingSub, Zero,
+    WrappingMul, WrappingNeg, WrappingShl, WrappingShr, WrappingSub, Zero, ConstZero
 };
 
 use crate::cast::CastFrom;
@@ -170,7 +170,7 @@ use crate::int::numtraits::num_trait_impl;
 
 macro_rules! numtraits {
     ($BUint: ident, $BInt: ident, $Digit: ident) => {
-        crate::int::numtraits::impls!($BInt, $BUint, $BInt);
+        crate::int::numtraits::impls!($BInt, $BUint, $BInt, $Digit);
 
         impl<const N: usize> FromPrimitive for $BInt<N> {
             from_uint!($Digit; u8, from_u8);

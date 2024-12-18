@@ -6,48 +6,16 @@ use core::iter::Iterator;
 use criterion::black_box;
 use rand::prelude::*;
 
+mod unzip;
+use unzip::unzip2;
+
+// use super::unzip2;
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 
 const SAMPLE_SIZE: usize = 10000;
 
-macro_rules! unzip {
-    (fn $name: ident <$($Gen: ident), *>) => {
-        paste::paste! {
-            fn $name<$($Gen), *, I>(i: I) -> ($(Vec<$Gen>), *)
-            where I: Iterator<Item = ($($Gen), *)>
-            {
-                let ($(mut [<vec_ $Gen:lower>]), *) = match i.size_hint().1 {
-                    Some(size) => ($(Vec::<$Gen>::with_capacity(size)), *),
-                    None => ($(Vec::<$Gen>::new()), *),
-                };
-                i.for_each(|($([<$Gen:lower>]), *)| {
-                    $(
-                        [<vec_ $Gen:lower>].push([<$Gen:lower>]);
-                    )*
-                });
-                ($([<vec_ $Gen:lower>]), *)
-            }
-        }
-    };
-}
-
-// unzip!(fn unzip3<T1, T2, T3>);
-unzip!(fn unzip2<T1, T2>);
-
-// mod uuint {
-//     uint::construct_uint! {
-//         pub struct UU128(2);
-//     }
-    
-//     uint::construct_uint! {
-//         pub struct UU512(8);
-//     }
-// }
-
-// use uuint::*;
-
 macro_rules! bench_against_primitive {
-    { $primitive: ty; $($method: ident ($($param: ident : $(ref $re: tt)? $ty: ty), *);) * } => {
+    { $primitive: ty; $group_name: ident; $($method: ident ($($param: ident : $(ref $re: tt)? $ty: ty), *);) * } => {
         paste::paste! {
             $(
                 fn [<bench_ $primitive _ $method>](c: &mut Criterion) {
@@ -64,7 +32,9 @@ macro_rules! bench_against_primitive {
                     let big_inputs = inputs.0;
                     let prim_inputs = inputs.1;
                     // let ruint_inputs = inputs.2;
+
                     const SIZE_ID: &'static str = stringify!([<$primitive:upper>]);
+
                     group.bench_with_input(BenchmarkId::new("bnum", SIZE_ID), &big_inputs, |b, inputs| {
                         b.iter(|| {
                             for ($($param), *, ()) in inputs.iter().cloned() {
@@ -90,7 +60,7 @@ macro_rules! bench_against_primitive {
                     group.finish();
                 }
             )*
-            criterion_group!([<$primitive _benches>], $([<bench_ $primitive _ $method>]), *);
+            criterion_group!($group_name, $([<bench_ $primitive _ $method>]), *);
         }
     };
 }
@@ -106,149 +76,129 @@ trait Format {
     fn lower_exp(self) -> String;
 }
 
-// macro_rules! impl_format {
-//     ($($ty: ty), *) => {
-//         $(
-//             impl Format for $ty {
-//                 fn display(self) -> String {
-//                     format!("{}", self)
-//                 }
-//                 fn debug(self) -> String {
-//                     format!("{:?}", self)
-//                 }
-//                 fn binary(self) -> String {
-//                     format!("{:b}", self)
-//                 }
-//                 fn upper_hex(self) -> String {
-//                     format!("{:X}", self)
-//                 }
-//                 fn lower_hex(self) -> String {
-//                     format!("{:x}", self)
-//                 }
-//                 fn octal(self) -> String {
-//                     format!("{:o}", self)
-//                 }
-//                 fn upper_exp(self) -> String {
-//                     format!("{:E}", self)
-//                 }
-//                 fn lower_exp(self) -> String {
-//                     format!("{:e}", self)
-//                 }
-//             }
-//         )*
-//     };
-// }
+macro_rules! impl_format {
+    ($($ty: ty), *) => {
+        $(
+            impl Format for $ty {
+                fn display(self) -> String {
+                    format!("{}", self)
+                }
+                fn debug(self) -> String {
+                    format!("{:?}", self)
+                }
+                fn binary(self) -> String {
+                    format!("{:b}", self)
+                }
+                fn upper_hex(self) -> String {
+                    format!("{:X}", self)
+                }
+                fn lower_hex(self) -> String {
+                    format!("{:x}", self)
+                }
+                fn octal(self) -> String {
+                    format!("{:o}", self)
+                }
+                fn upper_exp(self) -> String {
+                    format!("{:E}", self)
+                }
+                fn lower_exp(self) -> String {
+                    format!("{:e}", self)
+                }
+            }
+        )*
+    };
+}
 
-// impl_format!(u128, BU128);
+impl_format!(u128, U128);
 
-// use core::cmp::{PartialEq, PartialOrd};
+use core::cmp::{PartialEq, PartialOrd};
 // use core::ops::{BitAnd, BitOr, BitXor, Not};
 
-// // use num_traits::PrimInt;
-
-// trait BenchFrom<T> {
-//     fn from(value: T) -> Self;
-// }
-
-// impl<'a> BenchFrom<&'a BU128> for &'a UU128 {
-//     fn from(value: &'a BU128) -> Self {
-//         unsafe {
-//             &*(value as *const BU128 as *const UU128)
-//         }
-//     }
-// }
-
-// impl BenchFrom<u128> for UU128 {
-//     fn from(value: u128) -> Self {
-//         From::from(value)
-//     }
-// }
-
 bench_against_primitive! {
-    u128;
-    from_be_bytes(a: [u8; 16]);
+    u128; u128_benches;
+
     checked_add(a: u128, b: u128);
-    // checked_add_signed(a: u128, b: i128);
+    checked_add_signed(a: u128, b: i128);
     checked_sub(a: u128, b: u128);
     checked_mul(a: u128, b: u128);
     checked_div(a: u128, b: u128);
-    // checked_div_euclid(a: u128, b: u128);
+    checked_div_euclid(a: u128, b: u128);
     checked_rem(a: u128, b: u128);
-    // checked_rem_euclid(a: u128, b: u128);
+    checked_rem_euclid(a: u128, b: u128);
     checked_neg(a: u128);
-    // checked_shl(a: u128, b: u32);
-    // checked_shr(a: u128, b: u32);
+    checked_shl(a: u128, b: u32);
+    checked_shr(a: u128, b: u32);
     checked_pow(a: u128, b: u32);
-    // checked_next_multiple_of(a: u128, b: u128);
-    // checked_ilog2(a: u128);
-    // checked_ilog10(a: u128);
-    // checked_ilog(a: u128, b: u128);
-    // checked_next_power_of_two(a: u128);
+    checked_next_multiple_of(a: u128, b: u128);
+    checked_ilog2(a: u128);
+    checked_ilog10(a: u128);
+    checked_ilog(a: u128, b: u128);
+    checked_next_power_of_two(a: u128);
 
-    // from_be(a: u128);
-    // from_le(a: u128);
-    // to_be(a: u128);
-    // to_le(a: u128);
-    // to_be_bytes(a: u128);
-    // to_le_bytes(a: u128);
-    // to_ne_bytes(a: u128);
-    // from_be_bytes(a: [u8; 128 / 8]);
-    // from_le_bytes(a: [u8; 128 / 8]);
-    // from_ne_bytes(a: [u8; 128 / 8]);
+    from_be(a: u128);
+    from_le(a: u128);
+    to_be(a: u128);
+    to_le(a: u128);
+    to_be_bytes(a: u128);
+    to_le_bytes(a: u128);
+    to_ne_bytes(a: u128);
+    from_be_bytes(a: [u8; 128 / 8]);
+    from_le_bytes(a: [u8; 128 / 8]);
+    from_ne_bytes(a: [u8; 128 / 8]);
 
     overflowing_add(a: u128, b: u128);
-    // overflowing_add_signed(a: u128, b: i128);
+    overflowing_add_signed(a: u128, b: i128);
     overflowing_sub(a: u128, b: u128);
     overflowing_mul(a: u128, b: u128);
     overflowing_neg(a: u128);
-    // overflowing_shl(a: u128, b: u32);
-    // overflowing_shr(a: u128, b: u32);
+    overflowing_shl(a: u128, b: u32);
+    overflowing_shr(a: u128, b: u32);
     overflowing_pow(a: u128, b: u32);
 
-    // display(a: u128);
-    // debug(a: u128);
-    // binary(a: u128);
-    // upper_hex(a: u128);
-    // lower_hex(a: u128);
-    // octal(a: u128);
-    // upper_exp(a: u128);
-    // lower_exp(a: u128);
+    display(a: u128);
+    debug(a: u128);
+    binary(a: u128);
+    upper_hex(a: u128);
+    lower_hex(a: u128);
+    octal(a: u128);
+    upper_exp(a: u128);
+    lower_exp(a: u128);
 
     saturating_add(a: u128, b: u128);
-    // saturating_add_signed(a: u128, b: i128);
+    saturating_add_signed(a: u128, b: i128);
     saturating_sub(a: u128, b: u128);
     saturating_mul(a: u128, b: u128);
-    // saturating_pow(a: u128, exp: u32);
+    saturating_pow(a: u128, exp: u32);
 
-    // wrapping_add(a: u128, b: u128);
-    // wrapping_add_signed(a: u128, b: i128);
-    // wrapping_sub(a: u128, b: u128);
-    // wrapping_mul(a: u128, b: u128);
-    // wrapping_neg(a: u128);
-    // wrapping_shl(a: u128, rhs: u32);
-    // wrapping_shr(a: u128, rhs: u32);
-    // wrapping_pow(a: u128, exp: u32);
-    // wrapping_next_power_of_two(a: u128);
+    wrapping_add(a: u128, b: u128);
+    wrapping_add_signed(a: u128, b: i128);
+    wrapping_sub(a: u128, b: u128);
+    wrapping_mul(a: u128, b: u128);
+    wrapping_neg(a: u128);
+    wrapping_shl(a: u128, rhs: u32);
+    wrapping_shr(a: u128, rhs: u32);
+    wrapping_pow(a: u128, exp: u32);
+    wrapping_next_power_of_two(a: u128);
 
-    // count_ones(a: u128);
-    // count_zeros(a: u128);
-    // leading_zeros(a: u128);
-    // trailing_zeros(a: u128);
-    // leading_ones(a: u128);
-    // trailing_ones(a: u128);
-    // rotate_left(a: u128, b: u32);
-    // rotate_right(a: u128, b: u32);
-    // swap_bytes(a: u128);
-    // reverse_bits(a: u128);
-    // is_power_of_two(a: u128);
+    count_ones(a: u128);
+    count_zeros(a: u128);
+    leading_zeros(a: u128);
+    trailing_zeros(a: u128);
+    leading_ones(a: u128);
+    trailing_ones(a: u128);
+    rotate_left(a: u128, b: u32);
+    rotate_right(a: u128, b: u32);
+    swap_bytes(a: u128);
+    reverse_bits(a: u128);
+    is_power_of_two(a: u128);
 
     // bitand(a: u128, b: u128);
     // bitor(a: u128, b: u128);
     // bitxor(a: u128, b: u128);
     // not(a: u128);
 
-    // eq(a: ref &u128, b: ref &u128);
-    // partial_cmp(a: ref &u128, b: ref &u128);
+    eq(a: ref &u128, b: ref &u128);
+    partial_cmp(a: ref &u128, b: ref &u128);
 }
 
 criterion_main!(u128_benches);

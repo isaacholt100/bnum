@@ -5,7 +5,6 @@
         generic_const_exprs,
         const_trait_impl,
         const_option,
-        // effects,
     )
 )]
 #![cfg_attr(
@@ -37,6 +36,7 @@ mod digit;
 mod doc;
 pub mod errors;
 mod int;
+mod helpers;
 mod nightly;
 pub mod prelude;
 
@@ -45,11 +45,11 @@ pub mod random;
 
 pub mod types;
 
-// #[cfg(feature = "nightly")]
-// mod float;
+#[cfg(feature = "float")]
+mod float;
 
-// #[cfg(feature = "nightly")]
-// pub use float::Float;
+#[cfg(feature = "float")]
+pub use float::Float;
 
 #[cfg(test)]
 mod test;

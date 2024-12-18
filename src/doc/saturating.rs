@@ -6,7 +6,7 @@ macro_rules! impl_desc {
 
 pub(crate) use impl_desc;
 
-crate::doc::link_doc_comment!(
+crate::doc::link_doc_comment_method!(
     saturating_abs,
     saturating_add,
     saturating_add_signed,

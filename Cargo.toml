@@ -18,12 +18,13 @@ exclude = ["src/float/*", "src/tests", "TODO.txt", "lit-parser/*"] # TODO: make 
 [features]
 default = []
 nightly = []
+float = []
 serde = ["dep:serde", "serde-big-array"]
 numtraits = ["num-integer", "num-traits"]
 
 [dependencies]
 num-integer = { version = "0.1", optional = true, default-features = false }
-num-traits = { version = "0.2", optional = true, default-features = false }
+num-traits = { version = "0.2.19", optional = true, default-features = false }
 serde = { version = "1.0", features = ["derive"], optional = true, default-features = false }
 serde-big-array = { version = "0.5", optional = true, default-features = false }
 rand = { version = "0.8", features = ["min_const_gen"], optional = true, default-features = false }

@@ -47,41 +47,6 @@ macro_rules! overflowing {
                 (out, borrow)
             }
 
-            #[inline]
-            const fn long_mul(self, rhs: Self) -> (Self, bool) {
-                let mut overflow = false;
-                let mut out = Self::ZERO;
-                let mut carry: $Digit;
-
-                let mut i = 0;
-                while i < N {
-                    carry = 0;
-                    let mut j = 0;
-                    while j < N {
-                        let index = i + j;
-                        if index < N {
-                            let (prod, c) = digit::$Digit::carrying_mul(
-                                self.digits[i],
-                                rhs.digits[j],
-                                carry,
-                                out.digits[index],
-                            );
-                            out.digits[index] = prod;
-                            carry = c;
-                        } else if self.digits[i] != 0 && rhs.digits[j] != 0 {
-                            overflow = true;
-                            break;
-                        }
-                        j += 1;
-                    }
-                    if carry != 0 {
-                        overflow = true;
-                    }
-                    i += 1;
-                }
-                (out, overflow)
-            }
-
             #[doc = doc::overflowing::overflowing_mul!(U)]
             #[must_use = doc::must_use_op!()]
             #[inline]

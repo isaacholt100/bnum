@@ -1,13 +1,10 @@
 //! Panic-free casting between numeric types.
 
 /// Backend implementation trait for panic-free casting between numeric types.
-
-// #[cfg_attr(feature = "nightly", const_trait)]
 pub trait CastFrom<T> {
     fn cast_from(from: T) -> Self;
 }
 
-// #[cfg_attr(feature = "nightly", const_trait)]
 #[cfg(test)]
 pub(crate) trait CastTo<U> {
     fn cast_to(self) -> U;
@@ -154,3 +151,5 @@ primitive_cast_impl!(bool as [u8, u16, u32, u64, u128, usize, i8, i16, i32, i64,
 primitive_cast_impl!(char as [u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, char]);
 primitive_cast_impl!(u8 as [u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64, char]);
 multiple_impls!(u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64);
+
+pub mod float;

@@ -133,7 +133,7 @@ The `valuable` feature enables the [`Valuable`](https://docs.rs/valuable/latest/
 
 ### Nightly features
 
-Activating the `nightly` feature will enable the `from_be_bytes`, `from_le_bytes`, `from_ne_bytes`, `to_be_bytes`, `to_le_bytes` and `to_ne_bytes` methods on `bnum`'s unsigned and signed integers and will make the `unchecked_...` methods `const`. This comes at the cost of only being able to compile on nightly. The nightly features that this uses are [`generic_const_exprs`](https://github.com/rust-lang/rust/issues/76560), [`const_trait_impl`](https://github.com/rust-lang/rust/issues/67792), [`effects`](https://github.com/rust-lang/rust/issues/102090) and [`const_option`](https://github.com/rust-lang/rust/issues/67441).
+Activating the `nightly` feature will enable the `from_be_bytes`, `from_le_bytes`, `from_ne_bytes`, `to_be_bytes`, `to_le_bytes` and `to_ne_bytes` methods on `bnum`'s unsigned and signed integers and will make the `unchecked_...` methods `const`. This comes at the cost of only being able to compile on nightly. The nightly features that this uses are [`generic_const_exprs`](https://github.com/rust-lang/rust/issues/76560), [`const_trait_impl`](https://github.com/rust-lang/rust/issues/67792) and [`const_option`](https://github.com/rust-lang/rust/issues/67441).
 
 ## Testing
 

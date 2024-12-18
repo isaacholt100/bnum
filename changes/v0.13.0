@@ -1,0 +1,2 @@
+Add ConstZero and ConstOne (from num_traits) for ints
+(maybe?) implementation of int cast to float was incorrect, now fixed

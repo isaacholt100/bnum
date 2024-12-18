@@ -2,12 +2,14 @@ Floats:
 * Conversions from and to:
 	* primitive floats
     * bnum floats
-* FromStr trait
+* FromStr trait: REMEMBER: the num_traits crate has a general from_str_radix method for floats, could use if stuck
 * Display, debug, upper exp, lower exp traits
 * Transcendental functions:
 	* exp
 	* exp2
+	* exp_m1
 	* ln
+	* ln_1p
 	* log
 	* log2
 	* log10
@@ -21,8 +23,6 @@ Floats:
 	* atan
 	* atan2
 	* sin_cos
-	* exp_m1
-	* ln_1p
 	* sinh
 	* cosh
 	* tanh
@@ -31,14 +31,19 @@ Floats:
 	* atanh
 	* to_degrees
 	* to_radians
+    * powf
+    * gamma
+    * ln_gamma
+* Other functions:
+    * mul_add
+    * midpoint
+    * recip
 * Optimised division algorithm depending on size of mantissa
-* recip
 * Optimised multiplication algorithm depending on size of mantissa
-* Fused multiply add
 * Constants:
-	* DIGITS
-	* MIN_10_EXP
-	* MAX_10_EXP
+	* DIGITS. For this, we can divide MB by f64::LOG2_10 and take floor (roughly speaking).
+	* MIN_10_EXP. For this, we can divide MIN_EXP by f64::LOG2_10, and take floor (roughly speaking)
+	* MAX_10_EXP. For this, we can divide MAX_EXP by f64::LOG2_10, and take floor (roughly speaking)
 * Maths constants:
 	* E
 	* FRAC_1_PI
@@ -62,11 +67,20 @@ Floats:
 * From/TryFrom trait for ints, other floats
 * Float type aliases from IEEE standard: f16, f32, f64, f80, f128. (Include f32 and f64 as allows const methods which aren't available on the primitives)
 * Serde
-* Rand
-* num_traits::{Bounded, Float, FloatConst, AsPrimitive, FromPrimitive, ToPrimitive, One, Zero, Inv, MulAdd, MulAddAssign, Pow, Signed, Euclid, Num}
+* Rand:
+    * gen_range stuff
+* num_traits::{Bounded, Float, FloatConst, FloatCore, AsPrimitive, FromPrimitive, ToPrimitive, ConstZero, ConstOne, One, Zero, FromBytes, ToBytes, Inv, MulAdd, MulAddAssign, Pow, Signed, Euclid, Num}
 * Division algorithm which doesn't need where clause
 
 Ints:
-Faster mulitplication algorithm for larger integers
-Faster division algorithms for larger integers
-Update serde to use decimal string instead of struct debug - but CHECK that all serde options serialise primitive ints as decimal strings
+* Use new Rust const capabilities to write more idiomatic code (e.g. we don't need the option_expect! macro anymore). Note though that maybe we should wait a bit to keep the MSRV not too recent
+* Faster mulitplication algorithm for larger integers
+* Faster division algorithms for larger integers
+* Update serde to use decimal string instead of struct debug - but CHECK that all serde options serialise primitive ints as decimal strings
+* FromBytes and ToBytes num_traits traits - only when can implement without "unconstrained generic constant" error
+
+Other stuff:
+* Think about removing BTryFrom and just implementing TryFrom (no From for now), then can use CastFrom/As trait for Result-less conversions
+* Replace bitors, bitands, shifts, masks etc. with more efficient implementations (e.g. using set_bit, flip_bit, one-less-than-power-of-two methods, methods for efficiently generating masks/getting certain range of bits of integer)
+* Consider putting floats and signed integers behind optional features (which are enabled by default)
+* Add 16 bit and 32 bit width types to the test widths, so test u16, u32, f16, f32 as well (just make the digit sizes that are too wide not do anything for those tests)

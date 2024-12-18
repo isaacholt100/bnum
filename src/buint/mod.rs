@@ -508,6 +508,11 @@ macro_rules! mod_impl {
                 out
             }
 
+            #[inline(always)]
+            pub(crate) const fn digit(&self, index: usize) -> $Digit {
+                self.digits[index]
+            }
+
             /// Returns the digits stored in `self` as an array. Digits are little endian (least significant digit first).
             #[must_use]
             #[inline(always)]
@@ -725,7 +730,6 @@ macro_rules! mod_impl {
 
 crate::macro_impl!(mod_impl);
 
-pub mod float_as;
 mod bigint_helpers;
 pub mod cast;
 mod checked;
@@ -733,9 +737,10 @@ mod cmp;
 mod const_trait_fillers;
 mod consts;
 mod convert;
+mod div;
 mod endian;
-pub mod as_float;
 mod fmt;
+mod mul;
 #[cfg(feature = "numtraits")]
 mod numtraits;
 mod ops;

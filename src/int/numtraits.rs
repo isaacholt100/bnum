@@ -46,7 +46,7 @@ macro_rules! as_bigint_impl {
 pub(crate) use as_bigint_impl;
 
 macro_rules! impls {
-    ($Int: ident, $BUint: ident, $BInt: ident) => {
+    ($Int: ident, $BUint: ident, $BInt: ident, $Digit: ident) => {
         //crate::nightly::impl_const! {
             impl<const N: usize> Bounded for $Int<N> {
                 #[inline]
@@ -200,6 +200,48 @@ macro_rules! impls {
             }
         //}
 
+        // #[cfg(feature = "nightly")]
+        // #[doc = crate::doc::requires_feature!("nightly")]
+        // impl<const N: usize> FromBytes for $Int<N> {
+        //     type Bytes = [u8; $BUint::<N>::BYTES_USIZE];
+
+        //     #[inline]
+        //     fn from_be_bytes(&self) -> Self::BYTES {
+        //         Self::to_be_bytes(*self)
+        //     }
+
+        //     #[inline]
+        //     fn from_le_bytes(&self) -> Self::BYTES {
+        //         Self::to_le_bytes(*self)
+        //     }
+
+        //     #[inline]
+        //     fn from_ne_bytes(&self) -> Self::BYTES {
+        //         Self::to_ne_bytes(*self)
+        //     }
+        // }
+        
+        // #[cfg(feature = "nightly")]
+        // #[doc = crate::doc::requires_feature!("nightly")]
+        // impl<const N: usize> ToBytes for $Int<N> {
+        //     type Bytes = [u8; $BUint::<N>::BYTES_USIZE];
+
+        //     #[inline]
+        //     fn to_be_bytes(&self) -> Self::BYTES {
+        //         Self::to_be_bytes(*self)
+        //     }
+
+        //     #[inline]
+        //     fn to_le_bytes(&self) -> Self::BYTES {
+        //         Self::to_le_bytes(*self)
+        //     }
+
+        //     #[inline]
+        //     fn to_ne_bytes(&self) -> Self::BYTES {
+        //         Self::to_ne_bytes(*self)
+        //     }
+        // }
+
         //crate::nightly::impl_const! {
             impl<const N: usize> MulAdd for $Int<N> {
                 type Output = Self;
@@ -246,8 +288,12 @@ macro_rules! impls {
 
                 #[inline]
                 fn is_one(&self) -> bool {
-                    core::cmp::PartialEq::eq(self, &Self::ONE)
+                    Self::is_one(&self)
                 }
+            }
+
+            impl<const N: usize> ConstOne for $Int<N> {
+                const ONE: Self = Self::ONE;
             }
         //}
 
@@ -260,8 +306,12 @@ macro_rules! impls {
 
                 #[inline]
                 fn is_zero(&self) -> bool {
-                    Self::is_zero(self)
+                    Self::is_zero(&self)
                 }
+            }
+
+            impl<const N: usize> ConstZero for $Int<N> {
+                const ZERO: Self = Self::ZERO;
             }
         //}
     }

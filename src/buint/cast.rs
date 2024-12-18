@@ -45,46 +45,8 @@ macro_rules! buint_as_float {
         impl<const N: usize> CastFrom<$BUint<N>> for $f {
             #[must_use = doc::must_use_op!()]
             #[inline]
-            fn cast_from(from: $BUint<N>) -> Self {
-                crate::buint::as_float::cast_float_from_uint(from)
-                /*if from.is_zero() {
-                    return 0.0;
-                }
-                let bits = from.bits();
-                let mut mant = if $BUint::<N>::BITS > <$u>::BITS {
-                    if bits < <$f>::MANTISSA_DIGITS {
-                        <$u>::cast_from(from) << (<$f>::MANTISSA_DIGITS - bits)
-                    } else {
-                        <$u>::cast_from(from >> (bits - <$f>::MANTISSA_DIGITS))
-                    }
-                } else if bits < <$f>::MANTISSA_DIGITS {
-                    <$u>::cast_from(from) << (<$f>::MANTISSA_DIGITS - bits)
-                } else {
-                    <$u>::cast_from(from) >> (bits - <$f>::MANTISSA_DIGITS)
-                };
-                let mut round_up = true;
-                if bits <= <$f>::MANTISSA_DIGITS
-                    || !from.bit(bits - (<$f>::MANTISSA_DIGITS + 1))
-                    || (mant & 1 == 0
-                        && from.trailing_zeros() == bits - (<$f>::MANTISSA_DIGITS + 1))
-                {
-                    round_up = false;
-                }
-                let mut exp = bits as $u + (<$f>::MAX_EXP - 1) as $u - 1;
-                if round_up {
-                    mant += 1;
-                    if mant.leading_zeros() == <$u>::BITS - (<$f>::MANTISSA_DIGITS + 1) {
-                        exp += 1;
-                    }
-                }
-                if exp > 2 * (<$f>::MAX_EXP as $u) - 1 {
-                    return <$f>::INFINITY;
-                }
-                let mant = <$u>::cast_from(mant);
-                <$f>::from_bits(
-                    (exp << (<$f>::MANTISSA_DIGITS - 1))
-                        | (mant & (<$u>::MAX >> (<$u>::BITS - (<$f>::MANTISSA_DIGITS as u32 - 1)))),
-                )*/
+            fn cast_from(value: $BUint<N>) -> Self {
+                crate::cast::float::cast_float_from_uint(value)
             }
         }
     };
@@ -126,8 +88,44 @@ use crate::doc;
 use crate::nightly::impl_const;
 // use core::mem::MaybeUninit;
 
+use crate::ExpType;
+use crate::cast::float::{FloatMantissa, CastUintFromFloatHelper, CastFloatFromUintHelper};
+
 macro_rules! cast {
     ($BUint: ident, $BInt: ident, $Digit: ident) => {
+        impl<const N: usize> FloatMantissa for $BUint<N> {
+            const ZERO: Self = Self::ZERO;
+            const ONE: Self = Self::ONE;
+            const TWO: Self = Self::TWO;
+            const MAX: Self = Self::MAX;
+
+            #[inline]
+            fn leading_zeros(self) -> ExpType {
+                Self::leading_zeros(self)
+            }
+
+            #[inline]
+            fn checked_shr(self, n: ExpType) -> Option<Self> {
+                Self::checked_shr(self, n)
+            }
+
+            #[inline]
+            fn is_power_of_two(self) -> bool {
+                Self::is_power_of_two(self)
+            }
+        }
+
+        impl<const N: usize> CastUintFromFloatHelper for $BUint<N> {
+            const MAX: Self = Self::MAX;
+            const MIN: Self = Self::MIN;
+        }
+
+        impl<const N: usize> CastFloatFromUintHelper for $BUint<N> {
+            fn trailing_zeros(self) -> ExpType {
+                Self::trailing_zeros(self)
+            }
+        }
+
         impl<const N: usize> $BUint<N> {
             crate::nightly::const_fn! {
                 #[inline]
@@ -223,16 +221,16 @@ macro_rules! cast {
         impl<const N: usize> CastFrom<f32> for $BUint<N> {
             #[must_use = doc::must_use_op!()]
             #[inline]
-            fn cast_from(from: f32) -> Self {
-                crate::buint::float_as::uint_cast_from_float(from)
+            fn cast_from(value: f32) -> Self {
+                crate::cast::float::cast_uint_from_float(value)
             }
         }
 
         impl<const N: usize> CastFrom<f64> for $BUint<N> {
             #[must_use = doc::must_use_op!()]
             #[inline]
-            fn cast_from(from: f64) -> Self {
-                crate::buint::float_as::uint_cast_from_float(from)
+            fn cast_from(value: f64) -> Self {
+                crate::cast::float::cast_uint_from_float(value)
             }
         }
 

@@ -1,10 +1,14 @@
 pub mod bigint_helpers;
 pub mod checked;
+pub mod classify;
+pub mod cmp;
 pub mod const_trait_fillers;
 pub mod consts;
 pub mod endian;
+pub mod math;
 pub mod overflowing;
 pub mod radix;
+pub mod rounding;
 pub mod saturating;
 pub mod strict;
 pub mod unchecked;
@@ -21,6 +25,12 @@ pub(crate) use arithmetic_doc;
 macro_rules! must_use_op {
     () => {
         "this returns the result of the operation, without modifying the original"
+    };
+    (float) => {
+        "method returns a new number and does not mutate the original value"
+    };
+    (comparison) => {
+        "this returns the result of the comparison, without modifying either input"
     };
 }
 
@@ -88,15 +98,18 @@ macro_rules! small_sign {
     (I) => {
         "i"
     };
+    (F) => {
+        "f"
+    };
 }
 
 pub(crate) use small_sign;
 
 macro_rules! doc_comment {
-    { $(# $method: ident, )? $sign: ident $bits: literal, $($($desc: expr)+)? $(, $($code: expr)+)? } => {
+    { $(# $item_type: ident . $method: ident, )? $sign: ident $bits: literal, $($($desc: expr)+)? $(, $($code: expr)+)? } => {
         concat!(
             $($("\n\n", $desc), +,)?
-            $("\n\n", "See also: <https://doc.rust-lang.org/std/primitive.", doc::small_sign!($sign), "64.html#method.", stringify!($method), ">.", )?
+            $("\n\n", "See also: <https://doc.rust-lang.org/std/primitive.", doc::small_sign!($sign), "64.html#", stringify!($item_type), ".", stringify!($method), ">.", )?
             $(
                 doc::example_header!($sign $bits),
                 $($code), +,
@@ -106,13 +119,13 @@ macro_rules! doc_comment {
     }
 }
 
-macro_rules! link_doc_comment {
+macro_rules! link_doc_comment_method {
     ($($name: ident), *) => {
         $(
             macro_rules! $name {
                 ($sign: ident) => {
                     doc::doc_comment! {
-                        #$name,
+                        #method.$name,
                         $sign 256,
                     }
                 };
@@ -123,14 +136,33 @@ macro_rules! link_doc_comment {
     }
 }
 
-pub(crate) use link_doc_comment;
+pub(crate) use link_doc_comment_method;
+
+macro_rules! link_doc_comment_constant {
+    ($($name: ident), *) => {
+        $(
+            macro_rules! $name {
+                ($sign: ident) => {
+                    doc::doc_comment! {
+                        #associatedconstant.$name,
+                        $sign 256,
+                    }
+                };
+            }
+
+            pub(crate) use $name;
+        )*
+    }
+}
+
+pub(crate) use link_doc_comment_constant;
 
 pub(crate) use doc_comment;
 
 macro_rules! count_ones {
     ($sign: ident $bits: literal) => {
         doc::doc_comment! {
-            #count_ones,
+            #method.count_ones,
             $sign $bits,
             "Returns the number of ones in the binary representation of `self`.",
 
@@ -145,7 +177,7 @@ pub(crate) use count_ones;
 macro_rules! count_zeros {
     ($sign: ident $bits: literal) => {
         doc::doc_comment! {
-            #count_zeros,
+            #method.count_zeros,
             $sign $bits,
             "Returns the number of zeros in the binary representation of `self`.",
 
@@ -159,7 +191,7 @@ pub(crate) use count_zeros;
 macro_rules! leading_zeros {
     ($sign: ident $bits: literal) => {
         doc::doc_comment! {
-            #leading_zeros,
+            #method.leading_zeros,
             $sign $bits,
             "Returns the number of leading zeros in the binary representation of `self`.",
 
@@ -174,7 +206,7 @@ pub(crate) use leading_zeros;
 macro_rules! trailing_zeros {
     ($sign: ident $bits: literal) => {
         doc::doc_comment! {
-            #trailing_zeros,
+            #method.trailing_zeros,
             $sign $bits,
             "Returns the number of trailing zeros in the binary representation of `self`.",
 
@@ -189,7 +221,7 @@ pub(crate) use trailing_zeros;
 macro_rules! leading_ones {
     ($sign: ident $bits: literal, $c: ident) => {
         doc::doc_comment! {
-            #leading_ones,
+            #method.leading_ones,
             $sign $bits,
             "Returns the number of leading ones in the binary representation of `self`.",
 
@@ -204,7 +236,7 @@ pub(crate) use leading_ones;
 macro_rules! trailing_ones {
     ($sign: ident $bits: literal) => {
         doc::doc_comment! {
-            #trailing_ones,
+            #method.trailing_ones,
             $sign $bits,
             "Returns the number of trailing ones in the binary representation of `self`.",
 
@@ -219,7 +251,7 @@ pub(crate) use trailing_ones;
 macro_rules! rotate_left {
     ($sign: ident $bits: literal, $u: literal) => {
         doc::doc_comment! {
-            #rotate_left,
+            #method.rotate_left,
             $sign $bits,
             "Shifts the bits to the left by a specified amount, `n`, wrapping the truncated bits to the end of the resulting integer."
             "Please note this isn't the same operation as the `<<` shifting operator!"
@@ -232,7 +264,7 @@ pub(crate) use rotate_left;
 macro_rules! rotate_right {
     ($sign: ident $bits: literal, $u: literal) => {
         doc::doc_comment! {
-            #rotate_right,
+            #method.rotate_right,
             $sign $bits,
             "Shifts the bits to the left by a specified amount, `n`, wrapping the truncated bits to the end of the resulting integer."
             "Please note this isn't the same operation as the `>>` shifting operator!"
@@ -246,7 +278,7 @@ pub(crate) use rotate_right;
 macro_rules! swap_bytes {
     ($sign: ident $bits: literal, $u: literal) => {
         doc::doc_comment! {
-            #swap_bytes,
+            #method.swap_bytes,
             $sign $bits,
             "Reverses the byte order of the integer.",
 
@@ -261,7 +293,7 @@ pub(crate) use swap_bytes;
 macro_rules! reverse_bits {
     ($sign: ident $bits: literal, $u: literal) => {
         doc::doc_comment! {
-            #reverse_bits,
+            #method.reverse_bits,
             $sign $bits,
             "Reverses the order of bits in the integer. The least significant bit becomes the most significant bit, second least-significant bit becomes second most-significant bit, etc.",
 
@@ -276,7 +308,7 @@ pub(crate) use reverse_bits;
 macro_rules! pow {
     ($sign: ident $bits: literal) => {
         doc::doc_comment! {
-            #pow,
+            #method.pow,
             $sign $bits,
             "Raises `self` to the power of `exp`, using exponentiation by squaring.",
 
@@ -291,7 +323,7 @@ pub(crate) use pow;
 macro_rules! next_power_of_two {
     ($sign: ident $bits: literal, $wrap: literal, $small: literal) => {
         doc::doc_comment! {
-            #next_power_of_two,
+            #method.next_power_of_two,
             $sign $bits,
             concat!("When return value overflows, it panics in debug mode and the return value is wrapped to ", $wrap, " in release mode (the only situation in which method can return ", $wrap, ")."),
 
@@ -390,7 +422,7 @@ macro_rules! is_one {
 
 pub(crate) use is_one;
 
-crate::doc::link_doc_comment! {
+crate::doc::link_doc_comment_method! {
     unsigned_abs,
     div_euclid,
     rem_euclid,
@@ -407,5 +439,8 @@ crate::doc::link_doc_comment! {
     is_negative,
     cast_signed,
     cast_unsigned,
-    midpoint
+    midpoint,
+    copysign,
+    next_up,
+    next_down
 }

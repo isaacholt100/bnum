@@ -55,9 +55,9 @@ use crate::ExpType;
 use num_integer::{Integer, Roots};
 use num_traits::{
     AsPrimitive, Bounded, CheckedAdd, CheckedDiv, CheckedMul, CheckedNeg, CheckedRem, CheckedShl,
-    CheckedShr, CheckedSub, CheckedEuclid, Euclid, FromPrimitive, MulAdd, MulAddAssign, Num, One, Pow, PrimInt,
+    CheckedShr, CheckedSub, CheckedEuclid, Euclid, FromPrimitive, MulAdd, MulAddAssign, Num, One, ConstOne, Pow, PrimInt,
     Saturating, SaturatingAdd, SaturatingMul, SaturatingSub, ToPrimitive, Unsigned, WrappingAdd,
-    WrappingMul, WrappingNeg, WrappingShl, WrappingShr, WrappingSub, Zero,
+    WrappingMul, WrappingNeg, WrappingShl, WrappingShr, WrappingSub, Zero, ConstZero
 };
 
 use crate::cast::CastFrom;
@@ -65,7 +65,7 @@ use crate::int::numtraits::num_trait_impl;
 
 macro_rules! numtraits {
     ($BUint: ident, $BInt: ident, $Digit: ident) => {
-        crate::int::numtraits::impls!($BUint, $BUint, $BInt);
+        crate::int::numtraits::impls!($BUint, $BUint, $BInt, $Digit);
 
         macro_rules! from_float {
             ($method: ident, $float: ty, $decoder: ident, $mant_bits: ident) => {
@@ -153,6 +153,7 @@ macro_rules! numtraits {
                 }
             }
 
+            // TODO: replace this with code from the cast/float module
             from_float!(from_f32, f32, decode_f32, u32_bits);
             from_float!(from_f64, f64, decode_f64, u64_bits);
         }

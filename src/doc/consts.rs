@@ -91,3 +91,20 @@ macro_rules! value_desc {
 }
 
 pub(crate) use value_desc;
+
+crate::doc::link_doc_comment_constant!(
+    RADIX,
+    MANTISSA_DIGITS,
+    DIGITS,
+    EPSILON,
+    MIN,
+    MIN_POSITIVE,
+    MAX,
+    MIN_EXP,
+    MAX_EXP,
+    // MIN_10_EXP,
+    // MAX_10_EXP,
+    NAN,
+    INFINITY,
+    NEG_INFINITY
+);
