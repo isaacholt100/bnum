@@ -1,7 +1,7 @@
 macro_rules! from_uint {
     ($BUint: ident, $Digit: ident; $($uint: tt),*) => {
-        $(impl_const! {
-            impl<const N: usize> const From<$uint> for $BUint<N> {
+        $(
+            impl<const N: usize> From<$uint> for $BUint<N> {
                 #[inline]
                 fn from(int: $uint) -> Self {
                     const UINT_BITS: usize = $uint::BITS as usize;
@@ -17,14 +17,14 @@ macro_rules! from_uint {
                     out
                 }
             }
-        })*
+        )*
     }
 }
 
 macro_rules! try_from_iint {
     ($BUint: ident; $($int: tt -> $uint: tt),*) => {
-        $(impl_const! {
-            impl<const N: usize> const TryFrom<$int> for $BUint<N> {
+        $(
+            impl<const N: usize> TryFrom<$int> for $BUint<N> {
                 type Error = TryFromIntError;
 
                 #[inline]
@@ -36,14 +36,14 @@ macro_rules! try_from_iint {
                     Ok(Self::from(bits))
                 }
             }
-        })*
+        )*
     }
 }
 
 macro_rules! try_from_buint {
     ($BUint: ident, $Digit: ident; $($int: ty), *) => {
-        $(crate::nightly::impl_const! {
-            impl<const N: usize> const TryFrom<$BUint<N>> for $int {
+        $(
+            impl<const N: usize> TryFrom<$BUint<N>> for $int {
                 type Error = TryFromIntError;
 
                 #[inline]
@@ -84,7 +84,7 @@ macro_rules! try_from_buint {
                     Ok(out)
                 }
             }
-        })*
+        )*
     };
 }
 
@@ -188,25 +188,20 @@ macro_rules! mixed_try_from {
 
 use crate::cast::CastFrom;
 use crate::errors::TryFromIntError;
-use crate::nightly::impl_const;
 
 macro_rules! convert {
     ($BUint: ident, $BInt: ident, $Digit: ident) => {
-        impl_const! {
-            impl<const N: usize> const From<bool> for $BUint<N> {
-                #[inline]
-                fn from(small: bool) -> Self {
-                    Self::cast_from(small)
-                }
+        impl<const N: usize> From<bool> for $BUint<N> {
+            #[inline]
+            fn from(small: bool) -> Self {
+                Self::cast_from(small)
             }
         }
 
-        impl_const! {
-            impl<const N: usize> const From<char> for $BUint<N> {
-                #[inline]
-                fn from(c: char) -> Self {
-                    Self::cast_from(c)
-                }
+        impl<const N: usize> From<char> for $BUint<N> {
+            #[inline]
+            fn from(c: char) -> Self {
+                Self::cast_from(c)
             }
         }
 
@@ -218,21 +213,17 @@ macro_rules! convert {
 
         mixed_try_from!($BUint, $BInt);
 
-        impl_const! {
-            impl<const N: usize> const From<[$Digit; N]> for $BUint<N> {
-                #[inline]
-                fn from(digits: [$Digit; N]) -> Self {
-                    Self::from_digits(digits)
-                }
+        impl<const N: usize> From<[$Digit; N]> for $BUint<N> {
+            #[inline]
+            fn from(digits: [$Digit; N]) -> Self {
+                Self::from_digits(digits)
             }
         }
 
-        impl_const! {
-            impl<const N: usize> const From<$BUint<N>> for [$Digit; N] {
-                #[inline]
-                fn from(uint: $BUint<N>) -> Self {
-                    uint.digits
-                }
+        impl<const N: usize> From<$BUint<N>> for [$Digit; N] {
+            #[inline]
+            fn from(uint: $BUint<N>) -> Self {
+                uint.digits
             }
         }
 

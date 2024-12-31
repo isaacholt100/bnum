@@ -48,38 +48,6 @@ macro_rules! fmt {
         }
 
         impl<const N: usize> Display for $BUint<N> {
-            /*#[inline]
-            fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
-                if self.is_zero() {
-                    return f.pad_integral(true, "", "0");
-                }
-                fn digit_to_byte(d: $Digit) -> u8 {
-                    match d {
-                        0 => 0 + 48,
-                        1 => 1 + 48,
-                        2 => 2 + 48,
-                        3 => 3 + 48,
-                        4 => 4 + 48,
-                        5 => 5 + 48,
-                        6 => 6 + 48,
-                        7 => 7 + 48,
-                        8 => 8 + 48,
-                        9 => 9 + 48,
-                        _ => unreachable!(),
-                    }
-                }
-                let mut v: alloc::vec::Vec<u8> = alloc::vec::Vec::new();
-                let mut u = *self;
-                while !u.is_zero() {
-                    let (q, r) = u.div_rem_digit(10);
-                    v.push(digit_to_byte(r));
-                    u = q;
-                }
-                v.reverse();
-                let s = unsafe { String::from_utf8_unchecked(v) };
-                //s.push(digit_to_char(u.digits[0]));
-                f.pad_integral(true, "", &s)
-            }*/
             #[inline]
             fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
                 f.pad_integral(true, "", &self.to_str_radix(10))

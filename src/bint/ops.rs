@@ -6,90 +6,74 @@ use core::ops::{
 
 macro_rules! ops {
     ($BUint: ident, $BInt: ident, $Digit: ident) => {
-        crate::nightly::impl_const! {
-            impl<const N: usize> const Neg for $BInt<N> {
-                type Output = Self;
+        impl<const N: usize> Neg for $BInt<N> {
+            type Output = Self;
 
-                #[inline]
-                fn neg(self) -> Self {
-                    Self::neg(self)
-                }
+            #[inline]
+            fn neg(self) -> Self {
+                Self::neg(self)
             }
         }
 
-        crate::nightly::impl_const! {
-            impl<const N: usize> const Neg for &$BInt<N> {
-                type Output = $BInt<N>;
+        impl<const N: usize> Neg for &$BInt<N> {
+            type Output = $BInt<N>;
 
-                #[inline]
-                fn neg(self) -> $BInt<N> {
-                    $BInt::neg(*self)
-                }
+            #[inline]
+            fn neg(self) -> $BInt<N> {
+                $BInt::neg(*self)
             }
         }
 
-        crate::nightly::impl_const! {
-            impl<const N: usize> const BitAnd for $BInt<N> {
-                type Output = Self;
+        impl<const N: usize> BitAnd for $BInt<N> {
+            type Output = Self;
 
-                #[inline]
-                fn bitand(self, rhs: Self) -> Self {
-                    Self::bitand(self, rhs)
-                }
+            #[inline]
+            fn bitand(self, rhs: Self) -> Self {
+                Self::bitand(self, rhs)
             }
         }
 
-        crate::nightly::impl_const! {
-            impl<const N: usize> const BitOr for $BInt<N> {
-                type Output = Self;
+        impl<const N: usize> BitOr for $BInt<N> {
+            type Output = Self;
 
-                #[inline]
-                fn bitor(self, rhs: Self) -> Self {
-                    Self::bitor(self, rhs)
-                }
+            #[inline]
+            fn bitor(self, rhs: Self) -> Self {
+                Self::bitor(self, rhs)
             }
         }
 
-        crate::nightly::impl_const! {
-            impl<const N: usize> const BitXor for $BInt<N> {
-                type Output = Self;
+        impl<const N: usize> BitXor for $BInt<N> {
+            type Output = Self;
 
-                #[inline]
-                fn bitxor(self, rhs: Self) -> Self {
-                    Self::bitxor(self, rhs)
-                }
+            #[inline]
+            fn bitxor(self, rhs: Self) -> Self {
+                Self::bitxor(self, rhs)
             }
         }
 
-        crate::nightly::impl_const! {
-            impl<const N: usize> const Div for $BInt<N> {
-                type Output = Self;
+        impl<const N: usize> Div for $BInt<N> {
+            type Output = Self;
 
-                #[inline]
-                fn div(self, rhs: Self) -> Self {
-                    Self::div(self, rhs)
-                }
+            #[inline]
+            fn div(self, rhs: Self) -> Self {
+                Self::div(self, rhs)
             }
         }
 
-        crate::nightly::impl_const! {
-            impl<const N: usize> const Not for $BInt<N> {
-                type Output = Self;
+        impl<const N: usize> Not for $BInt<N> {
+            type Output = Self;
 
-                fn not(self) -> Self {
-                    Self::not(self)
-                }
+            fn not(self) -> Self {
+                Self::not(self)
             }
         }
 
-        crate::nightly::impl_const! {
-            impl<const N: usize> const Rem for $BInt<N> {
-                type Output = Self;
+        impl<const N: usize> Rem for $BInt<N> {
+            type Output = Self;
 
-                #[inline]
-                fn rem(self, rhs: Self) -> Self {
-                    Self::rem(self, rhs)
-                }
+            #[inline]
+            fn rem(self, rhs: Self) -> Self {
+                Self::rem(self, rhs)
             }
         }
 

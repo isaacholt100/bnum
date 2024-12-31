@@ -20,46 +20,78 @@ pub mod big_types {
         };
     }
 
-    #[cfg(test_int_bits = "64")]
-    big_types_modules!(64);
+    #[cfg(test_int_bits = "16")]
+    big_types_modules!(16);
 
-    #[cfg(not(test_int_bits = "64"))]
+    #[cfg(test_int_bits = "32")]
+    big_types_modules!(32);
+
+    #[cfg(test_int_bits = "128")]
     big_types_modules!(128);
+
+    #[cfg(not(any(test_int_bits = "16", test_int_bits = "32", test_int_bits = "128")))]
+    big_types_modules!(64);
 }
 
-#[cfg(test_int_bits = "64")]
+#[cfg(test_int_bits = "16")]
 mod small_types {
     #[allow(non_camel_case_types)]
     pub type utest = u64;
 
     #[allow(non_camel_case_types)]
     pub type itest = i64;
+
+    #[cfg(feature = "float")]
+    #[allow(non_camel_case_types)]
+    pub type ftest = f16;
 }
 
-#[cfg(not(test_int_bits = "64"))]
+#[cfg(test_int_bits = "32")]
+mod small_types {
+    #[allow(non_camel_case_types)]
+    pub type utest = u64;
+
+    #[allow(non_camel_case_types)]
+    pub type itest = i64;
+
+    #[cfg(feature = "float")]
+    #[allow(non_camel_case_types)]
+    pub type ftest = f32;
+}
+
+#[cfg(test_int_bits = "128")]
 mod small_types {
     #[allow(non_camel_case_types)]
     pub type utest = u128;
 
     #[allow(non_camel_case_types)]
     pub type itest = i128;
+
+    #[cfg(feature = "float")]
+    #[allow(non_camel_case_types)]
+    pub type ftest = f128;
+}
+
+#[cfg(not(any(test_int_bits = "16", test_int_bits = "32", test_int_bits = "128")))] // default is 64
+mod small_types {
+    #[allow(non_camel_case_types)]
+    pub type utest = u64;
+
+    #[allow(non_camel_case_types)]
+    pub type itest = i64;
+
+    #[cfg(feature = "float")]
+    #[allow(non_camel_case_types)]
+    pub type ftest = f64;
 }
 
 pub use core::primitive::*;
 pub use small_types::*;
 
-#[cfg(test_int_bits = "64")]
-#[allow(non_camel_case_types)]
-pub type ftest = f64;
-
-#[cfg(not(test_int_bits = "64"))]
-#[allow(non_camel_case_types)]
-pub type ftest = f32;
-
 #[cfg(feature = "float")]
-#[cfg(test_int_bits = "64")]
+#[cfg(not(test_int_bits = "32"))]
 pub type FTEST = crate::float::Float<8, 52>;
 
 #[cfg(feature = "float")]
-#[cfg(not(test_int_bits = "64"))]
+#[cfg(test_int_bits = "32")]
 pub type FTEST = crate::float::Float<4, 23>;

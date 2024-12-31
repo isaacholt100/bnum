@@ -20,7 +20,7 @@ run_test () {
 for flags in "" "--all-features"
 do
     echo "\n${CYAN_COLOR}info${RESET_FORMAT}: running tests with flags '$flags'..."
-    for bits in 64 128
+    for bits in 8 16 32 64 128
     do
         run_test $bits $flags
     done

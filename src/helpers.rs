@@ -27,7 +27,6 @@ macro_rules! impl_bits_for_uint {
 
 impl_bits_for_uint!(u8, u16, u32, u64, u128, usize);
 
-#[cfg(feature = "float")]
 macro_rules! impl_bits_for_buint {
     ($BUint: ident, $BInt: ident, $Digit: ident) => {
         impl<const N: usize> crate::helpers::Bits for $BUint<N> {
@@ -46,7 +45,6 @@ macro_rules! impl_bits_for_buint {
     };
 }
 
-#[cfg(feature = "float")]
 crate::macro_impl!(impl_bits_for_buint);
 
 pub trait Zero: Sized + PartialEq {
@@ -104,3 +102,12 @@ macro_rules! impl_one_for_buint {
 }
 
 crate::macro_impl!(impl_one_for_buint);
+
+#[inline]
+pub const fn tuple_to_option<T: Copy>((int, overflow): (T, bool)) -> Option<T> {
+    if overflow {
+        None
+    } else {
+        Some(int)
+    }
+}

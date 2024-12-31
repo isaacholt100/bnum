@@ -628,11 +628,6 @@ macro_rules! radix {
                 quickcheck_from_to_radix!(utest, radix_le, 256);
                 quickcheck_from_to_radix!(utest, str_radix, 36);
 
-                // #[test]
-                // fn parse_str_radix() {
-                //     assert_eq!(UTEST::parse_str_radix())
-                // }
-
                 #[test]
                 #[should_panic(expected = "attempt to parse integer from empty string")]
                 fn parse_str_radix_empty() {

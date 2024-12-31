@@ -21,27 +21,25 @@ pub trait FloatMantissa: Sized + Shl<ExpType, Output = Self> + Shr<ExpType, Outp
 macro_rules! impl_float_mantissa_for_uint {
     ($($uint: ty), *) => {
         $(
-            crate::nightly::const_impl! {
-                impl const FloatMantissa for $uint {
-                    const ZERO: Self = 0;
-                    const ONE: Self = 1;
-                    const TWO: Self = 2;
-                    const MAX: Self = Self::MAX;
+            impl FloatMantissa for $uint {
+                const ZERO: Self = 0;
+                const ONE: Self = 1;
+                const TWO: Self = 2;
+                const MAX: Self = Self::MAX;
 
-                    #[inline]
-                    fn leading_zeros(self) -> ExpType {
-                        Self::leading_zeros(self) as ExpType
-                    }
+                #[inline]
+                fn leading_zeros(self) -> ExpType {
+                    Self::leading_zeros(self) as ExpType
+                }
 
-                    #[inline]
-                    fn checked_shr(self, n: ExpType) -> Option<Self> {
-                        Self::checked_shr(self, n as u32)
-                    }
+                #[inline]
+                fn checked_shr(self, n: ExpType) -> Option<Self> {
+                    Self::checked_shr(self, n as u32)
+                }
 
-                    #[inline]
-                    fn is_power_of_two(self) -> bool {
-                        Self::is_power_of_two(self)
-                    }
+                #[inline]
+                fn is_power_of_two(self) -> bool {
+                    Self::is_power_of_two(self)
                 }
             }
         )*

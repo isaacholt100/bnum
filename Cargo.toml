@@ -49,4 +49,4 @@ opt-level = 3 # maximum optimisation level for faster runtime, but slower compil
 all-features = true
 
 [lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(test_int_bits, values("64", "128"))'] }
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(test_int_bits, values("8", "16", "32", "64", "128"))'] }

@@ -86,21 +86,17 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     }
 }
 
-crate::nightly::impl_const! {
-    impl<const W: usize, const MB: usize> const PartialEq for Float<W, MB> {
-        #[inline]
-        fn eq(&self, other: &Self) -> bool {
-            Self::eq(&self, other)
-        }
+impl<const W: usize, const MB: usize> PartialEq for Float<W, MB> {
+    #[inline]
+    fn eq(&self, other: &Self) -> bool {
+        Self::eq(&self, other)
     }
 }
 
-crate::nightly::impl_const! {
-    impl<const W: usize, const MB: usize> const PartialOrd for Float<W, MB> {
-        #[inline]
-        fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-            Self::partial_cmp(&self, other)
-        }
+impl<const W: usize, const MB: usize> PartialOrd for Float<W, MB> {
+    #[inline]
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Self::partial_cmp(&self, other)
     }
 }
 

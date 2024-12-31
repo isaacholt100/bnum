@@ -50,7 +50,6 @@ pub const fn u64_bits(u: u64) -> ExpType {
     64 - u.leading_zeros() as ExpType
 }
 use crate::buint::cast::{decode_f32, decode_f64};
-//use crate::nightly::impl_const;
 use crate::ExpType;
 use num_integer::{Integer, Roots};
 use num_traits::{
@@ -97,7 +96,6 @@ macro_rules! numtraits {
             };
         }
 
-        //impl_const! {
         impl<const N: usize> FromPrimitive for $BUint<N> {
             #[inline]
             fn from_u64(int: u64) -> Option<Self> {
@@ -157,9 +155,7 @@ macro_rules! numtraits {
             from_float!(from_f32, f32, decode_f32, u32_bits);
             from_float!(from_f64, f64, decode_f64, u64_bits);
         }
-        //}
 
-        //impl_const! {
         impl<const N: usize> Integer for $BUint<N> {
             #[inline]
             fn div_floor(&self, other: &Self) -> Self {
@@ -244,9 +240,7 @@ macro_rules! numtraits {
                 Self::div_rem(*self, *rhs)
             }
         }
-        //}
 
-        //impl_const! {
         impl<const N: usize> PrimInt for $BUint<N> {
             crate::int::numtraits::prim_int_methods!();
 
@@ -270,7 +264,6 @@ macro_rules! numtraits {
                 self >> n
             }
         }
-        //}
 
         macro_rules! check_zero_or_one {
             ($self: ident) => {
@@ -396,7 +389,6 @@ macro_rules! numtraits {
             }
         }
 
-        //impl_const! {
         impl<const N: usize> ToPrimitive for $BUint<N> {
             to_int! {
                 $Digit;
@@ -425,7 +417,6 @@ macro_rules! numtraits {
                 Some(self.as_())
             }
         }
-        //}
 
         impl<const N: usize> Unsigned for $BUint<N> {}
 

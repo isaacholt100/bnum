@@ -14,7 +14,7 @@ macro_rules! checked_ilog {
 }
 
 use crate::doc;
-use crate::int::checked::tuple_to_option;
+use crate::helpers::tuple_to_option;
 use crate::ExpType;
 
 macro_rules! checked {

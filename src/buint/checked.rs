@@ -1,7 +1,7 @@
 use crate::digit;
 use crate::doc;
 use crate::errors::div_zero;
-use crate::int::checked::tuple_to_option;
+use crate::helpers::tuple_to_option;
 use crate::ExpType;
 
 macro_rules! checked {

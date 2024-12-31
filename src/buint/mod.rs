@@ -740,6 +740,7 @@ mod convert;
 mod div;
 mod endian;
 mod fmt;
+mod mask;
 mod mul;
 #[cfg(feature = "numtraits")]
 mod numtraits;
