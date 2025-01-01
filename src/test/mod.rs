@@ -31,8 +31,6 @@ impl<const N: usize> Arbitrary for U8ArrayWrapper<N> {
 
 use core::fmt::{self, Debug, Formatter};
 
-use crate::BUintD8;
-
 impl<const N: usize> Debug for U8ArrayWrapper<N> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         self.0.fmt(f)

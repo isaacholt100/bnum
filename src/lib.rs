@@ -17,7 +17,7 @@
         float_next_up_down,
         unchecked_shifts,
         integer_sign_cast,
-        num_midpoint,
+        num_midpoint_signed,
         strict_overflow_ops,
     )
 )]
@@ -45,11 +45,11 @@ pub mod random;
 
 pub mod types;
 
-#[cfg(feature = "float")]
-mod float;
+// #[cfg(feature = "float")]
+// mod float;
 
-#[cfg(feature = "float")]
-pub use float::Float;
+// #[cfg(feature = "float")]
+// pub use float::Float;
 
 #[cfg(test)]
 mod test;
@@ -68,6 +68,7 @@ pub use bigints::*;
 
 macro_rules! macro_impl {
     ($name: ident) => {
+        #[allow(unused_imports)]
         use crate::bigints::*;
 
         crate::main_impl!($name);

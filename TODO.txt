@@ -69,7 +69,7 @@ Floats:
 * Division algorithm which doesn't need where clause
 
 Ints:
-* big idea: could only use u8 digits, but for calculations (if this is faster than just using BUintD8 and isn't much slower than using larger digits), use u64s, e.g. when iterating, iterate in batches of 8, use u64::from_ne_bytes/u64::from_le_bytes - this is a transmute so should be very small overhead (this might sacrifice some code readability)
+* big idea: could only use u8 digits, but for calculations (would need to do this as BUintD8 is noticeably slower than BUint), use u64s or u128s, e.g. when iterating, iterate in batches of 8, use u64::from_ne_bytes/u64::from_le_bytes - this is a transmute so should be very small overhead (this might sacrifice some code readability)
 * unsigned_signed_diff methods
 * isqrt methods
 * unbounded shr, shl methods
@@ -78,6 +78,8 @@ Ints:
 * Faster division algorithms for larger integers
 * Update serde to use decimal string instead of struct debug - but CHECK that all serde options serialise primitive ints as decimal strings
 * FromBytes and ToBytes num_traits traits - only when can implement without "unconstrained generic constant" error
+* do we need the from_be_slice and from_le_slice methods? (think we can just call from_radix_{b, l}e with radix 256)
+* create more efficient implementation of ilog10 (see e.g. Hacker's Delight book)
 
 Other stuff:
 * Think about removing BTryFrom and just implementing TryFrom (no From for now), then can use CastFrom/As trait for Result-less conversions
@@ -93,3 +95,5 @@ Other stuff:
 * consider splitting off allow-based methods into gated "alloc" feature
 * work out and add assertions about sizes of e.g. int widths (should be <= u32::MAX), and float mantissa and exponent widths, etc.
 * include list of difference with primitives in README, e.g. overflow_checks not detected yet, serde implementation different, memory layout different (always little endian - although maybe this could be changed? probably not a good idea though)
+* test using stable, only use nightly when need to test be_bytes methods
+* check you're happy with the layout of the random crate-level module

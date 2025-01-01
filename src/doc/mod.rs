@@ -1,14 +1,18 @@
 pub mod bigint_helpers;
 pub mod checked;
-pub mod classify;
-pub mod cmp;
+// #[cfg(feature = "float")]
+// pub mod classify;
+// #[cfg(feature = "float")]
+// pub mod cmp;
 pub mod const_trait_fillers;
 pub mod consts;
 pub mod endian;
-pub mod math;
+// #[cfg(feature = "float")]
+// pub mod math;
 pub mod overflowing;
 pub mod radix;
-pub mod rounding;
+// #[cfg(feature = "float")]
+// pub mod rounding;
 pub mod saturating;
 pub mod strict;
 pub mod unchecked;

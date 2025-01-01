@@ -127,6 +127,7 @@ macro_rules! overflowing {
             #[must_use = doc::must_use_op!()]
             #[inline]
             pub const fn overflowing_pow(mut self, mut pow: ExpType) -> (Self, bool) {
+                // exponentiation by squaring
                 if pow == 0 {
                     return (Self::ONE, false);
                 }

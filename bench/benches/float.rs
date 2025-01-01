@@ -13,7 +13,7 @@ type F64 = Float<8, 48>;
 type F32 = Float<4, 23>;
 
 type U256 = bnum::BUintD8<32>;
-type U64 = bnum::BUintD8<8>;
+type U1024 = bnum::BUintD8<128>;
 
 
 fn bench_fibs(c: &mut Criterion) {
@@ -50,10 +50,10 @@ fn bench_add(c: &mut Criterion) {
     let mut group = c.benchmark_group("round");
     let mut rng = rand::rngs::StdRng::seed_from_u64(0);
     let big_inputs = (0..SAMPLE_SIZE)
-        .map(|_| rng.gen::<(U64, U64)>())
-        .map(|(a, b)| (
-            (F64::from_bits((a >> 1)), F64::from_bits((b >> 1)))
-        ));
+        .map(|_| rng.gen::<(U1024, u32)>());
+        // .map(|(a, b)| (
+        //     (F64::from_bits((a >> 1)), F64::from_bits((b >> 1)))
+        // ));
     let big_inputs: Vec<_> = big_inputs.collect();
 
     // group.bench_with_input(BenchmarkId::new("Recursive", "new"), &big_inputs, |b, inputs| b.iter(|| {
@@ -63,7 +63,7 @@ fn bench_add(c: &mut Criterion) {
     // }));
     group.bench_with_input(BenchmarkId::new("Iterative", "old"), &big_inputs, |b, inputs| b.iter(|| {
         inputs.iter().cloned().for_each(|(a, b)| {
-            let _ = black_box(black_box(a) + black_box(b));
+            let _ = black_box(black_box(a).overflowing_shl(black_box(b)));
         })
     }));
     group.finish();

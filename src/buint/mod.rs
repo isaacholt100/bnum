@@ -307,7 +307,8 @@ macro_rules! mod_impl {
             #[must_use = doc::must_use_op!()]
             #[inline]
             pub const fn midpoint(self, rhs: Self) -> Self {
-                (self.bitxor(rhs).shr(1)).add(self.bitand(rhs))
+                // see section 2.5: Average of Two Integers in Hacker's Delight
+                self.bitand(rhs).add(self.bitxor(rhs).shr(1))
             }
 
             #[doc = doc::ilog2!(U)]
@@ -508,10 +509,10 @@ macro_rules! mod_impl {
                 out
             }
 
-            #[inline(always)]
-            pub(crate) const fn digit(&self, index: usize) -> $Digit {
-                self.digits[index]
-            }
+            // #[inline(always)]
+            // pub(crate) const fn digit(&self, index: usize) -> $Digit {
+            //     self.digits[index]
+            // }
 
             /// Returns the digits stored in `self` as an array. Digits are little endian (least significant digit first).
             #[must_use]

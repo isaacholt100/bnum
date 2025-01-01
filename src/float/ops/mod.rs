@@ -5,6 +5,7 @@ use core::ops::{Add, Div, Mul, Neg, Rem, Sub, AddAssign, SubAssign, MulAssign, R
 mod add;
 mod sub;
 mod mul;
+#[cfg(feature = "nightly")]
 mod div;
 mod rem;
 
@@ -75,26 +76,21 @@ impl<const W: usize, const MB: usize> Mul for Float<W, MB> {
 
 crate::int::ops::op_ref_impl!(Mul<Float<N, MB>> for Float<N, MB>, mul);
 
-impl<const W: usize, const MB: usize> Product for Float<W, MB>
-where
-    [(); W * 2]:,
-{
+impl<const W: usize, const MB: usize> Product for Float<W, MB> {
     #[inline]
     fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.fold(Self::ONE, |a, b| a * b)
     }
 }
 
-impl<'a, const W: usize, const MB: usize> Product<&'a Self> for Float<W, MB>
-where
-    [(); W * 2]:,
-{
+impl<'a, const W: usize, const MB: usize> Product<&'a Self> for Float<W, MB> {
     #[inline]
     fn product<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
         iter.fold(Self::ONE, |a, b| a * *b)
     }
 }
 
+#[cfg(feature = "nightly")]
 impl<const W: usize, const MB: usize> Div for Float<W, MB>
 where
     [(); W * 2]:,

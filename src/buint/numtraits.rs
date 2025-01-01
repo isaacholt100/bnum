@@ -54,7 +54,7 @@ use crate::ExpType;
 use num_integer::{Integer, Roots};
 use num_traits::{
     AsPrimitive, Bounded, CheckedAdd, CheckedDiv, CheckedMul, CheckedNeg, CheckedRem, CheckedShl,
-    CheckedShr, CheckedSub, CheckedEuclid, Euclid, FromPrimitive, MulAdd, MulAddAssign, Num, One, ConstOne, Pow, PrimInt,
+    CheckedShr, CheckedSub, CheckedEuclid, Euclid, FromPrimitive, MulAdd, MulAddAssign, Num, One, /*ConstOne,*/ Pow, PrimInt,
     Saturating, SaturatingAdd, SaturatingMul, SaturatingSub, ToPrimitive, Unsigned, WrappingAdd,
     WrappingMul, WrappingNeg, WrappingShl, WrappingShr, WrappingSub, Zero, ConstZero
 };

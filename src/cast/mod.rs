@@ -152,4 +152,4 @@ primitive_cast_impl!(char as [u8, u16, u32, u64, u128, usize, i8, i16, i32, i64,
 primitive_cast_impl!(u8 as [u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64, char]);
 multiple_impls!(u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64);
 
-pub mod float;
+pub(crate) mod float;

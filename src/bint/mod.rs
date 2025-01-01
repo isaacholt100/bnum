@@ -238,13 +238,13 @@ macro_rules! mod_impl {
             #[must_use = doc::must_use_op!()]
             #[inline]
             pub const fn midpoint(self, rhs: Self) -> Self {
-                let m = Self::from_bits(self.to_bits().midpoint(rhs.to_bits()));
-                if self.is_negative() == rhs.is_negative() {
-                    // signs agree. in the positive case, we can just compute as if they were unsigned. in the negative case, we compute as if unsigned, and the result is 2^(type bits) too large, but this is 0 (modulo 2^(type bits)) so does not affect the bits
-                    m
+                // see section 2.5: Average of Two Integers in Hacker's Delight
+                let x = self.bitxor(rhs);
+                let t = self.bitand(rhs).add(x.shr(1));
+                if t.is_negative() && x.bits.digits[0] & 1 == 1 { // t is negative and 
+                    t.add($BInt::ONE)
                 } else {
-                    // result is 2^(type bits - 1) too large, so subtract 2^(type bits - 1) by applying xor
-                    m.bitxor(Self::MIN)
+                    t
                 }
             }
 

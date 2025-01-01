@@ -1,6 +1,6 @@
-#![feature(wrapping_next_power_of_two, int_roundings)]
+// #![feature(wrapping_next_power_of_two, int_roundings)]
 
-use bnum::types::{U128, U512};
+// use bnum::types::{U128, U512};
 // use bnum::prelude::*;
 use core::iter::Iterator;
 use criterion::black_box;
@@ -8,6 +8,8 @@ use rand::prelude::*;
 
 mod unzip;
 use unzip::unzip2;
+
+type U128 = bnum::BUintD8::<16>;
 
 // use super::unzip2;
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
@@ -139,12 +141,12 @@ bench_against_primitive! {
     from_le(a: u128);
     to_be(a: u128);
     to_le(a: u128);
-    to_be_bytes(a: u128);
-    to_le_bytes(a: u128);
-    to_ne_bytes(a: u128);
-    from_be_bytes(a: [u8; 128 / 8]);
-    from_le_bytes(a: [u8; 128 / 8]);
-    from_ne_bytes(a: [u8; 128 / 8]);
+    // to_be_bytes(a: u128);
+    // to_le_bytes(a: u128);
+    // to_ne_bytes(a: u128);
+    // from_be_bytes(a: [u8; 128 / 8]);
+    // from_le_bytes(a: [u8; 128 / 8]);
+    // from_ne_bytes(a: [u8; 128 / 8]);
 
     overflowing_add(a: u128, b: u128);
     overflowing_add_signed(a: u128, b: i128);
@@ -178,7 +180,7 @@ bench_against_primitive! {
     wrapping_shl(a: u128, rhs: u32);
     wrapping_shr(a: u128, rhs: u32);
     wrapping_pow(a: u128, exp: u32);
-    wrapping_next_power_of_two(a: u128);
+    // wrapping_next_power_of_two(a: u128);
 
     count_ones(a: u128);
     count_zeros(a: u128);

@@ -160,9 +160,9 @@ use crate::ExpType;
 use num_integer::{Integer, Roots};
 use num_traits::{
     AsPrimitive, Bounded, CheckedAdd, CheckedDiv, CheckedMul, CheckedNeg, CheckedRem, CheckedShl,
-    CheckedShr, CheckedSub, CheckedEuclid, Euclid, FromPrimitive, MulAdd, MulAddAssign, Num, One, ConstOne, Pow, PrimInt,
+    CheckedShr, CheckedSub, CheckedEuclid, Euclid, FromPrimitive, MulAdd, MulAddAssign, Num, One, /*ConstOne,*/ Pow, PrimInt,
     Saturating, SaturatingAdd, SaturatingMul, SaturatingSub, Signed, ToPrimitive, WrappingAdd,
-    WrappingMul, WrappingNeg, WrappingShl, WrappingShr, WrappingSub, Zero, ConstZero
+    WrappingMul, WrappingNeg, WrappingShl, WrappingShr, WrappingSub, Zero, //ConstZero
 };
 
 use crate::cast::CastFrom;

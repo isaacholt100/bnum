@@ -31,6 +31,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         self.sqrt_internal()
     }
 
+    #[cfg(feature = "nightly")]
     #[doc = doc::math::div_euclid!(F)]
     #[must_use = doc::must_use_op!(float)]
     #[inline]
@@ -61,6 +62,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         }
     }
 
+    #[cfg(feature = "nightly")]
     #[doc = doc::math::powi!(F)]
     #[must_use = doc::must_use_op!(float)]
     #[inline]

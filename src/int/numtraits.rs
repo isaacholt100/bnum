@@ -259,9 +259,9 @@ macro_rules! impls {
             }
         }
 
-        impl<const N: usize> ConstOne for $Int<N> {
-            const ONE: Self = Self::ONE;
-        }
+        // impl<const N: usize> ConstOne for $Int<N> {
+        //     const ONE: Self = Self::ONE;
+        // }
 
         impl<const N: usize> Zero for $Int<N> {
             #[inline]
@@ -275,9 +275,9 @@ macro_rules! impls {
             }
         }
 
-        impl<const N: usize> ConstZero for $Int<N> {
-            const ZERO: Self = Self::ZERO;
-        }
+        // impl<const N: usize> ConstZero for $Int<N> {
+        //     const ZERO: Self = Self::ZERO;
+        // }
     }
 }
 
