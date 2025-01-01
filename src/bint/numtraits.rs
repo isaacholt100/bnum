@@ -213,7 +213,7 @@ macro_rules! numtraits {
                 if self.is_zero() || other.is_zero() {
                     Self::ZERO
                 } else {
-                    self.div_floor(&self.gcd(other)) * *other
+                    (self.div_floor(&self.gcd(other)) * *other).abs()
                 }
             }
 

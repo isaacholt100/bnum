@@ -511,7 +511,8 @@ macro_rules! tests {
                 #[allow(unused_comparisons)]
                 let cond = a.checked_mul(b).is_none() || (a < 0 && a == <$int>::MIN) || (b < 0 && b == <$int>::MIN); // lcm(a, b) <= a * b
                 cond
-            }
+            },
+            cases: [(ref &(1 as $int), ref &(-1i8 as $int))]
         }
         test_bignum! {
             function: <$int as Integer>::gcd(a: ref &$int, b: ref &$int),
