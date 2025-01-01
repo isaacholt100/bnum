@@ -86,6 +86,7 @@ macro_rules! as_buint {
 use crate::cast::CastFrom;
 use crate::doc;
 use crate::ExpType;
+#[allow(unused_imports)]
 use crate::cast::float::{FloatMantissa, CastUintFromFloatHelper, CastFloatFromUintHelper};
 
 macro_rules! cast {
