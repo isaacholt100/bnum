@@ -1,11 +1,10 @@
-// TODO: implement casts from and to float for primitive types and buint, bint
-use super::Float;
+use crate::cast::float::{FloatCastHelper, FloatMantissa};
+
+use super::{Float, FloatExponent};
 use crate::cast::CastFrom;
 use crate::doc;
 use crate::{BUintD8, BUintD16, BUintD32, BUint, BIntD8, BIntD16, BIntD32, BInt};
 use crate::ExpType;
-use crate::buint::as_float::{CastToFloatConsts, cast_float_from_uint};
-use crate::buint::as_float;
 
 macro_rules! uint_as_float {
     ($($uint: ident $(<$N: ident>)?), *) => {
@@ -14,7 +13,7 @@ macro_rules! uint_as_float {
                 #[must_use = doc::must_use_op!()]
                 #[inline]
                 fn cast_from(from: $uint $(<$N>)?) -> Self {
-                    cast_float_from_uint(from)
+                    crate::cast::float::cast_float_from_uint(from)
                 }
             }
         )*
@@ -101,111 +100,15 @@ macro_rules! float_as_int {
 
 float_as_int!(i8; u8, i16; u16, i32; u32, i64; u64, i128; u128, isize; usize);
 
-macro_rules! impl_mantissa_for_buint {
-    ($BUint: ident, $BInt: ident, $Digit: ident) => {
-        impl<const N: usize> as_float::Mantissa for $BUint<N> {
-            const ONE: Self = Self::ONE;
-            const TWO: Self = Self::TWO;
-            const MAX: Self = Self::MAX;
-            const BITS: ExpType = Self::BITS;
-
-            #[inline]
-            fn bit(&self, n: ExpType) -> bool {
-                Self::bit(&self, n)
-            }
-
-            #[inline]
-            fn shl(self, n: ExpType) -> Self {
-                Self::shl(self, n)
-            }
-
-            #[inline]
-            fn shr(self, n: ExpType) -> Self {
-                Self::shr(self, n)
-            }
-
-            #[inline]
-            fn add(self, rhs: Self) -> Self {
-                Self::add(self, rhs)
-            }
-
-            #[inline]
-            fn sub(self, rhs: Self) -> Self {
-                Self::sub(self, rhs)
-            }
-
-            #[inline]
-            fn leading_zeros(self) -> ExpType {
-                Self::leading_zeros(self)
-            }
-
-            #[inline]
-            fn bitand(self, rhs: Self) -> Self {
-                Self::bitand(self, rhs)
-            }
-
-            #[inline]
-            fn gt(&self, rhs: &Self) -> bool {
-                Self::gt(&self, &rhs)
-            }
-        }
-    };
-}
-
-pub(crate) use impl_mantissa_for_buint;
-
-crate::macro_impl!(impl_mantissa_for_buint);
-
-use crate::buint::float_as::{uint_cast_from_float, CastUintFromFloatHelper};
-
-impl<const W: usize, const MB: usize> CastUintFromFloatHelper for Float<W, MB> {
-    type M = BUintD8<W>;
-    type E = BIntD8<W>;
-
-    #[inline]
-    fn is_nan(&self) -> bool {
-        Self::is_nan(*self)
-    }
-
-    #[inline]
-    fn is_sign_negative(&self) -> bool {
-        Self::is_sign_negative(*self)
-    }
-
-    #[inline]
-    fn is_infinite(&self) -> bool {
-        Self::is_infinite(*self)
-    }
-
-    #[inline]
-    fn decode(self) -> (Self::M, Self::E) {
-        let (_, exp, mant) = self.to_parts_biased();
-        let exp = BIntD8::from_bits(exp) - Self::EXP_BIAS - BIntD8::cast_from(Self::MB);
-        (mant, exp)
-    }
-}
-
-impl<const W: usize, const MB: usize> CastToFloatConsts for Float<W, MB> {
-    type M = BUintD8<W>;
-
-    const ZERO: Self = Self::ZERO;
-    const MANTISSA_DIGITS: ExpType = Self::MANTISSA_DIGITS as ExpType;
-    const MAX_EXP: Self::M = Self::MAX_EXP.to_bits();
-    const INFINITY: Self = Self::INFINITY;
-
-    fn from_raw_parts(exp: Self::M, mant: Self::M) -> Self {
-        Self::from_raw_parts(false, exp, mant & Self::MANTISSA_MASK)
-    }
-}
-
 macro_rules! float_as_uint {
     ($($uint: ident $(<$N: ident>)?), *) => {
         $(
             impl<const W: usize, const MB: usize $(, const $N: usize)?> CastFrom<Float<W, MB>> for $uint $(<$N>)? {
                 #[must_use = doc::must_use_op!()]
                 #[inline]
-                fn cast_from(from: Float<W, MB>) -> Self {
-                    uint_cast_from_float(from)
+                fn cast_from(value: Float<W, MB>) -> Self {
+                    crate::cast::float::cast_uint_from_float(value)
+                    // uint_cast_from_float(from)
                 }
             }
         )*
@@ -213,6 +116,114 @@ macro_rules! float_as_uint {
 }
 
 float_as_uint!(BUintD8<N>, BUintD16<N>, BUintD32<N>, BUint<N>, u8, u16, u32, u64, u128, usize);
+
+impl<const W: usize, const MB: usize> FloatCastHelper for Float<W, MB> {
+    const BITS: ExpType = Self::BITS;
+    const MANTISSA_DIGITS: ExpType = Self::MANTISSA_DIGITS as ExpType;
+    const MAX_EXP: FloatExponent = Self::MAX_EXP;
+    const MIN_SUBNORMAL_EXP: FloatExponent = Self::MIN_SUBNORMAL_EXP;
+    const INFINITY: Self = Self::INFINITY;
+    const ZERO: Self = Self::ZERO;
+    const NEG_ZERO: Self = Self::NEG_ZERO;
+
+    #[inline]
+    fn is_nan(&self) -> bool {
+        Self::is_nan(*self)
+    }
+
+    #[inline]
+    fn is_infinite(&self) -> bool {
+        Self::is_infinite(*self)
+    }
+}
+
+fn cast_float_from_float<T, U>(f: T) -> U
+where
+    T: FloatCastHelper,
+    U: FloatCastHelper,
+    U::Mantissa: CastFrom<T::Mantissa>,
+    U::SignedExp: CastFrom<T::SignedExp>,
+    T::SignedExp: CastFrom<U::SignedExp>
+{
+    // deal with zero cases as this means mantissa must have leading one
+    let (sign, mut exponent, mantissa) = f.into_normalised_signed_parts();
+    if mantissa == T::Mantissa::ZERO {
+        return if sign {
+            U::NEG_ZERO
+        } else {
+            U::ZERO
+        };
+    }
+    if exponent == T::MAX_EXP { // the float is either infinity or NaN
+        let out_mantissa = if T::MANTISSA_DIGITS <= U::MANTISSA_DIGITS {
+            U::Mantissa::cast_from(mantissa) << (U::MANTISSA_DIGITS - T::MANTISSA_DIGITS)
+        } else {
+            U::Mantissa::cast_from(mantissa >> (T::MANTISSA_DIGITS - U::MANTISSA_DIGITS))
+        };
+        return U::from_normalised_signed_parts(sign, U::MAX_EXP, out_mantissa);
+    }
+    let out_mantissa = if T::MANTISSA_DIGITS <= U::MANTISSA_DIGITS { // in this case, the mantissa can be converted exactly
+        U::Mantissa::cast_from(mantissa) << (U::MANTISSA_DIGITS - T::MANTISSA_DIGITS)
+    } else {
+        let (e, m) = T::round_exponent_mantissa::<true>(exponent, mantissa, T::MANTISSA_DIGITS - U::MANTISSA_DIGITS);
+        exponent = e;
+
+        U::Mantissa::cast_from(m)
+    };
+
+    let out_exponent = if T::EXPONENT_BITS <= U::EXPONENT_BITS { // in this case, we will never have overflow or underflow
+        U::SignedExp::cast_from(exponent)
+    } else {
+        if T::SignedExp::cast_from(U::MAX_EXP) <= exponent { // exponent is too large to fit into output exponent
+            return if sign {
+                -U::INFINITY
+            } else {
+                U::INFINITY
+            };
+        }
+        if exponent < T::SignedExp::cast_from(U::MIN_SUBNORMAL_EXP) {
+            return if sign {
+                U::NEG_ZERO
+            } else {
+                U::ZERO
+            };
+        }
+        U::SignedExp::cast_from(exponent)
+    };
+    U::from_normalised_signed_parts(sign, out_exponent, out_mantissa)
+}
+
+impl<const W1: usize, const MB1: usize, const W2: usize, const MB2: usize> CastFrom<Float<W2, MB2>> for Float<W1, MB1> {
+    #[must_use = doc::must_use_op!()]
+    #[inline]
+    fn cast_from(from: Float<W2, MB2>) -> Self {
+        cast_float_from_float(from)
+    }
+}
+
+macro_rules! primitive_and_big_float_cast {
+    ($($primitive_float_type: ty), *) => {
+        $(
+            impl<const W: usize, const MB: usize> CastFrom<$primitive_float_type> for Float<W, MB> {
+                #[must_use = doc::must_use_op!()]
+                #[inline]
+                fn cast_from(from: $primitive_float_type) -> Self {
+                    cast_float_from_float(from)
+                }
+            }
+
+            impl<const W: usize, const MB: usize> CastFrom<Float<W, MB>> for $primitive_float_type {
+                #[must_use = doc::must_use_op!()]
+                #[inline]
+                fn cast_from(from: Float<W, MB>) -> Self {
+                    cast_float_from_float(from)
+                }
+            }
+        )*
+    };
+}
+
+primitive_and_big_float_cast!(f32, f64);
 
 #[cfg(test)]
 mod tests {
@@ -222,23 +233,27 @@ mod tests {
     use crate::test::types::{ftest, FTEST};
     use crate::test::cast_types::*;
 
-    #[test]
-    fn test_cast() {
-        let a = 1234034598347589374u128;
-        let b = FTEST::cast_from(a);
-        let c = ftest::cast_from(a);
-        assert_eq!(b, c.into());
-    }
-
     test_from! {
         function: <ftest as CastFrom>::cast_from,
-        from_types: (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, UTESTD8, UTESTD16, UTESTD32, UTESTD64, TestUint1, TestUint2, TestUint3, TestUint4, TestUint5, TestUint6, TestUint7, TestUint8, TestUint9, TestUint10, ITESTD8, ITESTD16, ITESTD32, ITESTD64, TestInt1, TestInt2, TestInt3, TestInt4, TestInt5, TestInt6, TestInt7, TestInt8)
+        from_types: (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64, UTESTD8, UTESTD16, UTESTD32, UTESTD64, TestUint1, TestUint2, TestUint3, TestUint4, TestUint5, TestUint6, TestUint7, TestUint8, TestUint9, TestUint10, ITESTD8, ITESTD16, ITESTD32, ITESTD64, TestInt1, TestInt2, TestInt3, TestInt4, TestInt5, TestInt6, TestInt7, TestInt8, TestInt9, TestInt10)
     }
 
     test_into! {
         function: <ftest as CastTo>::cast_to,
-        into_types: (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize)
+        into_types: (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64)
     }
 
-    crate::int::cast::test_cast_to_bigint!(ftest; UTESTD8, UTESTD16, UTESTD32, UTESTD64, TestUint1, TestUint2, TestUint3, TestUint4, TestUint5, TestUint6, TestUint7, TestUint8, ITESTD8, ITESTD16, ITESTD32, ITESTD64, TestInt1, TestInt2, TestInt3, TestInt4, TestInt5, TestInt6, TestInt7, TestInt8);
+    #[test]
+    fn test_cast_float() {
+        use crate::cast::As;
+        let f1 = FTEST::from_bits(3472883712u32.as_());
+        let f2 = f32::from_bits(3472883712u32);
+        dbg!(f2);
+        let u1 = u32::cast_from(f1);
+        let u2 = u32::cast_from(f2);
+        println!("{:?}", u1);
+        println!("{:?}", u2);
+    }
+
+    // crate::int::cast::test_cast_to_bigint!(ftest; UTESTD8, UTESTD16, UTESTD32, UTESTD64, TestUint1, TestUint2, TestUint3, TestUint4, TestUint5, TestUint6, TestUint7, TestUint8, ITESTD8, ITESTD16, ITESTD32, ITESTD64, TestInt1, TestInt2, TestInt3, TestInt4, TestInt5, TestInt6, TestInt7, TestInt8);
 }

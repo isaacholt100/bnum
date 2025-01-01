@@ -6,7 +6,7 @@ macro_rules! impl_desc {
 
 pub(crate) use impl_desc;
 
-crate::doc::link_doc_comment!(
+crate::doc::link_doc_comment_method!(
     overflowing_abs,
     overflowing_add,
     overflowing_add_signed,

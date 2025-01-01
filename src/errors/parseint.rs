@@ -4,7 +4,7 @@ use core::num::IntErrorKind;
 /// The error type that is returned when parsing an integer from an invalid source.
 ///
 /// This error can occur when the `from_str_radix` or [`FromStr::from_str`](https://doc.rust-lang.org/core/str/trait.FromStr.html#tymethod.from_str) methods of e.g. [`BUint`](crate::BUint::from_str_radix) are called with an invalid input string.
-#[derive(PartialEq, Eq, Clone)]
+#[derive(PartialEq, Eq, Clone, Debug)]
 pub struct ParseIntError {
     pub(crate) kind: IntErrorKind,
 }
@@ -38,11 +38,5 @@ impl ParseIntError {
 impl Display for ParseIntError {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(f, "{} {}", super::err_prefix!(), self.description())
-    }
-}
-
-impl Debug for ParseIntError {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        Display::fmt(&self, f)
     }
 }

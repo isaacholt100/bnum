@@ -1,27 +1,32 @@
 use super::Float;
 use crate::BUintD8;
 use core::num::FpCategory;
+use crate::doc;
 
 type Digit = u8;
 
 struct Masks<const W: usize, const MB: usize>;
 
 impl<const W: usize, const MB: usize> Masks<W, MB> {
-    //const Q_NAN_MASK: BUintD8<W> = Float::<W, MB>::NAN.to_bits();
     const FINITE_MASK: BUintD8<W> = Float::<W, MB>::INFINITY.to_bits();
 }
 
+#[doc = doc::classify::impl_desc!()]
 impl<const W: usize, const MB: usize> Float<W, MB> {
-    #[inline]
+    #[doc = doc::classify::is_sign_positive!(F)]
+    #[inline(always)]
     pub const fn is_sign_positive(self) -> bool {
         !self.is_sign_negative()
     }
 
-    #[inline]
+    #[doc = doc::classify::is_sign_negative!(F)]
+    #[inline(always)]
     pub const fn is_sign_negative(self) -> bool {
-        self.to_int().is_negative()
+        const A: Digit = (1 as Digit).rotate_right(1);
+        self.bits.digits[W - 1] >= A
     }
 
+    #[doc = doc::classify::is_finite!(F)]
     #[inline]
     pub const fn is_finite(self) -> bool {
         self.to_bits()
@@ -29,44 +34,26 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             .ne(&Masks::<W, MB>::FINITE_MASK)
     }
 
+    #[doc = doc::classify::is_infinite!(F)]
     #[inline]
     pub const fn is_infinite(self) -> bool {
         self.abs().to_bits().eq(&Masks::<W, MB>::FINITE_MASK)
-        /*let bits = self.abs().to_bits();
-        bits.trailing_zeros() == Self::MB && bits.count_ones() == Self::EXPONENT_BITS as ExpType*/
     }
 
-    /*#[inline]
-    pub const fn is_quiet_indefinite_nan(self) -> bool {
-        self == Self::NAN
-    }*/
-    //}
-
+    #[doc = doc::classify::is_nan!(F)]
     #[inline]
     pub const fn is_nan(self) -> bool {
-        //!(self.mantissa().is_zero() || self.is_finite())
         !self.is_finite() && self.to_bits().trailing_zeros() < Self::MB
     }
 
-    //crate::nightly::const_fns! {
-    /*#[inline]
-    pub const fn is_quiet_nan(self) -> bool {
-        self.to_bits() & Masks::<W, MB>::Q_NAN_MASK == Masks::<W, MB>::Q_NAN_MASK
-    }
-
-    #[inline]
-    pub const fn is_signalling_nan(self) -> bool {
-        self.to_bits() & Masks::<W, MB>::Q_NAN_MASK == Self::INFINITY.to_bits()
-    }*/
-    //}
-
+    #[doc = doc::classify::is_subnormal!(F)]
     #[inline]
     pub const fn is_subnormal(self) -> bool {
-        /*!self.is_zero() && self.exponent().is_zero()*/
         let lz = self.abs().to_bits().leading_zeros();
         lz < Self::BITS && lz > Self::EXPONENT_BITS
     }
 
+    #[doc = doc::classify::is_normal!(F)]
     #[inline]
     pub const fn is_normal(self) -> bool {
         matches!(self.classify(), FpCategory::Normal)
@@ -74,34 +61,34 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
     #[inline]
     pub const fn is_zero(&self) -> bool {
+        let words = self.words();
         let mut i = 0;
         while i < W - 1 {
-            if self.words()[i] != 0 {
+            if words[i] != 0 {
                 return false;
             }
             i += 1;
         }
-        let last = self.words()[W - 1];
+        let last = words[W - 1];
         last.trailing_zeros() >= Digit::BITS - 1
     }
 
-    crate::nightly::const_fn! {
-        #[inline]
-        pub const fn classify(self) -> FpCategory {
-            let u = self.abs().to_bits();
+    #[doc = doc::classify::classify!(F)]
+    #[inline]
+    pub const fn classify(self) -> FpCategory {
+        let u = self.abs().to_bits();
+        if u.is_zero() {
+            FpCategory::Zero
+        } else if u.eq(&Self::INFINITY.to_bits()) {
+            FpCategory::Infinite
+        } else {
+            let u = u.bitand(Masks::<W, MB>::FINITE_MASK);
             if u.is_zero() {
-                FpCategory::Zero
-            } else if u.eq(&Self::INFINITY.to_bits()) {
-                FpCategory::Infinite
+                FpCategory::Subnormal
+            } else if u.eq(&Masks::<W, MB>::FINITE_MASK) {
+                FpCategory::Nan
             } else {
-                let u = u.bitand(Masks::<W, MB>::FINITE_MASK);
-                if u.is_zero() {
-                    FpCategory::Subnormal
-                } else if u.eq(&Masks::<W, MB>::FINITE_MASK) {
-                    FpCategory::Nan
-                } else {
-                    FpCategory::Normal
-                }
+                FpCategory::Normal
             }
         }
     }

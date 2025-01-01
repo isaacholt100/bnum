@@ -8,4 +8,4 @@ macro_rules! impl_desc {
 
 pub(crate) use impl_desc;
 
-doc::link_doc_comment!(carrying_add, borrowing_sub, widening_mul, carrying_mul);
+doc::link_doc_comment_method!(carrying_add, borrowing_sub, widening_mul, carrying_mul);

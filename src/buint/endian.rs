@@ -175,8 +175,8 @@ macro_rules! endian {
             #[doc = doc::requires_feature!("nightly")]
             #[must_use = doc::must_use_op!()]
             #[inline]
-            pub const fn to_be_bytes(self) -> [u8; N * digit::$Digit::BYTES as usize] {
-                let mut bytes = [0; N * digit::$Digit::BYTES as usize];
+            pub const fn to_be_bytes(self) -> [u8; Self::BYTES_USIZE] {
+                let mut bytes = [0; Self::BYTES_USIZE];
                 let mut i = N;
                 while i > 0 {
                     let digit_bytes = self.digits[N - i].to_be_bytes();
@@ -195,12 +195,12 @@ macro_rules! endian {
             #[doc = doc::requires_feature!("nightly")]
             #[must_use = doc::must_use_op!()]
             #[inline]
-            pub const fn to_le_bytes(self) -> [u8; N * digit::$Digit::BYTES as usize] {
+            pub const fn to_le_bytes(self) -> [u8; Self::BYTES_USIZE] {
                 // Strangely, this is slightly faster than direct transmutation by either `mem::transmute_copy` or `ptr::read`.
                 // Also, initialising the bytes with zeros is faster than using MaybeUninit.
                 // The Rust compiler is probably being very smart and optimizing this code.
                 // The same goes for `to_be_bytes`.
-                let mut bytes = [0; N * digit::$Digit::BYTES as usize];
+                let mut bytes = [0; Self::BYTES_USIZE];
                 let mut i = 0;
                 while i < N {
                     let digit_bytes = self.digits[i].to_le_bytes();
@@ -219,7 +219,7 @@ macro_rules! endian {
             #[doc = doc::requires_feature!("nightly")]
             #[must_use = doc::must_use_op!()]
             #[inline]
-            pub const fn to_ne_bytes(self) -> [u8; N * digit::$Digit::BYTES as usize] {
+            pub const fn to_ne_bytes(self) -> [u8; Self::BYTES_USIZE] {
                 #[cfg(target_endian = "big")]
                 return self.to_be_bytes();
                 #[cfg(not(target_endian = "big"))]
@@ -231,7 +231,7 @@ macro_rules! endian {
             #[doc = doc::requires_feature!("nightly")]
             #[must_use]
             #[inline]
-            pub const fn from_be_bytes(bytes: [u8; N * digit::$Digit::BYTES as usize]) -> Self {
+            pub const fn from_be_bytes(bytes: [u8; Self::BYTES_USIZE]) -> Self {
                 let mut out = Self::ZERO;
                 // let arr_ptr = bytes.as_ptr();
                 let mut i = 0;
@@ -254,7 +254,7 @@ macro_rules! endian {
             #[doc = doc::requires_feature!("nightly")]
             #[must_use]
             #[inline]
-            pub const fn from_le_bytes(bytes: [u8; N * digit::$Digit::BYTES as usize]) -> Self {
+            pub const fn from_le_bytes(bytes: [u8; Self::BYTES_USIZE]) -> Self {
                 let mut out = Self::ZERO;
                 // let arr_ptr = bytes.as_ptr();
                 let mut i = 0;
@@ -277,25 +277,24 @@ macro_rules! endian {
             #[doc = doc::requires_feature!("nightly")]
             #[must_use]
             #[inline]
-            pub const fn from_ne_bytes(bytes: [u8; N * digit::$Digit::BYTES as usize]) -> Self {
+            pub const fn from_ne_bytes(bytes: [u8; Self::BYTES_USIZE]) -> Self {
                 #[cfg(target_endian = "big")]
                 return Self::from_be_bytes(bytes);
 
                 #[cfg(not(target_endian = "big"))]
                 Self::from_le_bytes(bytes)
             }
-        }
 
-        #[cfg(test)]
-        paste::paste! {
-            mod [<$Digit _digit_tests>] {
-                use crate::test::types::big_types::$Digit::*;
-                use crate::test::{test_bignum, types::utest};
-
-                crate::int::endian::tests!($Digit; utest);
-            }
+            pub(crate) const BYTES_USIZE: usize = N * digit::$Digit::BYTES as usize;
         }
     };
+}
+
+#[cfg(test)]
+crate::test::all_digit_tests! {
+    use crate::test::{test_bignum, types::utest};
+
+    crate::int::endian::tests!(utest);
 }
 
 crate::macro_impl!(endian);

@@ -32,38 +32,6 @@ macro_rules! const_fns {
 
 pub(crate) use const_fns;
 
-#[cfg(feature = "nightly")]
-macro_rules! impl_const {
-    { impl $(<$(const $C: ident : $ty: ty), +>)? const $($tt: tt) + } => {
-        impl $(<$(const $C: $ty), +>)? $($tt) +
-    }
-}
-
-#[cfg(not(feature = "nightly"))]
-macro_rules! impl_const {
-    { impl $(<$(const $C: ident : $ty: ty), +>)? const $($tt: tt) + } => {
-        impl $(<$(const $C: $ty), +>)? $($tt) +
-    }
-}
-
-pub(crate) use impl_const;
-
-#[cfg(feature = "nightly")]
-macro_rules! const_impl {
-    { impl $(<$(const $C: ident : $ty: ty), +>)? const $($tt: tt) + } => {
-        impl $(<$(const $C: $ty), +>)? $($tt) +
-    }
-}
-
-#[cfg(not(feature = "nightly"))]
-macro_rules! const_impl {
-    { impl $(<$(const $C: ident : $ty: ty), +>)? const $($tt: tt) + } => {
-        impl $(<$(const $C: $ty), +>)? $($tt) +
-    }
-}
-
-pub(crate) use const_impl;
-
 macro_rules! option_try {
     ($e: expr) => {
         match $e {

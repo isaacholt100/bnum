@@ -1,35 +1,29 @@
 macro_rules! op_ref_impl {
     ($tr: ident <$rhs: ty> for $Struct: ident <$($C: ident),+>, $method: ident) => {
-        crate::nightly::impl_const! {
-            impl<$(const $C: usize),+> const $tr<&$rhs> for $Struct <$($C),+> {
-                type Output = $Struct <$($C),+>;
+        impl<$(const $C: usize),+> $tr<&$rhs> for $Struct <$($C),+> {
+            type Output = $Struct <$($C),+>;
 
-                #[inline]
-                fn $method(self, rhs: &$rhs) -> Self::Output {
-                    $tr::<$rhs>::$method(self, *rhs)
-                }
+            #[inline]
+            fn $method(self, rhs: &$rhs) -> Self::Output {
+                $tr::<$rhs>::$method(self, *rhs)
             }
         }
 
-        crate::nightly::impl_const! {
-            impl<$(const $C: usize),+> const $tr<&$rhs> for &$Struct <$($C),+> {
-                type Output = $Struct <$($C),+>;
+        impl<$(const $C: usize),+> $tr<&$rhs> for &$Struct <$($C),+> {
+            type Output = $Struct <$($C),+>;
 
-                #[inline]
-                fn $method(self, rhs: &$rhs) -> Self::Output {
-                    $tr::<$rhs>::$method(*self, *rhs)
-                }
+            #[inline]
+            fn $method(self, rhs: &$rhs) -> Self::Output {
+                $tr::<$rhs>::$method(*self, *rhs)
             }
         }
 
-        crate::nightly::impl_const! {
-            impl<$(const $C: usize),+> const $tr<$rhs> for &$Struct <$($C),+> {
-                type Output = $Struct <$($C),+>;
+        impl<$(const $C: usize),+> $tr<$rhs> for &$Struct <$($C),+> {
+            type Output = $Struct <$($C),+>;
 
-                #[inline]
-                fn $method(self, rhs: $rhs) -> Self::Output {
-                    $tr::<$rhs>::$method(*self, rhs)
-                }
+            #[inline]
+            fn $method(self, rhs: $rhs) -> Self::Output {
+                $tr::<$rhs>::$method(*self, rhs)
             }
         }
     }
@@ -38,21 +32,17 @@ pub(crate) use op_ref_impl;
 
 macro_rules! assign_op_impl {
     ($OpTrait: ident, $AssignTrait: ident<$rhs: ty> for $Struct: ident, $assign: ident, $op: ident) => {
-        crate::nightly::impl_const! {
-            impl<const N: usize> const $AssignTrait<$rhs> for $Struct<N> {
-                #[inline]
-                fn $assign(&mut self, rhs: $rhs) {
-                    *self = $OpTrait::$op(*self, rhs);
-                }
+        impl<const N: usize> $AssignTrait<$rhs> for $Struct<N> {
+            #[inline]
+            fn $assign(&mut self, rhs: $rhs) {
+                *self = $OpTrait::$op(*self, rhs);
             }
         }
 
-        crate::nightly::impl_const! {
-            impl<const N: usize> const $AssignTrait<&$rhs> for $Struct<N> {
-                #[inline]
-                fn $assign(&mut self, rhs: &$rhs) {
-                    self.$assign(*rhs);
-                }
+        impl<const N: usize> $AssignTrait<&$rhs> for $Struct<N> {
+            #[inline]
+            fn $assign(&mut self, rhs: &$rhs) {
+                self.$assign(*rhs);
             }
         }
 
@@ -63,8 +53,8 @@ pub(crate) use assign_op_impl;
 
 macro_rules! shift_impl {
     ($Struct: ident, $tr: tt, $method: ident, $assign_tr: tt, $assign_method: ident, $($rhs: ty), *) => {
-        $(crate::nightly::impl_const! {
-            impl<const N: usize> const $tr<$rhs> for $Struct<N> {
+        $(
+            impl<const N: usize> $tr<$rhs> for $Struct<N> {
                 type Output = Self;
 
                 #[inline]
@@ -72,15 +62,15 @@ macro_rules! shift_impl {
                     self.$method(rhs as crate::ExpType)
                 }
             }
-        })*
+        )*
     }
 }
 pub(crate) use shift_impl;
 
 macro_rules! try_shift_impl {
     ($Struct: ident, $BUint: ident, $BInt: ident; $tr: tt, $method: ident, $assign_tr: tt, $assign_method: ident, $err: expr, $($rhs: ty), *) => {
-        $(crate::nightly::impl_const! {
-            impl<const N: usize> const $tr<$rhs> for $Struct<N> {
+        $(
+            impl<const N: usize> $tr<$rhs> for $Struct<N> {
                 type Output = Self;
 
                 #[inline]
@@ -94,74 +84,62 @@ macro_rules! try_shift_impl {
                     self.$method(rhs)
                 }
             }
-        })*
+        )*
     }
 }
 pub(crate) use try_shift_impl;
 
 macro_rules! shift_self_impl {
     ($Struct: ident, $BUint: ident, $BInt: ident; $tr: tt<$rhs: tt>, $method: ident, $assign_tr: tt, $assign_method: ident, $err: expr) => {
-        crate::nightly::impl_const! {
-            impl<const N: usize, const M: usize> const $tr<$rhs<M>> for $Struct<N> {
-                type Output = Self;
+        impl<const N: usize, const M: usize> $tr<$rhs<M>> for $Struct<N> {
+            type Output = Self;
 
-                #[inline]
-                fn $method(self, rhs: $rhs<M>) -> Self {
-                    use crate::ExpType;
-                    let rhs: ExpType = crate::errors::result_expect!(ExpType::try_from(rhs), crate::errors::err_msg!($err));
-                    self.$method(rhs)
-                }
+            #[inline]
+            fn $method(self, rhs: $rhs<M>) -> Self {
+                use crate::ExpType;
+                let rhs: ExpType = crate::errors::result_expect!(ExpType::try_from(rhs), crate::errors::err_msg!($err));
+                self.$method(rhs)
             }
         }
 
-        crate::nightly::impl_const! {
-            impl<const N: usize, const M: usize> const $tr<&$rhs<M>> for $Struct<N> {
-                type Output = $Struct<N>;
+        impl<const N: usize, const M: usize> $tr<&$rhs<M>> for $Struct<N> {
+            type Output = $Struct<N>;
 
-                #[inline]
-                fn $method(self, rhs: &$rhs<M>) -> Self::Output {
-                    $tr::<$rhs<M>>::$method(self, *rhs)
-                }
+            #[inline]
+            fn $method(self, rhs: &$rhs<M>) -> Self::Output {
+                $tr::<$rhs<M>>::$method(self, *rhs)
             }
         }
 
-        crate::nightly::impl_const! {
-            impl<const N: usize, const M: usize> const $tr<&$rhs<M>> for &$Struct<N> {
-                type Output = $Struct<N>;
+        impl<const N: usize, const M: usize> $tr<&$rhs<M>> for &$Struct<N> {
+            type Output = $Struct<N>;
 
-                #[inline]
-                fn $method(self, rhs: &$rhs<M>) -> Self::Output {
-                    $tr::<$rhs<M>>::$method(*self, *rhs)
-                }
+            #[inline]
+            fn $method(self, rhs: &$rhs<M>) -> Self::Output {
+                $tr::<$rhs<M>>::$method(*self, *rhs)
             }
         }
 
-        crate::nightly::impl_const! {
-            impl<const N: usize, const M: usize> const $tr<$rhs<M>> for &$Struct<N> {
-                type Output = $Struct<N>;
+        impl<const N: usize, const M: usize> $tr<$rhs<M>> for &$Struct<N> {
+            type Output = $Struct<N>;
 
-                #[inline]
-                fn $method(self, rhs: $rhs<M>) -> Self::Output {
-                    $tr::<$rhs<M>>::$method(*self, rhs)
-                }
+            #[inline]
+            fn $method(self, rhs: $rhs<M>) -> Self::Output {
+                $tr::<$rhs<M>>::$method(*self, rhs)
             }
         }
 
-        crate::nightly::impl_const! {
-            impl<const N: usize, const M: usize> const $assign_tr<$rhs<M>> for $Struct<N> {
-                #[inline]
-                fn $assign_method(&mut self, rhs: $rhs<M>) {
-                    *self = $tr::<$rhs<M>>::$method(*self, rhs);
-                }
+        impl<const N: usize, const M: usize> $assign_tr<$rhs<M>> for $Struct<N> {
+            #[inline]
+            fn $assign_method(&mut self, rhs: $rhs<M>) {
+                *self = $tr::<$rhs<M>>::$method(*self, rhs);
             }
         }
 
-        crate::nightly::impl_const! {
-            impl<const N: usize, const M: usize> const $assign_tr<&$rhs<M>> for $Struct<N> {
-                #[inline]
-                fn $assign_method(&mut self, rhs: &$rhs<M>) {
-                    (*self).$assign_method(*rhs);
-                }
+        impl<const N: usize, const M: usize> $assign_tr<&$rhs<M>> for $Struct<N> {
+            #[inline]
+            fn $assign_method(&mut self, rhs: &$rhs<M>) {
+                (*self).$assign_method(*rhs);
             }
         }
     }
@@ -330,71 +308,59 @@ pub(crate) use trait_fillers;
 
 macro_rules! impls {
     ($Struct: ident, $BUint: ident, $BInt: ident) => {
-        crate::nightly::impl_const! {
-            impl<const N: usize> const Add<Self> for $Struct<N> {
-                type Output = Self;
+        impl<const N: usize> Add<Self> for $Struct<N> {
+            type Output = Self;
 
-                #[inline]
-                fn add(self, rhs: Self) -> Self {
-                    Self::add(self, rhs)
-                }
+            #[inline]
+            fn add(self, rhs: Self) -> Self {
+                Self::add(self, rhs)
             }
         }
 
-        crate::nightly::impl_const! {
-            impl<const N: usize> const Mul for $Struct<N> {
-                type Output = Self;
+        impl<const N: usize> Mul for $Struct<N> {
+            type Output = Self;
 
-                #[inline]
-                fn mul(self, rhs: Self) -> Self {
-                    Self::mul(self, rhs)
-                }
+            #[inline]
+            fn mul(self, rhs: Self) -> Self {
+                Self::mul(self, rhs)
             }
         }
 
-        crate::nightly::impl_const! {
-            impl<const N: usize> const Not for &$Struct<N> {
-                type Output = $Struct<N>;
+        impl<const N: usize> Not for &$Struct<N> {
+            type Output = $Struct<N>;
 
-                #[inline]
-                fn not(self) -> $Struct<N> {
-                    (*self).not() // TODO: maybe use separate impl for this as well
-                }
+            #[inline]
+            fn not(self) -> $Struct<N> {
+                (*self).not() // TODO: maybe use separate impl for this as well
             }
         }
 
-        crate::nightly::impl_const! {
-            impl<const N: usize> const Shl<ExpType> for $Struct<N> {
-                type Output = Self;
+        impl<const N: usize> Shl<ExpType> for $Struct<N> {
+            type Output = Self;
 
-                #[inline]
-                fn shl(self, rhs: ExpType) -> Self {
-                    Self::shl(self, rhs)
-                }
+            #[inline]
+            fn shl(self, rhs: ExpType) -> Self {
+                Self::shl(self, rhs)
             }
         }
 
-        crate::nightly::impl_const! {
-            impl<const N: usize> const Shr<ExpType> for $Struct<N> {
-                type Output = Self;
+        impl<const N: usize> Shr<ExpType> for $Struct<N> {
+            type Output = Self;
 
-                #[inline]
-                fn shr(self, rhs: ExpType) -> Self {
-                    Self::shr(self, rhs)
-                }
+            #[inline]
+            fn shr(self, rhs: ExpType) -> Self {
+                Self::shr(self, rhs)
             }
         }
 
         crate::int::ops::all_shift_impls!($Struct, $BUint, $BInt);
 
-        crate::nightly::impl_const! {
-            impl<const N: usize> const Sub for $Struct<N> {
-                type Output = Self;
+        impl<const N: usize> Sub for $Struct<N> {
+            type Output = Self;
 
-                #[inline]
-                fn sub(self, rhs: Self) -> Self {
-                    Self::sub(self, rhs)
-                }
+            #[inline]
+            fn sub(self, rhs: Self) -> Self {
+                Self::sub(self, rhs)
             }
         }
 
@@ -418,6 +384,9 @@ pub(crate) use impls;
 #[cfg(test)]
 macro_rules! tests {
     ($int: ty) => {
+        #[allow(unused_imports)]
+        use super::*;
+
         test_bignum! {
             function: <$int as Add>::add(a: $int, b: $int),
             skip: a.checked_add(b).is_none()

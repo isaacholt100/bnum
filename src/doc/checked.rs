@@ -12,7 +12,7 @@ macro_rules! impl_desc {
 
 pub(crate) use impl_desc;
 
-doc::link_doc_comment!(
+doc::link_doc_comment_method!(
     checked_abs,
     checked_add,
     checked_add_signed,
@@ -37,7 +37,7 @@ doc::link_doc_comment!(
 macro_rules! checked_next_power_of_two {
     ($sign: ident $bits: literal) => {
         doc::doc_comment! {
-            #checked_next_power_of_two,
+            #method.checked_next_power_of_two,
             $sign $bits,
             "Returns the smallest power of two greater than or equal to `self`. If the next power of two is greater than `Self::MAX`, `None` is returned, otherwise the power of two is wrapped in `Some`.",
 

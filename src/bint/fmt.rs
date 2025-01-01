@@ -48,15 +48,12 @@ macro_rules! fmt {
         }
         
         fmt_trait!($BInt, UpperHex);
-
-        #[cfg(test)]
-        paste::paste! {
-            mod [<$Digit _digit_tests>] {
-                use crate::test::types::big_types::$Digit::*;
-                crate::int::fmt::tests!(itest);
-            }
-        }
     };
+}
+
+#[cfg(test)]
+crate::test::all_digit_tests! {
+    crate::int::fmt::tests!(itest);
 }
 
 crate::macro_impl!(fmt);

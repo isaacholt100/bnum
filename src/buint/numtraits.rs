@@ -50,14 +50,13 @@ pub const fn u64_bits(u: u64) -> ExpType {
     64 - u.leading_zeros() as ExpType
 }
 use crate::buint::cast::{decode_f32, decode_f64};
-//use crate::nightly::impl_const;
 use crate::ExpType;
 use num_integer::{Integer, Roots};
 use num_traits::{
     AsPrimitive, Bounded, CheckedAdd, CheckedDiv, CheckedMul, CheckedNeg, CheckedRem, CheckedShl,
-    CheckedShr, CheckedSub, CheckedEuclid, Euclid, FromPrimitive, MulAdd, MulAddAssign, Num, One, Pow, PrimInt,
+    CheckedShr, CheckedSub, CheckedEuclid, Euclid, FromPrimitive, MulAdd, MulAddAssign, Num, One, /*ConstOne,*/ Pow, PrimInt,
     Saturating, SaturatingAdd, SaturatingMul, SaturatingSub, ToPrimitive, Unsigned, WrappingAdd,
-    WrappingMul, WrappingNeg, WrappingShl, WrappingShr, WrappingSub, Zero,
+    WrappingMul, WrappingNeg, WrappingShl, WrappingShr, WrappingSub, Zero, //ConstZero
 };
 
 use crate::cast::CastFrom;
@@ -65,7 +64,7 @@ use crate::int::numtraits::num_trait_impl;
 
 macro_rules! numtraits {
     ($BUint: ident, $BInt: ident, $Digit: ident) => {
-        crate::int::numtraits::impls!($BUint, $BUint, $BInt);
+        crate::int::numtraits::impls!($BUint, $BUint, $BInt, $Digit);
 
         macro_rules! from_float {
             ($method: ident, $float: ty, $decoder: ident, $mant_bits: ident) => {
@@ -97,7 +96,6 @@ macro_rules! numtraits {
             };
         }
 
-        //impl_const! {
         impl<const N: usize> FromPrimitive for $BUint<N> {
             #[inline]
             fn from_u64(int: u64) -> Option<Self> {
@@ -153,12 +151,11 @@ macro_rules! numtraits {
                 }
             }
 
+            // TODO: replace this with code from the cast/float module
             from_float!(from_f32, f32, decode_f32, u32_bits);
             from_float!(from_f64, f64, decode_f64, u64_bits);
         }
-        //}
 
-        //impl_const! {
         impl<const N: usize> Integer for $BUint<N> {
             #[inline]
             fn div_floor(&self, other: &Self) -> Self {
@@ -243,9 +240,7 @@ macro_rules! numtraits {
                 Self::div_rem(*self, *rhs)
             }
         }
-        //}
 
-        //impl_const! {
         impl<const N: usize> PrimInt for $BUint<N> {
             crate::int::numtraits::prim_int_methods!();
 
@@ -269,7 +264,6 @@ macro_rules! numtraits {
                 self >> n
             }
         }
-        //}
 
         macro_rules! check_zero_or_one {
             ($self: ident) => {
@@ -395,7 +389,6 @@ macro_rules! numtraits {
             }
         }
 
-        //impl_const! {
         impl<const N: usize> ToPrimitive for $BUint<N> {
             to_int! {
                 $Digit;
@@ -424,20 +417,16 @@ macro_rules! numtraits {
                 Some(self.as_())
             }
         }
-        //}
 
         impl<const N: usize> Unsigned for $BUint<N> {}
-
-        #[cfg(test)]
-        paste::paste! {
-            mod [<$Digit _digit_tests>] {
-                use crate::test::types::big_types::$Digit::*;
-                use crate::test::types::utest;
-
-                crate::int::numtraits::tests!(utest);
-            }
-        }
     };
+}
+
+#[cfg(test)]
+crate::test::all_digit_tests! {
+    use crate::test::types::utest;
+    
+    crate::int::numtraits::tests!(utest);
 }
 
 crate::macro_impl!(numtraits);

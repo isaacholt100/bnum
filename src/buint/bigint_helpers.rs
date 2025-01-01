@@ -57,34 +57,29 @@ macro_rules! bigint_helpers {
                 }
             }
         }
-
-        #[cfg(test)]
-        paste::paste! {
-            mod [<$Digit _digit_tests>] {
-                // use crate::test::{test_bignum, types::*};
-                use crate::test::types::big_types::$Digit::*;
-
-                type U64 = crate::$BUint::<{64 / $Digit::BITS as usize}>;
-
-                crate::int::bigint_helpers::tests!(utest);
-
-                test_bignum! {
-                    function: <u64>::widening_mul(a: u64, b: u64),
-                    cases: [
-                        (u64::MAX, u64::MAX)
-                    ]
-                }
-
-                test_bignum! {
-                    function: <u64>::carrying_mul(a: u64, b: u64, c: u64),
-                    cases: [
-                        (u64::MAX, u64::MAX, u64::MAX),
-                        (u64::MAX, u64::MAX, 1u64)
-                    ]
-                }
-            }
-        }
     };
+}
+
+#[cfg(test)]
+crate::test::all_digit_tests! {
+    crate::int::bigint_helpers::tests!(utest);
+
+    #[cfg(test_int_bits = "64")]
+    test_bignum! {
+        function: <utest>::widening_mul(a: utest, b: utest),
+        cases: [
+            (utest::MAX, utest::MAX)
+        ]
+    }
+
+    #[cfg(test_int_bits = "64")]
+    test_bignum! {
+        function: <utest>::carrying_mul(a: utest, b: utest, c: utest),
+        cases: [
+            (utest::MAX, utest::MAX, utest::MAX),
+            (utest::MAX, utest::MAX, 1 as utest)
+        ]
+    }
 }
 
 crate::macro_impl!(bigint_helpers);

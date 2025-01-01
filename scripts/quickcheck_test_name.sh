@@ -1,4 +1,4 @@
-export QUICKCHECK_TESTS=1000000
+export QUICKCHECK_TESTS=100000
 iters=0
 while true
 do

@@ -14,21 +14,17 @@ macro_rules! strict {
                 )
             }
         }
-        
-        #[cfg(test)]
-        paste::paste! {
-            mod [<$Digit _digit_tests>] {
-                use crate::test::types::big_types::$Digit::*;
-
-                crate::int::strict::tests!(utest);
-
-                test_bignum! {
-                    function: <utest>::strict_add_signed(a: utest, b: itest),
-                    skip: a.checked_add_signed(b).is_none()
-                }
-            }
-        }
     };
+}
+
+#[cfg(test)]
+crate::test::all_digit_tests! {
+    crate::int::strict::tests!(utest);
+
+    test_bignum! {
+        function: <utest>::strict_add_signed(a: utest, b: itest),
+        skip: a.checked_add_signed(b).is_none()
+    }
 }
 
 use crate::doc;

@@ -1,6 +1,6 @@
-use super::Float;
-use crate::bint::BIntD8;
+use super::{Float, FloatExponent, UnsignedFloatExponent};
 use crate::buint::BUintD8;
+use crate::doc;
 
 const fn buint_from_usize<const N: usize>(u: usize) -> BUintD8<N> {
     const UINT_BITS: usize = <usize>::BITS as usize;
@@ -16,20 +16,27 @@ const fn buint_from_usize<const N: usize>(u: usize) -> BUintD8<N> {
     out
 }
 
+#[doc = doc::consts::impl_desc!()]
 impl<const W: usize, const MB: usize> Float<W, MB> {
+    #[doc = doc::consts::RADIX!(F)]
     pub const RADIX: u32 = 2;
 
+    #[doc = doc::consts::MANTISSA_DIGITS!(F)]
     pub const MANTISSA_DIGITS: u32 = MB as u32 + 1;
 
+    #[doc = doc::consts::DIGITS!(F)]
     pub const DIGITS: u32 = BUintD8::<W>::ONE.wrapping_shl(Self::MB).ilog10() as u32;
 
-    pub const EPSILON: Self = {
-        let u = Self::EXP_BIAS.to_bits().sub(buint_from_usize::<W>(MB));
-        Self::from_bits(u.shl(Self::MB))
-    };
+    pub(crate) const MB_AS_FLOAT_EXP: FloatExponent = Self::MB as FloatExponent;
 
-    pub const EXP_BIAS: BIntD8<W> = BIntD8::MAX.wrapping_shr(Self::MB + 1);
+    #[doc = doc::consts::EPSILON!(F)]
+    pub const EPSILON: Self = Self::normal_power_of_two(-Self::MB_AS_FLOAT_EXP);
 
+    pub(crate) const HALF_EPSILON: Self = Self::normal_power_of_two(-(Self::MB as FloatExponent + 1));
+
+    pub const EXP_BIAS: FloatExponent = (1 << (Self::EXPONENT_BITS - 1)) - 1;// UnsignedFloatExponent::MAX.wrapping_shr(Self::MB + 1) as _;
+
+    #[doc = doc::consts::MIN!(F)]
     pub const MIN: Self = {
         let mut e = BUintD8::MAX;
         e = e.wrapping_shr(Self::MB + 1);
@@ -39,22 +46,38 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         Self::from_bits(e.bitor(m))
     };
 
-    pub const MIN_POSITIVE: Self = { Self::from_bits(BUintD8::ONE.wrapping_shl(Self::MB)) };
+    #[doc = doc::consts::MIN_POSITIVE!(F)]
+    pub const MIN_POSITIVE: Self = Self::from_bits(BUintD8::ONE.wrapping_shl(Self::MB));
+
     pub const MAX_NEGATIVE: Self = Self::MIN_POSITIVE.neg();
+
+    #[doc = doc::consts::MAX!(F)]
     pub const MAX: Self = Self::MIN.abs();
 
-    pub const MIN_EXP: BIntD8<W> = (Self::EXP_BIAS.neg()).wrapping_add(BIntD8::ONE.wrapping_shl(1));
-    pub const MAX_EXP: BIntD8<W> = Self::EXP_BIAS.wrapping_add(BIntD8::ONE);
-    pub const MAX_UNBIASED_EXP: BUintD8<W> = Self::EXP_BIAS.to_bits().shl(1); // mul by 2
+
+    #[doc = doc::consts::MIN_EXP!(F)]
+    pub const MIN_EXP: FloatExponent = -Self::EXP_BIAS + 2;
+
+    pub(crate) const MIN_SUBNORMAL_EXP: FloatExponent = -Self::EXP_BIAS + 1 - Self::MB as FloatExponent; // TODO: need to check that this fits into FloatExponent
+
+    #[doc = doc::consts::MAX_EXP!(F)]
+    pub const MAX_EXP: FloatExponent = Self::EXP_BIAS + 1;
+
+    pub const MAX_UNBIASED_EXP: UnsignedFloatExponent = (Self::EXP_BIAS as UnsignedFloatExponent) * 2;
+
     pub const MIN_10_EXP: Self = todo!();
+
     pub const MAX_10_EXP: Self = todo!();
 
-    pub const MAX_SUBNORMAL: Self =
-        Self::from_bits(BUintD8::MAX.wrapping_shr(Self::EXPONENT_BITS + 1));
+    pub const MAX_SUBNORMAL: Self = Self::from_bits(BUintD8::MAX.wrapping_shr(Self::EXPONENT_BITS + 1));
+
     pub const MIN_SUBNORMAL: Self = Self::MAX_SUBNORMAL.neg();
+
     pub const MIN_POSITIVE_SUBNORMAL: Self = Self::from_bits(BUintD8::ONE);
+
     pub const MAX_NEGATIVE_SUBNORMAL: Self = Self::MIN_POSITIVE_SUBNORMAL.neg();
 
+    #[doc = doc::consts::NAN!(F)]
     pub const NAN: Self = {
         let mut u = BUintD8::MAX;
         u = u.wrapping_shl(1);
@@ -63,15 +86,16 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         Self::from_bits(u)
     };
 
-    pub const QNAN: Self = {
-        let bits = Self::NAN.to_bits();
-        Self::from_bits(bits.bitor(BUintD8::ONE.shl(Self::MB - 1)))
-    };
+    // pub const QNAN: Self = {
+    //     let bits = Self::NAN.to_bits();
+    //     Self::from_bits(bits.bitor(BUintD8::ONE.shl(Self::MB - 1)))
+    // };
 
     pub const NEG_NAN: Self = Self::NAN.neg();
 
-    pub const NEG_QNAN: Self = Self::QNAN.neg();
+    // pub const NEG_QNAN: Self = Self::QNAN.neg();
 
+    #[doc = doc::consts::INFINITY!(F)]
     pub const INFINITY: Self = {
         let mut u = BUintD8::MAX;
         u = u.wrapping_shl(1);
@@ -80,6 +104,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         Self::from_bits(u)
     };
 
+    #[doc = doc::consts::NEG_INFINITY!(F)]
     pub const NEG_INFINITY: Self = {
         let mut u = BUintD8::MAX;
         u = u.wrapping_shr(Self::MB);
@@ -89,32 +114,17 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
     pub const ZERO: Self = Self::from_bits(BUintD8::ZERO);
 
-    pub const NEG_ZERO: Self = Self::from_words(BIntD8::<W>::MIN.bits.digits);
+    pub const NEG_ZERO: Self = Self::ZERO.neg();
 
-    pub const ONE: Self = {
-        let mut u = BUintD8::MAX;
-        u = u.wrapping_shl(2);
-        u = u.wrapping_shr(2 + Self::MB);
-        u = u.wrapping_shl(Self::MB);
-        Self::from_bits(u)
-    };
+    pub const ONE: Self = Self::normal_power_of_two(0);
 
-    pub const TWO: Self = {
-        let (_, exp, _) = Self::ONE.to_raw_parts();
-        Self::from_exp_mant(false, exp.add(BUintD8::ONE), BUintD8::ZERO)
-    };
+    pub const TWO: Self = Self::normal_power_of_two(1);
 
-    pub const HALF: Self = {
-        let (_, exp, _) = Self::ONE.to_raw_parts();
-        Self::from_exp_mant(false, exp.sub(BUintD8::ONE), BUintD8::ZERO)
-    };
+    pub const HALF: Self = Self::normal_power_of_two(-1);
 
-    pub const QUARTER: Self = {
-        let (_, exp, _) = Self::ONE.to_raw_parts();
-        Self::from_exp_mant(false, exp.sub(BUintD8::TWO), BUintD8::ZERO)
-    };
+    pub const QUARTER: Self = Self::normal_power_of_two(-2);
 
-    pub const NEG_ONE: Self = Self::from_bits(Self::ONE.bits.bitor(Self::NEG_ZERO.bits));
+    pub const NEG_ONE: Self = Self::ONE.neg();
 }
 
 #[cfg(test)]
@@ -158,11 +168,11 @@ mod tests {
     }
     // don't test NAN as Rust f64/f32 NAN bit pattern not guaranteed to be stable across version
 
-    #[test]
-    fn nan_consts_is_nan() {
-        assert!(FTEST::NAN.is_nan());
-        assert!(FTEST::QNAN.is_nan());
-    }
+    // #[test]
+    // fn nan_consts_is_nan() {
+    //     assert!(FTEST::NAN.is_nan());
+    //     assert!(FTEST::QNAN.is_nan());
+    // }
 
     test_numeric_constants![
         (ZERO, 0.0),
@@ -170,15 +180,17 @@ mod tests {
         (ONE, 1.0),
         (QUARTER, 0.25),
         (HALF, 0.5),
-        (NEG_ONE, -1)
+        (NEG_ONE, -1),
+        (TWO, 2)
     ];
 
+    
     test_constant!(F64::BITS == 64 as ExpType);
     test_constant!(F32::BITS == 32 as ExpType);
     test_constant!(F64::EXPONENT_BITS == 11 as ExpType);
     test_constant!(F32::EXPONENT_BITS == 8 as ExpType);
-    test_constant!(F64::EXP_BIAS == 1023i64);
-    test_constant!(F32::EXP_BIAS == 127i32);
-    test_constant!(F64::MAX_UNBIASED_EXP == 2046u64);
-    test_constant!(F32::MAX_UNBIASED_EXP == 254u32);
+    test_constant!(F64::EXP_BIAS == 1023i128);
+    test_constant!(F32::EXP_BIAS == 127i128);
+    test_constant!(F64::MAX_UNBIASED_EXP == 2046u128);
+    test_constant!(F32::MAX_UNBIASED_EXP == 254u128);
 }

@@ -169,7 +169,7 @@ macro_rules! endian {
             #[doc = doc::requires_feature!("nightly")]
             #[must_use = doc::must_use_op!()]
             #[inline]
-            pub const fn to_be_bytes(self) -> [u8; N * digit::$Digit::BYTES as usize] {
+            pub const fn to_be_bytes(self) -> [u8; $BUint::<N>::BYTES_USIZE] {
                 self.bits.to_be_bytes()
             }
 
@@ -178,7 +178,7 @@ macro_rules! endian {
             #[doc = doc::requires_feature!("nightly")]
             #[must_use = doc::must_use_op!()]
             #[inline]
-            pub const fn to_le_bytes(self) -> [u8; N * digit::$Digit::BYTES as usize] {
+            pub const fn to_le_bytes(self) -> [u8; $BUint::<N>::BYTES_USIZE] {
                 self.bits.to_le_bytes()
             }
 
@@ -187,7 +187,7 @@ macro_rules! endian {
             #[doc = doc::requires_feature!("nightly")]
             #[must_use = doc::must_use_op!()]
             #[inline]
-            pub const fn to_ne_bytes(self) -> [u8; N * digit::$Digit::BYTES as usize] {
+            pub const fn to_ne_bytes(self) -> [u8; $BUint::<N>::BYTES_USIZE] {
                 self.bits.to_ne_bytes()
             }
 
@@ -196,7 +196,7 @@ macro_rules! endian {
             #[doc = doc::requires_feature!("nightly")]
             #[must_use]
             #[inline]
-            pub const fn from_be_bytes(bytes: [u8; N * digit::$Digit::BYTES as usize]) -> Self {
+            pub const fn from_be_bytes(bytes: [u8; $BUint::<N>::BYTES_USIZE]) -> Self {
                 Self::from_bits($BUint::from_be_bytes(bytes))
             }
 
@@ -205,7 +205,7 @@ macro_rules! endian {
             #[doc = doc::requires_feature!("nightly")]
             #[must_use]
             #[inline]
-            pub const fn from_le_bytes(bytes: [u8; N * digit::$Digit::BYTES as usize]) -> Self {
+            pub const fn from_le_bytes(bytes: [u8; $BUint::<N>::BYTES_USIZE]) -> Self {
                 Self::from_bits($BUint::from_le_bytes(bytes))
             }
 
@@ -214,22 +214,19 @@ macro_rules! endian {
             #[doc = doc::requires_feature!("nightly")]
             #[must_use]
             #[inline]
-            pub const fn from_ne_bytes(bytes: [u8; N * digit::$Digit::BYTES as usize]) -> Self {
+            pub const fn from_ne_bytes(bytes: [u8; $BUint::<N>::BYTES_USIZE]) -> Self {
                 Self::from_bits($BUint::from_ne_bytes(bytes))
             }
         }
-
-        #[cfg(test)]
-        paste::paste! {
-            mod [<$Digit _digit_tests>] {
-                use crate::test::types::big_types::$Digit::*;
-                use crate::test::test_bignum;
-                use crate::test::types::itest;
-
-                crate::int::endian::tests!($Digit; itest);
-            }
-        }
     };
+}
+
+#[cfg(test)]
+crate::test::all_digit_tests! {
+    use crate::test::test_bignum;
+    use crate::test::types::itest;
+
+    crate::int::endian::tests!(itest);
 }
 
 crate::macro_impl!(endian);

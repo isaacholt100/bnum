@@ -6,7 +6,7 @@ macro_rules! impl_desc {
 
 pub(crate) use impl_desc;
 
-crate::doc::link_doc_comment!(
+crate::doc::link_doc_comment_method!(
     wrapping_abs,
     wrapping_add,
     wrapping_add_signed,
@@ -27,7 +27,7 @@ crate::doc::link_doc_comment!(
 macro_rules! wrapping_next_power_of_two {
     ($sign: ident $bits: literal) => {
         doc::doc_comment! {
-            #wrapping_next_power_of_two,
+            #method.wrapping_next_power_of_two,
             $sign $bits,
             concat!("Returns the smallest power of two greater than or equal to `self`. If the next power of two is greater than `Self::MAX`, the return value is wrapped to `Self::MIN`."),
 

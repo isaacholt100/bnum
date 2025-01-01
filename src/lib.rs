@@ -5,7 +5,6 @@
         generic_const_exprs,
         const_trait_impl,
         const_option,
-        // effects,
     )
 )]
 #![cfg_attr(
@@ -18,7 +17,7 @@
         float_next_up_down,
         unchecked_shifts,
         integer_sign_cast,
-        num_midpoint,
+        num_midpoint_signed,
         strict_overflow_ops,
     )
 )]
@@ -37,6 +36,7 @@ mod digit;
 mod doc;
 pub mod errors;
 mod int;
+mod helpers;
 mod nightly;
 pub mod prelude;
 
@@ -45,10 +45,10 @@ pub mod random;
 
 pub mod types;
 
-// #[cfg(feature = "nightly")]
+// #[cfg(feature = "float")]
 // mod float;
 
-// #[cfg(feature = "nightly")]
+// #[cfg(feature = "float")]
 // pub use float::Float;
 
 #[cfg(test)]
@@ -68,6 +68,7 @@ pub use bigints::*;
 
 macro_rules! macro_impl {
     ($name: ident) => {
+        #[allow(unused_imports)]
         use crate::bigints::*;
 
         crate::main_impl!($name);
