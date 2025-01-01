@@ -110,7 +110,7 @@ pub fn le_pad(pad_length: usize, bits: u32) -> (usize, Range<usize>, Range<usize
 
 #[cfg(test)]
 macro_rules! tests {
-    ($Digit: ident; $int: ty) => {
+    ($int: ty) => {
         #[cfg(feature = "nightly")]
         use crate::test::U8ArrayWrapper;
 

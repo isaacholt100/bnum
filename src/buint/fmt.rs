@@ -104,15 +104,12 @@ macro_rules! fmt {
         impl<const N: usize> UpperHex for $BUint<N> {
             fmt_method!("{:X}", "{:01$X}", digit::$Digit::HEX_PADDING, "0x");
         }
-
-        #[cfg(test)]
-        paste::paste! {
-            mod [<$Digit _digit_tests>] {
-                use crate::test::types::big_types::$Digit::*;
-                crate::int::fmt::tests!(utest);
-            }
-        }
     };
+}
+
+#[cfg(test)]
+crate::test::all_digit_tests! {
+    crate::int::fmt::tests!(utest);
 }
 
 crate::macro_impl!(fmt);

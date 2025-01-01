@@ -187,99 +187,98 @@ macro_rules! checked {
             checked_ilog!(checked_ilog2);
             checked_ilog!(checked_ilog10);
         }
-
-        #[cfg(test)]
-        paste::paste! {
-            mod [<$Digit _digit_tests>] {
-                use crate::test::types::big_types::$Digit::*;
-                use crate::test::{test_bignum, types::*};
-
-                test_bignum! {
-                    function: <itest>::checked_add(a: itest, b: itest),
-                    cases: [
-                        (itest::MAX, -1i8)
-                    ]
-                }
-                test_bignum! {
-                    function: <itest>::checked_add_unsigned(a: itest, b: utest)
-                }
-                test_bignum! {
-                    function: <itest>::checked_sub(a: itest, b: itest),
-                    cases: [
-                        (itest::MIN, -1i8)
-                    ]
-                }
-                test_bignum! {
-                    function: <itest>::checked_sub_unsigned(a: itest, b: utest)
-                }
-                test_bignum! {
-                    function: <itest>::checked_mul(a: itest, b: itest),
-                    cases: [
-                        (itest::MIN, -1i8)
-                    ]
-                }
-                test_bignum! {
-                    function: <itest>::checked_div(a: itest, b: itest),
-                    cases: [
-                        (0, 0),
-                        (23098403i32 as itest, 0i8),
-                        (itest::MIN, -1i8),
-                        (8388600i32 as itest, 68201i32 as itest) // tests the unlikely condition in the division algorithm at step D5
-                    ]
-                }
-                test_bignum! {
-                    function: <itest>::checked_div_euclid(a: itest, b: itest),
-                    cases: [
-                        (itest::MIN, -1i8),
-                        (0, 0)
-                    ]
-                }
-                test_bignum! {
-                    function: <itest>::checked_rem(a: itest, b: itest),
-                    cases: [
-                        (itest::MIN, -1i8),
-                        (0, 0)
-                    ]
-                }
-                test_bignum! {
-                    function: <itest>::checked_rem_euclid(a: itest, b: itest),
-                    skip: b <= u8::MAX as itest,
-                    cases: [
-                        (itest::MIN, -1i8),
-                        (0, 0)
-                    ]
-                }
-                test_bignum! {
-                    function: <itest>::checked_neg(a: itest),
-                    cases: [
-                        (itest::MIN)
-                    ]
-                }
-                test_bignum! {
-                    function: <itest>::checked_shl(a: itest, b: u16)
-                }
-                test_bignum! {
-                    function: <itest>::checked_shr(a: itest, b: u16)
-                }
-                test_bignum! {
-                    function: <itest>::checked_pow(a: itest, b: u16),
-                    cases: [
-                        (2, itest::BITS as u16 - 1),
-                        (-2, itest::BITS as u16 - 1)
-                    ]
-                }
-                test_bignum! {
-                    function: <itest>::checked_ilog2(a: itest)
-                }
-                test_bignum! {
-                    function: <itest>::checked_ilog10(a: itest)
-                }
-                test_bignum! {
-                    function: <itest>::checked_ilog(a: itest, b: itest)
-                }
-            }
-        }
     };
+}
+
+
+#[cfg(test)]
+crate::test::all_digit_tests! {
+    use crate::test::test_bignum;
+    use crate::test::types::{itest, utest};
+
+    test_bignum! {
+        function: <itest>::checked_add(a: itest, b: itest),
+        cases: [
+            (itest::MAX, -1i8)
+        ]
+    }
+    test_bignum! {
+        function: <itest>::checked_add_unsigned(a: itest, b: utest)
+    }
+    test_bignum! {
+        function: <itest>::checked_sub(a: itest, b: itest),
+        cases: [
+            (itest::MIN, -1i8)
+        ]
+    }
+    test_bignum! {
+        function: <itest>::checked_sub_unsigned(a: itest, b: utest)
+    }
+    test_bignum! {
+        function: <itest>::checked_mul(a: itest, b: itest),
+        cases: [
+            (itest::MIN, -1i8)
+        ]
+    }
+    test_bignum! {
+        function: <itest>::checked_div(a: itest, b: itest),
+        cases: [
+            (0i8, 0i8),
+            (23098403i32 as itest, 0i8),
+            (itest::MIN, -1i8),
+            (8388600i32 as itest, 68201i32 as itest) // tests the unlikely condition in the division algorithm at step D5
+        ]
+    }
+    test_bignum! {
+        function: <itest>::checked_div_euclid(a: itest, b: itest),
+        cases: [
+            (itest::MIN, -1i8),
+            (0i8, 0i8)
+        ]
+    }
+    test_bignum! {
+        function: <itest>::checked_rem(a: itest, b: itest),
+        cases: [
+            (itest::MIN, -1i8),
+            (0i8, 0i8)
+        ]
+    }
+    test_bignum! {
+        function: <itest>::checked_rem_euclid(a: itest, b: itest),
+        skip: b <= u8::MAX as itest,
+        cases: [
+            (itest::MIN, -1i8),
+            (0i8, 0i8)
+        ]
+    }
+    test_bignum! {
+        function: <itest>::checked_neg(a: itest),
+        cases: [
+            (itest::MIN)
+        ]
+    }
+    test_bignum! {
+        function: <itest>::checked_shl(a: itest, b: u16)
+    }
+    test_bignum! {
+        function: <itest>::checked_shr(a: itest, b: u16)
+    }
+    test_bignum! {
+        function: <itest>::checked_pow(a: itest, b: u16),
+        cases: [
+            (2i8, itest::BITS as u16 - 1),
+            (-2i8, itest::BITS as u16 - 1)
+        ]
+    }
+    test_bignum! {
+        function: <itest>::checked_ilog2(a: itest)
+    }
+    test_bignum! {
+        function: <itest>::checked_ilog10(a: itest)
+    }
+    test_bignum! {
+        function: <itest>::checked_ilog(a: itest, b: itest)
+    }
 }
 
 crate::macro_impl!(checked);

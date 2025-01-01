@@ -267,78 +267,75 @@ macro_rules! checked {
                 Some(Self::power_of_two(bits))
             }
         }
-
-        #[cfg(test)]
-        paste::paste! {
-            mod [<$Digit _digit_tests>] {
-                use crate::test::types::big_types::$Digit::*;
-                use crate::test::{test_bignum, types::*};
-
-                test_bignum! {
-                    function: <utest>::checked_add(a: utest, b: utest),
-                    cases: [
-                        (utest::MAX, 1u8)
-                    ]
-                }
-                test_bignum! {
-                    function: <utest>::checked_add_signed(a: utest, b: itest)
-                }
-                test_bignum! {
-                    function: <utest>::checked_sub(a: utest, b: utest)
-                }
-                test_bignum! {
-                    function: <utest>::checked_mul(a: utest, b: utest)
-                }
-                test_bignum! {
-                    function: <utest>::checked_div(a: utest, b: utest),
-                    cases: [
-                        (328622u32 as utest, 10000u32 as utest), // tests the unlikely condition in the division algorithm at step D5
-                        (2074086u32 as utest, 76819u32 as utest) // tests the unlikely condition in the division algorithm at step D5
-                    ]
-                }
-                test_bignum! {
-                    function: <utest>::checked_div_euclid(a: utest, b: utest)
-                }
-                test_bignum! {
-                    function: <utest>::checked_rem(a: utest, b: utest)
-                }
-                test_bignum! {
-                    function: <utest>::checked_rem_euclid(a: utest, b: utest)
-                }
-                test_bignum! {
-                    function: <utest>::checked_neg(a: utest)
-                }
-                test_bignum! {
-                    function: <utest>::checked_shl(a: utest, b: u16)
-                }
-                test_bignum! {
-                    function: <utest>::checked_shr(a: utest, b: u16)
-                }
-                test_bignum! {
-                    function: <utest>::checked_pow(a: utest, b: u16)
-                }
-                test_bignum! {
-                    function: <utest>::checked_ilog(a: utest, b: utest),
-                    cases: [
-                        (2u8, 60u8),
-                        (utest::MAX, 2u8)
-                    ]
-                }
-                test_bignum! {
-                    function: <utest>::checked_ilog2(a: utest)
-                }
-                test_bignum! {
-                    function: <utest>::checked_ilog10(a: utest)
-                }
-                test_bignum! {
-                    function: <utest>::checked_next_power_of_two(a: utest),
-                    cases: [
-                        (utest::MAX)
-                    ]
-                }
-            }
-        }
     };
+}
+
+#[cfg(test)]
+crate::test::all_digit_tests! {
+    use crate::test::{test_bignum, types::*};
+
+    test_bignum! {
+        function: <utest>::checked_add(a: utest, b: utest),
+        cases: [
+            (utest::MAX, 1u8)
+        ]
+    }
+    test_bignum! {
+        function: <utest>::checked_add_signed(a: utest, b: itest)
+    }
+    test_bignum! {
+        function: <utest>::checked_sub(a: utest, b: utest)
+    }
+    test_bignum! {
+        function: <utest>::checked_mul(a: utest, b: utest)
+    }
+    test_bignum! {
+        function: <utest>::checked_div(a: utest, b: utest),
+        cases: [
+            (328622u32 as utest, 10000u32 as utest), // tests the unlikely condition in the division algorithm at step D5
+            (2074086u32 as utest, 76819u32 as utest) // tests the unlikely condition in the division algorithm at step D5
+        ]
+    }
+    test_bignum! {
+        function: <utest>::checked_div_euclid(a: utest, b: utest)
+    }
+    test_bignum! {
+        function: <utest>::checked_rem(a: utest, b: utest)
+    }
+    test_bignum! {
+        function: <utest>::checked_rem_euclid(a: utest, b: utest)
+    }
+    test_bignum! {
+        function: <utest>::checked_neg(a: utest)
+    }
+    test_bignum! {
+        function: <utest>::checked_shl(a: utest, b: u16)
+    }
+    test_bignum! {
+        function: <utest>::checked_shr(a: utest, b: u16)
+    }
+    test_bignum! {
+        function: <utest>::checked_pow(a: utest, b: u16)
+    }
+    test_bignum! {
+        function: <utest>::checked_ilog(a: utest, b: utest),
+        cases: [
+            (2u8, 60u8),
+            (utest::MAX, 2u8)
+        ]
+    }
+    test_bignum! {
+        function: <utest>::checked_ilog2(a: utest)
+    }
+    test_bignum! {
+        function: <utest>::checked_ilog10(a: utest)
+    }
+    test_bignum! {
+        function: <utest>::checked_next_power_of_two(a: utest),
+        cases: [
+            (utest::MAX)
+        ]
+    }
 }
 
 crate::macro_impl!(checked);

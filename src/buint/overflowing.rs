@@ -148,53 +148,50 @@ macro_rules! overflowing {
                 (prod, o || overflow)
             }
         }
-
-        #[cfg(test)]
-        paste::paste! {
-            mod [<$Digit _digit_tests>] {
-                use crate::test::{test_bignum, types::utest};
-                use crate::test::types::big_types::$Digit::*;
-
-                test_bignum! {
-                    function: <utest>::overflowing_add(a: utest, b: utest)
-                }
-                test_bignum! {
-                    function: <utest>::overflowing_sub(a: utest, b: utest)
-                }
-                test_bignum! {
-                    function: <utest>::overflowing_mul(a: utest, b: utest)
-                }
-                test_bignum! {
-                    function: <utest>::overflowing_div(a: utest, b: utest),
-                    skip: b == 0
-                }
-                test_bignum! {
-                    function: <utest>::overflowing_div_euclid(a: utest, b: utest),
-                    skip: b == 0
-                }
-                test_bignum! {
-                    function: <utest>::overflowing_rem(a: utest, b: utest),
-                    skip: b == 0
-                }
-                test_bignum! {
-                    function: <utest>::overflowing_rem_euclid(a: utest, b: utest),
-                    skip: b == 0
-                }
-                test_bignum! {
-                    function: <utest>::overflowing_neg(a: utest)
-                }
-                test_bignum! {
-                    function: <utest>::overflowing_shl(a: utest, b: u16)
-                }
-                test_bignum! {
-                    function: <utest>::overflowing_shr(a: utest, b: u16)
-                }
-                test_bignum! {
-                    function: <utest>::overflowing_pow(a: utest, b: u16)
-                }
-            }
-        }
     };
+}
+
+#[cfg(test)]
+crate::test::all_digit_tests! {
+    use crate::test::{test_bignum, types::utest};
+
+    test_bignum! {
+        function: <utest>::overflowing_add(a: utest, b: utest)
+    }
+    test_bignum! {
+        function: <utest>::overflowing_sub(a: utest, b: utest)
+    }
+    test_bignum! {
+        function: <utest>::overflowing_mul(a: utest, b: utest)
+    }
+    test_bignum! {
+        function: <utest>::overflowing_div(a: utest, b: utest),
+        skip: b == 0
+    }
+    test_bignum! {
+        function: <utest>::overflowing_div_euclid(a: utest, b: utest),
+        skip: b == 0
+    }
+    test_bignum! {
+        function: <utest>::overflowing_rem(a: utest, b: utest),
+        skip: b == 0
+    }
+    test_bignum! {
+        function: <utest>::overflowing_rem_euclid(a: utest, b: utest),
+        skip: b == 0
+    }
+    test_bignum! {
+        function: <utest>::overflowing_neg(a: utest)
+    }
+    test_bignum! {
+        function: <utest>::overflowing_shl(a: utest, b: u16)
+    }
+    test_bignum! {
+        function: <utest>::overflowing_shr(a: utest, b: u16)
+    }
+    test_bignum! {
+        function: <utest>::overflowing_pow(a: utest, b: u16)
+    }
 }
 
 crate::macro_impl!(overflowing);

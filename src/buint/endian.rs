@@ -287,17 +287,14 @@ macro_rules! endian {
 
             pub(crate) const BYTES_USIZE: usize = N * digit::$Digit::BYTES as usize;
         }
-
-        #[cfg(test)]
-        paste::paste! {
-            mod [<$Digit _digit_tests>] {
-                use crate::test::types::big_types::$Digit::*;
-                use crate::test::{test_bignum, types::utest};
-
-                crate::int::endian::tests!($Digit; utest);
-            }
-        }
     };
+}
+
+#[cfg(test)]
+crate::test::all_digit_tests! {
+    use crate::test::{test_bignum, types::utest};
+
+    crate::int::endian::tests!(utest);
 }
 
 crate::macro_impl!(endian);

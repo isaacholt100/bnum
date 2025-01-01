@@ -103,69 +103,66 @@ macro_rules! wrapping {
                 Self::from_bits(self.bits.wrapping_pow(pow))
             }
         }
-
-        #[cfg(test)]
-        paste::paste! {
-            mod [<$Digit _digit_tests>] {
-                use crate::test::types::big_types::$Digit::*;
-                use crate::test::{test_bignum, types::{itest, utest}};
-
-                test_bignum! {
-                    function: <itest>::wrapping_add(a: itest, b: itest)
-                }
-                test_bignum! {
-                    function: <itest>::wrapping_add_unsigned(a: itest, b: utest)
-                }
-                test_bignum! {
-                    function: <itest>::wrapping_sub(a: itest, b: itest)
-                }
-                test_bignum! {
-                    function: <itest>::wrapping_sub_unsigned(a: itest, b: utest)
-                }
-                test_bignum! {
-                    function: <itest>::wrapping_mul(a: itest, b: itest)
-                }
-                test_bignum! {
-                    function: <itest>::wrapping_div(a: itest, b: itest),
-                    skip: b == 0
-                }
-                test_bignum! {
-                    function: <itest>::wrapping_div_euclid(a: itest, b: itest),
-                    skip: b == 0
-                }
-                test_bignum! {
-                    function: <itest>::wrapping_rem(a: itest, b: itest),
-                    skip: b == 0,
-                    cases: [
-                        (itest::MIN, -1i8),
-                        (185892231884832768i64 as itest, 92946115942416385i64 as itest)
-                    ]
-                }
-                test_bignum! {
-                    function: <itest>::wrapping_rem_euclid(a: itest, b: itest),
-                    skip: b == 0
-                }
-                test_bignum! {
-                    function: <itest>::wrapping_neg(a: itest),
-                    cases: [
-                        (itest::MIN)
-                    ]
-                }
-                test_bignum! {
-                    function: <itest>::wrapping_shl(a: itest, b: u16)
-                }
-                test_bignum! {
-                    function: <itest>::wrapping_shr(a: itest, b: u16)
-                }
-                test_bignum! {
-                    function: <itest>::wrapping_abs(a: itest)
-                }
-                test_bignum! {
-                    function: <itest>::wrapping_pow(a: itest, b: u16)
-                }
-            }
-        }
     };
+}
+
+#[cfg(test)]
+crate::test::all_digit_tests! {
+    use crate::test::{test_bignum, types::{itest, utest}};
+
+    test_bignum! {
+        function: <itest>::wrapping_add(a: itest, b: itest)
+    }
+    test_bignum! {
+        function: <itest>::wrapping_add_unsigned(a: itest, b: utest)
+    }
+    test_bignum! {
+        function: <itest>::wrapping_sub(a: itest, b: itest)
+    }
+    test_bignum! {
+        function: <itest>::wrapping_sub_unsigned(a: itest, b: utest)
+    }
+    test_bignum! {
+        function: <itest>::wrapping_mul(a: itest, b: itest)
+    }
+    test_bignum! {
+        function: <itest>::wrapping_div(a: itest, b: itest),
+        skip: b == 0
+    }
+    test_bignum! {
+        function: <itest>::wrapping_div_euclid(a: itest, b: itest),
+        skip: b == 0
+    }
+    test_bignum! {
+        function: <itest>::wrapping_rem(a: itest, b: itest),
+        skip: b == 0,
+        cases: [
+            (itest::MIN, -1i8),
+            (185892231884832768i64 as itest, 92946115942416385i64 as itest)
+        ]
+    }
+    test_bignum! {
+        function: <itest>::wrapping_rem_euclid(a: itest, b: itest),
+        skip: b == 0
+    }
+    test_bignum! {
+        function: <itest>::wrapping_neg(a: itest),
+        cases: [
+            (itest::MIN)
+        ]
+    }
+    test_bignum! {
+        function: <itest>::wrapping_shl(a: itest, b: u16)
+    }
+    test_bignum! {
+        function: <itest>::wrapping_shr(a: itest, b: u16)
+    }
+    test_bignum! {
+        function: <itest>::wrapping_abs(a: itest)
+    }
+    test_bignum! {
+        function: <itest>::wrapping_pow(a: itest, b: u16)
+    }
 }
 
 crate::macro_impl!(wrapping);

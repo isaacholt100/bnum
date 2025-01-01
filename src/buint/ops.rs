@@ -101,14 +101,12 @@ macro_rules! ops {
 
         crate::int::ops::impls!($BUint, $BUint, $BInt);
 
-        #[cfg(test)]
+        #[cfg(all(test, test_int_bits = "64"))]
         paste::paste! {
-            mod [<$Digit _digit_tests>] {
+            mod [<$Digit _add_digit_test>] {
                 use super::*;
                 use crate::test::{test_bignum, types::utest};
                 use crate::test::types::big_types::$Digit::*;
-
-                crate::int::ops::tests!(utest);
 
                 quickcheck::quickcheck! {
                     fn add_digit(a: utest, b: $Digit) -> quickcheck::TestResult {
@@ -128,6 +126,13 @@ macro_rules! ops {
             }
         }
     };
+}
+
+#[cfg(test)]
+crate::test::all_digit_tests! {
+    use crate::test::{test_bignum, types::utest};
+
+    crate::int::ops::tests!(utest);
 }
 
 crate::macro_impl!(ops);

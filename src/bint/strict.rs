@@ -34,28 +34,25 @@ macro_rules! strict {
                 )
             }
         }
-
-        #[cfg(test)]
-        paste::paste! {
-            mod [<$Digit _digit_tests>] {
-                use crate::test::types::big_types::$Digit::*;
-                crate::int::strict::tests!(itest);
-                
-                test_bignum! {
-                    function: <itest>::strict_abs(a: itest),
-                    skip: a.checked_abs().is_none()
-                }
-                test_bignum! {
-                    function: <itest>::strict_add_unsigned(a: itest, b: utest),
-                    skip: a.checked_add_unsigned(b).is_none()
-                }
-                test_bignum! {
-                    function: <itest>::strict_sub_unsigned(a: itest, b: utest),
-                    skip: a.checked_sub_unsigned(b).is_none()
-                }
-            }
-        }
     };
+}
+
+#[cfg(test)]
+crate::test::all_digit_tests! {
+    crate::int::strict::tests!(itest);
+                
+    test_bignum! {
+        function: <itest>::strict_abs(a: itest),
+        skip: a.checked_abs().is_none()
+    }
+    test_bignum! {
+        function: <itest>::strict_add_unsigned(a: itest, b: utest),
+        skip: a.checked_add_unsigned(b).is_none()
+    }
+    test_bignum! {
+        function: <itest>::strict_sub_unsigned(a: itest, b: utest),
+        skip: a.checked_sub_unsigned(b).is_none()
+    }
 }
 
 use crate::doc;

@@ -419,17 +419,14 @@ macro_rules! numtraits {
         }
 
         impl<const N: usize> Unsigned for $BUint<N> {}
-
-        #[cfg(test)]
-        paste::paste! {
-            mod [<$Digit _digit_tests>] {
-                use crate::test::types::big_types::$Digit::*;
-                use crate::test::types::utest;
-
-                crate::int::numtraits::tests!(utest);
-            }
-        }
     };
+}
+
+#[cfg(test)]
+crate::test::all_digit_tests! {
+    use crate::test::types::utest;
+    
+    crate::int::numtraits::tests!(utest);
 }
 
 crate::macro_impl!(numtraits);

@@ -384,6 +384,9 @@ pub(crate) use impls;
 #[cfg(test)]
 macro_rules! tests {
     ($int: ty) => {
+        #[allow(unused_imports)]
+        use super::*;
+
         test_bignum! {
             function: <$int as Add>::add(a: $int, b: $int),
             skip: a.checked_add(b).is_none()

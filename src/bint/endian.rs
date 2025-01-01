@@ -218,18 +218,15 @@ macro_rules! endian {
                 Self::from_bits($BUint::from_ne_bytes(bytes))
             }
         }
-
-        #[cfg(test)]
-        paste::paste! {
-            mod [<$Digit _digit_tests>] {
-                use crate::test::types::big_types::$Digit::*;
-                use crate::test::test_bignum;
-                use crate::test::types::itest;
-
-                crate::int::endian::tests!($Digit; itest);
-            }
-        }
     };
+}
+
+#[cfg(test)]
+crate::test::all_digit_tests! {
+    use crate::test::test_bignum;
+    use crate::test::types::itest;
+
+    crate::int::endian::tests!(itest);
 }
 
 crate::macro_impl!(endian);

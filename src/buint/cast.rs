@@ -90,28 +90,28 @@ use crate::cast::float::{FloatMantissa, CastUintFromFloatHelper, CastFloatFromUi
 
 macro_rules! cast {
     ($BUint: ident, $BInt: ident, $Digit: ident) => {
-        #[cfg(feature = "float")]
-        impl<const N: usize> FloatMantissa for $BUint<N> {
-            const ZERO: Self = Self::ZERO;
-            const ONE: Self = Self::ONE;
-            const TWO: Self = Self::TWO;
-            const MAX: Self = Self::MAX;
+        // #[cfg(feature = "float")]
+        // impl<const N: usize> FloatMantissa for $BUint<N> {
+        //     const ZERO: Self = Self::ZERO;
+        //     const ONE: Self = Self::ONE;
+        //     const TWO: Self = Self::TWO;
+        //     const MAX: Self = Self::MAX;
 
-            #[inline]
-            fn leading_zeros(self) -> ExpType {
-                Self::leading_zeros(self)
-            }
+        //     #[inline]
+        //     fn leading_zeros(self) -> ExpType {
+        //         Self::leading_zeros(self)
+        //     }
 
-            #[inline]
-            fn checked_shr(self, n: ExpType) -> Option<Self> {
-                Self::checked_shr(self, n)
-            }
+        //     #[inline]
+        //     fn checked_shr(self, n: ExpType) -> Option<Self> {
+        //         Self::checked_shr(self, n)
+        //     }
 
-            #[inline]
-            fn is_power_of_two(self) -> bool {
-                Self::is_power_of_two(self)
-            }
-        }
+        //     #[inline]
+        //     fn is_power_of_two(self) -> bool {
+        //         Self::is_power_of_two(self)
+        //     }
+        // }
 
         impl<const N: usize> CastUintFromFloatHelper for $BUint<N> {
             const MAX: Self = Self::MAX;
@@ -220,15 +220,12 @@ macro_rules! cast {
                 crate::cast::float::cast_uint_from_float(value)
             }
         }
-
-        #[cfg(test)]
-        paste::paste! {
-            mod [<$Digit _digit_tests>] {
-                use crate::test::types::big_types::$Digit::*;
-                crate::int::cast::tests!(utest);
-            }
-        }
     };
+}
+
+#[cfg(test)]
+crate::test::all_digit_tests! {
+    crate::int::cast::tests!(utest);
 }
 
 crate::macro_impl!(cast);

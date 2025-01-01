@@ -369,17 +369,14 @@ macro_rules! numtraits {
                 self.signed_digit().is_negative()
             }
         }
-
-        #[cfg(test)]
-        paste::paste! {
-            mod [<$Digit _digit_tests>] {
-                use crate::test::types::big_types::$Digit::*;
-                use crate::test::types::itest;
-
-                crate::int::numtraits::tests!(itest);
-            }
-        }
     };
+}
+
+#[cfg(test)]
+crate::test::all_digit_tests! {
+    use crate::test::types::itest;
+
+    crate::int::numtraits::tests!(itest);
 }
 
 crate::macro_impl!(numtraits);

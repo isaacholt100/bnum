@@ -36,10 +36,10 @@ pub mod big_types {
 #[cfg(test_int_bits = "16")]
 mod small_types {
     #[allow(non_camel_case_types)]
-    pub type utest = u64;
+    pub type utest = u16;
 
     #[allow(non_camel_case_types)]
-    pub type itest = i64;
+    pub type itest = i16;
 
     // #[cfg(feature = "float")]
     // #[allow(non_camel_case_types)]
@@ -49,10 +49,10 @@ mod small_types {
 #[cfg(test_int_bits = "32")]
 mod small_types {
     #[allow(non_camel_case_types)]
-    pub type utest = u64;
+    pub type utest = u32;
 
     #[allow(non_camel_case_types)]
-    pub type itest = i64;
+    pub type itest = i32;
 
     // #[cfg(feature = "float")]
     // #[allow(non_camel_case_types)]

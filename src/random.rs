@@ -324,25 +324,22 @@ macro_rules! random {
         uniform_int_impl!($BUint<N>, $BUint<N>);
 
         uniform_int_impl!($BInt<N>, $BUint<N>, to_bits, from_bits);
-
-        #[cfg(test)]
-        paste::paste! {
-            mod [<$Digit _digit_tests>] {
-                use crate::test::types::big_types::$Digit::*;
-                use crate::test::types::*;
-                use rand::SeedableRng;
-
-                fn seeded_rngs<R: SeedableRng + Clone>(seed: u64) -> (R, R) {
-                    let rng = R::seed_from_u64(seed);
-                    let rng2 = rng.clone(); // need to clone `rng` to produce the same results before it is used as `gen` mutates it
-                    (rng, rng2)
-                }
-
-                test_random!(utest; StdRng, SmallRng);
-                test_random!(itest; StdRng, SmallRng);
-            }
-        }
     };
+}
+
+#[cfg(test)]
+crate::test::all_digit_tests! {
+    use crate::test::types::*;
+    use rand::SeedableRng;
+
+    fn seeded_rngs<R: SeedableRng + Clone>(seed: u64) -> (R, R) {
+        let rng = R::seed_from_u64(seed);
+        let rng2 = rng.clone(); // need to clone `rng` to produce the same results before it is used as `gen` mutates it
+        (rng, rng2)
+    }
+
+    test_random!(utest; StdRng, SmallRng);
+    test_random!(itest; StdRng, SmallRng);
 }
 
 crate::macro_impl!(random);

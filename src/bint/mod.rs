@@ -413,100 +413,98 @@ macro_rules! mod_impl {
                 Self::from_bits(<$BUint::<N> as quickcheck::Arbitrary>::arbitrary(g))
             }
         }
-
-        #[cfg(test)]
-        paste::paste! {
-            mod [<$Digit _digit_tests>] {
-                use crate::test::{
-                    debug_skip, test_bignum,
-                    types::itest,
-                };
-                use crate::test::types::big_types::$Digit::*;
-
-                crate::int::tests!(itest);
-
-                test_bignum! {
-                    function: <itest>::unsigned_abs(a: itest),
-                    cases: [
-                        (itest::MIN),
-                        (0 as itest)
-                    ]
-                }
-                test_bignum! {
-                    function: <itest>::abs(a: itest),
-                    skip: debug_skip!(a == itest::MIN)
-                }
-                test_bignum! {
-                    function: <itest>::signum(a: itest)
-                }
-                test_bignum! {
-                    function: <itest>::is_positive(a: itest)
-                }
-                test_bignum! {
-                    function: <itest>::is_negative(a: itest)
-                }
-                test_bignum! {
-                    function: <itest>::cast_unsigned(a: itest)
-                }
-
-                #[test]
-                fn bit() {
-                    let i = ITEST::from(0b1001010100101010101i64);
-                    assert!(i.bit(2));
-                    assert!(!i.bit(3));
-                    assert!(i.bit(8));
-                    assert!(!i.bit(9));
-                    assert!(i.bit(i.bits() - 1));
-                }
-
-                #[test]
-                fn is_zero() {
-                    assert!(ITEST::ZERO.is_zero());
-                    assert!(!ITEST::MAX.is_zero());
-                    assert!(!ITEST::ONE.is_zero());
-                }
-
-                #[test]
-                fn is_one() {
-                    assert!(ITEST::ONE.is_one());
-                    assert!(!ITEST::MAX.is_one());
-                    assert!(!ITEST::ZERO.is_one());
-                }
-
-                #[test]
-                fn bits() {
-                    let u = ITEST::from(0b11101001010100101010101i32);
-                    assert_eq!(u.bits(), 23);
-                }
-
-                #[test]
-                fn default() {
-                    assert_eq!(ITEST::default(), itest::default().into());
-                }
-
-                #[test]
-                fn is_power_of_two() {
-                    assert!(!ITEST::from(-94956729465i64).is_power_of_two());
-                    assert!(!ITEST::from(79458945i32).is_power_of_two());
-                    assert!(ITEST::from(1i32 << 17).is_power_of_two());
-                }
-
-                #[test]
-                fn sum() {
-                    let v = vec![&ITEST::ZERO, &ITEST::ONE, &ITEST::TWO, &ITEST::THREE, &ITEST::FOUR];
-                    assert_eq!(ITEST::TEN, v.iter().copied().sum());
-                    assert_eq!(ITEST::TEN, v.into_iter().sum());
-                }
-
-                #[test]
-                fn product() {
-                    let v = vec![&ITEST::ONE, &ITEST::TWO, &ITEST::THREE];
-                    assert_eq!(ITEST::SIX, v.iter().copied().sum());
-                    assert_eq!(ITEST::SIX, v.into_iter().sum());
-                }
-            }
-        }
     };
+}
+
+#[cfg(test)]
+crate::test::all_digit_tests! {
+    use crate::test::{
+        debug_skip, test_bignum,
+        types::itest,
+    };
+    // use crate::test::types::big_types::$Digit::*;
+
+    crate::int::tests!(itest);
+
+    test_bignum! {
+        function: <itest>::unsigned_abs(a: itest),
+        cases: [
+            (itest::MIN),
+            (0 as itest)
+        ]
+    }
+    test_bignum! {
+        function: <itest>::abs(a: itest),
+        skip: debug_skip!(a == itest::MIN)
+    }
+    test_bignum! {
+        function: <itest>::signum(a: itest)
+    }
+    test_bignum! {
+        function: <itest>::is_positive(a: itest)
+    }
+    test_bignum! {
+        function: <itest>::is_negative(a: itest)
+    }
+    test_bignum! {
+        function: <itest>::cast_unsigned(a: itest)
+    }
+
+    #[test]
+    fn bit() {
+        let i = ITEST::from(0b10100101010101i16);
+        assert!(i.bit(2));
+        assert!(!i.bit(3));
+        assert!(i.bit(8));
+        assert!(!i.bit(9));
+        assert!(i.bit(i.bits() - 1));
+    }
+
+    #[test]
+    fn is_zero() {
+        assert!(ITEST::ZERO.is_zero());
+        assert!(!ITEST::MAX.is_zero());
+        assert!(!ITEST::ONE.is_zero());
+    }
+
+    #[test]
+    fn is_one() {
+        assert!(ITEST::ONE.is_one());
+        assert!(!ITEST::MAX.is_one());
+        assert!(!ITEST::ZERO.is_one());
+    }
+
+    #[test]
+    fn bits() {
+        let u = ITEST::from(0b10100101010101i16);
+        assert_eq!(u.bits(), 14);
+    }
+
+    #[test]
+    fn default() {
+        assert_eq!(ITEST::default(), itest::default().into());
+    }
+
+    #[test]
+    fn is_power_of_two() {
+        assert!(!ITEST::from(-1273i16).is_power_of_two());
+        assert!(!ITEST::from(8945i16).is_power_of_two());
+        assert!(ITEST::from(1i16 << 14).is_power_of_two());
+    }
+
+    #[test]
+    fn sum() {
+        let v = vec![&ITEST::ZERO, &ITEST::ONE, &ITEST::TWO, &ITEST::THREE, &ITEST::FOUR];
+        assert_eq!(ITEST::TEN, v.iter().copied().sum());
+        assert_eq!(ITEST::TEN, v.into_iter().sum());
+    }
+
+    #[test]
+    fn product() {
+        let v = vec![&ITEST::ONE, &ITEST::TWO, &ITEST::THREE];
+        assert_eq!(ITEST::SIX, v.iter().copied().sum());
+        assert_eq!(ITEST::SIX, v.into_iter().sum());
+    }
 }
 
 crate::macro_impl!(mod_impl);

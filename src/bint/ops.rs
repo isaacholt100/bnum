@@ -78,23 +78,18 @@ macro_rules! ops {
         }
 
         crate::int::ops::impls!($BInt, $BUint, $BInt);
-
-        #[cfg(test)]
-        paste::paste! {
-            mod [<$Digit _digit_tests>] {
-                use super::*;
-                use crate::test::{debug_skip, test_bignum, types::itest};
-                use crate::test::types::big_types::$Digit::*;
-
-                crate::int::ops::tests!(itest);
-
-                test_bignum! {
-                    function: <itest>::neg(a: itest),
-                    skip: debug_skip!(a == itest::MIN)
-                }
-            }
-        }
     };
+}
+
+#[cfg(test)]
+crate::test::all_digit_tests! {
+    use crate::test::{debug_skip, test_bignum, types::itest};
+    use core::ops::Neg;
+
+    test_bignum! {
+        function: <itest>::neg(a: itest),
+        skip: debug_skip!(a == itest::MIN)
+    }
 }
 
 crate::macro_impl!(ops);

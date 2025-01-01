@@ -120,53 +120,50 @@ macro_rules! saturating {
                 }
             }
         }
-
-        #[cfg(test)]
-        paste::paste! {
-            mod [<$Digit _digit_tests>] {
-                use crate::test::types::big_types::$Digit::*;
-                use crate::test::{test_bignum, types::*};
-
-                test_bignum! {
-                    function: <itest>::saturating_add(a: itest, b: itest)
-                }
-                test_bignum! {
-                    function: <itest>::saturating_add_unsigned(a: itest, b: utest)
-                }
-                test_bignum! {
-                    function: <itest>::saturating_sub(a: itest, b: itest)
-                }
-                test_bignum! {
-                    function: <itest>::saturating_sub_unsigned(a: itest, b: utest)
-                }
-                test_bignum! {
-                    function: <itest>::saturating_div(a: itest, b: itest),
-                    skip: b == 0,
-                    cases: [
-                        (itest::MIN, -1i8)
-                    ]
-                }
-                test_bignum! {
-                    function: <itest>::saturating_neg(a: itest),
-                    cases: [
-                        (itest::MIN)
-                    ]
-                }
-                test_bignum! {
-                    function: <itest>::saturating_abs(a: itest),
-                    cases: [
-                        (itest::MIN)
-                    ]
-                }
-                test_bignum! {
-                    function: <itest>::saturating_mul(a: itest, b: itest)
-                }
-                test_bignum! {
-                    function: <itest>::saturating_pow(a: itest, b: u16)
-                }
-            }
-        }
     };
+}
+
+#[cfg(test)]
+crate::test::all_digit_tests! {
+    use crate::test::{test_bignum, types::*};
+
+    test_bignum! {
+        function: <itest>::saturating_add(a: itest, b: itest)
+    }
+    test_bignum! {
+        function: <itest>::saturating_add_unsigned(a: itest, b: utest)
+    }
+    test_bignum! {
+        function: <itest>::saturating_sub(a: itest, b: itest)
+    }
+    test_bignum! {
+        function: <itest>::saturating_sub_unsigned(a: itest, b: utest)
+    }
+    test_bignum! {
+        function: <itest>::saturating_div(a: itest, b: itest),
+        skip: b == 0,
+        cases: [
+            (itest::MIN, -1i8)
+        ]
+    }
+    test_bignum! {
+        function: <itest>::saturating_neg(a: itest),
+        cases: [
+            (itest::MIN)
+        ]
+    }
+    test_bignum! {
+        function: <itest>::saturating_abs(a: itest),
+        cases: [
+            (itest::MIN)
+        ]
+    }
+    test_bignum! {
+        function: <itest>::saturating_mul(a: itest, b: itest)
+    }
+    test_bignum! {
+        function: <itest>::saturating_pow(a: itest, b: u16)
+    }
 }
 
 crate::macro_impl!(saturating);

@@ -4,15 +4,14 @@ macro_rules! bigint_helpers {
         impl<const N: usize> $BInt<N> {
             crate::int::bigint_helpers::impls!(I);
         }
-
-        #[cfg(test)]
-        paste::paste! {
-            mod [<$Digit _digit_tests>] {
-                use crate::test::types::big_types::$Digit::*;
-                crate::int::bigint_helpers::tests!(itest);
-            }
-        }
     };
+}
+
+#[cfg(test)]
+crate::test::all_digit_tests! {
+    use crate::test::types::itest;
+    
+    crate::int::bigint_helpers::tests!(itest);
 }
 
 use crate::doc;

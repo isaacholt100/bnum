@@ -18,7 +18,6 @@ exclude = ["src/float/*", "src/tests", "TODO.txt", "lit-parser/*"] # TODO: make 
 [features]
 default = []
 nightly = []
-float = []
 serde = ["dep:serde", "serde-big-array"]
 numtraits = ["num-integer", "num-traits"]
 
@@ -49,4 +48,4 @@ opt-level = 3 # maximum optimisation level for faster runtime, but slower compil
 all-features = true
 
 [lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(test_int_bits, values("8", "16", "32", "64", "128"))'] }
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(test_int_bits, values("16", "32", "64", "128"))'] }

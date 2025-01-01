@@ -31,7 +31,7 @@ macro_rules! test_bignum {
             fn [<cases_ $primitive _ $function>]() {
                 $(
                     let (big, primitive) = crate::test::results!(<$primitive> :: $function ($($($re2)? Into::into($arg)), *));
-                    assert_eq!(big, primitive);
+                    assert_eq!(big, primitive, "cases assertion with inputs {:?}", ($($arg), *));
                 )*
             }
         }
@@ -248,9 +248,8 @@ macro_rules! digit_tests {
     { use $Digit: ident digit; $($test_content: tt)* } => {
         paste::paste! {
             mod [<$Digit _digit_tests>] {
-                use crate::test::{test_bignum, types::*};
                 use crate::test::types::big_types::$Digit::*;
-
+                
                 $($test_content)*
             }
         }
@@ -263,13 +262,12 @@ macro_rules! all_digit_tests {
     { $($test_content: tt)* } => {
         crate::test::digit_tests! { use u8 digit; $($test_content)* }
 
-        #[cfg(not(test_int_bits = "8"))]
         crate::test::digit_tests! { use u16 digit; $($test_content)* }
 
-        #[cfg(not(any(test_int_bits = "8", test_int_bits = "16")))]
+        #[cfg(not(test_int_bits = "16"))]
         crate::test::digit_tests! { use u32 digit; $($test_content)* }
 
-        #[cfg(not(any(test_int_bits = "8", test_int_bits = "16", test_int_bits = "32")))]
+        #[cfg(not(any(test_int_bits = "16", test_int_bits = "32")))]
         crate::test::digit_tests! { use u64 digit; $($test_content)* }
     }
 }

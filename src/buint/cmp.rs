@@ -30,15 +30,12 @@ macro_rules! cmp {
                 Self::clamp(self, min, max)
             }
         }
-
-        #[cfg(test)]
-        paste::paste! {
-            mod [<$Digit _digit_tests>] {
-                use crate::test::types::big_types::$Digit::*;
-                crate::int::cmp::tests!(utest);
-            }
-        }
     };
+}
+
+#[cfg(test)]
+crate::test::all_digit_tests! {
+    crate::int::cmp::tests!(utest);
 }
 
 crate::macro_impl!(cmp);

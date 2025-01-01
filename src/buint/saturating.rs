@@ -74,6 +74,9 @@ macro_rules! saturating {
 
 #[cfg(test)]
 crate::test::all_digit_tests! {
+    use crate::test::test_bignum;
+    use crate::test::types::*;
+
     test_bignum! {
         function: <utest>::saturating_add(a: utest, b: utest)
     }
