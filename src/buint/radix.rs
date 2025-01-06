@@ -8,11 +8,11 @@ The original license file and copyright notice for `num_bigint` can be found in 
 */
 
 use super::BUintD8;
-use crate::{digit, Digit};
 use crate::doc;
 use crate::errors::ParseIntError;
 use crate::int::radix::assert_range;
 use crate::ExpType;
+use crate::{digit, Digit};
 use alloc::string::String;
 use alloc::vec::Vec;
 use core::iter::Iterator;
@@ -587,11 +587,10 @@ impl<const N: usize> FromStr for BUintD8<N> {
 
 #[cfg(test)]
 mod tests {
-    use crate::test::{quickcheck_from_to_radix, test_bignum, self};
-    use core::str::FromStr;
     use crate::test::types::*;
+    use crate::test::{self, quickcheck_from_to_radix, test_bignum};
     use crate::BUintD8;
-
+    use core::str::FromStr;
 
     test_bignum! {
         function: <utest>::from_str,

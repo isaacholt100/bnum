@@ -1,7 +1,7 @@
 use super::BUintD8;
-use crate::{digit, Digit};
 use crate::doc;
 use crate::ExpType;
+use crate::{digit, Digit};
 use core::cmp::Ordering;
 
 #[doc = doc::const_trait_fillers::impl_desc!()]

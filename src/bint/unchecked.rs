@@ -1,7 +1,6 @@
 use super::BIntD8;
 use crate::{BUintD8, Digit};
 
-
 crate::int::unchecked::impls!(BIntD8, I);
 
 #[cfg(test)]

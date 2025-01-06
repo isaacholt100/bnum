@@ -55,11 +55,10 @@ use test::types::*;
 
 type ExpType = u32;
 
-pub use buint::BUintD8;
 pub use bint::BIntD8;
+pub use buint::BUintD8;
 
 type Digit = u8;
-
 
 /// Trait for fallible conversions between `bnum` integer types.
 ///

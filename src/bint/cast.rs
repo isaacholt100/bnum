@@ -1,5 +1,5 @@
 use super::BIntD8;
-use crate::{BUintD8, digit, Digit};
+use crate::{digit, BUintD8, Digit};
 
 macro_rules! bint_as {
     ($($int: ty), *) => {

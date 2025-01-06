@@ -1,6 +1,6 @@
 use super::BUintD8;
-use crate::{digit, Digit};
 use crate::doc;
+use crate::{digit, Digit};
 
 #[doc = doc::bigint_helpers::impl_desc!()]
 impl<const N: usize> BUintD8<N> {

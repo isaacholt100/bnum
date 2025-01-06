@@ -1,7 +1,7 @@
 use super::BUintD8;
-use crate::{digit, Digit, BIntD8};
 use crate::errors::option_expect;
 use crate::ExpType;
+use crate::{digit, BIntD8, Digit};
 use crate::{doc, errors};
 
 #[doc = doc::wrapping::impl_desc!()]

@@ -1,5 +1,5 @@
 use super::BUintD8;
-use crate::{digit, Digit, BIntD8};
+use crate::{digit, BIntD8, Digit};
 
 #[doc = doc::strict::impl_desc!()]
 impl<const N: usize> BUintD8<N> {

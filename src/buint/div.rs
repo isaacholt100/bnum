@@ -1,6 +1,6 @@
 use super::BUintD8;
-use crate::{digit, Digit};
 use crate::ExpType;
+use crate::{digit, Digit};
 
 impl<const N: usize> BUintD8<N> {
     pub(crate) const fn basecase_div_rem(self, mut v: Self, n: usize) -> (Self, Self) {
@@ -167,8 +167,7 @@ impl<const N: usize> BUintD8<N> {
 
             // q_hat will be either `q` or `q + 1`
             let mut q_hat = if u_jn < v_n_m1 {
-                let (mut q_hat, r_hat) =
-                    digit::div_rem_wide(u.digit(j + n - 1), u_jn, v_n_m1); // D3
+                let (mut q_hat, r_hat) = digit::div_rem_wide(u.digit(j + n - 1), u_jn, v_n_m1); // D3
 
                 if tuple_gt(
                     digit::widening_mul(q_hat, v_n_m2),

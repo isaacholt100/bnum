@@ -1,9 +1,9 @@
 use super::BUintD8;
-use crate::{digit, Digit, BIntD8};
 use crate::doc;
 use crate::errors::div_zero;
 use crate::helpers::tuple_to_option;
 use crate::ExpType;
+use crate::{digit, BIntD8, Digit};
 
 #[doc = doc::checked::impl_desc!()]
 impl<const N: usize> BUintD8<N> {

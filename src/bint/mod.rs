@@ -425,10 +425,7 @@ impl<const N: usize> quickcheck::Arbitrary for BIntD8<N> {
 
 #[cfg(test)]
 mod tests {
-    use crate::test::{
-        debug_skip, test_bignum,
-        types::*,
-    };
+    use crate::test::{debug_skip, test_bignum, types::*};
     // use crate::test::types::big_types::Digit::*;
 
     crate::int::tests!(itest);
@@ -501,7 +498,13 @@ mod tests {
 
     #[test]
     fn sum() {
-        let v = vec![&ITEST::ZERO, &ITEST::ONE, &ITEST::TWO, &ITEST::THREE, &ITEST::FOUR];
+        let v = vec![
+            &ITEST::ZERO,
+            &ITEST::ONE,
+            &ITEST::TWO,
+            &ITEST::THREE,
+            &ITEST::FOUR,
+        ];
         assert_eq!(ITEST::TEN, v.iter().copied().sum());
         assert_eq!(ITEST::TEN, v.into_iter().sum());
     }

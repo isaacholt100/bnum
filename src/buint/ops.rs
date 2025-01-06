@@ -1,6 +1,6 @@
 use super::BUintD8;
-use crate::{digit, Digit, BIntD8};
 use crate::ExpType;
+use crate::{digit, BIntD8, Digit};
 use core::ops::{
     Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Div, DivAssign,
     Mul, MulAssign, Not, Rem, RemAssign, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign,

@@ -89,15 +89,9 @@ pub const fn widening_mul(a: Digit, b: Digit) -> (Digit, Digit) {
 }
 
 #[inline]
-pub const fn carrying_mul(
-    a: Digit,
-    b: Digit,
-    carry: Digit,
-    current: Digit,
-) -> (Digit, Digit) {
-    let prod = carry as DoubleDigit
-        + current as DoubleDigit
-        + (a as DoubleDigit) * (b as DoubleDigit);
+pub const fn carrying_mul(a: Digit, b: Digit, carry: Digit, current: Digit) -> (Digit, Digit) {
+    let prod =
+        carry as DoubleDigit + current as DoubleDigit + (a as DoubleDigit) * (b as DoubleDigit);
     (prod as Digit, (prod >> BITS) as Digit)
 }
 

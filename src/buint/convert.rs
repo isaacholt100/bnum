@@ -195,7 +195,7 @@ impl<const N: usize> From<char> for BUintD8<N> {
     }
 }
 
-use crate::{BTryFrom, BIntD8};
+use crate::{BIntD8, BTryFrom};
 
 uint_try_from_uint!(BTryFrom; BUintD8; BUintD8<N>);
 uint_try_from_int!(BTryFrom; BUintD8; BIntD8<N>);
@@ -224,8 +224,8 @@ impl<const N: usize> From<BUintD8<N>> for [Digit; N] {
 
 #[cfg(test)]
 mod tests {
-    use crate::test::{self, types::*};
     use crate::test::cast_types::*;
+    use crate::test::{self, types::*};
     use crate::BTryFrom;
 
     test::test_btryfrom!(utest; TestUint1, TestUint2, TestUint3, TestUint4, TestUint5, TestUint6, TestUint7, TestUint8, TestUint9, TestUint10, TestInt1, TestInt2, TestInt3, TestInt4, TestInt5, TestInt6, TestInt7, TestInt8, TestInt9, TestInt10/*, u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize*/);

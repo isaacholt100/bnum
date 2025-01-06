@@ -1,7 +1,6 @@
 use super::BIntD8;
 use crate::{BUintD8, Digit};
 
-
 #[doc = doc::strict::impl_desc!()]
 impl<const N: usize> BIntD8<N> {
     crate::int::strict::impls!(I);

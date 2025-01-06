@@ -166,8 +166,8 @@ uint_try_from_bint!(u8, u16, u32, u64, u128, usize);
 #[cfg(test)]
 mod tests {
     use crate::test;
-    use crate::test::types::*;
     use crate::test::cast_types::*;
+    use crate::test::types::*;
     use crate::BTryFrom;
 
     test::test_btryfrom!(itest; TestUint1, TestUint2, TestUint3, TestUint4, TestUint5, TestUint6, TestUint7, TestUint8, TestUint9, TestUint10, TestInt1, TestInt2, TestInt3, TestInt4, TestInt5, TestInt6, TestInt7, TestInt8, TestInt9, TestInt10);

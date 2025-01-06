@@ -30,8 +30,8 @@ test_types!(128);
 #[cfg(not(any(test_int_bits = "16", test_int_bits = "32", test_int_bits = "128")))]
 test_types!(64);
 
-pub use types::*;
 pub use core::primitive::*;
+pub use types::*;
 
 // #[cfg(feature = "float")]
 // #[cfg(not(test_int_bits = "32"))]

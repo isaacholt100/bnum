@@ -1,6 +1,6 @@
 use super::BUintD8;
-use crate::{digit, Digit};
 use crate::doc;
+use crate::{digit, Digit};
 // use core::mem::MaybeUninit;
 
 #[doc = doc::endian::impl_desc!(BUintD8)]

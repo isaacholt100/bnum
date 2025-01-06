@@ -296,10 +296,10 @@ pub struct UniformInt<X> {
     z: X,
 }
 
+use crate::{BIntD8, BUintD8};
 use rand::distributions::uniform::{SampleBorrow, SampleUniform, UniformSampler};
 use rand::distributions::{Distribution, Standard};
 use rand::{Error, Fill, Rng};
-use crate::{BUintD8, BIntD8};
 
 impl<const N: usize> Distribution<BUintD8<N>> for Standard {
     #[inline]

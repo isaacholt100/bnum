@@ -1,5 +1,5 @@
-use crate::{digit, Digit, BIntD8};
 use crate::errors::{self, option_expect};
+use crate::{digit, BIntD8, Digit};
 
 use crate::doc;
 use crate::ExpType;
@@ -503,8 +503,7 @@ impl<const N: usize> BUintD8<N> {
     #[inline]
     pub const fn power_of_two(power: ExpType) -> Self {
         let mut out = Self::ZERO;
-        out.digits[power as usize >> digit::BIT_SHIFT] =
-            1 << (power & (digit::BITS - 1));
+        out.digits[power as usize >> digit::BIT_SHIFT] = 1 << (power & (digit::BITS - 1));
         out
     }
 
@@ -710,7 +709,13 @@ mod tests {
 
     #[test]
     fn sum() {
-        let v = vec![&UTEST::ZERO, &UTEST::ONE, &UTEST::TWO, &UTEST::THREE, &UTEST::FOUR];
+        let v = vec![
+            &UTEST::ZERO,
+            &UTEST::ONE,
+            &UTEST::TWO,
+            &UTEST::THREE,
+            &UTEST::FOUR,
+        ];
         assert_eq!(UTEST::TEN, v.iter().copied().sum());
         assert_eq!(UTEST::TEN, v.into_iter().sum());
     }
