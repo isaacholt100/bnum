@@ -195,6 +195,13 @@ impl<const N: usize> From<char> for BUintD8<N> {
     }
 }
 
+use crate::{BTryFrom, BIntD8};
+
+uint_try_from_uint!(BTryFrom; BUintD8; BUintD8<N>);
+uint_try_from_int!(BTryFrom; BUintD8; BIntD8<N>);
+int_try_from_uint!(BTryFrom; BIntD8; BUintD8<N>);
+int_try_from_int!(BTryFrom; BIntD8; BIntD8<N>);
+
 from_uint!(u8, u16, u32, u64, u128, usize);
 
 try_from_iint!(i8 -> u8, i16 -> u16, i32 -> u32, isize -> usize, i64 -> u64, i128 -> u128);
