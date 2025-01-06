@@ -97,3 +97,4 @@ Other stuff:
 * include list of difference with primitives in README, e.g. overflow_checks not detected yet, serde implementation different, memory layout different (always little endian - although maybe this could be changed? probably not a good idea though)
 * test using stable, only use nightly when need to test be_bytes methods
 * check you're happy with the layout of the random crate-level module
+* include proper docs for all methods (as well as links to the primitive equivalents)

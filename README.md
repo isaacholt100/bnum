@@ -170,3 +170,4 @@ Additionally, a proc macro for parsing numeric values will be developed at some 
 ## Licensing
 
 `bnum` is licensed under either the MIT license or the Apache License 2.0.
+
