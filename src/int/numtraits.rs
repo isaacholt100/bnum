@@ -42,7 +42,7 @@ macro_rules! as_bigint_impl {
 pub(crate) use as_bigint_impl;
 
 macro_rules! impls {
-    ($Int: ident, $BUint: ident, $BInt: ident, $Digit: ident) => {
+    ($Int: ident) => {
         impl<const N: usize> Bounded for $Int<N> {
             #[inline]
             fn min_value() -> Self {
@@ -160,24 +160,24 @@ macro_rules! impls {
 
         crate::int::numtraits::as_bigint_impl!([u8, u16, u32, usize, u64, u128, i8, i16, i32, isize, i64, i128, char, bool, f32, f64] as $Int);
 
-        impl<const N: usize, const M: usize> AsPrimitive<$BUint<M>> for $Int<N> {
+        impl<const N: usize, const M: usize> AsPrimitive<crate::BUintD8<M>> for $Int<N> {
             #[inline]
-            fn as_(self) -> crate::$BUint<M> {
-                crate::$BUint::<M>::cast_from(self)
+            fn as_(self) -> crate::BUintD8<M> {
+                crate::BUintD8::<M>::cast_from(self)
             }
         }
 
-        impl<const N: usize, const M: usize> AsPrimitive<$BInt<M>> for $Int<N> {
+        impl<const N: usize, const M: usize> AsPrimitive<crate::BIntD8<M>> for $Int<N> {
             #[inline]
-            fn as_(self) -> crate::$BInt<M> {
-                crate::$BInt::<M>::cast_from(self)
+            fn as_(self) -> crate::BIntD8<M> {
+                crate::BIntD8::<M>::cast_from(self)
             }
         }
 
         // #[cfg(feature = "nightly")]
         // #[doc = crate::doc::requires_feature!("nightly")]
         // impl<const N: usize> FromBytes for $Int<N> {
-        //     type Bytes = [u8; $BUint::<N>::BYTES_USIZE];
+        //     type Bytes = [u8; BUintD8::<N>::BYTES_USIZE];
 
         //     #[inline]
         //     fn from_be_bytes(&self) -> Self::BYTES {
@@ -198,7 +198,7 @@ macro_rules! impls {
         // #[cfg(feature = "nightly")]
         // #[doc = crate::doc::requires_feature!("nightly")]
         // impl<const N: usize> ToBytes for $Int<N> {
-        //     type Bytes = [u8; $BUint::<N>::BYTES_USIZE];
+        //     type Bytes = [u8; BUintD8::<N>::BYTES_USIZE];
 
         //     #[inline]
         //     fn to_be_bytes(&self) -> Self::BYTES {

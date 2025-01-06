@@ -1,8 +1,11 @@
+use super::BIntD8;
+use crate::{BUintD8, Digit};
+
 use core::fmt::{Binary, Debug, Display, Formatter, LowerExp, LowerHex, Octal, UpperExp, UpperHex};
 
 macro_rules! fmt_trait {
-    ($BInt: ident, $trait: tt) => {
-        impl<const N: usize> $trait for $BInt<N> {
+    ($trait: tt) => {
+        impl<const N: usize> $trait for BIntD8<N> {
             #[inline]
             fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
                 $trait::fmt(&self.bits, f)
@@ -11,49 +14,43 @@ macro_rules! fmt_trait {
     };
 }
 
-macro_rules! fmt {
-    ($BUint: ident, $BInt: ident, $Digit: ident) => {
-        fmt_trait!($BInt, Binary);
+fmt_trait!(Binary);
 
-        impl<const N: usize> Display for $BInt<N> {
-            #[inline]
-            fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
-                f.pad_integral(!self.is_negative(), "", &format!("{}", self.unsigned_abs()))
-            }
-        }
-
-        impl<const N: usize> Debug for $BInt<N> {
-            #[inline]
-            fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
-                Display::fmt(&self, f)
-            }
-        }
-
-        impl<const N: usize> LowerExp for $BInt<N> {
-            #[inline]
-            fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
-                let uint = self.unsigned_abs();
-                f.pad_integral(!self.is_negative(), "", &format!("{:e}", uint))
-            }
-        }
-        fmt_trait!($BInt, LowerHex);
-        fmt_trait!($BInt, Octal);
-
-        impl<const N: usize> UpperExp for $BInt<N> {
-            #[inline]
-            fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
-                let uint = self.unsigned_abs();
-                f.pad_integral(!self.is_negative(), "", &format!("{:E}", uint))
-            }
-        }
-        
-        fmt_trait!($BInt, UpperHex);
-    };
+impl<const N: usize> Display for BIntD8<N> {
+    #[inline]
+    fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
+        f.pad_integral(!self.is_negative(), "", &format!("{}", self.unsigned_abs()))
+    }
 }
+
+impl<const N: usize> Debug for BIntD8<N> {
+    #[inline]
+    fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
+        Display::fmt(&self, f)
+    }
+}
+
+impl<const N: usize> LowerExp for BIntD8<N> {
+    #[inline]
+    fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
+        let uint = self.unsigned_abs();
+        f.pad_integral(!self.is_negative(), "", &format!("{:e}", uint))
+    }
+}
+fmt_trait!(LowerHex);
+fmt_trait!(Octal);
+
+impl<const N: usize> UpperExp for BIntD8<N> {
+    #[inline]
+    fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
+        let uint = self.unsigned_abs();
+        f.pad_integral(!self.is_negative(), "", &format!("{:E}", uint))
+    }
+}
+
+fmt_trait!(UpperHex);
 
 #[cfg(test)]
-crate::test::all_digit_tests! {
+mod tests {
     crate::int::fmt::tests!(itest);
 }
-
-crate::macro_impl!(fmt);

@@ -1,14 +1,17 @@
+use super::BUintD8;
+use crate::{digit, Digit};
+
 macro_rules! from_uint {
-    ($BUint: ident, $Digit: ident; $($uint: tt),*) => {
+    ($($uint: tt),*) => {
         $(
-            impl<const N: usize> From<$uint> for $BUint<N> {
+            impl<const N: usize> From<$uint> for BUintD8<N> {
                 #[inline]
                 fn from(int: $uint) -> Self {
                     const UINT_BITS: usize = $uint::BITS as usize;
                     let mut out = Self::ZERO;
                     let mut i = 0;
-                    while i << crate::digit::$Digit::BIT_SHIFT < UINT_BITS {
-                        let d = (int >> (i << crate::digit::$Digit::BIT_SHIFT)) as $Digit;
+                    while i << crate::digit::BIT_SHIFT < UINT_BITS {
+                        let d = (int >> (i << crate::digit::BIT_SHIFT)) as Digit;
                         if d != 0 {
                             out.digits[i] = d;
                         }
@@ -22,9 +25,9 @@ macro_rules! from_uint {
 }
 
 macro_rules! try_from_iint {
-    ($BUint: ident; $($int: tt -> $uint: tt),*) => {
+    ($($int: tt -> $uint: tt),*) => {
         $(
-            impl<const N: usize> TryFrom<$int> for $BUint<N> {
+            impl<const N: usize> TryFrom<$int> for BUintD8<N> {
                 type Error = TryFromIntError;
 
                 #[inline]
@@ -41,18 +44,18 @@ macro_rules! try_from_iint {
 }
 
 macro_rules! try_from_buint {
-    ($BUint: ident, $Digit: ident; $($int: ty), *) => {
+    ($($int: ty), *) => {
         $(
-            impl<const N: usize> TryFrom<$BUint<N>> for $int {
+            impl<const N: usize> TryFrom<BUintD8<N>> for $int {
                 type Error = TryFromIntError;
 
                 #[inline]
-                fn try_from(u: $BUint<N>) -> Result<$int, Self::Error> {
+                fn try_from(u: BUintD8<N>) -> Result<$int, Self::Error> {
                     let mut out = 0;
                     let mut i = 0;
-                    if $Digit::BITS > <$int>::BITS {
+                    if Digit::BITS > <$int>::BITS {
                         let small = u.digits[i] as $int;
-                        let trunc = small as $Digit;
+                        let trunc = small as Digit;
                         if u.digits[i] != trunc {
                             return Err(TryFromIntError(()));
                         }
@@ -60,7 +63,7 @@ macro_rules! try_from_buint {
                         i = 1;
                     } else {
                         loop {
-                            let shift = i << crate::digit::$Digit::BIT_SHIFT;
+                            let shift = i << crate::digit::BIT_SHIFT;
                             if i >= N || shift >= <$int>::BITS as usize {
                                 break;
                             }
@@ -80,7 +83,7 @@ macro_rules! try_from_buint {
                         }
                         i += 1;
                     }
-                    
+
                     Ok(out)
                 }
             }
@@ -93,7 +96,7 @@ macro_rules! uint_try_from_uint {
         $(
             impl<$(const $N: usize,)? const M: usize> $Trait<$From $(<$N>)?> for $To<M> {
                 type Error = TryFromIntError;
-            
+
                 fn try_from(from: $From $(<$N>)?) -> Result<Self, Self::Error> {
                     if $From $(::<$N>)?::BITS <= Self::BITS || $From $(::<$N>)?::BITS - from.leading_zeros() <= Self::BITS {
                         Ok(Self::cast_from(from))
@@ -111,7 +114,7 @@ macro_rules! uint_try_from_int {
         $(
             impl<$(const $N: usize,)? const M: usize> $Trait<$From $(<$N>)?> for $To<M> {
                 type Error = TryFromIntError;
-            
+
                 fn try_from(from: $From $(<$N>)?) -> Result<Self, Self::Error> {
                     if from.is_negative() {
                         Err(TryFromIntError(()))
@@ -133,7 +136,7 @@ macro_rules! int_try_from_uint {
         $(
             impl<$(const $N: usize,)? const M: usize> $Trait<$From $(<$N>)?> for $To<M> {
                 type Error = TryFromIntError;
-            
+
                 fn try_from(from: $From $(<$N>)?) -> Result<Self, Self::Error> {
                     if $From $(::<$N>)?::BITS <= Self::BITS - 1 || $From $(::<$N>)?::BITS - from.leading_zeros() <= Self::BITS - 1 { // Self::BITS - 1 as otherwise return value would be negative
                         Ok(Self::cast_from(from))
@@ -151,7 +154,7 @@ macro_rules! int_try_from_int {
         $(
             impl<$(const $N: usize,)? const M: usize> $Trait<$From $(<$N>)?> for $To<M> {
                 type Error = TryFromIntError;
-            
+
                 fn try_from(from: $From $(<$N>)?) -> Result<Self, Self::Error> {
                     if $From $(::<$N>)?::BITS <= Self::BITS {
                         return Ok(Self::cast_from(from));
@@ -175,65 +178,48 @@ macro_rules! int_try_from_int {
     };
 }
 
-use crate::BTryFrom;
-
-macro_rules! mixed_try_from {
-    ($BUint: ident, $BInt: ident) => {
-        uint_try_from_uint!(BTryFrom; $BUint; BUint<N>, BUintD32<N>, BUintD16<N>, BUintD8<N>/*, u8, u16, u32, u64, u128, usize*/);
-        uint_try_from_int!(BTryFrom; $BUint; BInt<N>, BIntD32<N>, BIntD16<N>, BIntD8<N>/*, i8, i16, i32, i64, i128, isize*/);
-        int_try_from_uint!(BTryFrom; $BInt; BUint<N>, BUintD32<N>, BUintD16<N>, BUintD8<N>/*, u8, u16, u32, u64, u128, usize*/);
-        int_try_from_int!(BTryFrom; $BInt; BInt<N>, BIntD32<N>, BIntD16<N>, BIntD8<N>/*, i8, i16, i32, i64, i128, isize*/);
-    };
-}
-
 use crate::cast::CastFrom;
 use crate::errors::TryFromIntError;
 
-macro_rules! convert {
-    ($BUint: ident, $BInt: ident, $Digit: ident) => {
-        impl<const N: usize> From<bool> for $BUint<N> {
-            #[inline]
-            fn from(small: bool) -> Self {
-                Self::cast_from(small)
-            }
-        }
+impl<const N: usize> From<bool> for BUintD8<N> {
+    #[inline]
+    fn from(small: bool) -> Self {
+        Self::cast_from(small)
+    }
+}
 
-        impl<const N: usize> From<char> for $BUint<N> {
-            #[inline]
-            fn from(c: char) -> Self {
-                Self::cast_from(c)
-            }
-        }
+impl<const N: usize> From<char> for BUintD8<N> {
+    #[inline]
+    fn from(c: char) -> Self {
+        Self::cast_from(c)
+    }
+}
 
-        from_uint!($BUint, $Digit; u8, u16, u32, u64, u128, usize);
+from_uint!(u8, u16, u32, u64, u128, usize);
 
-        try_from_iint!($BUint; i8 -> u8, i16 -> u16, i32 -> u32, isize -> usize, i64 -> u64, i128 -> u128);
+try_from_iint!(i8 -> u8, i16 -> u16, i32 -> u32, isize -> usize, i64 -> u64, i128 -> u128);
 
-        try_from_buint!($BUint, $Digit; u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
+try_from_buint!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
 
-        mixed_try_from!($BUint, $BInt);
+impl<const N: usize> From<[Digit; N]> for BUintD8<N> {
+    #[inline]
+    fn from(digits: [Digit; N]) -> Self {
+        Self::from_digits(digits)
+    }
+}
 
-        impl<const N: usize> From<[$Digit; N]> for $BUint<N> {
-            #[inline]
-            fn from(digits: [$Digit; N]) -> Self {
-                Self::from_digits(digits)
-            }
-        }
-
-        impl<const N: usize> From<$BUint<N>> for [$Digit; N] {
-            #[inline]
-            fn from(uint: $BUint<N>) -> Self {
-                uint.digits
-            }
-        }
-    };
+impl<const N: usize> From<BUintD8<N>> for [Digit; N] {
+    #[inline]
+    fn from(uint: BUintD8<N>) -> Self {
+        uint.digits
+    }
 }
 
 #[cfg(test)]
-crate::test::all_digit_tests! {
-    use crate::test::{self, types::utest};
+mod tests {
+    use crate::test::{self, types::*};
     use crate::test::cast_types::*;
-    use super::BTryFrom;
+    use crate::BTryFrom;
 
     test::test_btryfrom!(utest; TestUint1, TestUint2, TestUint3, TestUint4, TestUint5, TestUint6, TestUint7, TestUint8, TestUint9, TestUint10, TestInt1, TestInt2, TestInt3, TestInt4, TestInt5, TestInt6, TestInt7, TestInt8, TestInt9, TestInt10/*, u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize*/);
 
@@ -248,5 +234,3 @@ crate::test::all_digit_tests! {
         into_types: (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize)
     }
 }
-
-crate::macro_impl!(convert);

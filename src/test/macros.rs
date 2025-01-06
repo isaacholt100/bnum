@@ -216,7 +216,7 @@ macro_rules! quickcheck_from_str_radix {
 
                 let (big, primitive) = crate::test::results!(<$primitive>::from_str_radix(&s2, radix as u32));
 
-                // let parsed = 
+                // let parsed =
 
                 quickcheck::TestResult::from_bool(big == primitive)
             }
@@ -243,33 +243,3 @@ macro_rules! quickcheck_from_str {
 }
 
 pub(crate) use quickcheck_from_str;
-
-macro_rules! digit_tests {
-    { use $Digit: ident digit; $($test_content: tt)* } => {
-        paste::paste! {
-            mod [<$Digit _digit_tests>] {
-                use crate::test::types::big_types::$Digit::*;
-                
-                $($test_content)*
-            }
-        }
-    };
-}
-
-pub(crate) use digit_tests;
-
-macro_rules! all_digit_tests {
-    { $($test_content: tt)* } => {
-        crate::test::digit_tests! { use u8 digit; $($test_content)* }
-
-        crate::test::digit_tests! { use u16 digit; $($test_content)* }
-
-        #[cfg(not(test_int_bits = "16"))]
-        crate::test::digit_tests! { use u32 digit; $($test_content)* }
-
-        #[cfg(not(any(test_int_bits = "16", test_int_bits = "32")))]
-        crate::test::digit_tests! { use u64 digit; $($test_content)* }
-    }
-}
-
-pub(crate) use all_digit_tests;

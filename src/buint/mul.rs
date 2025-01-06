@@ -1,43 +1,40 @@
-use crate::digit;
+use super::BUintD8;
+use crate::{digit, Digit};
 
-macro_rules! mul {
-    ($BUint: ident, $BInt: ident, $Digit: ident) => {
-        impl<const N: usize> $BUint<N> {
-            #[inline]
-            pub(super) const fn long_mul(self, rhs: Self) -> (Self, bool) {
-                let mut overflow = false;
-                let mut out = Self::ZERO;
-                let mut carry: $Digit;
+impl<const N: usize> BUintD8<N> {
+    #[inline]
+    pub(super) const fn long_mul(self, rhs: Self) -> (Self, bool) {
+        let mut overflow = false;
+        let mut out = Self::ZERO;
+        let mut carry: Digit;
 
-                let mut i = 0;
-                while i < N {
-                    carry = 0;
-                    let mut j = 0;
-                    while j < N {
-                        let index = i + j;
-                        if index < N {
-                            let (prod, c) = digit::$Digit::carrying_mul(
-                                self.digits[i],
-                                rhs.digits[j],
-                                carry,
-                                out.digits[index],
-                            );
-                            out.digits[index] = prod;
-                            carry = c;
-                        } else if self.digits[i] != 0 && rhs.digits[j] != 0 {
-                            overflow = true;
-                            break;
-                        }
-                        j += 1;
-                    }
-                    if carry != 0 {
-                        overflow = true;
-                    }
-                    i += 1;
+        let mut i = 0;
+        while i < N {
+            carry = 0;
+            let mut j = 0;
+            while j < N {
+                let index = i + j;
+                if index < N {
+                    let (prod, c) = digit::carrying_mul(
+                        self.digits[i],
+                        rhs.digits[j],
+                        carry,
+                        out.digits[index],
+                    );
+                    out.digits[index] = prod;
+                    carry = c;
+                } else if self.digits[i] != 0 && rhs.digits[j] != 0 {
+                    overflow = true;
+                    break;
                 }
-                (out, overflow)
+                j += 1;
             }
+            if carry != 0 {
+                overflow = true;
+            }
+            i += 1;
         }
+        (out, overflow)
     }
 }
 
@@ -53,7 +50,7 @@ macro_rules! mul {
 //     let z0 = karatsuba(a, b, end_index, mid_index);
 //     // let d1 = abs_diff(x0, x1);
 //     // let d2 = abs_diff(y0, y1);
-//     // 
+//     //
 //     // let a = karatsuba((x0 - x1)(y1 - y0))
 //     // let z1 = a + z2
 
@@ -75,5 +72,3 @@ macro_rules! mul {
 //     let (a1karat_widening(x1, y1);
 //     karat_widening(x0, y0);
 // }
-
-crate::macro_impl!(mul);

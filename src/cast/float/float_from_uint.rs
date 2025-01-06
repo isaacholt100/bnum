@@ -1,8 +1,8 @@
-use crate::helpers::{Bits, One};
-use crate::cast::CastFrom;
-use crate::ExpType;
 use super::FloatCastHelper;
-use core::ops::{Shr, Add};
+use crate::cast::CastFrom;
+use crate::helpers::{Bits, One};
+use crate::ExpType;
+use core::ops::{Add, Shr};
 
 pub trait CastFloatFromUintHelper: Bits + Shr<ExpType, Output = Self> {
     fn trailing_zeros(self) -> ExpType;
@@ -28,10 +28,10 @@ where
     F: FloatCastHelper,
     F::SignedExp: TryFrom<ExpType> + One + Add<F::SignedExp, Output = F::SignedExp>,
     F::Mantissa: CastFrom<U> + One,
-    U: CastFloatFromUintHelper + Copy
+    U: CastFloatFromUintHelper + Copy,
 {
     let bit_width = value.bits(); // number of bits needed to specify value = exponent of largest power of two smaller than value. so bit_width will be one less than the exponent of the float
-    // let mant = if F::M::BITS < U::BITS {
+                                  // let mant = if F::M::BITS < U::BITS {
 
     // }
     if bit_width == 0 {
@@ -50,7 +50,7 @@ where
                 // in this case, we can safely cast which preserves the value (no truncation)
                 F::Mantissa::cast_from(value) << (F::MANTISSA_DIGITS - bit_width)
             } else {
-                // note: we know that exponent >= F::MANTISSA_DIGITS, so only way 
+                // note: we know that exponent >= F::MANTISSA_DIGITS, so only way
                 // TODO: we could generalise the round_mantissa_exponent code so that this could just be a call of round_mantissa_exponent instead
                 let shift = bit_width - F::MANTISSA_DIGITS;
                 let gte_half = value.bit(shift - 1); // is the discarded part greater than or equal to a half?
@@ -67,7 +67,7 @@ where
                 shifted_mantissa
             };
             F::from_signed_parts(false, exponent, mantissa)
-        },
+        }
         _ => F::INFINITY, // in this case, the exponent doesn't even fit into the float signed exponent, so is too big to be stored by F
     }
 }

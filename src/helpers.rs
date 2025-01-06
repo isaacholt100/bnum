@@ -27,25 +27,19 @@ macro_rules! impl_bits_for_uint {
 
 impl_bits_for_uint!(u8, u16, u32, u64, u128, usize);
 
-macro_rules! impl_bits_for_buint {
-    ($BUint: ident, $BInt: ident, $Digit: ident) => {
-        impl<const N: usize> crate::helpers::Bits for $BUint<N> {
-            const BITS: ExpType = Self::BITS;
+impl<const N: usize> crate::helpers::Bits for crate::BUintD8<N> {
+    const BITS: ExpType = Self::BITS;
 
-            #[inline]
-            fn bits(&self) -> ExpType {
-                Self::bits(&self)
-            }
+    #[inline]
+    fn bits(&self) -> ExpType {
+        Self::bits(&self)
+    }
 
-            #[inline]
-            fn bit(&self, index: ExpType) -> bool {
-                Self::bit(&self, index)
-            }
-        }
-    };
+    #[inline]
+    fn bit(&self, index: ExpType) -> bool {
+        Self::bit(&self, index)
+    }
 }
-
-crate::macro_impl!(impl_bits_for_buint);
 
 pub trait Zero: Sized + PartialEq {
     const ZERO: Self;
@@ -83,25 +77,13 @@ macro_rules! impl_one_for_int {
 
 impl_one_for_int!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
 
-macro_rules! impl_zero_for_buint {
-    ($BUint: ident, $BInt: ident, $Digit: ident) => {
-        impl<const N: usize> crate::helpers::Zero for $BUint<N> {
-            const ZERO: Self = Self::ZERO;
-        }
-    };
+impl<const N: usize> crate::helpers::Zero for crate::BUintD8<N> {
+    const ZERO: Self = Self::ZERO;
 }
 
-crate::macro_impl!(impl_zero_for_buint);
-
-macro_rules! impl_one_for_buint {
-    ($BUint: ident, $BInt: ident, $Digit: ident) => {
-        impl<const N: usize> crate::helpers::One for $BUint<N> {
-            const ONE: Self = Self::ONE;
-        }
-    };
+impl<const N: usize> crate::helpers::One for crate::BUintD8<N> {
+    const ONE: Self = Self::ONE;
 }
-
-crate::macro_impl!(impl_one_for_buint);
 
 #[inline]
 pub const fn tuple_to_option<T: Copy>((int, overflow): (T, bool)) -> Option<T> {

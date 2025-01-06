@@ -28,7 +28,8 @@ impl ParseIntError {
                 "attempt to parse integer too small to be represented by the target type"
             }
             IntErrorKind::Zero => {
-                "attempt to parse the integer `0` which cannot be represented by the target type" // for now this should never occur, unless we implement NonZeroU... types
+                "attempt to parse the integer `0` which cannot be represented by the target type"
+                // for now this should never occur, unless we implement NonZeroU... types
             }
             _ => panic!("unsupported `IntErrorKind` variant"), // necessary as `IntErrorKind` is non-exhaustive
         }

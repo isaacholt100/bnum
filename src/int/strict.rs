@@ -63,7 +63,8 @@ macro_rules! impls {
         #[inline]
         pub const fn strict_neg(self) -> Self {
             crate::errors::option_expect!(
-                self.checked_neg(), crate::errors::err_msg!("attempt to negate with overflow")
+                self.checked_neg(),
+                crate::errors::err_msg!("attempt to negate with overflow")
             )
         }
 
@@ -95,8 +96,8 @@ macro_rules! impls {
                 self.checked_pow(exp),
                 crate::errors::err_msg!("attempt to calculate power with overflow")
             )
-        }            
-    }
+        }
+    };
 }
 
 pub(crate) use impls;
@@ -150,7 +151,7 @@ macro_rules! tests {
             function: <$int>::strict_pow(a: $int, b: u8),
             skip: a.checked_pow(b as u32).is_none()
         }
-    }
+    };
 }
 
 #[cfg(test)]

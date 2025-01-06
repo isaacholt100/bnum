@@ -1,24 +1,23 @@
-macro_rules! strict {
-    ($BUint: ident, $BInt: ident, $Digit: ident) => {
-        #[doc = doc::strict::impl_desc!()]
-        impl<const N: usize> $BUint<N> {
-            crate::int::strict::impls!(U);
+use super::BUintD8;
+use crate::{digit, Digit, BIntD8};
 
-            #[doc = doc::strict::strict_add_signed!(U)]
-            #[must_use = doc::must_use_op!()]
-            #[inline]
-            pub const fn strict_add_signed(self, rhs: $BInt<N>) -> Self {
-                crate::errors::option_expect!(
-                    self.checked_add_signed(rhs),
-                    crate::errors::err_msg!("attempt to add with overflow")
-                )
-            }
-        }
-    };
+#[doc = doc::strict::impl_desc!()]
+impl<const N: usize> BUintD8<N> {
+    crate::int::strict::impls!(U);
+
+    #[doc = doc::strict::strict_add_signed!(U)]
+    #[must_use = doc::must_use_op!()]
+    #[inline]
+    pub const fn strict_add_signed(self, rhs: BIntD8<N>) -> Self {
+        crate::errors::option_expect!(
+            self.checked_add_signed(rhs),
+            crate::errors::err_msg!("attempt to add with overflow")
+        )
+    }
 }
 
 #[cfg(test)]
-crate::test::all_digit_tests! {
+mod tests {
     crate::int::strict::tests!(utest);
 
     test_bignum! {
@@ -28,5 +27,3 @@ crate::test::all_digit_tests! {
 }
 
 use crate::doc;
-
-crate::macro_impl!(strict);

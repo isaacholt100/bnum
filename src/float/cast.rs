@@ -42,10 +42,10 @@ macro_rules! int_as_float {
 int_as_float!(i8, i16, i32, i64, i128, isize);
 
 macro_rules! bint_as_float {
-    ($($bint: ident), *) => {
+    ($(BIntD8: ident), *) => {
         $(
-            impl<const W: usize, const MB: usize, const N: usize> CastFrom<$bint<N>> for Float<W, MB> {
-                fn cast_from(from: $bint<N>) -> Self {
+            impl<const W: usize, const MB: usize, const N: usize> CastFrom<BIntD8<N>> for Float<W, MB> {
+                fn cast_from(from: BIntD8<N>) -> Self {
                     let pos_cast = Self::cast_from(from.unsigned_abs());
                     if from.is_negative() {
                         -pos_cast
@@ -60,15 +60,11 @@ macro_rules! bint_as_float {
 
 bint_as_float!(BIntD8, BIntD16, BIntD32, BInt);
 
-macro_rules! float_as_bint {
-    ($BUint: ident, $BInt: ident, $Digit: ident) => {
-        impl<const W: usize, const MB: usize, const N: usize> CastFrom<Float<W, MB>> for $BInt<N> {
-            crate::bint::cast::bint_cast_from_float!(Float<W, MB>, $BUint<N>);
+        impl<const W: usize, const MB: usize, const N: usize> CastFrom<Float<W, MB>> for BIntD8<N> {
+            crate::bint::cast::bint_cast_from_float!(Float<W, MB>, BUintD8<N>);
         }
     };
 }
-
-crate::macro_impl!(float_as_bint);
 
 macro_rules! float_as_int {
     ($($int: ty; $uint: ty), *) => {

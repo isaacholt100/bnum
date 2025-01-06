@@ -69,7 +69,7 @@ macro_rules! tests {
             function: unsafe <$int>::unchecked_shr(a: $int, b: u8),
             skip: a.checked_shr(b as u32).is_none()
         }
-    }
+    };
 }
 
 #[cfg(test)]

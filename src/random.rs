@@ -299,36 +299,33 @@ pub struct UniformInt<X> {
 use rand::distributions::uniform::{SampleBorrow, SampleUniform, UniformSampler};
 use rand::distributions::{Distribution, Standard};
 use rand::{Error, Fill, Rng};
+use crate::{BUintD8, BIntD8};
 
-macro_rules! random {
-    ($BUint: ident, $BInt: ident, $Digit: ident) => {
-        impl<const N: usize> Distribution<$BUint<N>> for Standard {
-            #[inline]
-            fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> $BUint<N> {
-                let mut digits = [0; N];
-                rng.fill(&mut digits);
-                $BUint::from_digits(digits)
-            }
-        }
-
-        impl<const N: usize> Distribution<$BInt<N>> for Standard {
-            #[inline]
-            fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> $BInt<N> {
-                $BInt::from_bits(rng.gen())
-            }
-        }
-
-        fill_impl!($BUint<N>);
-        fill_impl!($BInt<N>);
-
-        uniform_int_impl!($BUint<N>, $BUint<N>);
-
-        uniform_int_impl!($BInt<N>, $BUint<N>, to_bits, from_bits);
-    };
+impl<const N: usize> Distribution<BUintD8<N>> for Standard {
+    #[inline]
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> BUintD8<N> {
+        let mut digits = [0; N];
+        rng.fill(&mut digits);
+        BUintD8::from_digits(digits)
+    }
 }
 
+impl<const N: usize> Distribution<BIntD8<N>> for Standard {
+    #[inline]
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> BIntD8<N> {
+        BIntD8::from_bits(rng.gen())
+    }
+}
+
+fill_impl!(BUintD8<N>);
+fill_impl!(BIntD8<N>);
+
+uniform_int_impl!(BUintD8<N>, BUintD8<N>);
+
+uniform_int_impl!(BIntD8<N>, BUintD8<N>, to_bits, from_bits);
+
 #[cfg(test)]
-crate::test::all_digit_tests! {
+mod tests {
     use crate::test::types::*;
     use rand::SeedableRng;
 
@@ -341,5 +338,3 @@ crate::test::all_digit_tests! {
     test_random!(utest; StdRng, SmallRng);
     test_random!(itest; StdRng, SmallRng);
 }
-
-crate::macro_impl!(random);

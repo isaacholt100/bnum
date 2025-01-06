@@ -1,9 +1,9 @@
-use core::ops::{Neg, Shl};
-use crate::cast::CastFrom;
-use crate::ExpType;
-use super::FloatMantissa;
 use super::FloatCastHelper;
+use super::FloatMantissa;
+use crate::cast::CastFrom;
 use crate::helpers::{Bits, One, Zero};
+use crate::ExpType;
+use core::ops::{Neg, Shl};
 
 pub trait CastUintFromFloatHelper: Zero + One + Bits {
     const MAX: Self;

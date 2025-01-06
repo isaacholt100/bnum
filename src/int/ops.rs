@@ -68,7 +68,7 @@ macro_rules! shift_impl {
 pub(crate) use shift_impl;
 
 macro_rules! try_shift_impl {
-    ($Struct: ident, $BUint: ident, $BInt: ident; $tr: tt, $method: ident, $assign_tr: tt, $assign_method: ident, $err: expr, $($rhs: ty), *) => {
+    ($Struct: ident; $tr: tt, $method: ident, $assign_tr: tt, $assign_method: ident, $err: expr, $($rhs: ty), *) => {
         $(
             impl<const N: usize> $tr<$rhs> for $Struct<N> {
                 type Output = Self;
@@ -90,14 +90,17 @@ macro_rules! try_shift_impl {
 pub(crate) use try_shift_impl;
 
 macro_rules! shift_self_impl {
-    ($Struct: ident, $BUint: ident, $BInt: ident; $tr: tt<$rhs: tt>, $method: ident, $assign_tr: tt, $assign_method: ident, $err: expr) => {
+    ($Struct: ident; $tr: tt<$rhs: tt>, $method: ident, $assign_tr: tt, $assign_method: ident, $err: expr) => {
         impl<const N: usize, const M: usize> $tr<$rhs<M>> for $Struct<N> {
             type Output = Self;
 
             #[inline]
             fn $method(self, rhs: $rhs<M>) -> Self {
                 use crate::ExpType;
-                let rhs: ExpType = crate::errors::result_expect!(ExpType::try_from(rhs), crate::errors::err_msg!($err));
+                let rhs: ExpType = crate::errors::result_expect!(
+                    ExpType::try_from(rhs),
+                    crate::errors::err_msg!($err)
+                );
                 self.$method(rhs)
             }
         }
@@ -142,14 +145,14 @@ macro_rules! shift_self_impl {
                 (*self).$assign_method(*rhs);
             }
         }
-    }
+    };
 }
 pub(crate) use shift_self_impl;
 
 macro_rules! all_shift_impls {
-    ($Struct: ident, $BUint: ident, $BInt: ident) => {
+    ($Struct: ident) => {
         crate::int::ops::try_shift_impl!(
-            $Struct, $BUint, $BInt;
+            $Struct;
             Shl,
             shl,
             ShlAssign,
@@ -164,7 +167,7 @@ macro_rules! all_shift_impls {
         );
 
         crate::int::ops::try_shift_impl!(
-            $Struct, $BUint, $BInt;
+            $Struct;
             Shr,
             shr,
             ShrAssign,
@@ -183,7 +186,7 @@ macro_rules! all_shift_impls {
         crate::int::ops::shift_impl!($Struct, Shr, shr, ShrAssign, shr_assign, u8, u16);
 
         crate::int::ops::try_shift_impl!(
-            $Struct, $BUint, $BInt;
+            $Struct;
             Shl,
             shl,
             ShlAssign,
@@ -195,7 +198,7 @@ macro_rules! all_shift_impls {
         );
 
         crate::int::ops::try_shift_impl!(
-            $Struct, $BUint, $BInt;
+            $Struct;
             Shr,
             shr,
             ShrAssign,
@@ -207,8 +210,8 @@ macro_rules! all_shift_impls {
         );
 
         crate::int::ops::shift_self_impl!(
-            $Struct, $BUint, $BInt;
-            Shl<$BUint>,
+            $Struct;
+            Shl<BUintD8>,
             shl,
             ShlAssign,
             shl_assign,
@@ -216,8 +219,8 @@ macro_rules! all_shift_impls {
         );
 
         crate::int::ops::shift_self_impl!(
-            $Struct, $BUint, $BInt;
-            Shr<$BUint>,
+            $Struct;
+            Shr<BUintD8>,
             shr,
             ShrAssign,
             shr_assign,
@@ -225,8 +228,8 @@ macro_rules! all_shift_impls {
         );
 
         crate::int::ops::shift_self_impl!(
-            $Struct, $BUint, $BInt;
-            Shl<$BInt>,
+            $Struct;
+            Shl<BIntD8>,
             shl,
             ShlAssign,
             shl_assign,
@@ -234,8 +237,8 @@ macro_rules! all_shift_impls {
         );
 
         crate::int::ops::shift_self_impl!(
-            $Struct, $BUint, $BInt;
-            Shr<$BInt>,
+            $Struct;
+            Shr<BIntD8>,
             shr,
             ShrAssign,
             shr_assign,
@@ -307,7 +310,7 @@ macro_rules! trait_fillers {
 pub(crate) use trait_fillers;
 
 macro_rules! impls {
-    ($Struct: ident, $BUint: ident, $BInt: ident) => {
+    ($Struct: ident) => {
         impl<const N: usize> Add<Self> for $Struct<N> {
             type Output = Self;
 
@@ -353,7 +356,7 @@ macro_rules! impls {
             }
         }
 
-        crate::int::ops::all_shift_impls!($Struct, $BUint, $BInt);
+        crate::int::ops::all_shift_impls!($Struct);
 
         impl<const N: usize> Sub for $Struct<N> {
             type Output = Self;

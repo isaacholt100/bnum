@@ -7,7 +7,8 @@ Copyright (c) 2014 The Rust Project Developers
 The original license file and copyright notice for `num_bigint` can be found in this project's root at licenses/LICENSE-num-bigint.
 */
 
-use crate::digit;
+use super::BUintD8;
+use crate::{digit, Digit};
 use crate::doc;
 use crate::errors::ParseIntError;
 use crate::int::radix::assert_range;
@@ -32,581 +33,564 @@ const fn div_ceil(a: ExpType, b: ExpType) -> ExpType {
     }
 }
 
-macro_rules! radix {
-    ($BUint: ident, $BInt: ident, $Digit: ident) => {
-        #[doc = doc::radix::impl_desc!($BUint)]
-        impl<const N: usize> $BUint<N> {
-            #[inline]
-            const fn radix_base(radix: u32) -> ($Digit, usize) {
-                let mut power: usize = 1;
-                let radix = radix as $Digit;
-                let mut base = radix;
-                loop {
-                    match base.checked_mul(radix) {
-                        Some(n) => {
-                            base = n;
-                            power += 1;
-                        }
-                        None => return (base, power),
-                    }
+#[doc = doc::radix::impl_desc!(BUintD8)]
+impl<const N: usize> BUintD8<N> {
+    #[inline]
+    const fn radix_base(radix: u32) -> (Digit, usize) {
+        let mut power: usize = 1;
+        let radix = radix as Digit;
+        let mut base = radix;
+        loop {
+            match base.checked_mul(radix) {
+                Some(n) => {
+                    base = n;
+                    power += 1;
                 }
+                None => return (base, power),
             }
+        }
+    }
 
-            #[inline]
-            const fn radix_base_half(radix: u32) -> ($Digit, usize) {
-                const HALF_BITS_MAX: $Digit = $Digit::MAX >> ($Digit::BITS / 2);
+    #[inline]
+    const fn radix_base_half(radix: u32) -> (Digit, usize) {
+        const HALF_BITS_MAX: Digit = Digit::MAX >> (Digit::BITS / 2);
 
-                let mut power: usize = 1;
-                let radix = radix as $Digit;
-                let mut base = radix;
-                loop {
-                    match base.checked_mul(radix) {
-                        Some(n) if n <= HALF_BITS_MAX => {
-                            base = n;
-                            power += 1;
-                        }
-                        _ => return (base, power),
-                    }
+        let mut power: usize = 1;
+        let radix = radix as Digit;
+        let mut base = radix;
+        loop {
+            match base.checked_mul(radix) {
+                Some(n) if n <= HALF_BITS_MAX => {
+                    base = n;
+                    power += 1;
                 }
+                _ => return (base, power),
             }
+        }
+    }
 
-            /// Converts a byte slice in a given base to an integer. The input slice must contain ascii/utf8 characters in [0-9a-zA-Z].
-            ///
-            /// This function is equivalent to the [`from_str_radix`](#method.from_str_radix) function for a string slice equivalent to the byte slice and the same radix.
-            ///
-            /// Returns `None` if the conversion of the byte slice to string slice fails or if a digit is larger than or equal to the given radix, otherwise the integer is wrapped in `Some`.
-            ///
-            /// # Panics
-            ///
-            /// This function panics if `radix` is not in the range from 2 to 36 inclusive.
-            ///
-            /// # Examples
-            ///
-            /// ```
-            /// use bnum::types::U512;
-            ///
-            /// let src = "394857hdgfjhsnkg947dgfjkeita";
-            /// assert_eq!(U512::from_str_radix(src, 32).ok(), U512::parse_bytes(src.as_bytes(), 32));
-            /// ```
-            #[inline]
-            pub const fn parse_bytes(buf: &[u8], radix: u32) -> Option<Self> {
-                let s = crate::nightly::option_try!(crate::nightly::ok!(core::str::from_utf8(buf)));
-                crate::nightly::ok!(Self::from_str_radix(s, radix))
+    /// Converts a byte slice in a given base to an integer. The input slice must contain ascii/utf8 characters in [0-9a-zA-Z].
+    ///
+    /// This function is equivalent to the [`from_str_radix`](#method.from_str_radix) function for a string slice equivalent to the byte slice and the same radix.
+    ///
+    /// Returns `None` if the conversion of the byte slice to string slice fails or if a digit is larger than or equal to the given radix, otherwise the integer is wrapped in `Some`.
+    ///
+    /// # Panics
+    ///
+    /// This function panics if `radix` is not in the range from 2 to 36 inclusive.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bnum::types::U512;
+    ///
+    /// let src = "394857hdgfjhsnkg947dgfjkeita";
+    /// assert_eq!(U512::from_str_radix(src, 32).ok(), U512::parse_bytes(src.as_bytes(), 32));
+    /// ```
+    #[inline]
+    pub const fn parse_bytes(buf: &[u8], radix: u32) -> Option<Self> {
+        let s = crate::nightly::option_try!(crate::nightly::ok!(core::str::from_utf8(buf)));
+        crate::nightly::ok!(Self::from_str_radix(s, radix))
+    }
+
+    /// Converts a slice of big-endian digits in the given radix to an integer. Each `u8` of the slice is interpreted as one digit of base `radix` of the number, so this function will return `None` if any digit is greater than or equal to `radix`, otherwise the integer is wrapped in `Some`.
+    ///
+    /// # Panics
+    ///
+    /// This function panics if `radix` is not in the range from 2 to 256 inclusive.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bnum::types::U512;
+    ///
+    /// let n = U512::from(34598748526857897975u128);
+    /// let digits = n.to_radix_be(12);
+    /// assert_eq!(Some(n), U512::from_radix_be(&digits, 12));
+    /// ```
+    #[inline]
+    pub const fn from_radix_be(buf: &[u8], radix: u32) -> Option<Self> {
+        assert_range!(radix, 256);
+        if buf.is_empty() {
+            return Some(Self::ZERO);
+        }
+        if radix == 256 {
+            return Self::from_be_slice(buf);
+        }
+
+        crate::nightly::ok!(Self::from_buf_radix_internal::<false, true>(
+            buf, radix, false
+        ))
+    }
+
+    /// Converts a slice of little-endian digits in the given radix to an integer. Each `u8` of the slice is interpreted as one digit of base `radix` of the number, so this function will return `None` if any digit is greater than or equal to `radix`, otherwise the integer is wrapped in `Some`.
+    ///
+    /// # Panics
+    ///
+    /// This function panics if `radix` is not in the range from 2 to 256 inclusive.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bnum::types::U512;
+    ///
+    /// let n = U512::from(109837459878951038945798u128);
+    /// let digits = n.to_radix_le(15);
+    /// assert_eq!(Some(n), U512::from_radix_le(&digits, 15));
+    /// ```
+    #[inline]
+    pub const fn from_radix_le(buf: &[u8], radix: u32) -> Option<Self> {
+        assert_range!(radix, 256);
+        if buf.is_empty() {
+            return Some(Self::ZERO);
+        }
+        if radix == 256 {
+            return Self::from_le_slice(buf);
+        }
+
+        crate::nightly::ok!(Self::from_buf_radix_internal::<false, false>(
+            buf, radix, false
+        ))
+    }
+
+    #[inline]
+    const fn byte_to_digit<const FROM_STR: bool>(byte: u8) -> u8 {
+        if FROM_STR {
+            match byte {
+                b'0'..=b'9' => byte - b'0',
+                b'a'..=b'z' => byte - b'a' + 10,
+                b'A'..=b'Z' => byte - b'A' + 10,
+                _ => u8::MAX,
             }
+        } else {
+            byte
+        }
+    }
 
-            /// Converts a slice of big-endian digits in the given radix to an integer. Each `u8` of the slice is interpreted as one digit of base `radix` of the number, so this function will return `None` if any digit is greater than or equal to `radix`, otherwise the integer is wrapped in `Some`.
-            ///
-            /// # Panics
-            ///
-            /// This function panics if `radix` is not in the range from 2 to 256 inclusive.
-            ///
-            /// # Examples
-            ///
-            /// ```
-            /// use bnum::types::U512;
-            ///
-            /// let n = U512::from(34598748526857897975u128);
-            /// let digits = n.to_radix_be(12);
-            /// assert_eq!(Some(n), U512::from_radix_be(&digits, 12));
-            /// ```
-            #[inline]
-            pub const fn from_radix_be(buf: &[u8], radix: u32) -> Option<Self> {
-                assert_range!(radix, 256);
-                if buf.is_empty() {
-                    return Some(Self::ZERO);
-                }
-                if radix == 256 {
-                    return Self::from_be_slice(buf);
-                }
+    /// Converts a string slice in a given base to an integer.
+    ///
+    /// The string is expected to be an optional `+` sign followed by digits. Leading and trailing whitespace represent an error. Digits are a subset of these characters, depending on `radix`:
+    ///
+    /// - `0-9`
+    /// - `a-z`
+    /// - `A-Z`
+    ///
+    /// # Panics
+    ///
+    /// This function panics if `radix` is not in the range from 2 to 36 inclusive.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bnum::types::U512;
+    ///
+    /// assert_eq!(U512::from_str_radix("A", 16), Ok(U512::from(10u128)));
+    /// ```
+    #[inline]
+    pub const fn from_str_radix(src: &str, radix: u32) -> Result<Self, ParseIntError> {
+        assert_range!(radix, 36);
+        if src.is_empty() {
+            return Err(ParseIntError {
+                kind: IntErrorKind::Empty,
+            });
+        }
+        let buf = src.as_bytes();
+        let leading_plus = buf[0] == b'+';
+        Self::from_buf_radix_internal::<true, true>(buf, radix, leading_plus)
+    }
 
-                crate::nightly::ok!(Self::from_buf_radix_internal::<false, true>(buf, radix, false))
-            }
+    #[doc = doc::radix::parse_str_radix!(BUintD8)]
+    #[inline]
+    pub const fn parse_str_radix(src: &str, radix: u32) -> Self {
+        match Self::from_str_radix(src, radix) {
+            Ok(n) => n,
+            Err(e) => panic!("{}", e.description()),
+        }
+    }
 
-            /// Converts a slice of little-endian digits in the given radix to an integer. Each `u8` of the slice is interpreted as one digit of base `radix` of the number, so this function will return `None` if any digit is greater than or equal to `radix`, otherwise the integer is wrapped in `Some`.
-            ///
-            /// # Panics
-            ///
-            /// This function panics if `radix` is not in the range from 2 to 256 inclusive.
-            ///
-            /// # Examples
-            ///
-            /// ```
-            /// use bnum::types::U512;
-            ///
-            /// let n = U512::from(109837459878951038945798u128);
-            /// let digits = n.to_radix_le(15);
-            /// assert_eq!(Some(n), U512::from_radix_le(&digits, 15));
-            /// ```
-            #[inline]
-            pub const fn from_radix_le(buf: &[u8], radix: u32) -> Option<Self> {
-                assert_range!(radix, 256);
-                if buf.is_empty() {
-                    return Some(Self::ZERO);
-                }
-                if radix == 256 {
-                    return Self::from_le_slice(buf);
-                }
+    pub(crate) const fn from_buf_radix_internal<const FROM_STR: bool, const BE: bool>(
+        buf: &[u8],
+        radix: u32,
+        leading_sign: bool,
+    ) -> Result<Self, ParseIntError> {
+        if leading_sign && buf.len() == 1 {
+            return Err(ParseIntError {
+                kind: IntErrorKind::InvalidDigit,
+            });
+        }
+        let input_digits_len = if leading_sign {
+            buf.len() - 1
+        } else {
+            buf.len()
+        };
 
-                crate::nightly::ok!(Self::from_buf_radix_internal::<false, false>(buf, radix, false))
-            }
+        match radix {
+            2 | 4 | 16 | 256 => {
+                let mut out = Self::ZERO;
+                let base_digits_per_digit = (digit::BITS_U8 / ilog2(radix)) as usize;
+                let full_digits = input_digits_len / base_digits_per_digit as usize;
+                let remaining_digits = input_digits_len % base_digits_per_digit as usize;
+                let radix_u8 = radix as u8;
 
-            #[inline]
-            const fn byte_to_digit<const FROM_STR: bool>(byte: u8) -> u8 {
-                if FROM_STR {
-                    match byte {
-                        b'0'..=b'9' => byte - b'0',
-                        b'a'..=b'z' => byte - b'a' + 10,
-                        b'A'..=b'Z' => byte - b'A' + 10,
-                        _ => u8::MAX,
-                    }
-                } else {
-                    byte
-                }
-            }
-
-            /// Converts a string slice in a given base to an integer.
-            ///
-            /// The string is expected to be an optional `+` sign followed by digits. Leading and trailing whitespace represent an error. Digits are a subset of these characters, depending on `radix`:
-            ///
-            /// - `0-9`
-            /// - `a-z`
-            /// - `A-Z`
-            ///
-            /// # Panics
-            ///
-            /// This function panics if `radix` is not in the range from 2 to 36 inclusive.
-            ///
-            /// # Examples
-            ///
-            /// ```
-            /// use bnum::types::U512;
-            ///
-            /// assert_eq!(U512::from_str_radix("A", 16), Ok(U512::from(10u128)));
-            /// ```
-            #[inline]
-            pub const fn from_str_radix(src: &str, radix: u32) -> Result<Self, ParseIntError> {
-                assert_range!(radix, 36);
-                if src.is_empty() {
-                    return Err(ParseIntError {
-                        kind: IntErrorKind::Empty,
-                    });
-                }
-                let buf = src.as_bytes();
-                let leading_plus = buf[0] == b'+';
-                Self::from_buf_radix_internal::<true, true>(buf, radix, leading_plus)
-            }
-
-            #[doc = doc::radix::parse_str_radix!($BUint)]
-            #[inline]
-            pub const fn parse_str_radix(src: &str, radix: u32) -> Self {
-                match Self::from_str_radix(src, radix) {
-                    Ok(n) => n,
-                    Err(e) => panic!("{}", e.description()),
-                }
-            }
-
-            pub(crate) const fn from_buf_radix_internal<const FROM_STR: bool, const BE: bool>(buf: &[u8], radix: u32, leading_sign: bool) -> Result<Self, ParseIntError> {
-                if leading_sign && buf.len() == 1 {
-                    return Err(ParseIntError {
-                        kind: IntErrorKind::InvalidDigit,
-                    });
-                }
-                let input_digits_len = if leading_sign {
-                    buf.len() - 1
-                } else {
-                    buf.len()
-                };
-
-                match radix {
-                    2 | 4 | 16 | 256 => {
-                        let mut out = Self::ZERO;
-                        let base_digits_per_digit = (digit::$Digit::BITS_U8 / ilog2(radix)) as usize;
-                        let full_digits = input_digits_len / base_digits_per_digit as usize;
-                        let remaining_digits = input_digits_len % base_digits_per_digit as usize;
-                        let radix_u8 = radix as u8;
-
-                        if full_digits > N || full_digits == N && remaining_digits != 0 {
-                            let mut i = if leading_sign { 1 } else { 0 };
-                            while i < N * base_digits_per_digit + if leading_sign { 1 } else { 0 } {
-                                if Self::byte_to_digit::<FROM_STR>(buf[i]) >= radix_u8 {
-                                    return Err(ParseIntError {
-                                        kind: IntErrorKind::InvalidDigit,
-                                    });
-                                }
-                                i += 1;
-                            }
+                if full_digits > N || full_digits == N && remaining_digits != 0 {
+                    let mut i = if leading_sign { 1 } else { 0 };
+                    while i < N * base_digits_per_digit + if leading_sign { 1 } else { 0 } {
+                        if Self::byte_to_digit::<FROM_STR>(buf[i]) >= radix_u8 {
                             return Err(ParseIntError {
-                                kind: IntErrorKind::PosOverflow,
+                                kind: IntErrorKind::InvalidDigit,
                             });
                         }
+                        i += 1;
+                    }
+                    return Err(ParseIntError {
+                        kind: IntErrorKind::PosOverflow,
+                    });
+                }
 
-                        let log2r = ilog2(radix);
+                let log2r = ilog2(radix);
 
-                        let mut i = 0;
-                        while i < full_digits {
-                            let mut j = 0;
-                            while j < base_digits_per_digit {
-                                let idx = if BE {
-                                    buf.len() - 1 - (i * base_digits_per_digit + j)
-                                } else {
-                                    i * base_digits_per_digit + j
-                                };
-                                let d = Self::byte_to_digit::<FROM_STR>(buf[idx]);
-                                if d >= radix_u8 {
-                                    return Err(ParseIntError {
-                                        kind: IntErrorKind::InvalidDigit,
-                                    });
-                                }
-                                out.digits[i] |= (d as $Digit) << (j * log2r as usize);
-                                j += 1;
-                            }
-                            i += 1;
-                        }
-                        let mut j = 0;
-                        while j < remaining_digits {
-                            let idx = if BE {
-                                buf.len() - 1 - (i * base_digits_per_digit + j)
-                            } else {
-                                i * base_digits_per_digit + j
-                            };
-                            let d = Self::byte_to_digit::<FROM_STR>(buf[idx]);
-                            if d >= radix_u8 {
-                                return Err(ParseIntError {
-                                    kind: IntErrorKind::InvalidDigit,
-                                });
-                            }
-                            out.digits[i] |= (d as $Digit) << (j * log2r as usize);
-                            j += 1;
-                        }
-                        Ok(out)
-                    },
-                    /*8 | 32 | 64 | 128*/ 0 => { // TODO: for now, we don't use this, as hard to get the errors right
-                        let mut out = Self::ZERO;
-                        let radix_u8 = radix as u8;
-                        let log2r = ilog2(radix);
-
-                        let mut index = 0;
-                        let mut shift = 0;
-
-                        let mut i = buf.len();
-                        let stop_index = if leading_sign { 1 } else { 0 };
-                        while i > stop_index {
-                            i -= 1;
-                            let idx = if BE {
-                                i
-                            } else {
-                                buf.len() - 1 - i
-                            };
-                            let d = Self::byte_to_digit::<FROM_STR>(buf[idx]);
-                            if d >= radix_u8 {
-                                // panic!("noooooo");
-                                return Err(ParseIntError {
-                                    kind: IntErrorKind::InvalidDigit,
-                                });
-                            }
-                            out.digits[index] |= (d as $Digit) << shift;
-                            shift += log2r;
-                            if shift >= digit::$Digit::BITS_U8 {
-                                shift -= digit::$Digit::BITS_U8;
-                                let carry = (d as $Digit) >> (log2r - shift);
-                                index += 1;
-                                if index == N {
-                                    if carry != 0 {
-                                        return Err(ParseIntError {
-                                            kind: IntErrorKind::PosOverflow,
-                                        });
-                                    }
-                                    while i > stop_index {
-                                        i -= 1;
-                                        let idx = if BE {
-                                            i
-                                        } else {
-                                            buf.len() - 1 - i
-                                        };
-                                        let d = Self::byte_to_digit::<FROM_STR>(buf[idx]);
-                                        if d != 0 {
-                                            return Err(ParseIntError {
-                                                kind: IntErrorKind::PosOverflow,
-                                            });
-                                        }
-                                    }
-                                    return Ok(out);
-                                } else {
-                                    out.digits[index] = carry;
-                                }
-                            }
-                        }
-                        Ok(out)
-                    },
-                    _ => {
-                        let (base, power) = Self::radix_base(radix);
-                        let r = input_digits_len % power;
-                        let split = if r == 0 { power } else { r };
-                        let radix_u8 = radix as u8;
-                        let mut out = Self::ZERO;
-                        let mut first: $Digit = 0;
-                        let mut i = if leading_sign {
-                            1
+                let mut i = 0;
+                while i < full_digits {
+                    let mut j = 0;
+                    while j < base_digits_per_digit {
+                        let idx = if BE {
+                            buf.len() - 1 - (i * base_digits_per_digit + j)
                         } else {
-                            0
+                            i * base_digits_per_digit + j
                         };
-                        while i < if leading_sign { split + 1 } else { split } {
-                            let idx = if BE {
-                                i
-                            } else {
-                                buf.len() - 1 - i
-                            };
-                            let d = Self::byte_to_digit::<FROM_STR>(buf[idx]);
-                            if d >= radix_u8 {
-                                return Err(ParseIntError {
-                                    kind: IntErrorKind::InvalidDigit,
-                                });
-                            }
-                            first = first * (radix as $Digit) + d as $Digit;
-                            i += 1;
+                        let d = Self::byte_to_digit::<FROM_STR>(buf[idx]);
+                        if d >= radix_u8 {
+                            return Err(ParseIntError {
+                                kind: IntErrorKind::InvalidDigit,
+                            });
                         }
-                        out.digits[0] = first;
-                        let mut start = i;
-                        while start < buf.len() {
-                            let end = start + power;
+                        out.digits[i] |= (d as Digit) << (j * log2r as usize);
+                        j += 1;
+                    }
+                    i += 1;
+                }
+                let mut j = 0;
+                while j < remaining_digits {
+                    let idx = if BE {
+                        buf.len() - 1 - (i * base_digits_per_digit + j)
+                    } else {
+                        i * base_digits_per_digit + j
+                    };
+                    let d = Self::byte_to_digit::<FROM_STR>(buf[idx]);
+                    if d >= radix_u8 {
+                        return Err(ParseIntError {
+                            kind: IntErrorKind::InvalidDigit,
+                        });
+                    }
+                    out.digits[i] |= (d as Digit) << (j * log2r as usize);
+                    j += 1;
+                }
+                Ok(out)
+            }
+            /*8 | 32 | 64 | 128*/
+            0 => {
+                // TODO: for now, we don't use this, as hard to get the errors right
+                let mut out = Self::ZERO;
+                let radix_u8 = radix as u8;
+                let log2r = ilog2(radix);
 
-                            let mut carry = 0;
-                            let mut j = 0;
-                            while j < N {
-                                let (low, high) = digit::$Digit::carrying_mul(out.digits[j], base, carry, 0);
-                                carry = high;
-                                out.digits[j] = low;
-                                j += 1;
-                            }
+                let mut index = 0;
+                let mut shift = 0;
+
+                let mut i = buf.len();
+                let stop_index = if leading_sign { 1 } else { 0 };
+                while i > stop_index {
+                    i -= 1;
+                    let idx = if BE { i } else { buf.len() - 1 - i };
+                    let d = Self::byte_to_digit::<FROM_STR>(buf[idx]);
+                    if d >= radix_u8 {
+                        // panic!("noooooo");
+                        return Err(ParseIntError {
+                            kind: IntErrorKind::InvalidDigit,
+                        });
+                    }
+                    out.digits[index] |= (d as Digit) << shift;
+                    shift += log2r;
+                    if shift >= digit::BITS_U8 {
+                        shift -= digit::BITS_U8;
+                        let carry = (d as Digit) >> (log2r - shift);
+                        index += 1;
+                        if index == N {
                             if carry != 0 {
-                                while start < buf.len() && start < end { // TODO: this isn't quite correct behaviour
-                                    let idx = if BE {
-                                        start
-                                    } else {
-                                        buf.len() - 1 - start
-                                    };
-                                    let d = Self::byte_to_digit::<FROM_STR>(buf[idx]);
-                                    if d >= radix_u8 {
-                                        return Err(ParseIntError {
-                                            kind: IntErrorKind::InvalidDigit,
-                                        });
-                                    }
-                                    start += 1;
-                                }
                                 return Err(ParseIntError {
                                     kind: IntErrorKind::PosOverflow,
                                 });
                             }
-
-                            let mut n = 0;
-                            j = start;
-                            while j < end && j < buf.len() {
-                                let idx = if BE {
-                                    j
-                                } else {
-                                    buf.len() - 1 - j
-                                };
+                            while i > stop_index {
+                                i -= 1;
+                                let idx = if BE { i } else { buf.len() - 1 - i };
                                 let d = Self::byte_to_digit::<FROM_STR>(buf[idx]);
-                                if d >= radix_u8 {
-                                    return Err(ParseIntError {
-                                        kind: IntErrorKind::InvalidDigit,
-                                    });
-                                }
-                                n = n * (radix as $Digit) + d as $Digit;
-                                j += 1;
-                            }
-
-                            out = match out.checked_add(Self::from_digit(n)) {
-                                Some(out) => out,
-                                None => {
+                                if d != 0 {
                                     return Err(ParseIntError {
                                         kind: IntErrorKind::PosOverflow,
-                                    })
+                                    });
                                 }
-                            };
-                            start = end;
+                            }
+                            return Ok(out);
+                        } else {
+                            out.digits[index] = carry;
                         }
-                        Ok(out)
                     }
                 }
+                Ok(out)
             }
-
-            /// Returns the integer as a string in the given radix.
-            ///
-            /// # Panics
-            ///
-            /// This function panics if `radix` is not in the range from 2 to 36 inclusive.
-            ///
-            /// # Examples
-            ///
-            /// ```
-            /// use bnum::types::U512;
-            ///
-            /// let src = "934857djkfghhkdfgbf9345hdfkh";
-            /// let n = U512::from_str_radix(src, 36).unwrap();
-            /// assert_eq!(n.to_str_radix(36), src);
-            /// ```
-            #[inline]
-            pub fn to_str_radix(&self, radix: u32) -> String {
-                let mut out = Self::to_radix_be(self, radix);
-
-                for byte in out.iter_mut() {
-                    if *byte < 10 {
-                        *byte += b'0';
-                    } else {
-                        *byte += b'a' - 10;
+            _ => {
+                let (base, power) = Self::radix_base(radix);
+                let r = input_digits_len % power;
+                let split = if r == 0 { power } else { r };
+                let radix_u8 = radix as u8;
+                let mut out = Self::ZERO;
+                let mut first: Digit = 0;
+                let mut i = if leading_sign { 1 } else { 0 };
+                while i < if leading_sign { split + 1 } else { split } {
+                    let idx = if BE { i } else { buf.len() - 1 - i };
+                    let d = Self::byte_to_digit::<FROM_STR>(buf[idx]);
+                    if d >= radix_u8 {
+                        return Err(ParseIntError {
+                            kind: IntErrorKind::InvalidDigit,
+                        });
                     }
+                    first = first * (radix as Digit) + d as Digit;
+                    i += 1;
                 }
-                unsafe { String::from_utf8_unchecked(out) }
-            }
+                out.digits[0] = first;
+                let mut start = i;
+                while start < buf.len() {
+                    let end = start + power;
 
-            /// Returns the integer in the given base in big-endian digit order.
-            ///
-            /// # Panics
-            ///
-            /// This function panics if `radix` is not in the range from 2 to 256 inclusive.
-            ///
-            /// ```
-            /// use bnum::types::U512;
-            ///
-            /// let digits = &[3, 55, 60, 100, 5, 0, 5, 88];
-            /// let n = U512::from_radix_be(digits, 120).unwrap();
-            /// assert_eq!(n.to_radix_be(120), digits);
-            /// ```
-            #[inline]
-            pub fn to_radix_be(&self, radix: u32) -> Vec<u8> {
-                let mut v = self.to_radix_le(radix);
-                v.reverse();
-                v
-            }
-
-            /// Returns the integer in the given base in little-endian digit order.
-            ///
-            /// # Panics
-            ///
-            /// This function panics if `radix` is not in the range from 2 to 256 inclusive.
-            ///
-            /// ```
-            /// use bnum::types::U512;
-            ///
-            /// let digits = &[1, 67, 88, 200, 55, 68, 87, 120, 178];
-            /// let n = U512::from_radix_le(digits, 250).unwrap();
-            /// assert_eq!(n.to_radix_le(250), digits);
-            /// ```
-            pub fn to_radix_le(&self, radix: u32) -> Vec<u8> {
-                if self.is_zero() {
-                    vec![0]
-                } else if radix.is_power_of_two() {
-                    if $Digit::BITS == 8 && radix == 256 {
-                        return (&self.digits[0..=self.last_digit_index()])
-                            .into_iter()
-                            .map(|d| *d as u8)
-                            .collect(); // we can cast to `u8` here as the underlying digit must be a `u8` anyway
+                    let mut carry = 0;
+                    let mut j = 0;
+                    while j < N {
+                        let (low, high) = digit::carrying_mul(out.digits[j], base, carry, 0);
+                        carry = high;
+                        out.digits[j] = low;
+                        j += 1;
                     }
-
-                    let bits = ilog2(radix);
-                    if digit::$Digit::BITS_U8 % bits == 0 {
-                        self.to_bitwise_digits_le(bits)
-                    } else {
-                        self.to_inexact_bitwise_digits_le(bits)
-                    }
-                } else if radix == 10 {
-                    self.to_radix_digits_le(10)
-                } else {
-                    self.to_radix_digits_le(radix)
-                }
-            }
-
-            fn to_bitwise_digits_le(self, bits: u8) -> Vec<u8> {
-                let last_digit_index = self.last_digit_index();
-                let mask: $Digit = (1 << bits) - 1;
-                let digits_per_big_digit = digit::$Digit::BITS_U8 / bits;
-                let digits = div_ceil(self.bits(), bits as ExpType);
-                let mut out = Vec::with_capacity(digits as usize);
-
-                let mut r = self.digits[last_digit_index];
-
-                for mut d in IntoIterator::into_iter(self.digits).take(last_digit_index) {
-                    for _ in 0..digits_per_big_digit {
-                        out.push((d & mask) as u8);
-                        d >>= bits;
-                    }
-                }
-                while r != 0 {
-                    out.push((r & mask) as u8);
-                    r >>= bits;
-                }
-                out
-            }
-
-            fn to_inexact_bitwise_digits_le(self, bits: u8) -> Vec<u8> {
-                let mask: $Digit = (1 << bits) - 1;
-                let digits = div_ceil(self.bits(), bits as ExpType);
-                let mut out = Vec::with_capacity(digits as usize);
-                let mut r = 0;
-                let mut rbits = 0;
-                for c in self.digits {
-                    r |= c << rbits;
-                    rbits += digit::$Digit::BITS_U8;
-
-                    while rbits >= bits {
-                        out.push((r & mask) as u8);
-                        r >>= bits;
-
-                        if rbits > digit::$Digit::BITS_U8 {
-                            r = c >> (digit::$Digit::BITS_U8 - (rbits - bits));
+                    if carry != 0 {
+                        while start < buf.len() && start < end {
+                            // TODO: this isn't quite correct behaviour
+                            let idx = if BE { start } else { buf.len() - 1 - start };
+                            let d = Self::byte_to_digit::<FROM_STR>(buf[idx]);
+                            if d >= radix_u8 {
+                                return Err(ParseIntError {
+                                    kind: IntErrorKind::InvalidDigit,
+                                });
+                            }
+                            start += 1;
                         }
-                        rbits -= bits;
+                        return Err(ParseIntError {
+                            kind: IntErrorKind::PosOverflow,
+                        });
                     }
-                }
-                if rbits != 0 {
-                    out.push(r as u8);
-                }
-                while let Some(&0) = out.last() {
-                    out.pop();
-                }
-                out
-            }
 
-            fn to_radix_digits_le(self, radix: u32) -> Vec<u8> {
-                let radix_digits = div_ceil(self.bits(), ilog2(radix) as ExpType);
-                let mut out = Vec::with_capacity(radix_digits as usize);
-                let (base, power) = Self::radix_base_half(radix);
-                let radix = radix as $Digit;
-                let mut copy = self;
-                while copy.last_digit_index() > 0 {
-                    let (q, mut r) = copy.div_rem_digit(base);
-                    for _ in 0..power {
-                        out.push((r % radix) as u8);
-                        r /= radix;
+                    let mut n = 0;
+                    j = start;
+                    while j < end && j < buf.len() {
+                        let idx = if BE { j } else { buf.len() - 1 - j };
+                        let d = Self::byte_to_digit::<FROM_STR>(buf[idx]);
+                        if d >= radix_u8 {
+                            return Err(ParseIntError {
+                                kind: IntErrorKind::InvalidDigit,
+                            });
+                        }
+                        n = n * (radix as Digit) + d as Digit;
+                        j += 1;
                     }
-                    copy = q;
+
+                    out = match out.checked_add(Self::from_digit(n)) {
+                        Some(out) => out,
+                        None => {
+                            return Err(ParseIntError {
+                                kind: IntErrorKind::PosOverflow,
+                            })
+                        }
+                    };
+                    start = end;
                 }
-                let mut r = copy.digits[0];
-                while r != 0 {
-                    out.push((r % radix) as u8);
-                    r /= radix;
-                }
-                out
+                Ok(out)
             }
         }
+    }
 
-        impl<const N: usize> FromStr for $BUint<N> {
-            type Err = ParseIntError;
+    /// Returns the integer as a string in the given radix.
+    ///
+    /// # Panics
+    ///
+    /// This function panics if `radix` is not in the range from 2 to 36 inclusive.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bnum::types::U512;
+    ///
+    /// let src = "934857djkfghhkdfgbf9345hdfkh";
+    /// let n = U512::from_str_radix(src, 36).unwrap();
+    /// assert_eq!(n.to_str_radix(36), src);
+    /// ```
+    #[inline]
+    pub fn to_str_radix(&self, radix: u32) -> String {
+        let mut out = Self::to_radix_be(self, radix);
 
-            fn from_str(src: &str) -> Result<Self, Self::Err> {
-                Self::from_str_radix(src, 10)
+        for byte in out.iter_mut() {
+            if *byte < 10 {
+                *byte += b'0';
+            } else {
+                *byte += b'a' - 10;
             }
         }
-    };
+        unsafe { String::from_utf8_unchecked(out) }
+    }
+
+    /// Returns the integer in the given base in big-endian digit order.
+    ///
+    /// # Panics
+    ///
+    /// This function panics if `radix` is not in the range from 2 to 256 inclusive.
+    ///
+    /// ```
+    /// use bnum::types::U512;
+    ///
+    /// let digits = &[3, 55, 60, 100, 5, 0, 5, 88];
+    /// let n = U512::from_radix_be(digits, 120).unwrap();
+    /// assert_eq!(n.to_radix_be(120), digits);
+    /// ```
+    #[inline]
+    pub fn to_radix_be(&self, radix: u32) -> Vec<u8> {
+        let mut v = self.to_radix_le(radix);
+        v.reverse();
+        v
+    }
+
+    /// Returns the integer in the given base in little-endian digit order.
+    ///
+    /// # Panics
+    ///
+    /// This function panics if `radix` is not in the range from 2 to 256 inclusive.
+    ///
+    /// ```
+    /// use bnum::types::U512;
+    ///
+    /// let digits = &[1, 67, 88, 200, 55, 68, 87, 120, 178];
+    /// let n = U512::from_radix_le(digits, 250).unwrap();
+    /// assert_eq!(n.to_radix_le(250), digits);
+    /// ```
+    pub fn to_radix_le(&self, radix: u32) -> Vec<u8> {
+        if self.is_zero() {
+            vec![0]
+        } else if radix.is_power_of_two() {
+            if Digit::BITS == 8 && radix == 256 {
+                return (&self.digits[0..=self.last_digit_index()])
+                    .into_iter()
+                    .map(|d| *d as u8)
+                    .collect(); // we can cast to `u8` here as the underlying digit must be a `u8` anyway
+            }
+
+            let bits = ilog2(radix);
+            if digit::BITS_U8 % bits == 0 {
+                self.to_bitwise_digits_le(bits)
+            } else {
+                self.to_inexact_bitwise_digits_le(bits)
+            }
+        } else if radix == 10 {
+            self.to_radix_digits_le(10)
+        } else {
+            self.to_radix_digits_le(radix)
+        }
+    }
+
+    fn to_bitwise_digits_le(self, bits: u8) -> Vec<u8> {
+        let last_digit_index = self.last_digit_index();
+        let mask: Digit = (1 << bits) - 1;
+        let digits_per_big_digit = digit::BITS_U8 / bits;
+        let digits = div_ceil(self.bits(), bits as ExpType);
+        let mut out = Vec::with_capacity(digits as usize);
+
+        let mut r = self.digits[last_digit_index];
+
+        for mut d in IntoIterator::into_iter(self.digits).take(last_digit_index) {
+            for _ in 0..digits_per_big_digit {
+                out.push((d & mask) as u8);
+                d >>= bits;
+            }
+        }
+        while r != 0 {
+            out.push((r & mask) as u8);
+            r >>= bits;
+        }
+        out
+    }
+
+    fn to_inexact_bitwise_digits_le(self, bits: u8) -> Vec<u8> {
+        let mask: Digit = (1 << bits) - 1;
+        let digits = div_ceil(self.bits(), bits as ExpType);
+        let mut out = Vec::with_capacity(digits as usize);
+        let mut r = 0;
+        let mut rbits = 0;
+        for c in self.digits {
+            r |= c << rbits;
+            rbits += digit::BITS_U8;
+
+            while rbits >= bits {
+                out.push((r & mask) as u8);
+                r >>= bits;
+
+                if rbits > digit::BITS_U8 {
+                    r = c >> (digit::BITS_U8 - (rbits - bits));
+                }
+                rbits -= bits;
+            }
+        }
+        if rbits != 0 {
+            out.push(r as u8);
+        }
+        while let Some(&0) = out.last() {
+            out.pop();
+        }
+        out
+    }
+
+    fn to_radix_digits_le(self, radix: u32) -> Vec<u8> {
+        let radix_digits = div_ceil(self.bits(), ilog2(radix) as ExpType);
+        let mut out = Vec::with_capacity(radix_digits as usize);
+        let (base, power) = Self::radix_base_half(radix);
+        let radix = radix as Digit;
+        let mut copy = self;
+        while copy.last_digit_index() > 0 {
+            let (q, mut r) = copy.div_rem_digit(base);
+            for _ in 0..power {
+                out.push((r % radix) as u8);
+                r /= radix;
+            }
+            copy = q;
+        }
+        let mut r = copy.digits[0];
+        while r != 0 {
+            out.push((r % radix) as u8);
+            r /= radix;
+        }
+        out
+    }
+}
+
+impl<const N: usize> FromStr for BUintD8<N> {
+    type Err = ParseIntError;
+
+    fn from_str(src: &str) -> Result<Self, Self::Err> {
+        Self::from_str_radix(src, 10)
+    }
 }
 
 #[cfg(test)]
-crate::test::all_digit_tests! {
+mod tests {
     use crate::test::{quickcheck_from_to_radix, test_bignum, self};
-    use crate::BUint;
     use core::str::FromStr;
-    use crate::test::types::utest;
+    use crate::test::types::*;
+    use crate::BUintD8;
 
 
     test_bignum! {
@@ -679,15 +663,13 @@ crate::test::all_digit_tests! {
     #[test]
     fn parse_bytes() {
         let src = "134957dkbhadoinegrhi983475hdgkhgdhiu3894hfd";
-        let u = BUint::<100>::parse_bytes(src.as_bytes(), 35).unwrap();
-        let v = BUint::<100>::from_str_radix(src, 35).unwrap();
+        let u = BUintD8::<100>::parse_bytes(src.as_bytes(), 35).unwrap();
+        let v = BUintD8::<100>::from_str_radix(src, 35).unwrap();
         assert_eq!(u, v);
         assert_eq!(v.to_str_radix(35), src);
 
         let bytes = b"345977fsuudf0350845";
-        let option = BUint::<100>::parse_bytes(bytes, 20);
+        let option = BUintD8::<100>::parse_bytes(bytes, 20);
         assert!(option.is_none());
     }
 }
-
-crate::macro_impl!(radix);

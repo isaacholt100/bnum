@@ -1,46 +1,46 @@
-macro_rules! strict {
-    ($BUint: ident, $BInt: ident, $Digit: ident) => {
-        #[doc = doc::strict::impl_desc!()]
-        impl<const N: usize> $BInt<N> {
-            crate::int::strict::impls!(I);
+use super::BIntD8;
+use crate::{BUintD8, Digit};
 
-            #[doc = doc::strict::strict_abs!(I)]
-            #[must_use = doc::must_use_op!()]
-            #[inline]
-            pub const fn strict_abs(self) -> Self {
-                crate::errors::option_expect!(
-                    self.checked_abs(),
-                    crate::errors::err_msg!("attempt to negate with overflow")
-                )
-            }
 
-            #[doc = doc::strict::strict_add_unsigned!(I)]
-            #[must_use = doc::must_use_op!()]
-            #[inline]
-            pub const fn strict_add_unsigned(self, rhs: $BUint<N>) -> Self {
-                crate::errors::option_expect!(
-                    self.checked_add_unsigned(rhs),
-                    crate::errors::err_msg!("attempt to add with overflow")
-                )
-            }
+#[doc = doc::strict::impl_desc!()]
+impl<const N: usize> BIntD8<N> {
+    crate::int::strict::impls!(I);
 
-            #[doc = doc::strict::strict_sub_unsigned!(I)]
-            #[must_use = doc::must_use_op!()]
-            #[inline]
-            pub const fn strict_sub_unsigned(self, rhs: $BUint<N>) -> Self {
-                crate::errors::option_expect!(
-                    self.checked_sub_unsigned(rhs),
-                    crate::errors::err_msg!("attempt to subtract with overflow")
-                )
-            }
-        }
-    };
+    #[doc = doc::strict::strict_abs!(I)]
+    #[must_use = doc::must_use_op!()]
+    #[inline]
+    pub const fn strict_abs(self) -> Self {
+        crate::errors::option_expect!(
+            self.checked_abs(),
+            crate::errors::err_msg!("attempt to negate with overflow")
+        )
+    }
+
+    #[doc = doc::strict::strict_add_unsigned!(I)]
+    #[must_use = doc::must_use_op!()]
+    #[inline]
+    pub const fn strict_add_unsigned(self, rhs: BUintD8<N>) -> Self {
+        crate::errors::option_expect!(
+            self.checked_add_unsigned(rhs),
+            crate::errors::err_msg!("attempt to add with overflow")
+        )
+    }
+
+    #[doc = doc::strict::strict_sub_unsigned!(I)]
+    #[must_use = doc::must_use_op!()]
+    #[inline]
+    pub const fn strict_sub_unsigned(self, rhs: BUintD8<N>) -> Self {
+        crate::errors::option_expect!(
+            self.checked_sub_unsigned(rhs),
+            crate::errors::err_msg!("attempt to subtract with overflow")
+        )
+    }
 }
 
 #[cfg(test)]
-crate::test::all_digit_tests! {
+mod tests {
     crate::int::strict::tests!(itest);
-                
+
     test_bignum! {
         function: <itest>::strict_abs(a: itest),
         skip: a.checked_abs().is_none()
@@ -56,5 +56,3 @@ crate::test::all_digit_tests! {
 }
 
 use crate::doc;
-
-crate::macro_impl!(strict);
