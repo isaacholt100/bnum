@@ -63,7 +63,7 @@ fn bench_add(c: &mut Criterion) {
     // }));
     group.bench_with_input(BenchmarkId::new("Iterative", "old"), &big_inputs, |b, inputs| b.iter(|| {
         inputs.iter().cloned().for_each(|(a, b)| {
-            let _ = black_box(black_box(a).overflowing_shl(black_box(b)));
+            let _ = black_box(black_box(a).count_ones());
         })
     }));
     group.finish();

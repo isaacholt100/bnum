@@ -41,11 +41,11 @@ pub mod random;
 
 pub mod types;
 
-// #[cfg(feature = "float")]
-// mod float;
+#[cfg(feature = "float")]
+mod float;
 
-// #[cfg(feature = "float")]
-// pub use float::Float;
+#[cfg(feature = "float")]
+pub use float::Float;
 
 #[cfg(test)]
 mod test;

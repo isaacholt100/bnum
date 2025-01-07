@@ -102,8 +102,8 @@ impl<const W: usize> BUintD8<W> {
     pub(crate) const fn cast_to_unsigned_float_exponent(self) -> UnsignedFloatExponent {
         let mut out = 0;
         let mut i = 0;
-        while i << crate::digit::u8::BIT_SHIFT < UnsignedFloatExponent::BITS as usize && i < W {
-            out |= (self.digits[i] as UnsignedFloatExponent) << (i << crate::digit::u8::BIT_SHIFT);
+        while i << crate::digit::BIT_SHIFT < UnsignedFloatExponent::BITS as usize && i < W {
+            out |= (self.digits[i] as UnsignedFloatExponent) << (i << crate::digit::BIT_SHIFT);
             i += 1;
         }
         out

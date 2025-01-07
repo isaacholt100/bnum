@@ -262,14 +262,14 @@ impl<const N: usize> BUintD8<N> {
     }
 
     #[doc = doc::doc_comment! {
-                        U 256,
-                        "Returns `true` if and only if `self == 2^k` for some integer `k`.",
+        U 256,
+        "Returns `true` if and only if `self == 2^k` for some integer `k`.",
 
-                        "let n = " stringify!(U256) "::from(1u16 << 14);\n"
-                        "assert!(n.is_power_of_two());\n"
-                        "let m = " stringify!(U256) "::from(100u8);\n"
-                        "assert!(!m.is_power_of_two());"
-                    }]
+        "let n = " stringify!(U256) "::from(1u16 << 14);\n"
+        "assert!(n.is_power_of_two());\n"
+        "let m = " stringify!(U256) "::from(100u8);\n"
+        "assert!(!m.is_power_of_two());"
+    }]
     #[must_use]
     #[inline]
     pub const fn is_power_of_two(self) -> bool {

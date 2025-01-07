@@ -92,28 +92,28 @@ use crate::cast::CastFrom;
 use crate::doc;
 use crate::ExpType;
 
-// #[cfg(feature = "float")]
-// impl<const N: usize> FloatMantissa for BUintD8<N> {
-//     const ZERO: Self = Self::ZERO;
-//     const ONE: Self = Self::ONE;
-//     const TWO: Self = Self::TWO;
-//     const MAX: Self = Self::MAX;
+#[cfg(feature = "float")]
+impl<const N: usize> FloatMantissa for BUintD8<N> {
+    const ZERO: Self = Self::ZERO;
+    const ONE: Self = Self::ONE;
+    const TWO: Self = Self::TWO;
+    const MAX: Self = Self::MAX;
 
-//     #[inline]
-//     fn leading_zeros(self) -> ExpType {
-//         Self::leading_zeros(self)
-//     }
+    #[inline]
+    fn leading_zeros(self) -> ExpType {
+        Self::leading_zeros(self)
+    }
 
-//     #[inline]
-//     fn checked_shr(self, n: ExpType) -> Option<Self> {
-//         Self::checked_shr(self, n)
-//     }
+    #[inline]
+    fn checked_shr(self, n: ExpType) -> Option<Self> {
+        Self::checked_shr(self, n)
+    }
 
-//     #[inline]
-//     fn is_power_of_two(self) -> bool {
-//         Self::is_power_of_two(self)
-//     }
-// }
+    #[inline]
+    fn is_power_of_two(self) -> bool {
+        Self::is_power_of_two(self)
+    }
+}
 
 impl<const N: usize> CastUintFromFloatHelper for BUintD8<N> {
     const MAX: Self = Self::MAX;

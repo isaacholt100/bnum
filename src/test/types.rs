@@ -33,10 +33,10 @@ test_types!(64);
 pub use core::primitive::*;
 pub use types::*;
 
-// #[cfg(feature = "float")]
-// #[cfg(not(test_int_bits = "32"))]
-// pub type FTEST = crate::float::Float<8, 52>;
+#[cfg(feature = "float")]
+#[cfg(not(test_int_bits = "32"))]
+pub type FTEST = crate::float::Float<8, 52>;
 
-// #[cfg(feature = "float")]
-// #[cfg(test_int_bits = "32")]
-// pub type FTEST = crate::float::Float<4, 23>;
+#[cfg(feature = "float")]
+#[cfg(test_int_bits = "32")]
+pub type FTEST = crate::float::Float<4, 23>;

@@ -3,7 +3,7 @@ use crate::cast::float::{FloatCastHelper, FloatMantissa};
 use super::{Float, FloatExponent};
 use crate::cast::CastFrom;
 use crate::doc;
-use crate::{BUintD8, BUintD16, BUintD32, BUint, BIntD8, BIntD16, BIntD32, BInt};
+use crate::{BUintD8, BIntD8};
 use crate::ExpType;
 
 macro_rules! uint_as_float {
@@ -20,7 +20,7 @@ macro_rules! uint_as_float {
     };
 }
 
-uint_as_float!(u8, u16, u32, u64, u128, usize, BUintD8<N>, BUintD16<N>, BUintD32<N>, BUint<N>);
+uint_as_float!(u8, u16, u32, u64, u128, usize, BUintD8<N>);
 
 macro_rules! int_as_float {
     ($($int: ty), *) => {
@@ -41,29 +41,19 @@ macro_rules! int_as_float {
 
 int_as_float!(i8, i16, i32, i64, i128, isize);
 
-macro_rules! bint_as_float {
-    ($(BIntD8: ident), *) => {
-        $(
-            impl<const W: usize, const MB: usize, const N: usize> CastFrom<BIntD8<N>> for Float<W, MB> {
-                fn cast_from(from: BIntD8<N>) -> Self {
-                    let pos_cast = Self::cast_from(from.unsigned_abs());
-                    if from.is_negative() {
-                        -pos_cast
-                    } else {
-                        pos_cast
-                    }
-                }
-            }
-        )*
-    };
+impl<const W: usize, const MB: usize, const N: usize> CastFrom<BIntD8<N>> for Float<W, MB> {
+    fn cast_from(from: BIntD8<N>) -> Self {
+        let pos_cast = Self::cast_from(from.unsigned_abs());
+        if from.is_negative() {
+            -pos_cast
+        } else {
+            pos_cast
+        }
+    }
 }
 
-bint_as_float!(BIntD8, BIntD16, BIntD32, BInt);
-
-        impl<const W: usize, const MB: usize, const N: usize> CastFrom<Float<W, MB>> for BIntD8<N> {
-            crate::bint::cast::bint_cast_from_float!(Float<W, MB>, BUintD8<N>);
-        }
-    };
+impl<const W: usize, const MB: usize, const N: usize> CastFrom<Float<W, MB>> for BIntD8<N> {
+    crate::bint::cast::bint_cast_from_float!(Float<W, MB>);
 }
 
 macro_rules! float_as_int {
@@ -111,7 +101,7 @@ macro_rules! float_as_uint {
     };
 }
 
-float_as_uint!(BUintD8<N>, BUintD16<N>, BUintD32<N>, BUint<N>, u8, u16, u32, u64, u128, usize);
+float_as_uint!(BUintD8<N>, u8, u16, u32, u64, u128, usize);
 
 impl<const W: usize, const MB: usize> FloatCastHelper for Float<W, MB> {
     const BITS: ExpType = Self::BITS;

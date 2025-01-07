@@ -6,8 +6,8 @@ const fn buint_from_usize<const N: usize>(u: usize) -> BUintD8<N> {
     const UINT_BITS: usize = <usize>::BITS as usize;
     let mut out = BUintD8::ZERO;
     let mut i = 0;
-    while i << crate::digit::u8::BIT_SHIFT < UINT_BITS {
-        let d = (u >> (i << crate::digit::u8::BIT_SHIFT)) as u8;
+    while i << crate::digit::BIT_SHIFT < UINT_BITS {
+        let d = (u >> (i << crate::digit::BIT_SHIFT)) as u8;
         if d != 0 {
             out.digits[i] = d;
         }

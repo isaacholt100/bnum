@@ -18,6 +18,7 @@ exclude = ["src/float/*", "src/tests", "TODO.txt", "lit-parser/*"] # TODO: make 
 [features]
 default = []
 nightly = []
+float = []
 serde = ["dep:serde", "serde-big-array"]
 numtraits = ["num-integer", "num-traits"]
 

@@ -21,7 +21,7 @@ impl<const W: usize> BUintD8<W> {
             i = 1;
         } else {
             loop {
-                let shift = i << crate::digit::u8::BIT_SHIFT; // TODO: make sure to generalise when using general digits
+                let shift = i << crate::digit::BIT_SHIFT; // TODO: make sure to generalise when using general digits
                 if i >= W || shift >= ExpType::BITS as usize {
                     break;
                 }
@@ -44,8 +44,8 @@ impl<const W: usize> BUintD8<W> {
     pub(crate) const fn from_exp_type(int: ExpType) -> Option<Self> {
         let mut out = Self::ZERO;
         let mut i = 0;
-        while i << crate::digit::u8::BIT_SHIFT < ExpType::BITS as usize { // TODO: make sure to generalise when using general digits
-            let d = (int >> (i << crate::digit::u8::BIT_SHIFT)) as Digit; // TODO: make sure to generalise when using general digits
+        while i << crate::digit::BIT_SHIFT < ExpType::BITS as usize { // TODO: make sure to generalise when using general digits
+            let d = (int >> (i << crate::digit::BIT_SHIFT)) as Digit; // TODO: make sure to generalise when using general digits
             if d != 0 {
                 if i < W {
                     out.digits[i] = d;
