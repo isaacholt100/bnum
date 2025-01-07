@@ -40,14 +40,14 @@ macro_rules! bench_against_primitive {
                     group.bench_with_input(BenchmarkId::new("bnum", SIZE_ID), &big_inputs, |b, inputs| {
                         b.iter(|| {
                             for ($($param), *, ()) in inputs.iter().cloned() {
-                                let _ = [<$primitive:upper>]::$method($($($re)? black_box($param)), *);
+                                let _ = black_box([<$primitive:upper>]::$method($($($re)? $param), *));
                             }
                         })
                     });
                     group.bench_with_input(BenchmarkId::new("core", SIZE_ID), &prim_inputs, |b, inputs| {
                         b.iter(|| {
                             for ($($param), *, ()) in inputs.iter().cloned() {
-                                let _ = [<$primitive>]::$method($($($re)? black_box($param)), *);
+                                let _ = black_box([<$primitive>]::$method($($($re)? $param), *));
                             }
                         })
                     });
