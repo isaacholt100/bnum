@@ -3,7 +3,7 @@ mod types {
 
     pub type SignedDigit = i8;
 
-    pub type DoubleDigit = i16;
+    pub type DoubleDigit = u16;
 }
 
 use crate::ExpType;
