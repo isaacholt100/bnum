@@ -61,9 +61,9 @@ fn bench_add(c: &mut Criterion) {
     //         let _ = black_box(a).floor();
     //     }
     // }));
-    group.bench_with_input(BenchmarkId::new("Iterative", "old"), &big_inputs, |b, inputs| b.iter(|| {
+    group.bench_with_input(BenchmarkId::new("Iterative", "d64"), &big_inputs, |b, inputs| b.iter(|| {
         inputs.iter().cloned().for_each(|(a, b)| {
-            let _ = black_box(black_box(a).count_ones());
+            let _ = black_box((a).trailing_ones());
         })
     }));
     group.finish();
