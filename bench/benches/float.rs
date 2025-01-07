@@ -14,8 +14,8 @@ const SAMPLE_SIZE: usize = 10000;
 // type F32 = Float<4, 23>;
 
 type U256 = bnum::BUintD8<32>;
-type U1024 = bnum::BUintD8<128>;
-type U1024D64 = bnum::BUint<16>;
+type U1024 = bnum::BUintD8<{17 * 8}>;
+type U1024D64 = bnum::BUint<17>;
 
 
 // fn bench_fibs(c: &mut Criterion) {
@@ -52,8 +52,8 @@ fn bench_add(c: &mut Criterion) {
     let mut group = c.benchmark_group("round");
     let mut rng = rand::rngs::StdRng::seed_from_u64(0);
     let big_inputs = (0..SAMPLE_SIZE)
-        .map(|_| rng.gen::<(U1024)>())
-        .map(|a| (a, U1024D64::cast_from(a)));
+        .map(|_| rng.gen::<(U1024, U1024)>())
+        .map(|(a, b)| ((a, b), (U1024D64::cast_from(a), U1024D64::cast_from(b))));
         // .map(|(a, b)| (
         //     (F64::from_bits((a >> 1)), F64::from_bits((b >> 1)))
         // ));
@@ -65,13 +65,13 @@ fn bench_add(c: &mut Criterion) {
     //     }
     // }));
     group.bench_with_input(BenchmarkId::new("Iterative", "d8"), &inputs1, |b, inputs| b.iter(|| {
-        inputs.iter().cloned().for_each(|(a)| {
-            let _ = black_box(a.trailing_ones());
+        inputs.iter().cloned().for_each(|(a, b)| {
+            let _ = black_box(!a);
         })
     }));
     group.bench_with_input(BenchmarkId::new("Iterative", "d64"), &inputs2, |b, inputs| b.iter(|| {
-        inputs.iter().cloned().for_each(|(a)| {
-            let _ = black_box(a.trailing_ones());
+        inputs.iter().cloned().for_each(|(a, b)| {
+            let _ = black_box(!a);
         })
     }));
     group.finish();
