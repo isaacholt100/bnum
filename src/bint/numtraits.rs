@@ -164,6 +164,7 @@ use num_traits::{
     Saturating, SaturatingAdd, SaturatingMul, SaturatingSub, Signed, ToPrimitive, WrappingAdd,
     WrappingMul, WrappingNeg, WrappingShl, WrappingShr, WrappingSub, Zero, //ConstZero
 };
+use num_traits::ops::overflowing::{OverflowingAdd, OverflowingSub};
 
 use crate::cast::CastFrom;
 use crate::int::numtraits::num_trait_impl;
