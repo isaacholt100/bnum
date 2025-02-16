@@ -9,6 +9,7 @@ impl<const N: usize> BUintD8<N> {
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn overflowing_add(self, rhs: Self) -> (Self, bool) {
+        // TODO: can use u128
         let mut out = Self::ZERO;
         let mut carry = false;
         let mut i = 0;
@@ -33,6 +34,7 @@ impl<const N: usize> BUintD8<N> {
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn overflowing_sub(self, rhs: Self) -> (Self, bool) {
+        // TODO: can use u128
         let mut out = Self::ZERO;
         let mut borrow = false;
         let mut i = 0;

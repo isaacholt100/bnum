@@ -12,6 +12,7 @@ num-traits = "0.2"
 uint = "0.9"
 rand = { version = "0.8", features = ["std", "std_rng"] }
 paste = "1.0"
+bnum-old = { package = "bnum", version = "0.12.0", features = ["rand"]}
 
 [[bench]]
 name = "float"

@@ -30,6 +30,15 @@ macro_rules! buint_as_int {
                 #[must_use = doc::must_use_op!()]
                 #[inline]
                 fn cast_from(from: BUintD8<N>) -> Self {
+                    const BYTES: usize = <$int>::BITS as usize / 8;
+                    // let low_digits: [u8; BYTES] = unsafe { *(from.digits.as_ptr() as *const _) };
+                    let mut bytes = [0u8; BYTES];
+                    let mut i = 0;
+                    while i < BYTES && i < N {
+                        bytes[i] = from.digits[i];
+                        i += 1;
+                    }
+                    return Self::from_le_bytes(bytes);
                     let mut out = 0;
                     let mut i = 0;
                     while i << crate::digit::BIT_SHIFT < <$int>::BITS as usize && i < N {
@@ -225,62 +234,3 @@ mod tests {
 
     crate::int::cast::tests!(utest);
 }
-
-macro_rules! buint_as_different_digit_bigint {
-    (BUintD8: ident, BIntD8: ident, Digit: ident; $(($OtherBUint: ident, $OtherDigit: ident)), *) => {
-        $(
-            impl<const N: usize, const M: usize> crate::cast::CastFrom<$OtherBUint<M>> for BUintD8<N> {
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                fn cast_from(from: $OtherBUint<M>) -> Self {
-                    let mut out = Self::ZERO;
-                    if Digit::BITS < $OtherDigit::BITS {
-                        const DIVIDE_COUNT: usize = ($OtherDigit::BITS / Digit::BITS) as usize;
-                        let stop_index: usize = if <$OtherBUint<M>>::BITS > <BUintD8<N>>::BITS {
-                            N
-                        } else {
-                            M * DIVIDE_COUNT
-                        };
-                        let mut i = 0;
-                        while i < stop_index {
-                            let wider_digit = from.digits[i / DIVIDE_COUNT];
-                            let mini_shift = i % DIVIDE_COUNT;
-                            let digit = (wider_digit >> (mini_shift << digit::BIT_SHIFT)) as Digit;
-                            out.digits[i] = digit;
-                            i += 1;
-                        }
-                    } else {
-                        const DIVIDE_COUNT: usize = (Digit::BITS / $OtherDigit::BITS) as usize;
-                        let stop_index: usize = if <$OtherBUint<M>>::BITS > <BUintD8<N>>::BITS {
-                            N * DIVIDE_COUNT
-                        } else {
-                            M
-                        };
-                        let mut current_digit: Digit = 0;
-                        let mut i = 0;
-                        while i < stop_index {
-                            let mini_shift = i % DIVIDE_COUNT;
-                            current_digit |= (from.digits[i] as Digit) << (mini_shift << digit::$OtherDigit::BIT_SHIFT);
-                            if mini_shift == DIVIDE_COUNT - 1 || i == stop_index - 1 {
-                                out.digits[i / DIVIDE_COUNT] = current_digit;
-                                current_digit = 0;
-                            }
-                            i += 1;
-                        }
-                    }
-                    out
-                }
-            }
-
-            impl<const N: usize, const M: usize> crate::cast::CastFrom<$OtherBUint<M>> for BIntD8<N> {
-                #[must_use = doc::must_use_op!()]
-                #[inline]
-                fn cast_from(from: $OtherBUint<M>) -> Self {
-                    Self::from_bits(BUintD8::cast_from(from))
-                }
-            }
-        )*
-    }
-}
-
-pub(crate) use buint_as_different_digit_bigint;

@@ -10,6 +10,7 @@ impl<const N: usize> BUintD8<N> {
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn widening_mul(self, rhs: Self) -> (Self, Self) {
+        // TODO: can use u128
         let mut low = Self::ZERO;
         let mut high = Self::ZERO;
         let mut carry: Digit;

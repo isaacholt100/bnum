@@ -4,6 +4,7 @@ use crate::{digit, Digit};
 impl<const N: usize> BUintD8<N> {
     #[inline]
     pub(super) const fn long_mul(self, rhs: Self) -> (Self, bool) {
+        // TODO: can use u128
         let mut overflow = false;
         let mut out = Self::ZERO;
         let mut carry: Digit;

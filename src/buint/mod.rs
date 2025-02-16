@@ -47,6 +47,12 @@ pub struct BUintD8<const N: usize> {
 #[cfg(feature = "zeroize")]
 impl<const N: usize> zeroize::DefaultIsZeroes for BUintD8<N> {}
 
+pub const fn u128_from_digits(digits: &[Digit], start_index: usize) -> u128 {
+    let i = start_index;
+    let bytes = [digits[i], digits[i + 1], digits[i + 2], digits[i + 3], digits[i + 4], digits[i + 5], digits[i + 6], digits[i + 7], digits[i + 8], digits[i + 9], digits[i + 10], digits[i + 11], digits[i + 12], digits[i + 13], digits[i + 14], digits[i + 15]];
+    u128::from_le_bytes(bytes) // NOTE: need to change if using ne byte representation
+}
+
 impl<const N: usize> BUintD8<N> {
     #[doc = doc::count_ones!(U 1024)]
     #[must_use = doc::must_use_op!()]
@@ -65,19 +71,14 @@ impl<const N: usize> BUintD8<N> {
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn count_zeros(self) -> ExpType {
-        let mut zeros = 0;
-        let mut i = 0;
-        while i < N {
-            zeros += self.digits[i].count_zeros() as ExpType;
-            i += 1;
-        }
-        zeros
+        Self::BITS - self.count_ones()
     }
 
     #[doc = doc::leading_zeros!(U 1024)]
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn leading_zeros(self) -> ExpType {
+        // don't need to use larger digits, the compiler optimises this code well
         let mut zeros = 0;
         let mut i = N;
         while i > 0 {
@@ -95,6 +96,7 @@ impl<const N: usize> BUintD8<N> {
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn trailing_zeros(self) -> ExpType {
+        // TODO: can use u128. slower than leading_zeros using naive method
         let mut zeros = 0;
         let mut i = 0;
         while i < N {
@@ -112,6 +114,7 @@ impl<const N: usize> BUintD8<N> {
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn leading_ones(self) -> ExpType {
+        // don't need to use larger digits, the compiler optimises this code well
         let mut ones = 0;
         let mut i = N;
         while i > 0 {
@@ -129,6 +132,7 @@ impl<const N: usize> BUintD8<N> {
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn trailing_ones(self) -> ExpType {
+        // TODO: can use u128. slower than leading_ones using naive method
         let mut ones = 0;
         let mut i = 0;
         while i < N {
@@ -151,6 +155,7 @@ impl<const N: usize> BUintD8<N> {
 
     #[inline]
     const unsafe fn rotate_digits_left(self, n: usize) -> Self {
+        // TODO: can use u128
         let mut out = Self::ZERO;
         let mut i = n;
         while i < N {
@@ -169,6 +174,7 @@ impl<const N: usize> BUintD8<N> {
 
     #[inline]
     const unsafe fn unchecked_rotate_left(self, rhs: ExpType) -> Self {
+        // TODO: can use u128
         let digit_shift = (rhs >> digit::BIT_SHIFT) as usize;
         let bit_shift = rhs & digit::BITS_MINUS_1;
 
@@ -214,6 +220,7 @@ impl<const N: usize> BUintD8<N> {
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn swap_bytes(self) -> Self {
+        // TODO: can use u128
         let mut uint = Self::ZERO;
         let mut i = 0;
         while i < N {
@@ -227,6 +234,7 @@ impl<const N: usize> BUintD8<N> {
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn reverse_bits(self) -> Self {
+        // TODO: can use u128
         let mut uint = Self::ZERO;
         let mut i = 0;
         while i < N {
@@ -273,6 +281,7 @@ impl<const N: usize> BUintD8<N> {
     #[must_use]
     #[inline]
     pub const fn is_power_of_two(self) -> bool {
+        // TODO: can use u128
         let mut i = 0;
         let mut ones = 0;
         while i < N {
@@ -385,6 +394,7 @@ impl<const N: usize> BUintD8<N> {
 impl<const N: usize> BUintD8<N> {
     #[inline]
     pub(crate) const unsafe fn unchecked_shl_internal(self, rhs: ExpType) -> Self {
+        // TODO: can use u128
         let mut out = BUintD8::ZERO;
         let digit_shift = (rhs >> digit::BIT_SHIFT) as usize;
         let bit_shift = rhs & digit::BITS_MINUS_1;
@@ -419,6 +429,7 @@ impl<const N: usize> BUintD8<N> {
         self,
         rhs: ExpType,
     ) -> Self {
+        // TODO: can use u128
         let mut out = if NEG { BUintD8::MAX } else { BUintD8::ZERO };
         let digit_shift = (rhs >> digit::BIT_SHIFT) as usize;
         let bit_shift = rhs & digit::BITS_MINUS_1;
@@ -479,7 +490,7 @@ impl<const N: usize> BUintD8<N> {
         let digit = &mut self.digits[index as usize >> digit::BIT_SHIFT];
         let shift = index & digit::BITS_MINUS_1;
         if value {
-            *digit |= (1 << shift);
+            *digit |= 1 << shift;
         } else {
             *digit &= !(1 << shift);
         }
@@ -546,9 +557,10 @@ impl<const N: usize> BUintD8<N> {
     #[must_use]
     #[inline]
     pub const fn is_zero(&self) -> bool {
+        // TODO: can use u128
         let mut i = 0;
         while i < N {
-            if (&self.digits)[i] != 0 {
+            if self.digits[i] != 0 {
                 return false;
             }
             i += 1;
@@ -560,6 +572,7 @@ impl<const N: usize> BUintD8<N> {
     #[must_use]
     #[inline]
     pub const fn is_one(&self) -> bool {
+        // TODO: can use u128
         if N == 0 || self.digits[0] != 1 {
             return false;
         }
@@ -575,6 +588,7 @@ impl<const N: usize> BUintD8<N> {
 
     #[inline]
     pub(crate) const fn last_digit_index(&self) -> usize {
+        // TODO: can use u128
         let mut index = 0;
         let mut i = 1;
         while i < N {
@@ -633,6 +647,7 @@ impl<'a, const N: usize> Sum<&'a Self> for BUintD8<N> {
 #[cfg(any(test, feature = "quickcheck"))]
 impl<const N: usize> quickcheck::Arbitrary for BUintD8<N> {
     fn arbitrary(g: &mut quickcheck::Gen) -> Self {
+        // TODO: can use u128
         let mut out = Self::ZERO;
         for digit in out.digits.iter_mut() {
             *digit = <Digit as quickcheck::Arbitrary>::arbitrary(g);

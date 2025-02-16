@@ -213,6 +213,7 @@ impl<const N: usize> BUintD8<N> {
         radix: u32,
         leading_sign: bool,
     ) -> Result<Self, ParseIntError> {
+        // TODO: can use u128
         if leading_sign && buf.len() == 1 {
             return Err(ParseIntError {
                 kind: IntErrorKind::InvalidDigit,
@@ -480,6 +481,7 @@ impl<const N: usize> BUintD8<N> {
     /// assert_eq!(n.to_radix_le(250), digits);
     /// ```
     pub fn to_radix_le(&self, radix: u32) -> Vec<u8> {
+        // TODO: can use u128
         if self.is_zero() {
             vec![0]
         } else if radix.is_power_of_two() {
@@ -504,6 +506,7 @@ impl<const N: usize> BUintD8<N> {
     }
 
     fn to_bitwise_digits_le(self, bits: u8) -> Vec<u8> {
+        // TODO: can use u128
         let last_digit_index = self.last_digit_index();
         let mask: Digit = (1 << bits) - 1;
         let digits_per_big_digit = digit::BITS_U8 / bits;
@@ -526,6 +529,7 @@ impl<const N: usize> BUintD8<N> {
     }
 
     fn to_inexact_bitwise_digits_le(self, bits: u8) -> Vec<u8> {
+        // TODO: can use u128
         let mask: Digit = (1 << bits) - 1;
         let digits = div_ceil(self.bits(), bits as ExpType);
         let mut out = Vec::with_capacity(digits as usize);

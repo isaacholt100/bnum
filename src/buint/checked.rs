@@ -36,6 +36,7 @@ impl<const N: usize> BUintD8<N> {
     }
 
     pub(crate) const fn div_rem_digit(self, rhs: Digit) -> (Self, Digit) {
+        // TODO: can use u128
         let mut out = Self::ZERO;
         let mut rem: Digit = 0;
         let mut i = N;

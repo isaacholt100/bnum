@@ -1,10 +1,12 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use rand::prelude::*;
+use bnum::cast::CastFrom;
 
 mod unzip;
 
 const SAMPLE_SIZE: usize = 10000;
 
+use bnum::{BIntD8, BUintD8};
 use bnum::Float;
 
 type F256 = Float<32, 236>;
@@ -14,6 +16,7 @@ type F32 = Float<4, 23>;
 
 type U256 = bnum::BUintD8<32>;
 type U1024 = bnum::BUintD8<128>;
+type I1024 = bnum::BIntD8<128>;
 
 
 fn bench_fibs(c: &mut Criterion) {
@@ -49,21 +52,27 @@ fn bench_fibs(c: &mut Criterion) {
 fn bench_add(c: &mut Criterion) {
     let mut group = c.benchmark_group("round");
     let mut rng = rand::rngs::StdRng::seed_from_u64(0);
+    const N: usize = 18;
     let big_inputs = (0..SAMPLE_SIZE)
-        .map(|_| rng.gen::<(U1024, u32)>());
-        // .map(|(a, b)| (
-        //     (F64::from_bits((a >> 1)), F64::from_bits((b >> 1)))
-        // ));
-    let big_inputs: Vec<_> = big_inputs.collect();
+        .map(|_| rng.gen::<(BUintD8<{N*8}>, BUintD8<{N*8}>)>())
+        .map(|(a, b)| (
+            ((a, b), (unsafe { core::mem::transmute::<_, bnum_old::BUint<N>>(a) }, unsafe { core::mem::transmute::<_, bnum_old::BUint<N>>(b) }))
+        ));
+    let (inputs1, inputs2) = unzip::unzip2(big_inputs);
 
     // group.bench_with_input(BenchmarkId::new("Recursive", "new"), &big_inputs, |b, inputs| b.iter(|| {
     //     for a in inputs.iter().cloned() {
     //         let _ = black_box(a).floor();
     //     }
     // }));
-    group.bench_with_input(BenchmarkId::new("Iterative", "d64"), &big_inputs, |b, inputs| b.iter(|| {
+    group.bench_with_input(BenchmarkId::new("Iterative", "d8"), &inputs1, |b, inputs| b.iter(|| {
         inputs.iter().cloned().for_each(|(a, b)| {
-            let _ = black_box((a).trailing_ones());
+            let _ = black_box(a & b);
+        })
+    }));
+    group.bench_with_input(BenchmarkId::new("Iterative", "d64"), &inputs2, |b, inputs| b.iter(|| {
+        inputs.iter().cloned().for_each(|(a, b)| {
+            let _ = black_box(a & b);
         })
     }));
     group.finish();

@@ -31,4 +31,7 @@ impl<const N: usize> BUintD8<N> {
     pub const ZERO: Self = Self::MIN;
 
     pos_const!(ONE 1, TWO 2, THREE 3, FOUR 4, FIVE 5, SIX 6, SEVEN 7, EIGHT 8, NINE 9, TEN 10);
+
+    pub(crate) const U128_DIGITS: usize = Self::BITS as usize / 128;
+    pub(crate) const U128_DIGIT_REMAINDER: usize = Self::BITS as usize % 128;
 }

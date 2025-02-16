@@ -4,6 +4,7 @@ use crate::{digit, Digit};
 
 impl<const N: usize> BUintD8<N> {
     pub(crate) const fn basecase_div_rem(self, mut v: Self, n: usize) -> (Self, Self) {
+        // TODO: can use u128
         // The Art of Computer Programming Volume 2 by Donald Knuth, Section 4.3.1, Algorithm D
 
         let mut q = Self::ZERO;

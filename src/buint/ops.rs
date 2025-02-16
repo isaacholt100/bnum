@@ -11,6 +11,7 @@ impl<const N: usize> Add<Digit> for BUintD8<N> {
 
     #[inline]
     fn add(self, rhs: Digit) -> Self {
+        // TODO: can use u128
         let mut out = self;
         let result = digit::carrying_add(out.digits[0], rhs, false);
         out.digits[0] = result.0;
