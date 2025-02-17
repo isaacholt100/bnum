@@ -151,10 +151,6 @@ macro_rules! radix {
 
             /// Returns the integer's underlying representation as an unsigned integer in the given base in little-endian digit order.
             ///
-            /// # Panics
-            ///
-            /// This function panics if `radix` is not in the range from 2 to 256 inclusive.
-            ///
             /// For examples, see the
             #[doc = concat!("[`to_radix_le`](crate::", stringify!($BUint), "::to_radix_le) method documentation for [`", stringify!($BUint), "`](crate::", stringify!($BUint), ").")]
             #[inline]

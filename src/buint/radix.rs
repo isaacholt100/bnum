@@ -433,10 +433,6 @@ macro_rules! radix {
 
             /// Returns the integer as a string in the given radix.
             ///
-            /// # Panics
-            ///
-            /// This function panics if `radix` is not in the range from 2 to 36 inclusive.
-            ///
             /// # Examples
             ///
             /// ```
@@ -461,10 +457,6 @@ macro_rules! radix {
             }
 
             /// Returns the integer in the given base in big-endian digit order.
-            ///
-            /// # Panics
-            ///
-            /// This function panics if `radix` is not in the range from 2 to 256 inclusive.
             ///
             /// ```
             /// use bnum::types::U512;
