@@ -135,7 +135,7 @@ macro_rules! uniform_int_impl {
 
                 let range = high.wrapping_sub(low).wrapping_add(<$ty>::ONE)$(.$as_unsigned())?;
                 let ints_to_reject = if !range.is_zero() {
-                    (<$u_large>::MAX - range + 1) % range
+                    (<$u_large>::MAX - range + <$u_large>::ONE) % range
                 } else {
                     <$u_large>::ZERO
                 };
@@ -191,7 +191,7 @@ macro_rules! uniform_int_impl {
                 }
 
                 let zone = if <$u_large>::MAX.bits() <= 16 {
-                    let ints_to_reject = (<$u_large>::MAX - range + 1) % range;
+                    let ints_to_reject = (<$u_large>::MAX - range + <$u_large>::ONE) % range;
                     <$u_large>::MAX - ints_to_reject
                 } else {
                     (range << range.leading_zeros()).wrapping_sub(<$u_large>::ONE)

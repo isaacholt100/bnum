@@ -11,28 +11,13 @@ impl<const N: usize> BIntD8<N> {
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn overflowing_add(self, rhs: Self) -> (Self, bool) {
-        // TODO: can use u128
-        let mut out = Self::ZERO;
-        let mut carry = false;
-
-        let self_digits = self.bits.digits;
-        let rhs_digits = rhs.bits.digits;
-
-        let mut i = 0;
-        while i < Self::N_MINUS_1 {
-            let (sum, c) = digit::carrying_add(self_digits[i], rhs_digits[i], carry);
-            out.bits.digits[i] = sum;
-            carry = c;
-            i += 1;
-        }
-        let (sum, carry) = digit::carrying_add_signed(
-            self_digits[Self::N_MINUS_1] as digit::SignedDigit,
-            rhs_digits[Self::N_MINUS_1] as digit::SignedDigit,
-            carry,
-        );
-        out.bits.digits[Self::N_MINUS_1] = sum as Digit;
-
-        (out, carry)
+        let sum = Self::from_bits(self.bits.wrapping_add(rhs.bits));
+        let overflow = match (self.is_negative(), rhs.is_negative()) {
+            (false, false) => sum.is_negative(),
+            (true, true) => !sum.is_negative(),
+            _ => false,
+        };
+        (sum, overflow)
     }
 
     #[doc = doc::overflowing::overflowing_add_unsigned!(I)]
@@ -48,28 +33,13 @@ impl<const N: usize> BIntD8<N> {
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn overflowing_sub(self, rhs: Self) -> (Self, bool) {
-        // TODO: can use u128
-        let mut out = Self::ZERO;
-        let mut borrow = false;
-
-        let self_digits = self.bits.digits;
-        let rhs_digits = rhs.bits.digits;
-
-        let mut i = 0;
-        while i < Self::N_MINUS_1 {
-            let (sub, b) = digit::borrowing_sub(self_digits[i], rhs_digits[i], borrow);
-            out.bits.digits[i] = sub;
-            borrow = b;
-            i += 1;
-        }
-        let (sub, borrow) = digit::borrowing_sub_signed(
-            self_digits[Self::N_MINUS_1] as digit::SignedDigit,
-            rhs_digits[Self::N_MINUS_1] as digit::SignedDigit,
-            borrow,
-        );
-        out.bits.digits[Self::N_MINUS_1] = sub as Digit;
-
-        (out, borrow)
+        let sub = Self::from_bits(self.bits.wrapping_sub(rhs.bits));
+        let overflow = match (self.is_negative(), rhs.is_negative()) {
+            (false, true) => sub.is_negative(),
+            (true, false) => !sub.is_negative(),
+            _ => false,
+        };
+        (sub, overflow)
     }
 
     #[doc = doc::overflowing::overflowing_sub_unsigned!(I)]
@@ -199,26 +169,8 @@ impl<const N: usize> BIntD8<N> {
     #[doc = doc::overflowing::overflowing_neg!(I)]
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn overflowing_neg(mut self) -> (Self, bool) {
-        // TODO: can use u128
-        // this is faster than self.not().overflowing_add(Self::ONE);
-        let mut i = 0;
-        while i < N - 1 {
-            let (s, o) = (!self.bits.digits[i]).overflowing_add(1); // TODO: use overflowing add on signed integer digit instead
-            self.bits.digits[i] = s;
-            if !o {
-                i += 1;
-                while i < N {
-                    self.bits.digits[i] = !self.bits.digits[i];
-                    i += 1;
-                }
-                return (self, false);
-            }
-            i += 1;
-        }
-        let (s, o) = (self.bits.digits[i] as digit::SignedDigit).overflowing_neg();
-        self.bits.digits[i] = s as Digit;
-        (self, o)
+    pub const fn overflowing_neg(self) -> (Self, bool) {
+        self.not().overflowing_add(Self::ONE)
     }
 
     #[doc = doc::overflowing::overflowing_shl!(I)]

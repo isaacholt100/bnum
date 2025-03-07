@@ -294,20 +294,6 @@ impl<const N: usize> PrimInt for BUintD8<N> {
     }
 }
 
-macro_rules! check_zero_or_one {
-    ($self: ident) => {
-        if N == 0 {
-            return *$self;
-        }
-        if $self.last_digit_index() == 0 {
-            let d = $self.digits[0];
-            if d == 0 || d == 1 {
-                return *$self;
-            }
-        }
-    };
-}
-
 /*
 The `fixpoint` function and the implementation of `Roots` below are adapted from the Rust `num_bigint` library, https://docs.rs/num-bigint/latest/num_bigint/, modified under the MIT license. The changes are released under either the MIT license or the Apache License 2.0, as described in the README. See LICENSE-MIT or LICENSE-APACHE at the project root.
 
@@ -343,7 +329,9 @@ impl<const N: usize> BUintD8<N> {
 impl<const N: usize> Roots for BUintD8<N> {
     #[inline]
     fn sqrt(&self) -> Self {
-        check_zero_or_one!(self);
+        if self.is_zero() || self.is_one() {
+            return *self;
+        }
 
         #[cfg(not(test))]
         // disable this when testing as this condition will always be true when testing against primitives, so the rest of the algorithm wouldn't be tested
@@ -363,7 +351,9 @@ impl<const N: usize> Roots for BUintD8<N> {
 
     #[inline]
     fn cbrt(&self) -> Self {
-        check_zero_or_one!(self);
+        if self.is_zero() || self.is_one() {
+            return *self;
+        }
 
         #[cfg(not(test))]
         // disable this when testing as this condition will always be true when testing against primitives, so the rest of the algorithm wouldn't be tested
@@ -389,7 +379,9 @@ impl<const N: usize> Roots for BUintD8<N> {
             2 => self.sqrt(),
             3 => self.cbrt(),
             _ => {
-                check_zero_or_one!(self);
+                if self.is_zero() || self.is_one() {
+                    return *self;
+                }
 
                 #[cfg(not(test))]
                 // disable this when testing as this condition will always be true when testing against primitives, so the rest of the algorithm wouldn't be tested

@@ -47,12 +47,6 @@ pub struct BUintD8<const N: usize> {
 #[cfg(feature = "zeroize")]
 impl<const N: usize> zeroize::DefaultIsZeroes for BUintD8<N> {}
 
-pub const fn u128_from_digits(digits: &[Digit], start_index: usize) -> u128 {
-    let i = start_index;
-    let bytes = [digits[i], digits[i + 1], digits[i + 2], digits[i + 3], digits[i + 4], digits[i + 5], digits[i + 6], digits[i + 7], digits[i + 8], digits[i + 9], digits[i + 10], digits[i + 11], digits[i + 12], digits[i + 13], digits[i + 14], digits[i + 15]];
-    u128::from_le_bytes(bytes) // NOTE: need to change if using ne byte representation
-}
-
 impl<const N: usize> BUintD8<N> {
     #[doc = doc::count_ones!(U 1024)]
     #[must_use = doc::must_use_op!()]
@@ -96,13 +90,13 @@ impl<const N: usize> BUintD8<N> {
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn trailing_zeros(self) -> ExpType {
-        // TODO: can use u128. slower than leading_zeros using naive method
         let mut zeros = 0;
         let mut i = 0;
-        while i < N {
-            let digit = self.digits[i];
-            zeros += digit.trailing_zeros() as ExpType;
-            if digit != Digit::MIN {
+        while i < Self::U128_DIGITS {
+            let digit = self.u128_digit_one_pad(i);
+            let tz = digit.trailing_zeros() as ExpType;
+            zeros += tz;
+            if tz != u128::BITS {
                 break;
             }
             i += 1;
@@ -132,13 +126,13 @@ impl<const N: usize> BUintD8<N> {
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn trailing_ones(self) -> ExpType {
-        // TODO: can use u128. slower than leading_ones using naive method
         let mut ones = 0;
         let mut i = 0;
-        while i < N {
-            let digit = self.digits[i];
-            ones += digit.trailing_ones() as ExpType;
-            if digit != Digit::MAX {
+        while i < Self::U128_DIGITS {
+            let digit = self.u128_digit(i);
+            let to = digit.trailing_ones() as ExpType;
+            ones += to;
+            if to != u128::BITS {
                 break;
             }
             i += 1;
@@ -155,7 +149,7 @@ impl<const N: usize> BUintD8<N> {
 
     #[inline]
     const unsafe fn rotate_digits_left(self, n: usize) -> Self {
-        // TODO: can use u128
+        // this is no slower than using pointers with add and copy_from_nonoverlapping
         let mut out = Self::ZERO;
         let mut i = n;
         while i < N {
@@ -174,24 +168,22 @@ impl<const N: usize> BUintD8<N> {
 
     #[inline]
     const unsafe fn unchecked_rotate_left(self, rhs: ExpType) -> Self {
-        // TODO: can use u128
-        let digit_shift = (rhs >> digit::BIT_SHIFT) as usize;
-        let bit_shift = rhs & digit::BITS_MINUS_1;
+        let digit_shift = (rhs / 8) as usize;
+        let bit_shift = rhs % 8;
 
         let mut out = self.rotate_digits_left(digit_shift);
 
         if bit_shift != 0 {
-            let carry_shift = digit::BITS - bit_shift;
-            let mut carry = 0;
+            let carry_shift = 128 - bit_shift;
+            let mut carry = (out.digits[N - 1] >> (8 - bit_shift)) as u128;
 
             let mut i = 0;
-            while i < N {
-                let current_digit = out.digits[i];
-                out.digits[i] = (current_digit << bit_shift) | carry;
+            while i < Self::U128_DIGITS {
+                let current_digit = out.u128_digit(i);
+                out.set_u128_digit(i, (current_digit << bit_shift) | carry);
                 carry = current_digit >> carry_shift;
                 i += 1;
             }
-            out.digits[0] |= carry;
         }
 
         out
@@ -214,34 +206,52 @@ impl<const N: usize> BUintD8<N> {
         unsafe { self.unchecked_rotate_left(Self::BITS as ExpType - n) }
     }
 
-    const N_MINUS_1: usize = N - 1;
-
     #[doc = doc::swap_bytes!(U 256, "u")]
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn swap_bytes(self) -> Self {
-        // TODO: can use u128
-        let mut uint = Self::ZERO;
+        let mut out = Self::ZERO;
         let mut i = 0;
-        while i < N {
-            uint.digits[i] = self.digits[Self::N_MINUS_1 - i].swap_bytes();
+        while i < Self::FULL_U128_DIGITS {
+            let d = self.u128_digit(i).swap_bytes();
+            let j = N - (i + 1) * 16;
+            out.set_u128_digit(j, d);
             i += 1;
         }
-        uint
+        if Self::U128_DIGIT_REMAINDER != 0 {
+            let d = self.u128_digit(i).swap_bytes().to_le_bytes();
+            unsafe {
+                d
+                    .as_ptr()
+                    .add(16 - Self::U128_DIGIT_REMAINDER)
+                    .copy_to_nonoverlapping(out.digits.as_mut_ptr(), Self::U128_DIGIT_REMAINDER);
+            }
+        }
+        out
     }
 
     #[doc = doc::reverse_bits!(U 256, "u")]
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn reverse_bits(self) -> Self {
-        // TODO: can use u128
-        let mut uint = Self::ZERO;
+        let mut out = Self::ZERO;
         let mut i = 0;
-        while i < N {
-            uint.digits[i] = self.digits[Self::N_MINUS_1 - i].reverse_bits();
+        while i < Self::FULL_U128_DIGITS {
+            let d = self.u128_digit(i).reverse_bits();
+            let j = N - (i + 1) * 16;
+            out.set_u128_digit(j, d);
             i += 1;
         }
-        uint
+        if Self::U128_DIGIT_REMAINDER != 0 {
+            let d = self.u128_digit(i).reverse_bits().to_le_bytes();
+            unsafe {
+                d
+                    .as_ptr()
+                    .add(16 - Self::U128_DIGIT_REMAINDER)
+                    .copy_to_nonoverlapping(out.digits.as_mut_ptr(), Self::U128_DIGIT_REMAINDER);
+            }
+        }
+        out
     }
 
     #[doc = doc::pow!(U 256)]
@@ -281,11 +291,10 @@ impl<const N: usize> BUintD8<N> {
     #[must_use]
     #[inline]
     pub const fn is_power_of_two(self) -> bool {
-        // TODO: can use u128
         let mut i = 0;
         let mut ones = 0;
-        while i < N {
-            ones += (&self.digits)[i].count_ones();
+        while i < Self::U128_DIGITS {
+            ones += self.u128_digit(i).count_ones();
             if ones > 1 {
                 return false;
             }
@@ -394,30 +403,28 @@ impl<const N: usize> BUintD8<N> {
 impl<const N: usize> BUintD8<N> {
     #[inline]
     pub(crate) const unsafe fn unchecked_shl_internal(self, rhs: ExpType) -> Self {
-        // TODO: can use u128
         let mut out = BUintD8::ZERO;
-        let digit_shift = (rhs >> digit::BIT_SHIFT) as usize;
-        let bit_shift = rhs & digit::BITS_MINUS_1;
+        let digit_shift = (rhs / 8) as usize;
+        let bit_shift = rhs % 8;
 
-        // let num_copies = N.saturating_sub(digit_shift); // TODO: use unchecked_ methods from primitives when these are stablised and constified
+        let mut i = digit_shift;
+        while i < N {
+            // we start i at digit_shift, not 0, since the compiler can elide bounds checks when i < N
+            // this is no slower than using pointers with add and copy_from_nonoverlapping
+            out.digits[i] = self.digits[i - digit_shift];
+            i += 1;
+        }
 
         if bit_shift != 0 {
-            let carry_shift = digit::BITS - bit_shift;
+            let carry_shift = 128 - bit_shift;
             let mut carry = 0;
 
             let mut i = digit_shift;
             while i < N {
-                let current_digit = self.digits[i - digit_shift];
-                out.digits[i] = (current_digit << bit_shift) | carry;
+                let current_digit = out.u128_digit_at_offset::<0>(i);
+                out.set_u128_digit_at_offset(i, (current_digit << bit_shift) | carry);
                 carry = current_digit >> carry_shift;
-                i += 1;
-            }
-        } else {
-            let mut i = digit_shift;
-            while i < N {
-                // we start i at digit_shift, not 0, since the compiler can elide bounds checks when i < N
-                out.digits[i] = self.digits[i - digit_shift];
-                i += 1;
+                i += 16;
             }
         }
 
@@ -429,36 +436,43 @@ impl<const N: usize> BUintD8<N> {
         self,
         rhs: ExpType,
     ) -> Self {
-        // TODO: can use u128
         let mut out = if NEG { BUintD8::MAX } else { BUintD8::ZERO };
-        let digit_shift = (rhs >> digit::BIT_SHIFT) as usize;
-        let bit_shift = rhs & digit::BITS_MINUS_1;
+        let digit_shift = (rhs / 8) as usize;
+        let bit_shift = rhs % 8;
 
-        let num_copies = N.saturating_sub(digit_shift); // TODO: use unchecked_ methods from primitives when these are stablised and constified
+        let num_copies = N.unchecked_sub(digit_shift); // TODO: use unchecked_ methods from primitives when these are stablised and constified
+
+        let mut i = digit_shift;
+        while i < N {
+            // we start i at digit_shift, not 0, since the compiler can elide bounds checks when i < N
+            out.digits[i - digit_shift] = self.digits[i];
+            i += 1;
+        }
 
         if bit_shift != 0 {
-            let carry_shift = digit::BITS - bit_shift;
+            let carry_shift = 128 - bit_shift;
             let mut carry = 0;
 
             let mut i = digit_shift;
-            while i < N {
-                // we use an increment while loop because the compiler can elide the array bounds check, which results in big performance gains
-                let index = N - 1 - i;
-                let current_digit = self.digits[index + digit_shift];
-                out.digits[index] = (current_digit >> bit_shift) | carry;
+            while i + 15 < N {
+                let offset = N - 16 - i;
+                let current_digit = out.u128_digit_at_offset::<0>(offset);
+                out.set_u128_digit_at_offset(offset, (current_digit >> bit_shift) | carry);
                 carry = current_digit << carry_shift;
-                i += 1;
+                i += 16;
+            }
+            let rem = (N - digit_shift) % 16;
+            if rem != 0 {
+                let mut bytes = [0; 16];
+                bytes.as_mut_ptr().add(16 - rem).copy_from_nonoverlapping(out.digits.as_ptr(), rem);
+                let digit = u128::from_le_bytes(bytes);
+                let shifted = (digit >> bit_shift) | carry;
+                let bytes = shifted.to_le_bytes();
+                out.digits.as_mut_ptr().copy_from_nonoverlapping(bytes.as_ptr().add(16 - rem), rem);
             }
 
             if NEG {
-                out.digits[num_copies - 1] |= Digit::MAX << carry_shift;
-            }
-        } else {
-            let mut i = digit_shift;
-            while i < N {
-                // we start i at digit_shift, not 0, since the compiler can elide bounds checks when i < N
-                out.digits[i - digit_shift] = self.digits[i];
-                i += 1;
+                out.digits[num_copies - 1] |= Digit::MAX << (8 - bit_shift);
             }
         }
 
@@ -557,10 +571,9 @@ impl<const N: usize> BUintD8<N> {
     #[must_use]
     #[inline]
     pub const fn is_zero(&self) -> bool {
-        // TODO: can use u128
         let mut i = 0;
-        while i < N {
-            if self.digits[i] != 0 {
+        while i < Self::U128_DIGITS {
+            if self.u128_digit(i) != 0 {
                 return false;
             }
             i += 1;
@@ -572,13 +585,12 @@ impl<const N: usize> BUintD8<N> {
     #[must_use]
     #[inline]
     pub const fn is_one(&self) -> bool {
-        // TODO: can use u128
-        if N == 0 || self.digits[0] != 1 {
+        if self.u128_digit(0) != 1 {
             return false;
         }
         let mut i = 1;
-        while i < N {
-            if (&self.digits)[i] != 0 {
+        while i < Self::U128_DIGITS {
+            if self.u128_digit(i) != 0 {
                 return false;
             }
             i += 1;
@@ -586,6 +598,7 @@ impl<const N: usize> BUintD8<N> {
         true
     }
 
+    // TODO: maybe don't need this method once using u128 digits for relevant methods
     #[inline]
     pub(crate) const fn last_digit_index(&self) -> usize {
         // TODO: can use u128
@@ -606,6 +619,55 @@ impl<const N: usize> BUintD8<N> {
         // TODO: optimise this method, this will make exponentiation by squaring faster
         self * self
     }
+}
+
+impl<const N: usize> BUintD8<N> {
+    // TODO: should probably make these unsafe or add checks in
+    #[inline]
+    const fn u128_digit_at_offset<const PAD: u8>(&self, offset: usize) -> u128 {
+        let mut bytes = [PAD; 16];
+        let c = N - offset;
+        let count = c & (16 ^ (-((16 > c) as isize) as usize)); // this is a bit hack for min(c, 16)
+        unsafe {
+            self.digits.as_ptr().add(offset).copy_to_nonoverlapping(bytes.as_mut_ptr(), count);
+        }
+        u128::from_le_bytes(bytes)
+    }
+
+    #[inline]
+    const fn u128_digit_pad<const PAD: u8>(&self, i: usize) -> u128 {
+        let offset = i * 16;
+        self.u128_digit_at_offset::<PAD>(offset)
+    }
+
+    #[inline]
+    const fn u128_digit(&self, i: usize) -> u128 {
+        self.u128_digit_pad::<0>(i)
+    }
+
+    #[inline]
+    const fn u128_digit_one_pad(&self, i: usize) -> u128 {
+        self.u128_digit_pad::<{u8::MAX}>(i)
+    }
+
+    #[inline]
+    const fn set_u128_digit(&mut self, i: usize, value: u128) {
+        self.set_u128_digit_at_offset(i * 16, value);
+    }
+
+    #[inline]
+    const fn set_u128_digit_at_offset(&mut self, offset: usize, value: u128) {
+        let out_bytes = value.to_le_bytes();
+        let c = N - offset;
+        let count = c & (16 ^ (-((16 > c) as isize) as usize)); // this is a bit hack for min(c, 16)
+        unsafe {
+            out_bytes.as_ptr().copy_to_nonoverlapping(self.digits.as_mut_ptr().add(offset), count);
+        }
+    }
+
+    const U128_DIGITS: usize = N.div_ceil(16);
+    pub(crate) const FULL_U128_DIGITS: usize = N / 16;
+    pub(crate) const U128_DIGIT_REMAINDER: usize = N % 16;
 }
 
 impl<const N: usize> Default for BUintD8<N> {
@@ -647,10 +709,12 @@ impl<'a, const N: usize> Sum<&'a Self> for BUintD8<N> {
 #[cfg(any(test, feature = "quickcheck"))]
 impl<const N: usize> quickcheck::Arbitrary for BUintD8<N> {
     fn arbitrary(g: &mut quickcheck::Gen) -> Self {
-        // TODO: can use u128
         let mut out = Self::ZERO;
-        for digit in out.digits.iter_mut() {
-            *digit = <Digit as quickcheck::Arbitrary>::arbitrary(g);
+        let mut i = 0;
+        while i < Self::U128_DIGITS {
+            let a = <u128 as quickcheck::Arbitrary>::arbitrary(g);
+            out.set_u128_digit(i, a);
+            i += 1;
         }
         out
     }
@@ -671,6 +735,11 @@ mod tests {
     }
     test_bignum! {
         function: <utest>::cast_signed(a: utest)
+    }
+
+    test_bignum! {
+        function: <itest>::overflowing_shr,
+        cases: [(-1, 9u8)]
     }
 
     #[test]

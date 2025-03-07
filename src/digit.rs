@@ -31,6 +31,18 @@ pub const fn to_double_digit(low: Digit, high: Digit) -> DoubleDigit {
 // TODO: these will no longer be necessary once const_bigint_helper_methods is stabilised: https://github.com/rust-lang/rust/issues/85532
 
 #[inline]
+pub const fn carrying_add_u128(a: u128, b: u128, carry: bool) -> (u128, bool) {
+    let (s1, o1) = a.overflowing_add(b);
+    if carry {
+        let (s2, o2) = s1.overflowing_add(1);
+        (s2, o1 || o2)
+    } else {
+        (s1, o1)
+    }
+}
+
+
+#[inline]
 pub const fn carrying_add(a: Digit, b: Digit, carry: bool) -> (Digit, bool) {
     let (s1, o1) = a.overflowing_add(b);
     if carry {
@@ -53,11 +65,37 @@ pub const fn borrowing_sub(a: Digit, b: Digit, borrow: bool) -> (Digit, bool) {
 }
 
 #[inline]
+pub const fn borrowing_sub_u128(a: u128, b: u128, borrow: bool) -> (u128, bool) {
+    let (s1, o1) = a.overflowing_sub(b);
+    if borrow {
+        let (s2, o2) = s1.overflowing_sub(1);
+        (s2, o1 || o2)
+    } else {
+        (s1, o1)
+    }
+}
+
+#[inline]
 pub const fn carrying_add_signed(
     a: SignedDigit,
     b: SignedDigit,
     carry: bool,
 ) -> (SignedDigit, bool) {
+    let (s1, o1) = a.overflowing_add(b);
+    if carry {
+        let (s2, o2) = s1.overflowing_add(1);
+        (s2, o1 != o2)
+    } else {
+        (s1, o1)
+    }
+}
+
+#[inline]
+pub const fn carrying_add_signed_i128(
+    a: i128,
+    b: i128,
+    carry: bool,
+) -> (i128, bool) {
     let (s1, o1) = a.overflowing_add(b);
     if carry {
         let (s2, o2) = s1.overflowing_add(1);

@@ -6,26 +6,26 @@ use core::ops::{
     Mul, MulAssign, Not, Rem, RemAssign, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign,
 };
 
-impl<const N: usize> Add<Digit> for BUintD8<N> {
-    type Output = Self;
+// TODO: mark that this has been removed
+// impl<const N: usize> Add<Digit> for BUintD8<N> {
+//     type Output = Self;
 
-    #[inline]
-    fn add(self, rhs: Digit) -> Self {
-        // TODO: can use u128
-        let mut out = self;
-        let result = digit::carrying_add(out.digits[0], rhs, false);
-        out.digits[0] = result.0;
-        let mut carry = result.1;
-        let mut i = 1;
-        while i < N && carry {
-            let result = out.digits[i].overflowing_add(1);
-            out.digits[i] = result.0;
-            carry = result.1;
-            i += 1;
-        }
-        out
-    }
-}
+//     #[inline]
+//     fn add(self, rhs: Digit) -> Self {
+//         let mut out = self;
+//         let result = digit::carrying_add(out.digits[0], rhs, false);
+//         out.digits[0] = result.0;
+//         let mut carry = result.1;
+//         let mut i = 1;
+//         while i < N && carry {
+//             let result = out.digits[i].overflowing_add(1);
+//             out.digits[i] = result.0;
+//             carry = result.1;
+//             i += 1;
+//         }
+//         out
+//     }
+// }
 
 impl<const N: usize> BitAnd for BUintD8<N> {
     type Output = Self;

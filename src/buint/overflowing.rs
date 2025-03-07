@@ -1,7 +1,7 @@
 use super::BUintD8;
 use crate::doc;
 use crate::ExpType;
-use crate::{digit, BIntD8, Digit};
+use crate::{digit, BIntD8};
 
 #[doc = doc::overflowing::impl_desc!()]
 impl<const N: usize> BUintD8<N> {
@@ -9,15 +9,19 @@ impl<const N: usize> BUintD8<N> {
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn overflowing_add(self, rhs: Self) -> (Self, bool) {
-        // TODO: can use u128
         let mut out = Self::ZERO;
         let mut carry = false;
         let mut i = 0;
-        while i < N {
-            let result = digit::carrying_add(self.digits[i], rhs.digits[i], carry);
-            out.digits[i] = result.0;
+        while i < Self::FULL_U128_DIGITS {
+            let result = digit::carrying_add_u128(self.u128_digit(i), rhs.u128_digit(i), carry);
+            out.set_u128_digit(i, result.0);
             carry = result.1;
             i += 1;
+        }
+        if Self::U128_DIGIT_REMAINDER != 0 {
+            let (d, _) = digit::carrying_add_u128(self.u128_digit(Self::FULL_U128_DIGITS), rhs.u128_digit(Self::FULL_U128_DIGITS), carry);
+            out.set_u128_digit(Self::FULL_U128_DIGITS, d);
+            carry = (128 - d.leading_zeros()) > (Self::U128_DIGIT_REMAINDER as u32) * 8;
         }
         (out, carry)
     }
@@ -34,13 +38,12 @@ impl<const N: usize> BUintD8<N> {
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn overflowing_sub(self, rhs: Self) -> (Self, bool) {
-        // TODO: can use u128
         let mut out = Self::ZERO;
         let mut borrow = false;
         let mut i = 0;
-        while i < N {
-            let result = digit::borrowing_sub(self.digits[i], rhs.digits[i], borrow);
-            out.digits[i] = result.0;
+        while i < Self::U128_DIGITS { // the last full u128 digits cause an overflow iff the truncated last digits cause an overflow
+            let result = digit::borrowing_sub_u128(self.u128_digit(i), rhs.u128_digit(i), borrow);
+            out.set_u128_digit(i, result.0);
             borrow = result.1;
             i += 1;
         }

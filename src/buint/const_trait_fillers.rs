@@ -8,36 +8,25 @@ use core::cmp::Ordering;
 impl<const N: usize> BUintD8<N> {
     #[inline]
     pub const fn bitand(self, rhs: Self) -> Self {
-        // TODO: can use u128
         let mut out = Self::ZERO;
         let mut i = 0;
-        while i < N {
-            out.digits[i] = self.digits[i] & rhs.digits[i];
+        while i < Self::U128_DIGITS {
+            let d = self.u128_digit(i) & rhs.u128_digit(i);
+            out.set_u128_digit(i, d);
+
             i += 1;
-        }
-        return out;
-        while i < N {
-            let u128_a = super::u128_from_digits(&self.digits, i);
-            let u128_b = super::u128_from_digits(&rhs.digits, i);
-            let u128_out = u128_a & u128_b;
-            let out_bytes = u128_out.to_le_bytes();
-            let mut j = 0;
-            while j < 16 {
-                out.digits[i + j] = out_bytes[j];
-                j += 1;
-            }
-            i += 16;
         }
         out
     }
 
     #[inline]
     pub const fn bitor(self, rhs: Self) -> Self {
-        // TODO: can use u128
         let mut out = Self::ZERO;
         let mut i = 0;
-        while i < N {
-            out.digits[i] = self.digits[i] | rhs.digits[i];
+        while i < Self::U128_DIGITS {
+            let d = self.u128_digit(i) | rhs.u128_digit(i);
+            out.set_u128_digit(i, d);
+
             i += 1;
         }
         out
@@ -45,11 +34,12 @@ impl<const N: usize> BUintD8<N> {
 
     #[inline]
     pub const fn bitxor(self, rhs: Self) -> Self {
-        // TODO: can use u128
         let mut out = Self::ZERO;
         let mut i = 0;
-        while i < N {
-            out.digits[i] = self.digits[i] ^ rhs.digits[i];
+        while i < Self::U128_DIGITS {
+            let d = self.u128_digit(i) ^ rhs.u128_digit(i);
+            out.set_u128_digit(i, d);
+
             i += 1;
         }
         out
@@ -57,11 +47,12 @@ impl<const N: usize> BUintD8<N> {
 
     #[inline]
     pub const fn not(self) -> Self {
-        // TODO: can use u128
         let mut out = Self::ZERO;
         let mut i = 0;
-        while i < N {
-            out.digits[i] = !self.digits[i];
+        while i < Self::U128_DIGITS {
+            let d = !self.u128_digit(i);
+            out.set_u128_digit(i, d);
+
             i += 1;
         }
         out
@@ -69,10 +60,9 @@ impl<const N: usize> BUintD8<N> {
 
     #[inline]
     pub const fn eq(&self, other: &Self) -> bool {
-        // TODO: can use u128
         let mut i = 0;
-        while i < N {
-            if self.digits[i] != other.digits[i] {
+        while i < Self::U128_DIGITS {
+            if self.u128_digit(i) != other.u128_digit(i) {
                 return false;
             }
             i += 1;
@@ -87,12 +77,11 @@ impl<const N: usize> BUintD8<N> {
 
     #[inline]
     pub const fn cmp(&self, other: &Self) -> Ordering {
-        // TODO: can use u128
-        let mut i = N;
+        let mut i = Self::U128_DIGITS;
         while i > 0 {
             i -= 1;
-            let a = self.digits[i];
-            let b = other.digits[i];
+            let a = self.u128_digit(i);
+            let b = other.u128_digit(i);
 
             // Clippy: don't use match here as `cmp` is not yet const for primitive integers
             #[allow(clippy::comparison_chain)]

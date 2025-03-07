@@ -9,7 +9,7 @@ impl<const N: usize> BIntD8<N> {
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn wrapping_add(self, rhs: Self) -> Self {
-        Self::from_bits(self.bits.wrapping_add(rhs.bits))
+        self.overflowing_add(rhs).0
     }
 
     #[doc = doc::wrapping::wrapping_add_unsigned!(I)]
@@ -23,7 +23,7 @@ impl<const N: usize> BIntD8<N> {
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn wrapping_sub(self, rhs: Self) -> Self {
-        Self::from_bits(self.bits.wrapping_sub(rhs.bits))
+        self.overflowing_sub(rhs).0
     }
 
     #[doc = doc::wrapping::wrapping_sub_unsigned!(I)]
