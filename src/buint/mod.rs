@@ -480,7 +480,7 @@ macro_rules! mod_impl {
             pub fn set_bit(&mut self, index: ExpType, value: bool) {
                 let digit = &mut self.digits[index as usize >> digit::$Digit::BIT_SHIFT];
                 let shift = index & digit::$Digit::BITS_MINUS_1;
-                *digit = *digit & !(1 << shift) | ((value as $Digit) << shift)
+                *digit = *digit & !(1 << shift) | ((value as $Digit) << shift);
             }
 
             /// Returns an integer whose value is `2^power`. This is faster than using a shift left on `Self::ONE`.
