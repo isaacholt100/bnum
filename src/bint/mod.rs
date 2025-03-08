@@ -408,7 +408,7 @@ macro_rules! mod_impl {
             /// This simply returns a mutable reference to the underlying representation of the integer in two's complement, as an unsigned integer.
             #[must_use]
             #[inline(always)]
-            pub const fn as_bits_mut(&mut self) -> &mut $BUint<N> {
+            pub fn as_bits_mut(&mut self) -> &mut $BUint<N> {
                 &mut self.bits
             }
         }
