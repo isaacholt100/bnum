@@ -397,6 +397,20 @@ macro_rules! mod_impl {
             pub const fn to_bits(self) -> $BUint<N> {
                 self.bits
             }
+
+            /// This simply returns a reference to the underlying representation of the integer in two's complement, as an unsigned integer.
+            #[must_use]
+            #[inline(always)]
+            pub const fn as_bits(&self) -> &$BUint<N> {
+                &self.bits
+            }
+
+            /// This simply returns a mutable reference to the underlying representation of the integer in two's complement, as an unsigned integer.
+            #[must_use]
+            #[inline(always)]
+            pub const fn as_bits_mut(&mut self) -> &mut $BUint<N> {
+                &mut self.bits
+            }
         }
 
         impl<const N: usize> Default for $BInt<N> {
