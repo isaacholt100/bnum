@@ -291,6 +291,24 @@ crate::test::all_digit_tests! {
         let option = BInt::<100>::parse_bytes(bytes, 11);
         assert!(option.is_none());
     }
+
+    #[test]
+    #[should_panic(expected = "Radix must be in range [2, 36]")]
+    fn parse_str_radix_invalid_radix() {
+        let _ = ITEST::parse_str_radix("1234", 37);
+    }
+
+    #[test]
+    #[should_panic(expected = "Radix must be in range [2, 256]")]
+    fn from_radix_be_invalid_radix() {
+        let _ = ITEST::from_radix_be(&[1], 257);
+    }
+
+    #[test]
+    #[should_panic(expected = "Radix must be in range [2, 256]")]
+    fn from_radix_le_invalid_radix() {
+        let _ = ITEST::from_radix_le(&[1], 257);
+    }
 }
 
 crate::macro_impl!(radix);

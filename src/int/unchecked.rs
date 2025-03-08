@@ -61,10 +61,12 @@ macro_rules! tests {
             function: unsafe <$int>::unchecked_mul(a: $int, b: $int),
             skip: a.checked_mul(b).is_none()
         }
+        #[cfg(feature = "nightly")] // as unchecked_shifts not stabilised yet
         test_bignum! {
             function: unsafe <$int>::unchecked_shl(a: $int, b: u8),
             skip: a.checked_shl(b as u32).is_none()
         }
+        #[cfg(feature = "nightly")] // as unchecked_shifts not stabilised yet
         test_bignum! {
             function: unsafe <$int>::unchecked_shr(a: $int, b: u8),
             skip: a.checked_shr(b as u32).is_none()

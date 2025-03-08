@@ -27,20 +27,6 @@ This crate uses Rust's const generics to allow creation of integers of arbitrary
 - **Compile-time integer parsing**: the `from_str_radix` and `parse_str_radix` methods on `bnum` integers are `const`, which allows parsing of integers from string slices at compile time. Note that this is more powerful than compile-time parsing of integer literals. This is because it allows parsing of strings in all radices from `2` to `36` inclusive instead of just `2`, `8`, `10` and `16`. Additionally, the string to be parsed does not have to be a literal: it could, for example, be obtained via [`include_str!`](https://doc.rust-lang.org/core/macro.include_str.html), or [`env!`](https://doc.rust-lang.org/core/macro.env.html).
 - **`const` evaluation**: nearly all methods defined on `bnum` integers are `const`, which allows complex compile-time calculations.
 
-## Installation
-
-To install and use `bnum`, simply add the following line to your `Cargo.toml` file in the `[dependencies]` section:
-
-```toml
-bnum = "0.12.1"
-```
-
-Or, to enable various `bnum` features as well, add for example this line instead:
-
-```toml
-bnum = { version = "0.12.1", features = ["rand"] } # enables the "rand" feature
-```
-
 ## Example Usage
 
 **NB: the examples in the documentation use specific type aliases (e.g. `U256`, `U512`,  or `I256`, `I512`) to give examples of correct usage for most methods. There is nothing special about these types in particular: all methods that are shown with these are implemented for all unsigned/signed `bnum` integers for any value of `N`.**
@@ -134,6 +120,8 @@ The `valuable` feature enables the [`Valuable`](https://docs.rs/valuable/latest/
 ### Nightly features
 
 Activating the `nightly` feature will enable the `from_be_bytes`, `from_le_bytes`, `from_ne_bytes`, `to_be_bytes`, `to_le_bytes` and `to_ne_bytes` methods on `bnum`'s unsigned and signed integers and will make the `unchecked_...` methods `const`. This comes at the cost of only being able to compile on nightly. The nightly features that this uses are [`generic_const_exprs`](https://github.com/rust-lang/rust/issues/76560), [`const_trait_impl`](https://github.com/rust-lang/rust/issues/67792) and [`const_option`](https://github.com/rust-lang/rust/issues/67441).
+
+The `nightly` feature is also required to test methods whose counterparts on the primitive integers are only available on nightly, e.g. the `div_floor` and all `strict_...` methods.
 
 ## Testing
 

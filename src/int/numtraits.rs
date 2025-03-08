@@ -69,6 +69,9 @@ macro_rules! impls {
         num_trait_impl!($Int, WrappingMul, wrapping_mul, Self);
         num_trait_impl!($Int, WrappingSub, wrapping_sub, Self);
 
+        num_trait_impl!($Int, OverflowingAdd, overflowing_add, (Self, bool));
+        num_trait_impl!($Int, OverflowingSub, overflowing_sub, (Self, bool));
+
         impl<const N: usize> CheckedNeg for $Int<N> {
             #[inline]
             fn checked_neg(&self) -> Option<Self> {
@@ -428,7 +431,13 @@ macro_rules! tests {
             function: <$int as WrappingAdd>::wrapping_add(a: ref &$int, b: ref &$int)
         }
         test_bignum! {
+            function: <$int as OverflowingAdd>::overflowing_add(a: ref &$int, b: ref &$int)
+        }
+        test_bignum! {
             function: <$int as WrappingSub>::wrapping_sub(a: ref &$int, b: ref &$int)
+        }
+        test_bignum! {
+            function: <$int as OverflowingSub>::overflowing_sub(a: ref &$int, b: ref &$int)
         }
         test_bignum! {
             function: <$int as WrappingMul>::wrapping_mul(a: ref &$int, b: ref &$int)

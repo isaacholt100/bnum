@@ -446,5 +446,7 @@ crate::doc::link_doc_comment_method! {
     midpoint,
     copysign,
     next_up,
-    next_down
+    next_down,
+    unbounded_shl,
+    unbounded_shr
 }

@@ -124,6 +124,35 @@ macro_rules! mod_impl {
                 Self::from_bits(self.bits.rotate_right(n))
             }
 
+            #[doc = doc::unbounded_shl!(U)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn unbounded_shl(self, rhs: ExpType) -> Self {
+                Self::from_bits(self.bits.unbounded_shl(rhs))
+            }
+
+            #[doc = doc::unbounded_shr!(U)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn unbounded_shr(self, rhs: ExpType) -> Self {
+                if rhs >= Self::BITS {
+                    if self.is_negative() {
+                        Self::NEG_ONE
+                    } else {
+                        Self::ZERO
+                    }
+                } else {
+                    let u = unsafe {
+                        if self.is_negative() {
+                            $BUint::unchecked_shr_pad_internal::<true>(self.bits, rhs)
+                        } else {
+                            $BUint::unchecked_shr_pad_internal::<false>(self.bits, rhs)
+                        }
+                    };
+                    Self::from_bits(u)
+                }
+            }
+
             #[doc = doc::swap_bytes!(I 256, "i")]
             #[must_use = doc::must_use_op!()]
             #[inline]
@@ -368,6 +397,20 @@ macro_rules! mod_impl {
             pub const fn to_bits(self) -> $BUint<N> {
                 self.bits
             }
+
+            /// This simply returns a reference to the underlying representation of the integer in two's complement, as an unsigned integer.
+            #[must_use]
+            #[inline(always)]
+            pub const fn as_bits(&self) -> &$BUint<N> {
+                &self.bits
+            }
+
+            /// This simply returns a mutable reference to the underlying representation of the integer in two's complement, as an unsigned integer.
+            #[must_use]
+            #[inline(always)]
+            pub fn as_bits_mut(&mut self) -> &mut $BUint<N> {
+                &mut self.bits
+            }
         }
 
         impl<const N: usize> Default for $BInt<N> {
@@ -446,6 +489,7 @@ crate::test::all_digit_tests! {
     test_bignum! {
         function: <itest>::is_negative(a: itest)
     }
+    #[cfg(feature = "nightly")] // as integer_sign_cast not yet stabilised
     test_bignum! {
         function: <itest>::cast_unsigned(a: itest)
     }
