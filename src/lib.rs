@@ -8,7 +8,7 @@
     )
 )]
 #![cfg_attr(
-    test,
+    all(test, feature = "nightly"),
     feature(
         bigint_helper_methods,
         int_roundings,
@@ -19,6 +19,7 @@
         integer_sign_cast,
         num_midpoint_signed,
         strict_overflow_ops,
+        unbounded_shifts
     )
 )]
 #![doc = include_str!("../README.md")]

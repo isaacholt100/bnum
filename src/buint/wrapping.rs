@@ -175,6 +175,7 @@ crate::test::all_digit_tests! {
     test_bignum! {
         function: <utest>::wrapping_pow(a: utest, b: u16)
     }
+    #[cfg(feature = "nightly")]
     test_bignum! {
         function: <utest>::wrapping_next_power_of_two(a: utest),
         cases: [

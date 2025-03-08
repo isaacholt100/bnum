@@ -212,6 +212,28 @@ macro_rules! mod_impl {
                 }
             }
 
+            #[doc = doc::unbounded_shl!(U)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn unbounded_shl(self, rhs: ExpType) -> Self {
+                if rhs >= Self::BITS {
+                    Self::ZERO
+                } else {
+                    unsafe { self.unchecked_shl_internal(rhs) }
+                }
+            }
+
+            #[doc = doc::unbounded_shr!(U)]
+            #[must_use = doc::must_use_op!()]
+            #[inline]
+            pub const fn unbounded_shr(self, rhs: ExpType) -> Self {
+                if rhs >= Self::BITS {
+                    Self::ZERO
+                } else {
+                    unsafe { self.unchecked_shr_pad_internal::<false>(rhs) }
+                }
+            }
+
             const N_MINUS_1: usize = N - 1;
 
             #[doc = doc::swap_bytes!(U 256, "u")]
@@ -658,6 +680,7 @@ crate::test::all_digit_tests! {
     test_bignum! {
         function: <utest>::is_power_of_two(a: utest)
     }
+    #[cfg(feature = "nightly")] // as integer_sign_cast not yet stabilised
     test_bignum! {
         function: <utest>::cast_signed(a: utest)
     }

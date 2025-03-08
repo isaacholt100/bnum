@@ -17,7 +17,7 @@ macro_rules! strict {
     };
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "nightly"))] // as strict_overflow_ops not stabilised yet
 crate::test::all_digit_tests! {
     crate::int::strict::tests!(utest);
 

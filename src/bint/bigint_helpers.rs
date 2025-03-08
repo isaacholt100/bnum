@@ -7,7 +7,7 @@ macro_rules! bigint_helpers {
     };
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "nightly"))] // as bigint_helpers not stabilised yet
 crate::test::all_digit_tests! {
     use crate::test::types::itest;
     
