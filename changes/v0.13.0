@@ -3,4 +3,5 @@ Add OverflowingAdd and OverflowingSub
 Make to_str_radix, to_radix_{b,l}_e panic on invalid radix
 Add unbounded_{shl, shr} methods
 Make it possible to test on stable
-Use branchless algorithm for set_bit
+Use branchless algorithm for set_bit on unsigned ints
+Add as_bits, as_bits_mut to signed ints
