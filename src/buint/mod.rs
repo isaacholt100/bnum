@@ -699,6 +699,19 @@ crate::test::all_digit_tests! {
     }
 
     #[test]
+    fn set_bit() {
+        let mut u = UTEST::from(0b001010100101010101u64);
+        u.set_bit(1, true);
+        assert!(u.bit(1));
+        u.set_bit(1, false);
+        assert!(!u.bit(1));
+        u.set_bit(14, false);
+        assert!(!u.bit(14));
+        u.set_bit(14, true);
+        assert!(u.bit(14));
+    }
+
+    #[test]
     fn is_zero() {
         assert!(UTEST::MIN.is_zero());
         assert!(!UTEST::MAX.is_zero());
