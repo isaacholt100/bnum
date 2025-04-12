@@ -162,38 +162,11 @@ use crate::errors;
 use crate::ExpType;
 use num_integer::{Integer, Roots};
 use num_traits::{
-    AsPrimitive,
-    Bounded,
-    CheckedAdd,
-    CheckedDiv,
-    CheckedEuclid,
-    CheckedMul,
-    CheckedNeg,
-    CheckedRem,
-    CheckedShl,
-    CheckedShr,
-    CheckedSub,
-    Euclid,
-    FromPrimitive,
-    MulAdd,
-    MulAddAssign,
-    Num,
-    One,
-    /*ConstOne,*/ Pow,
-    PrimInt,
-    Saturating,
-    SaturatingAdd,
-    SaturatingMul,
-    SaturatingSub,
-    Signed,
-    ToPrimitive,
-    WrappingAdd,
-    WrappingMul,
-    WrappingNeg,
-    WrappingShl,
-    WrappingShr,
-    WrappingSub,
-    Zero, //ConstZero
+    AsPrimitive, Bounded, CheckedAdd, CheckedDiv, CheckedEuclid, CheckedMul, CheckedNeg,
+    CheckedRem, CheckedShl, CheckedShr, CheckedSub, ConstOne, ConstZero, Euclid, FromBytes,
+    FromPrimitive, MulAdd, MulAddAssign, Num, One, Pow, PrimInt, Saturating, SaturatingAdd,
+    SaturatingMul, SaturatingSub, Signed, ToBytes, ToPrimitive, WrappingAdd, WrappingMul,
+    WrappingNeg, WrappingShl, WrappingShr, WrappingSub, Zero,
 };
 
 use crate::cast::CastFrom;

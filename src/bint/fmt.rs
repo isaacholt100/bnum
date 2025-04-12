@@ -1,5 +1,4 @@
 use super::BIntD8;
-use crate::{BUintD8, Digit};
 
 use core::fmt::{Binary, Debug, Display, Formatter, LowerExp, LowerHex, Octal, UpperExp, UpperHex};
 

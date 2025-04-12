@@ -1,7 +1,8 @@
 use super::BUintD8;
+use crate::digit::SignedDigit;
 use crate::doc;
 use crate::ExpType;
-use crate::{digit, BIntD8};
+use crate::digit;
 
 #[doc = doc::overflowing::impl_desc!()]
 impl<const N: usize> BUintD8<N> {
@@ -12,24 +13,35 @@ impl<const N: usize> BUintD8<N> {
         let mut out = Self::ZERO;
         let mut carry = false;
         let mut i = 0;
-        while i < Self::FULL_U128_DIGITS {
-            let result = digit::carrying_add_u128(self.u128_digit(i), rhs.u128_digit(i), carry);
-            out.set_u128_digit(i, result.0);
-            carry = result.1;
-            i += 1;
+        unsafe {
+            while i < Self::FULL_U128_DIGITS {
+                let result = digit::carrying_add_u128(
+                    self.as_u128_digits().get(i),
+                    rhs.as_u128_digits().get(i),
+                    carry,
+                );
+                out.as_u128_digits_mut().set(i, result.0);
+                carry = result.1;
+                i += 1;
+            }
         }
         if Self::U128_DIGIT_REMAINDER != 0 {
-            let (d, _) = digit::carrying_add_u128(self.u128_digit(Self::FULL_U128_DIGITS), rhs.u128_digit(Self::FULL_U128_DIGITS), carry);
-            out.set_u128_digit(Self::FULL_U128_DIGITS, d);
+            let (d, _) = digit::carrying_add_u128(
+                self.as_u128_digits().last(),
+                rhs.as_u128_digits().last(),
+                carry,
+            );
+            out.as_u128_digits_mut().set_last(d);
             carry = (128 - d.leading_zeros()) > (Self::U128_DIGIT_REMAINDER as u32) * 8;
         }
         (out, carry)
     }
 
+    #[cfg(feature = "signed")]
     #[doc = doc::overflowing::overflowing_add_signed!(U)]
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn overflowing_add_signed(self, rhs: BIntD8<N>) -> (Self, bool) {
+    pub const fn overflowing_add_signed(self, rhs: crate::BIntD8<N>) -> (Self, bool) {
         let (sum, overflow) = self.overflowing_add(rhs.to_bits());
         (sum, rhs.is_negative() != overflow)
     }
@@ -41,13 +53,26 @@ impl<const N: usize> BUintD8<N> {
         let mut out = Self::ZERO;
         let mut borrow = false;
         let mut i = 0;
-        while i < Self::U128_DIGITS { // the last full u128 digits cause an overflow iff the truncated last digits cause an overflow
-            let result = digit::borrowing_sub_u128(self.u128_digit(i), rhs.u128_digit(i), borrow);
-            out.set_u128_digit(i, result.0);
-            borrow = result.1;
-            i += 1;
+        unsafe {
+            while i < Self::U128_DIGITS - 1 {
+                // the last full u128 digits cause an overflow iff the truncated last digits cause an overflow
+                let result = digit::borrowing_sub_u128(
+                    self.as_u128_digits().get(i),
+                    rhs.as_u128_digits().get(i),
+                    borrow,
+                );
+                out.as_u128_digits_mut().set(i, result.0);
+                borrow = result.1;
+                i += 1;
+            }
         }
-        (out, borrow)
+        let result = digit::borrowing_sub_u128(
+            self.as_u128_digits().last(),
+            rhs.as_u128_digits().last(),
+            borrow,
+        );
+        out.as_u128_digits_mut().set_last(result.0);
+        (out, result.1)
     }
 
     #[doc = doc::overflowing::overflowing_mul!(U)]
@@ -100,10 +125,7 @@ impl<const N: usize> BUintD8<N> {
     pub const fn overflowing_shl(self, rhs: ExpType) -> (Self, bool) {
         unsafe {
             if rhs >= Self::BITS {
-                (
-                    Self::unchecked_shl_internal(self, rhs & (Self::BITS - 1)),
-                    true,
-                )
+                (Self::unchecked_shl_internal(self, rhs % Self::BITS), true)
             } else {
                 (Self::unchecked_shl_internal(self, rhs), false)
             }
@@ -116,14 +138,28 @@ impl<const N: usize> BUintD8<N> {
     pub const fn overflowing_shr(self, rhs: ExpType) -> (Self, bool) {
         unsafe {
             if rhs >= Self::BITS {
-                (
-                    Self::unchecked_shr_internal(self, rhs & (Self::BITS - 1)),
-                    true,
-                )
+                (Self::unchecked_shr_internal(self, rhs % Self::BITS), true)
             } else {
                 (Self::unchecked_shr_internal(self, rhs), false)
             }
         }
+    }
+
+    #[inline]
+    pub(crate) const fn overflowing_shr_signed(self, rhs: ExpType) -> (Self, bool) {
+        let (overflow, shift) = if rhs >= Self::BITS {
+            (true, rhs & Self::BITS_MINUS_1)
+        } else {
+            (false, rhs)
+        };
+        let u = unsafe {
+            if (self.digits[N - 1] as SignedDigit).is_negative() {
+                self.unchecked_shr_pad_internal::<true>(shift)
+            } else {
+                self.unchecked_shr_pad_internal::<false>(shift)
+            }
+        };
+        (u, overflow)
     }
 
     #[doc = doc::overflowing::overflowing_pow!(U)]
@@ -163,7 +199,8 @@ mod tests {
         function: <utest>::overflowing_sub(a: utest, b: utest)
     }
     test_bignum! {
-        function: <utest>::overflowing_mul(a: utest, b: utest)
+        function: <utest>::overflowing_mul(a: utest, b: utest),
+        cases: [(256u16, 1u16)]
     }
     test_bignum! {
         function: <utest>::overflowing_div(a: utest, b: utest),

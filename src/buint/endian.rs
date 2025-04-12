@@ -51,7 +51,6 @@ impl<const N: usize> BUintD8<N> {
     /// use bnum::types::U128;
     ///
     /// let value_from_array = U128::from(u128::from_be_bytes([0, 0, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12]));
-    /// // using the `from_be_bytes` method on the primitve `u128` here instead of on `U128` as `from_be_bytes` is currently only available in bnum on nightly
     /// let value_from_slice = U128::from_be_slice(&[0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12]).unwrap();
     /// let value_from_long_slice = U128::from_be_slice(&[0, 0, 0, 0, 0, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12, 0x34, 0x56, 0x78, 0x90, 0x12]).unwrap();
     ///
@@ -116,7 +115,6 @@ impl<const N: usize> BUintD8<N> {
     /// use bnum::types::U128;
     ///
     /// let value_from_array = U128::from(u128::from_le_bytes([0x12, 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0, 0]));
-    /// // using the `from_le_bytes` method on the primitve `u128` here instead of on `U128` as `from_le_bytes` is currently only available in bnum on nightly
     /// let value_from_slice = U128::from_le_slice(&[0x12, 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56]).unwrap();
     /// let value_from_long_slice = U128::from_le_slice(&[0x12, 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0x34, 0x12, 0x90, 0x78, 0x56, 0, 0, 0, 0, 0, 0]).unwrap();
     ///
@@ -169,122 +167,55 @@ impl<const N: usize> BUintD8<N> {
         }
     }
 
-    #[cfg(feature = "nightly")]
     #[doc = doc::endian::to_be_bytes!(U)]
-    #[doc = doc::requires_feature!("nightly")]
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn to_be_bytes(self) -> [u8; Self::BYTES_USIZE] {
-        let mut bytes = [0; Self::BYTES_USIZE];
-        let mut i = N;
-        while i > 0 {
-            let digit_bytes = self.digits[N - i].to_be_bytes();
-            i -= 1;
-            let mut j = 0;
-            while j < digit::BYTES as usize {
-                bytes[(i << digit::BYTE_SHIFT) + j] = digit_bytes[j];
-                j += 1;
-            }
-        }
-        bytes
+    pub const fn to_be_bytes(self) -> [u8; N] {
+        self.swap_bytes().to_le_bytes()
     }
 
-    #[cfg(feature = "nightly")]
     #[doc = doc::endian::to_le_bytes!(U)]
-    #[doc = doc::requires_feature!("nightly")]
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn to_le_bytes(self) -> [u8; Self::BYTES_USIZE] {
-        // Strangely, this is slightly faster than direct transmutation by either `mem::transmute_copy` or `ptr::read`.
-        // Also, initialising the bytes with zeros is faster than using MaybeUninit.
-        // The Rust compiler is probably being very smart and optimizing this code.
-        // The same goes for `to_be_bytes`.
-        let mut bytes = [0; Self::BYTES_USIZE];
-        let mut i = 0;
-        while i < N {
-            let digit_bytes = self.digits[i].to_le_bytes();
-            let mut j = 0;
-            while j < digit::BYTES as usize {
-                bytes[(i << digit::BYTE_SHIFT) + j] = digit_bytes[j];
-                j += 1;
-            }
-            i += 1;
-        }
-        bytes
+    pub const fn to_le_bytes(self) -> [u8; N] {
+        self.digits
     }
 
-    #[cfg(feature = "nightly")]
     #[doc = doc::endian::to_ne_bytes!(U)]
-    #[doc = doc::requires_feature!("nightly")]
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn to_ne_bytes(self) -> [u8; Self::BYTES_USIZE] {
+    pub const fn to_ne_bytes(self) -> [u8; N] {
         #[cfg(target_endian = "big")]
         return self.to_be_bytes();
+
         #[cfg(not(target_endian = "big"))]
         self.to_le_bytes()
     }
 
-    #[cfg(feature = "nightly")]
     #[doc = doc::endian::from_be_bytes!(U)]
-    #[doc = doc::requires_feature!("nightly")]
     #[must_use]
     #[inline]
-    pub const fn from_be_bytes(bytes: [u8; Self::BYTES_USIZE]) -> Self {
-        let mut out = Self::ZERO;
-        // let arr_ptr = bytes.as_ptr();
-        let mut i = 0;
-        while i < N {
-            let mut digit_bytes = [0u8; digit::BYTES as usize];
-            let init_index = N * digit::BYTES as usize - digit::BYTES as usize;
-            let mut j = init_index;
-            while j < N * digit::BYTES as usize {
-                digit_bytes[j - init_index] = bytes[j - (i << digit::BYTE_SHIFT)];
-                j += 1;
-            }
-            out.digits[i] = Digit::from_be_bytes(digit_bytes);
-            i += 1;
-        }
-        out
+    pub const fn from_be_bytes(bytes: [u8; N]) -> Self {
+        Self::from_le_bytes(bytes).swap_bytes()
     }
 
-    #[cfg(feature = "nightly")]
     #[doc = doc::endian::from_le_bytes!(U)]
-    #[doc = doc::requires_feature!("nightly")]
     #[must_use]
     #[inline]
-    pub const fn from_le_bytes(bytes: [u8; Self::BYTES_USIZE]) -> Self {
-        let mut out = Self::ZERO;
-        // let arr_ptr = bytes.as_ptr();
-        let mut i = 0;
-        while i < N {
-            let mut digit_bytes = [0u8; digit::BYTES as usize];
-            let init_index = i << digit::BYTE_SHIFT;
-            let mut j = init_index;
-            while j < init_index + digit::BYTES as usize {
-                digit_bytes[j - init_index] = bytes[j];
-                j += 1;
-            }
-            out.digits[i] = Digit::from_le_bytes(digit_bytes);
-            i += 1;
-        }
-        out
+    pub const fn from_le_bytes(bytes: [u8; N]) -> Self {
+        Self::from_digits(bytes)
     }
 
-    #[cfg(feature = "nightly")]
     #[doc = doc::endian::from_ne_bytes!(U)]
-    #[doc = doc::requires_feature!("nightly")]
     #[must_use]
     #[inline]
-    pub const fn from_ne_bytes(bytes: [u8; Self::BYTES_USIZE]) -> Self {
+    pub const fn from_ne_bytes(bytes: [u8; N]) -> Self {
         #[cfg(target_endian = "big")]
         return Self::from_be_bytes(bytes);
 
         #[cfg(not(target_endian = "big"))]
         Self::from_le_bytes(bytes)
     }
-
-    pub(crate) const BYTES_USIZE: usize = N * digit::BYTES as usize;
 }
 
 #[cfg(test)]

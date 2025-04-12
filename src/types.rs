@@ -1,6 +1,4 @@
-//! Type aliases for big signed and unsigned integers. Each is an alias for either a [`BUint`] or a [`BInt`].
-
-use crate::{BIntD8, BUintD8};
+//! Type aliases for big signed and unsigned integers.
 
 macro_rules! int_type_doc {
     ($bits: literal, $sign: literal) => {
@@ -12,10 +10,11 @@ macro_rules! int_types {
     { $($bits: literal $u: ident $i: ident; ) *}  => {
         $(
             #[doc = int_type_doc!($bits, "unsigned")]
-            pub type $u = BUintD8::<{$bits / 8}>;
+            pub type $u = crate::BUintD8::<{$bits / 8}>;
 
+            #[cfg(feature = "signed")]
             #[doc = int_type_doc!($bits, "signed")]
-            pub type $i = BIntD8::<{$bits / 8}>;
+            pub type $i = crate::BIntD8::<{$bits / 8}>;
         )*
     };
 }
@@ -44,6 +43,7 @@ mod tests {
         { $($bits: literal $u: ident $i: ident; ) *} => {
             $(
                 assert_eq!($u::BITS, $bits);
+                #[cfg(feature = "signed")]
                 assert_eq!($i::BITS, $bits);
             )*
         }

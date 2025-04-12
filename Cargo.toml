@@ -16,9 +16,11 @@ rust-version = "1.65"
 exclude = ["src/float/*", "src/tests", "TODO.txt", "lit-parser/*"] # TODO: make sure to include these when they are ready
 
 [features]
-default = []
+default = ["alloc", "signed"]
 nightly = []
-float = []
+float = ["signed"]
+alloc = []
+signed = []
 serde = ["dep:serde", "serde-big-array"]
 numtraits = ["num-integer", "num-traits"]
 
@@ -47,6 +49,7 @@ opt-level = 3 # maximum optimisation level for faster runtime, but slower compil
 
 [package.metadata.docs.rs]
 all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
 
-[lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(test_int_bits, values("16", "32", "64", "128"))'] }
+# [lints.rust]
+# unexpected_cfgs = { level = "warn", check-cfg = ['cfg(test_int_bits, values("16", "32", "64", "128"))'] }

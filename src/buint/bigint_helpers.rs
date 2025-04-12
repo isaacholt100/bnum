@@ -58,7 +58,7 @@ impl<const N: usize> BUintD8<N> {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "nightly"))] // since bigint_helper_methods are not stable yet
 mod tests {
     crate::int::bigint_helpers::tests!(utest);
 

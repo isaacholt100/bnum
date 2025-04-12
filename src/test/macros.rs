@@ -12,7 +12,7 @@ macro_rules! test_bignum {
                     })?
 
                     let (big, primitive) = $($unsafe)? {
-                        crate::test::results!(<$primitive $(as $Trait $(<$($gen), *>)?)?>::$function ($($($re)? Into::into($param)), *))
+                        crate::test::results!(<$primitive $(as $Trait $(<$($gen), *>)?)?>::$function ($($($re)? TryInto::try_into($param).expect("test argument conversion failed")), *))
                     };
 
                     quickcheck::TestResult::from_bool(big == primitive)
@@ -30,7 +30,7 @@ macro_rules! test_bignum {
             #[test]
             fn [<cases_ $primitive _ $function>]() {
                 $(
-                    let (big, primitive) = crate::test::results!(<$primitive> :: $function ($($($re2)? Into::into($arg)), *));
+                    let (big, primitive) = crate::test::results!(<$primitive> :: $function ($($($re2)? TryInto::try_into($arg).expect("test argument conversion failed")), *));
                     assert_eq!(big, primitive, "cases assertion with inputs {:?}", ($($arg), *));
                 )*
             }
@@ -46,7 +46,7 @@ macro_rules! test_bignum {
             #[test]
             fn [<cases_ $primitive _ $function>]() {
                 $(
-                    let (big, primitive) = crate::test::results!(<$primitive as $Trait> :: $function ($($($re2)? Into::into($arg)), *));
+                    let (big, primitive) = crate::test::results!(<$primitive as $Trait> :: $function ($($($re2)? TryInto::try_into($arg).expect("test argument conversion failed")), *));
                     assert_eq!(big, primitive);
                 )*
             }
@@ -158,13 +158,16 @@ impl<const MAX: u32> Arbitrary for Radix<MAX> {
     }
 }
 
+#[cfg(feature = "alloc")]
 macro_rules! quickcheck_from_to_radix {
     ($primitive: ty, $name: ident, $max: expr) => {
         paste::paste! {
             quickcheck::quickcheck! {
                 fn [<quickcheck_from_to_ $name>](u: crate::test::types::$primitive, radix: crate::test::Radix<$max>) -> quickcheck::TestResult {
+                    use crate::cast::CastFrom;
+                    
                     let radix = radix.0;
-                    let u = <[<$primitive:upper>]>::from(u);
+                    let u = <[<$primitive:upper>]>::cast_from(u);
                     let v = u.[<to_ $name>](radix as u32);
                     let u1 = <[<$primitive:upper>]>::[<from_ $name>](&v, radix as u32).unwrap_or(!u);
                     quickcheck::TestResult::from_bool(u == u1)
@@ -174,6 +177,7 @@ macro_rules! quickcheck_from_to_radix {
     }
 }
 
+#[cfg(feature = "alloc")]
 pub(crate) use quickcheck_from_to_radix;
 
 macro_rules! debug_skip {
@@ -189,6 +193,7 @@ macro_rules! debug_skip {
 
 pub(crate) use debug_skip;
 
+#[cfg(feature = "alloc")]
 macro_rules! quickcheck_from_str_radix {
     { $primitive: ident, $sign1: literal | $sign2: literal } => {
         quickcheck::quickcheck! {
@@ -224,8 +229,10 @@ macro_rules! quickcheck_from_str_radix {
     }
 }
 
+#[cfg(feature = "alloc")]
 pub(crate) use quickcheck_from_str_radix;
 
+#[cfg(feature = "alloc")]
 macro_rules! quickcheck_from_str {
     ($primitive: ty) => {
         quickcheck::quickcheck! {
@@ -242,4 +249,5 @@ macro_rules! quickcheck_from_str {
     };
 }
 
+#[cfg(feature = "alloc")]
 pub(crate) use quickcheck_from_str;

@@ -1,1 +1,3 @@
-Add ConstZero and ConstOne (from num_traits) for ints
+- Add FromBytes, ToBytes, ConstZero, ConstOne from num_traits
+- unchecked methods const on stable
+- change BTryFrom to TryFrom for BUint to BInt, BInt to BUint

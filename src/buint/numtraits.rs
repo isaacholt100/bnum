@@ -1,5 +1,5 @@
 use super::BUintD8;
-use crate::{digit, Digit};
+use crate::Digit;
 
 macro_rules! to_int {
     { $($name: ident -> $int: ty), * }  => {
@@ -45,52 +45,19 @@ macro_rules! to_int {
     };
 }
 
-pub const fn u32_bits(u: u32) -> ExpType {
-    32 - u.leading_zeros() as ExpType
-}
-
-pub const fn u64_bits(u: u64) -> ExpType {
-    64 - u.leading_zeros() as ExpType
-}
-use crate::buint::cast::{decode_f32, decode_f64};
 use crate::ExpType;
 use num_integer::{Integer, Roots};
 use num_traits::{
-    AsPrimitive,
-    Bounded,
-    CheckedAdd,
-    CheckedDiv,
-    CheckedEuclid,
-    CheckedMul,
-    CheckedNeg,
-    CheckedRem,
-    CheckedShl,
-    CheckedShr,
-    CheckedSub,
-    Euclid,
-    FromPrimitive,
-    MulAdd,
-    MulAddAssign,
-    Num,
-    One,
-    /*ConstOne,*/ Pow,
-    PrimInt,
-    Saturating,
-    SaturatingAdd,
-    SaturatingMul,
-    SaturatingSub,
-    ToPrimitive,
-    Unsigned,
-    WrappingAdd,
-    WrappingMul,
-    WrappingNeg,
-    WrappingShl,
-    WrappingShr,
-    WrappingSub,
-    Zero, //ConstZero
+    AsPrimitive, Bounded, CheckedAdd, CheckedDiv, CheckedEuclid, CheckedMul, CheckedNeg,
+    CheckedRem, CheckedShl, CheckedShr, CheckedSub, ConstOne, ConstZero, Euclid, FromBytes, FromPrimitive,
+    MulAdd, MulAddAssign, Num, One, Pow, PrimInt, Saturating, SaturatingAdd, SaturatingMul,
+    SaturatingSub, ToBytes, ToPrimitive, Unsigned, WrappingAdd, WrappingMul, WrappingNeg,
+    WrappingShl, WrappingShr, WrappingSub, Zero,
 };
 
 use crate::cast::CastFrom;
+use crate::cast::float::ConvertFloatParts;
+use crate::helpers::Bits;
 use crate::int::numtraits::num_trait_impl;
 
 crate::int::numtraits::impls!(BUintD8);
@@ -105,21 +72,33 @@ macro_rules! from_float {
             if f == 0.0 {
                 return Some(Self::ZERO);
             }
-            if f.is_sign_negative() {
+            let (sign, exp, mant) = f.into_normalised_signed_parts();
+            if sign {
                 return None;
             }
-            let (mut mant, exp) = $decoder(f);
-            if exp.is_negative() {
-                mant = mant.checked_shr((-exp) as ExpType).unwrap_or(0);
-                if $mant_bits(mant) > Self::BITS {
-                    return None;
+            if exp < -1 {
+                // in this case, the value is at most a half, so we round (ties to even) to zero
+                return Some(Self::ZERO);
+            }
+            if exp == -1 {
+                // exponent is -1, so value is in range [1/2, 1)
+                if mant.is_power_of_two() {
+                    // in this case, the value is exactly 1/2, so we round (ties to even) to zero
+                    return Some(Self::ZERO);
                 }
-                Some(Self::cast_from(mant))
+                return Some(Self::ONE);
+            }
+
+            let exp = exp as ExpType;
+            if exp >= Self::BITS {
+                return None;
+            }
+            let mant_bit_width = mant.bits();
+            if exp <= mant_bit_width - 1 {
+                // in this case, we have a fractional part to truncate
+                Some(Self::cast_from(mant >> (mant_bit_width - 1 - exp))) // the right shift means the mantissa now has exp + 1 bits, and as we must have exp < U::BITS, the shifted mantissa is no wider than U
             } else {
-                if $mant_bits(mant) + exp as ExpType > Self::BITS {
-                    return None;
-                }
-                Some(Self::cast_from(mant) << exp)
+                Some(Self::cast_from(mant) << (exp - (mant_bit_width - 1)))
             }
         }
     };
@@ -280,7 +259,14 @@ impl<const N: usize> PrimInt for BUintD8<N> {
 
     #[inline]
     fn signed_shr(self, n: u32) -> Self {
-        (crate::BIntD8::from_bits(self) >> n).to_bits() // TODO: need to change this if we add "signed-int" as a feature
+        let (u, overflow) = self.overflowing_shr_signed(n);
+
+        #[cfg(debug_assertions)]
+        if overflow {
+            panic!(crate::errors::err_msg!("attempt to shift right with overflow"))
+        }
+        
+        u
     }
 
     #[inline]
@@ -336,7 +322,7 @@ impl<const N: usize> Roots for BUintD8<N> {
         #[cfg(not(test))]
         // disable this when testing as this condition will always be true when testing against primitives, so the rest of the algorithm wouldn't be tested
         if let Some(n) = self.to_u128() {
-            return n.sqrt().into();
+            return Self::cast_from(n.sqrt());
         }
         let bits = self.bits();
         let max_bits = bits / 2 + 1;
@@ -358,7 +344,7 @@ impl<const N: usize> Roots for BUintD8<N> {
         #[cfg(not(test))]
         // disable this when testing as this condition will always be true when testing against primitives, so the rest of the algorithm wouldn't be tested
         if let Some(n) = self.to_u128() {
-            return n.cbrt().into();
+            return Self::cast_from(n.cbrt());
         }
         let bits = self.bits();
         let max_bits = bits / 3 + 1;
@@ -386,10 +372,9 @@ impl<const N: usize> Roots for BUintD8<N> {
                 #[cfg(not(test))]
                 // disable this when testing as this condition will always be true when testing against primitives, so the rest of the algorithm wouldn't be tested
                 if let Some(x) = self.to_u128() {
-                    return x.nth_root(n).into();
+                    return Self::cast_from(x.nth_root(n));
                 }
                 let bits = self.bits();
-                let n = n as ExpType;
                 if bits <= n {
                     return Self::ONE;
                 }
@@ -401,9 +386,9 @@ impl<const N: usize> Roots for BUintD8<N> {
 
                 guess.fixpoint(max_bits, |s| {
                     let q = self / s.pow(n_minus_1);
-                    let mul: Self = n_minus_1.into();
+                    let mul = Self::cast_from(n_minus_1);
                     let t: Self = s * mul + q;
-                    t.div_rem_unchecked(n.into()).0
+                    t.div_rem_unchecked(Self::cast_from(n)).0
                 })
             }
         }

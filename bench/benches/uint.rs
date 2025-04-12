@@ -27,8 +27,8 @@ macro_rules! bench_against_primitive {
                     let inputs = unzip2((0..SAMPLE_SIZE)
                         .map(|_| rng.gen::<($($ty), *)>())
                         .map(|($($param), *)| (
-                            ($(Into::into($param)), *, ()),
-                            ($(Into::into($param)), *, ()), // TODO: report this as bug in Rust compiler, shouldn't need extra ()
+                            ($(TryInto::try_into($param).expect("benchmark argument conversion failed")), *, ()),
+                            ($(TryInto::try_into($param).expect("benchmark argument conversion failed")), *, ()), // TODO: report this as bug in Rust compiler, shouldn't need extra ()
                             // ($(TryInto::try_into($param).unwrap()), *, ())
                         )));
                     let big_inputs = inputs.0;

@@ -62,7 +62,6 @@ macro_rules! to_le {
 
 pub(crate) use to_le;
 
-#[cfg(feature = "nightly")]
 crate::doc::link_doc_comment_method! {
     to_be_bytes,
     to_le_bytes,

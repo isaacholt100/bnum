@@ -1,5 +1,5 @@
 use core::num::FpCategory;
-use crate::cast::As;
+use crate::cast::{As, CastFrom};
 use crate::float::FloatExponent;
 use crate::float::UnsignedFloatExponent;
 use crate::BUintD8;
@@ -52,7 +52,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         let mut mant = a_mant - shifted_b_mant;
 
         if mant.bits() == Self::MB + 2 {
-            if mant & BUintD8::from(0b10u8) == BUintD8::from(0b10u8) && !sticky_bit {
+            if mant & BUintD8::cast_from(0b10u8) == BUintD8::cast_from(0b10u8) && !sticky_bit {
                 mant += BUintD8::ONE;
             }
 
@@ -79,7 +79,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             mant = a_mant - shifted_b_mant;
 
             if mant.bits() == Self::MB + 2 {
-                if mant & BUintD8::from(0b10u8) == BUintD8::from(0b10u8) && !sticky_bit {
+                if mant & BUintD8::cast_from(0b10u8) == BUintD8::cast_from(0b10u8) && !sticky_bit {
                     mant += BUintD8::ONE;
                 }
 
@@ -89,7 +89,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                 if sticky_bit2 && !all_zeros
                     || (sticky_bit2
                         && all_zeros
-                        && b_mant & BUintD8::from(0b1u8) == BUintD8::from(0b1u8))
+                        && b_mant & BUintD8::cast_from(0b1u8) == BUintD8::cast_from(0b1u8))
                 {
                     mant -= BUintD8::ONE;
                 }

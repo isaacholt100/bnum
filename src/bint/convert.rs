@@ -1,107 +1,91 @@
 use super::BIntD8;
 use crate::{BUintD8, Digit};
 
-macro_rules! from_int {
+macro_rules! int_try_from_primitive_int {
     ($($int: tt),*) => {
         $(
-            impl<const N: usize> From<$int> for BIntD8<N> {
+            impl<const N: usize> TryFrom<$int> for BIntD8<N> {
+                type Error = TryFromIntError;
+
                 #[inline]
-                fn from(int: $int) -> Self {
-                    let mut out = if int.is_negative() {
-                        !Self::ZERO
-                    } else {
-                        Self::ZERO
-                    };
-                    let mut i = 0;
-                    while i << crate::digit::BIT_SHIFT < $int::BITS as usize {
-                        let d = (int >> (i << crate::digit::BIT_SHIFT)) as Digit;
-                        out.bits.digits[i] = d;
-                        i += 1;
+                fn try_from(from: $int) -> Result<Self, Self::Error> {
+                    if <$int>::BITS <= Self::BITS {
+                        return Ok(Self::cast_from(from));
                     }
-                    out
+                    if from.is_negative() {
+                        if from.leading_ones() >= <$int>::BITS - Self::BITS + 1 {
+                            Ok(Self::cast_from(from))
+                        } else {
+                            Err(TryFromIntError(()))
+                        }
+                    } else {
+                        if from.leading_zeros() >= <$int>::BITS - Self::BITS + 1 {
+                            Ok(Self::cast_from(from))
+                        } else {
+                            Err(TryFromIntError(()))
+                        }
+                    }
                 }
             }
         )*
     }
 }
 
-macro_rules! from_uint {
-    ($($from: tt), *) => {
+int_try_from_primitive_int!(i8, i16, i32, i64, i128, isize);
+
+macro_rules! int_try_from_primitive_uint {
+    ($($uint: ty), *) => {
         $(
-            impl<const N: usize> From<$from> for BIntD8<N> {
+            impl<const N: usize> TryFrom<$uint> for BIntD8<N> {
+                type Error = TryFromIntError;
+
                 #[inline]
-                fn from(int: $from) -> Self {
-                    let out = Self::from_bits(BUintD8::from(int));
-                    out
+                fn try_from(uint: $uint) -> Result<Self, Self::Error> {
+                    if <$uint>::BITS <= Self::BITS - 1 || uint.leading_zeros() >= <$uint>::BITS - Self::BITS + 1 {
+                        Ok(Self::cast_from(uint))
+                    } else {
+                        Err(TryFromIntError(()))
+                    }
                 }
             }
         )*
     }
 }
 
-macro_rules! int_try_from_bint {
+int_try_from_primitive_uint!(u8, u16, u32, u64, u128, usize);
+
+macro_rules! primitive_int_try_from_int {
     { $($int: ty), * }  => {
         $(
             impl<const N: usize> TryFrom<BIntD8<N>> for $int {
                 type Error = TryFromIntError;
 
-                fn try_from(int: BIntD8<N>) -> Result<$int, Self::Error> {
-                    let neg = int.is_negative();
-                    let (mut out, padding) = if neg {
-                        (-1, Digit::MAX)
-                    } else {
-                        (0, Digit::MIN)
-                    };
-                    let mut i = 0;
-                    if Digit::BITS > <$int>::BITS {
-                        let small = int.bits.digits[i] as $int;
-                        let trunc = small as Digit;
-                        if int.bits.digits[i] != trunc {
-                            return Err(TryFromIntError(()));
-                        }
-                        out = small;
-                        i = 1;
-                    } else {
-                        if neg {
-                            loop {
-                                let shift = i << digit::BIT_SHIFT;
-                                if i >= N || shift >= <$int>::BITS as usize {
-                                    break;
-                                }
-                                out &= !((!int.bits.digits[i]) as $int << shift);
-                                i += 1;
-                            }
+                fn try_from(from: BIntD8<N>) -> Result<Self, Self::Error> {
+                    if BIntD8::<N>::BITS <= Self::BITS {
+                        return Ok(Self::cast_from(from));
+                    }
+                    if from.is_negative() {
+                        if from.leading_ones() >= BIntD8::<N>::BITS - Self::BITS + 1 {
+                            Ok(Self::cast_from(from))
                         } else {
-                            loop {
-                                let shift = i << digit::BIT_SHIFT;
-                                if i >= N || shift >= <$int>::BITS as usize {
-                                    break;
-                                }
-                                out |= int.bits.digits[i] as $int << shift;
-                                i += 1;
-                            }
+                            Err(TryFromIntError(()))
+                        }
+                    } else {
+                        if from.leading_zeros() >= BIntD8::<N>::BITS - Self::BITS + 1 {
+                            Ok(Self::cast_from(from))
+                        } else {
+                            Err(TryFromIntError(()))
                         }
                     }
-
-                    while i < N {
-                        if int.bits.digits[i] != padding {
-                            return Err(TryFromIntError(()));
-                        }
-                        i += 1;
-                    }
-
-                    if out.is_negative() != neg {
-                        return Err(TryFromIntError(()));
-                    }
-
-                    Ok(out)
                 }
             }
         )*
     };
 }
 
-macro_rules! uint_try_from_bint {
+primitive_int_try_from_int!(i8, i16, i32, i64, i128, isize);
+
+macro_rules! primitive_uint_try_from_int {
     ($($uint: ty), *) => {
         $(
             impl<const N: usize> TryFrom<BIntD8<N>> for $uint {
@@ -110,15 +94,19 @@ macro_rules! uint_try_from_bint {
                 #[inline]
                 fn try_from(int: BIntD8<N>) -> Result<$uint, Self::Error> {
                     if int.is_negative() {
-                        Err(TryFromIntError(()))
+                        return Err(TryFromIntError(()));
+                    }
+                    if BIntD8::<N>::BITS - 1 <= Self::BITS || int.bits.leading_zeros_at_least_threshold(BIntD8::<N>::BITS - Self::BITS) {
+                        Ok(Self::cast_from(int))
                     } else {
-                        <$uint>::try_from(int.bits)
+                        Err(TryFromIntError(()))
                     }
                 }
             }
         )*
     };
 }
+primitive_uint_try_from_int!(u8, u16, u32, u64, u128, usize);
 
 use crate::cast::CastFrom;
 use crate::digit;
@@ -134,10 +122,6 @@ impl<const N: usize> FromStr for BIntD8<N> {
     }
 }
 
-from_int!(i8, i16, i32, i64, i128, isize);
-
-from_uint!(u8, u16, u32, u64, u128, usize);
-
 impl<const N: usize> From<bool> for BIntD8<N> {
     #[inline]
     fn from(small: bool) -> Self {
@@ -145,23 +129,56 @@ impl<const N: usize> From<bool> for BIntD8<N> {
     }
 }
 
-int_try_from_bint!(i8, i16, i32, i64, i128, isize);
-uint_try_from_bint!(u8, u16, u32, u64, u128, usize);
+impl<const N: usize, const M: usize> TryFrom<BIntD8<N>> for BUintD8<M> {
+    type Error = TryFromIntError;
 
-// impl_const! {
-//     impl<const N: usize> const TryFrom<BUintD8<N>> for BIntD8<N> {
-//         type Error = TryFromIntError;
+    fn try_from(from: BIntD8<N>) -> Result<Self, Self::Error> {
+        if from.is_negative() {
+            Err(TryFromIntError(()))
+        } else {
+            if BIntD8::<N>::BITS - 1 <= Self::BITS || from.bits.leading_zeros_at_least_threshold(BIntD8::<N>::BITS - Self::BITS) {
+                Ok(Self::cast_from(from))
+            } else {
+                Err(TryFromIntError(()))
+            }
+        }
+    }
+}
 
-//         #[inline]
-//         fn try_from(u: BUintD8<N>) -> Result<Self, Self::Error> {
-//             if u.leading_ones() != 0 {
-//                 Err(TryFromIntError(()))
-//             } else {
-//                 Ok(Self::from_bits(u))
-//             }
-//         }
-//     }
-// }
+impl<const N: usize, const M: usize> TryFrom<BUintD8<N>> for BIntD8<M> {
+    type Error = TryFromIntError;
+
+    fn try_from(from: BUintD8<N>) -> Result<Self, Self::Error> {
+        if BUintD8::<N>::BITS <= Self::BITS - 1 || from.leading_zeros_at_least_threshold(BUintD8::<N>::BITS - Self::BITS + 1) { // Self::BITS - 1 as otherwise return value would be negative
+            Ok(Self::cast_from(from))
+        } else {
+            Err(TryFromIntError(()))
+        }
+    }
+}
+
+impl<const M: usize, const N: usize> crate::BTryFrom<BIntD8<M>> for BIntD8<N> {
+    type Error = TryFromIntError;
+
+    fn try_from(from: BIntD8<M>) -> Result<Self, Self::Error> {
+        if BIntD8::<M>::BITS <= Self::BITS {
+            return Ok(Self::cast_from(from));
+        }
+        if from.is_negative() {
+            if from.bits.leading_ones_at_least_threshold(BIntD8::<M>::BITS - Self::BITS + 1) {
+                Ok(Self::cast_from(from))
+            } else {
+                Err(TryFromIntError(()))
+            }
+        } else {
+            if from.bits.leading_zeros_at_least_threshold(BIntD8::<M>::BITS - Self::BITS + 1) {
+                Ok(Self::cast_from(from))
+            } else {
+                Err(TryFromIntError(()))
+            }
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -170,18 +187,11 @@ mod tests {
     use crate::test::types::*;
     use crate::BTryFrom;
 
-    test::test_btryfrom!(itest; TestUint1, TestUint2, TestUint3, TestUint4, TestUint5, TestUint6, TestUint7, TestUint8, TestUint9, TestUint10, TestInt1, TestInt2, TestInt3, TestInt4, TestInt5, TestInt6, TestInt7, TestInt8, TestInt9, TestInt10);
+    test::test_btryfrom!(itest; TestInt1, TestInt2, TestInt3, TestInt4, TestInt5, TestInt6, TestInt7, TestInt8, TestInt9, TestInt10);
 
-    #[cfg(test_int_bits = "128")]
     test::test_from! {
         function: <itest as TryFrom>::try_from,
-        from_types: (i8, i16, i32, i64, i128, u8, u16, u32, u64, bool, usize, isize)
-    }
-
-    #[cfg(test_int_bits = "64")]
-    test::test_from! {
-        function: <itest as TryFrom>::try_from,
-        from_types: (i8, i16, i32, i64, u8, u16, u32, bool, isize)
+        from_types: (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize, bool, TestUint1, TestUint2, TestUint3, TestUint4, TestUint5, TestUint6, TestUint7, TestUint8, TestUint9, TestUint10)
     }
 
     test::test_into! {

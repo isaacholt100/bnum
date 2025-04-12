@@ -1,6 +1,6 @@
 use super::BUintD8;
 use crate::ExpType;
-use crate::{digit, BIntD8, Digit};
+use crate::Digit;
 use core::ops::{
     Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, Div, DivAssign,
     Mul, MulAssign, Not, Rem, RemAssign, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign,
@@ -99,32 +99,10 @@ impl<const N: usize> Rem<Digit> for BUintD8<N> {
     }
 }
 
+#[cfg(feature = "signed")]
+use crate::BIntD8;
+
 crate::int::ops::impls!(BUintD8);
-
-#[cfg(all(test, test_int_bits = "64"))]
-paste::paste! {
-    mod [<Digit _add_digit_test>] {
-        use super::*;
-        use crate::test::{test_bignum, types::utest};
-        use crate::test::types::big_types::Digit::*;
-
-        quickcheck::quickcheck! {
-            fn add_digit(a: utest, b: Digit) -> quickcheck::TestResult {
-                use crate::cast::As;
-
-                let c: utest = b.as_();
-                match a.checked_add(c) {
-                    None => quickcheck::TestResult::discard(),
-                    Some(_d) => {
-                        let e: UTEST = b.as_();
-                        let f: UTEST = a.as_();
-                        quickcheck::TestResult::from_bool(f + e == f + b)
-                    }
-                }
-            }
-        }
-    }
-}
 
 #[cfg(test)]
 mod tests {

@@ -1,7 +1,6 @@
 use super::BIntD8;
-use crate::{BUintD8, Digit};
+use crate::BUintD8;
 
-use crate::digit;
 use crate::errors::div_zero;
 use crate::{doc, ExpType};
 
@@ -186,18 +185,7 @@ impl<const N: usize> BIntD8<N> {
     #[inline]
     pub const fn overflowing_shr(self, rhs: ExpType) -> (Self, bool) {
         let bits = self.to_bits();
-        let (overflow, shift) = if rhs >= Self::BITS {
-            (true, rhs & Self::BITS_MINUS_1)
-        } else {
-            (false, rhs)
-        };
-        let u = unsafe {
-            if self.is_negative() {
-                BUintD8::unchecked_shr_pad_internal::<true>(bits, shift)
-            } else {
-                BUintD8::unchecked_shr_pad_internal::<false>(bits, shift)
-            }
-        };
+        let (u, overflow) = bits.overflowing_shr_signed(rhs);
         (Self::from_bits(u), overflow)
     }
 

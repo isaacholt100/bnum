@@ -39,6 +39,7 @@ macro_rules! test_convert_bigints {
             $(
                 test_convert_big!(BUintD8<{$bits / 8}>; [<u $bits>]);
 
+                #[cfg(feature = "signed")]
                 test_convert_big!(BIntD8<{$bits / 8}>; [<i $bits>]);
             )*
         }
@@ -48,8 +49,10 @@ macro_rules! test_convert_bigints {
 test_convert_bigints!(128, 64);
 
 test_convert_big!(BUintD8<{32 / 8}>; u32);
-test_convert_big!(BIntD8<{32 / 8}>; i32);
 test_convert_big!(BUintD8<{16 / 8}>; u16);
+#[cfg(feature = "signed")]
+test_convert_big!(BIntD8<{32 / 8}>; i32);
+#[cfg(feature = "signed")]
 test_convert_big!(BIntD8<{16 / 8}>; i16);
 
 impl<T: TestConvert> TestConvert for Option<T> {
@@ -205,6 +208,8 @@ test_convert_to_self!(
     i32,
     i64,
     i128,
-    isize,
-    alloc::string::String
+    isize
 );
+
+#[cfg(feature = "alloc")]
+test_convert_to_self!(alloc::string::String);

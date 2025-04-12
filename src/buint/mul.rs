@@ -1,38 +1,63 @@
 use super::BUintD8;
-use crate::{digit, Digit};
+use crate::digit;
 
 impl<const N: usize> BUintD8<N> {
     #[inline]
     pub(super) const fn long_mul(self, rhs: Self) -> (Self, bool) {
-        // TODO: can use u128
         let mut overflow = false;
         let mut out = Self::ZERO;
-        let mut carry: Digit;
+        let mut carry: u128;
 
         let mut i = 0;
-        while i < N {
+        while i < Self::U128_DIGITS {
+            let self_digit_i = unsafe { self.as_u128_digits().get_with_correct_count(i) }; // it would require a lot of extra code to run the loop where we don't check the correct count (i.e. separate last digit from the rest), and only a linear number of checks won't affect the performance too much
             carry = 0;
             let mut j = 0;
-            while j < N {
-                let index = i + j;
-                if index < N {
-                    let (prod, c) = digit::carrying_mul(
-                        self.digits[i],
-                        rhs.digits[j],
+            unsafe {
+                while j < Self::U128_DIGITS - 1 - i {
+                    let index = i + j;
+                    let (prod, c) = digit::carrying_mul_u128(
+                        self_digit_i,
+                        rhs.as_u128_digits().get(j),
                         carry,
-                        out.digits[index],
+                        out.as_u128_digits().get(index),
                     );
-                    out.digits[index] = prod;
+                    out.as_u128_digits_mut().set(index, prod);
                     carry = c;
-                } else if self.digits[i] != 0 && rhs.digits[j] != 0 {
-                    overflow = true;
-                    break;
+                    j += 1;
                 }
-                j += 1;
             }
-            if carry != 0 {
+            let (prod, c) = digit::carrying_mul_u128(
+                self_digit_i,
+                unsafe { rhs.as_u128_digits().get_with_correct_count(j) },
+                carry,
+                out.as_u128_digits().last()
+            );
+            out.as_u128_digits_mut().set_last(prod);
+            if Self::U128_DIGIT_REMAINDER != 0 {
+                if 128 - Self::U128_BITS_REMAINDER > prod.leading_zeros() {
+                    overflow = true;
+                }
+            }
+            if c != 0 {
                 overflow = true;
+            } else if self_digit_i != 0 {
+                if j < Self::U128_DIGITS - 1 && rhs.as_u128_digits().last() != 0 {
+                    overflow = true;
+                } else {
+                    j += 1;
+                    unsafe {
+                        while j < Self::U128_DIGITS - 1 {
+                            if rhs.as_u128_digits().get(j) != 0 {
+                                overflow = true;
+                                break;
+                            }
+                            j += 1;
+                        }
+                    }
+                }
             }
+            // assert!(!overflow);
             i += 1;
         }
         (out, overflow)

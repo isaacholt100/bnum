@@ -30,14 +30,14 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
 #[test]
 fn test_parse() {
-    use core::str::FromStr;
-    use alloc::string::String;
+    // use core::str::FromStr;
+    // use alloc::string::String;
 
-    let digits = [3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 8];
-    let parsed = super::F32::parse(&digits, 0);
-    let mut s = unsafe { String::from_utf8_unchecked(digits.into_iter().map(|d| d + 48).collect()) };
-    s.insert(1, '.');
-    s.push_str("");
+    // let digits = [3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 8];
+    // let parsed = super::F32::parse(&digits, 0);
+    // let mut s = unsafe { String::from_utf8_unchecked(digits.into_iter().map(|d| d + 48).collect()) };
+    // s.insert(1, '.');
+    // s.push_str("");
     // println!("{}", s);
     // println!("{:032b}", parsed.to_bits());
     // println!("{:032b}", f32::from_str(&s).unwrap().to_bits());

@@ -37,8 +37,24 @@ impl<const N: usize> Debug for U8ArrayWrapper<N> {
     }
 }
 
+#[cfg(feature = "signed")]
+mod cast_signed_types {
+    use crate::BIntD8;
+
+    pub type TestInt1 = BIntD8<10>;
+    pub type TestInt2 = BIntD8<8>;
+    pub type TestInt3 = BIntD8<6>;
+    pub type TestInt4 = BIntD8<11>;
+    pub type TestInt5 = BIntD8<5>;
+    pub type TestInt6 = BIntD8<7>;
+    pub type TestInt7 = BIntD8<3>;
+    pub type TestInt8 = BIntD8<1>;
+    pub type TestInt9 = BIntD8<15>;
+    pub type TestInt10 = BIntD8<17>;
+}
+
 pub mod cast_types {
-    use crate::{BIntD8, BUintD8};
+    use crate::BUintD8;
 
     pub type TestUint1 = BUintD8<10>;
     pub type TestUint2 = BUintD8<8>;
@@ -51,14 +67,6 @@ pub mod cast_types {
     pub type TestUint9 = BUintD8<15>;
     pub type TestUint10 = BUintD8<17>;
 
-    pub type TestInt1 = BIntD8<10>;
-    pub type TestInt2 = BIntD8<8>;
-    pub type TestInt3 = BIntD8<6>;
-    pub type TestInt4 = BIntD8<11>;
-    pub type TestInt5 = BIntD8<5>;
-    pub type TestInt6 = BIntD8<7>;
-    pub type TestInt7 = BIntD8<3>;
-    pub type TestInt8 = BIntD8<1>;
-    pub type TestInt9 = BIntD8<15>;
-    pub type TestInt10 = BIntD8<17>;
+    #[cfg(feature = "signed")]
+    pub use super::cast_signed_types::*;
 }

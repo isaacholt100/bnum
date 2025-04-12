@@ -17,7 +17,7 @@ use core::ops::{Deref, DerefMut};
 
 /// Wrapper type designed to be filled with random big integers.
 ///
-/// This type exists because [`rand::Fill`](https://docs.rs/rand/latest/rand/trait.Fill.html) can't be implemented for `[BUint<N>]` (or any other slice of bnum integers) due to Rust's orphan rules. Instead, it is implemented for `Slice<BUint<N>>`, etc. The underlying slice can then be accessed by calling [`AsRef::as_ref`](https://doc.rust-lang.org/core/convert/trait.AsRef.html#tymethod.as_ref) or [`AsMut::as_mut`](https://doc.rust-lang.org/core/convert/trait.AsMut.html#tymethod.as_mut) on the wrapper, or deferencing it. An alternative way of filling a slice with random big integers is using the [`try_fill_slice`] method in this crate's [`random`](crate::random) module.
+/// This type exists because [`rand::Fill`](https://docs.rs/rand/latest/rand/trait.Fill.html) can't be implemented for `[BUintD8<N>]` or `[BIntD8<N>]` due to Rust's orphan rules. Instead, it is implemented for `Slice<BUintD8<N>>` and `Slice<BIntD8<N>>`. The underlying slice can then be accessed by calling [`AsRef::as_ref`](https://doc.rust-lang.org/core/convert/trait.AsRef.html#tymethod.as_ref) or [`AsMut::as_mut`](https://doc.rust-lang.org/core/convert/trait.AsMut.html#tymethod.as_mut) on the wrapper, or deferencing it. An alternative way of filling a slice with random big integers is using the [`try_fill_slice`] method in this crate's [`random`](crate::random) module.
 #[repr(transparent)]
 pub struct Slice<T>(pub [T]);
 
@@ -259,13 +259,14 @@ macro_rules! test_random {
 							return quickcheck::TestResult::discard();
 						}
 						use crate::test::convert;
+                        use crate::cast::CastFrom;
 						use rand::Rng;
 						use rand::rngs::$Rng;
 
 						let (mut rng, mut rng2) = seeded_rngs::<$Rng>(seed);
 
-						let min_big = [<$int:upper>]::from(min);
-						let max_big = [<$int:upper>]::from(max);
+						let min_big = [<$int:upper>]::cast_from(min);
+						let max_big = [<$int:upper>]::cast_from(max);
 
 						let big = rng.gen_range(min_big..max_big);
 						let primitive = rng2.gen_range(min..max);
@@ -296,7 +297,9 @@ pub struct UniformInt<X> {
     z: X,
 }
 
-use crate::{BIntD8, BUintD8};
+use crate::BUintD8;
+#[cfg(feature = "signed")]
+use crate::BIntD8;
 use rand::distributions::uniform::{SampleBorrow, SampleUniform, UniformSampler};
 use rand::distributions::{Distribution, Standard};
 use rand::{Error, Fill, Rng};
@@ -310,6 +313,7 @@ impl<const N: usize> Distribution<BUintD8<N>> for Standard {
     }
 }
 
+#[cfg(feature = "signed")]
 impl<const N: usize> Distribution<BIntD8<N>> for Standard {
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> BIntD8<N> {
@@ -318,10 +322,12 @@ impl<const N: usize> Distribution<BIntD8<N>> for Standard {
 }
 
 fill_impl!(BUintD8<N>);
+#[cfg(feature = "signed")]
 fill_impl!(BIntD8<N>);
 
 uniform_int_impl!(BUintD8<N>, BUintD8<N>);
 
+#[cfg(feature = "signed")]
 uniform_int_impl!(BIntD8<N>, BUintD8<N>, to_bits, from_bits);
 
 #[cfg(test)]
@@ -336,5 +342,6 @@ mod tests {
     }
 
     test_random!(utest; StdRng, SmallRng);
+    #[cfg(feature = "signed")]
     test_random!(itest; StdRng, SmallRng);
 }

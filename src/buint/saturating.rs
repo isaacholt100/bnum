@@ -1,7 +1,6 @@
 use super::BUintD8;
 use crate::doc;
 use crate::ExpType;
-use crate::{digit, BIntD8, Digit};
 
 #[doc = doc::saturating::impl_desc!()]
 impl<const N: usize> BUintD8<N> {
@@ -30,10 +29,11 @@ impl<const N: usize> BUintD8<N> {
         Self::saturate_up(self.overflowing_add(rhs))
     }
 
+    #[cfg(feature = "signed")]
     #[doc = doc::saturating::saturating_add_signed!(U)]
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn saturating_add_signed(self, rhs: BIntD8<N>) -> Self {
+    pub const fn saturating_add_signed(self, rhs: crate::BIntD8<N>) -> Self {
         if rhs.is_negative() {
             Self::saturate_down(self.overflowing_add_signed(rhs))
         } else {
@@ -78,6 +78,7 @@ mod tests {
     test_bignum! {
         function: <utest>::saturating_add(a: utest, b: utest)
     }
+    #[cfg(feature = "signed")]
     test_bignum! {
         function: <utest>::saturating_add_signed(a: utest, b: itest)
     }

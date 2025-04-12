@@ -227,6 +227,7 @@ macro_rules! all_shift_impls {
             "attempt to shift right with overflow"
         );
 
+        #[cfg(feature = "signed")]
         crate::int::ops::shift_self_impl!(
             $Struct;
             Shl<BIntD8>,
@@ -236,6 +237,7 @@ macro_rules! all_shift_impls {
             "attempt to shift left with overflow"
         );
 
+        #[cfg(feature = "signed")]
         crate::int::ops::shift_self_impl!(
             $Struct;
             Shr<BIntD8>,

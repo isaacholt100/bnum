@@ -1,11 +1,11 @@
 use super::BIntD8;
-use crate::{BUintD8, Digit};
+use crate::BUintD8;
 
 use crate::doc;
 use crate::errors::ParseIntError;
 use crate::int::radix::assert_range;
-use alloc::string::String;
-use alloc::vec::Vec;
+#[cfg(feature = "alloc")]
+use alloc::{string::String, vec::Vec};
 use core::num::IntErrorKind;
 
 #[doc = doc::radix::impl_desc!(BIntD8)]
@@ -122,6 +122,7 @@ impl<const N: usize> BIntD8<N> {
         }
     }
 
+    #[cfg(feature = "alloc")]
     /// Returns the integer as a string in the given radix.
     ///
     /// # Panics
@@ -139,6 +140,7 @@ impl<const N: usize> BIntD8<N> {
         }
     }
 
+    #[cfg(feature = "alloc")]
     /// Returns the integer's underlying representation as an unsigned integer in the given base in big-endian digit order.
     ///
     /// # Panics
@@ -152,6 +154,7 @@ impl<const N: usize> BIntD8<N> {
         self.bits.to_radix_be(radix)
     }
 
+    #[cfg(feature = "alloc")]
     /// Returns the integer's underlying representation as an unsigned integer in the given base in little-endian digit order.
     ///
     /// # Panics
@@ -169,7 +172,8 @@ impl<const N: usize> BIntD8<N> {
 #[cfg(test)]
 mod tests {
     use crate::test::types::*;
-    use crate::test::{self, quickcheck_from_to_radix, test_bignum};
+    use crate::test::{self, test_bignum};
+    #[cfg(feature = "alloc")]
     use crate::BIntD8;
 
     test_bignum! {
@@ -194,13 +198,19 @@ mod tests {
         ]
     }
 
-    quickcheck_from_to_radix!(itest, radix_be, 256);
-    quickcheck_from_to_radix!(itest, radix_le, 256);
-    quickcheck_from_to_radix!(itest, str_radix, 36);
+    #[cfg(feature = "alloc")]
+    test::quickcheck_from_to_radix!(itest, radix_be, 256);
+    #[cfg(feature = "alloc")]
+    test::quickcheck_from_to_radix!(itest, radix_le, 256);
+    #[cfg(feature = "alloc")]
+    test::quickcheck_from_to_radix!(itest, str_radix, 36);
 
+    #[cfg(feature = "alloc")]
     test::quickcheck_from_str_radix!(itest, "+" | "-");
+    #[cfg(feature = "alloc")]
     test::quickcheck_from_str!(itest);
 
+    #[cfg(feature = "alloc")]
     #[test]
     fn from_to_radix_le() {
         let buf = &[
@@ -226,6 +236,8 @@ mod tests {
         let v = u.to_radix_le(5);
         assert_eq!(v, buf);
     }
+
+    #[cfg(feature = "alloc")]
     #[test]
     fn from_to_radix_be() {
         let buf = &[
@@ -261,6 +273,8 @@ mod tests {
         let v = u.to_radix_be(128);
         assert_eq!(v, buf);
     }
+
+    #[cfg(feature = "alloc")]
     #[test]
     fn from_to_str_radix() {
         let src = "-293487598aashkhkhakb8345cbvjkus";
@@ -280,6 +294,8 @@ mod tests {
         let u = BIntD8::<100>::from_str_radix(src, 36).unwrap();
         assert_eq!(u.to_str_radix(36), src);
     }
+
+    #[cfg(feature = "alloc")]
     #[test]
     fn parse_bytes() {
         let src = "1797972456987acbdead7889";

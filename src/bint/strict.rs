@@ -1,5 +1,5 @@
 use super::BIntD8;
-use crate::{BUintD8, Digit};
+use crate::BUintD8;
 
 #[doc = doc::strict::impl_desc!()]
 impl<const N: usize> BIntD8<N> {
@@ -36,7 +36,7 @@ impl<const N: usize> BIntD8<N> {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "nightly"))] // since strict_overflow_ops are not stable yet
 mod tests {
     crate::int::strict::tests!(itest);
 

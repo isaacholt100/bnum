@@ -1,5 +1,5 @@
 use super::BIntD8;
-use crate::{BUintD8, Digit};
+use crate::BUintD8;
 
 macro_rules! checked_ilog {
     ($method: ident $(, $base: ident: $ty: ty)?) => {

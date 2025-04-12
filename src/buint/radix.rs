@@ -13,8 +13,8 @@ use crate::errors::ParseIntError;
 use crate::int::radix::assert_range;
 use crate::ExpType;
 use crate::{digit, Digit};
-use alloc::string::String;
-use alloc::vec::Vec;
+#[cfg(feature = "alloc")]
+use alloc::{string::String, vec::Vec};
 use core::iter::Iterator;
 use core::num::IntErrorKind;
 use core::str::FromStr;
@@ -418,6 +418,7 @@ impl<const N: usize> BUintD8<N> {
         }
     }
 
+    #[cfg(feature = "alloc")]
     /// Returns the integer as a string in the given radix.
     ///
     /// # Panics
@@ -447,6 +448,7 @@ impl<const N: usize> BUintD8<N> {
         unsafe { String::from_utf8_unchecked(out) }
     }
 
+    #[cfg(feature = "alloc")]
     /// Returns the integer in the given base in big-endian digit order.
     ///
     /// # Panics
@@ -467,6 +469,7 @@ impl<const N: usize> BUintD8<N> {
         v
     }
 
+    #[cfg(feature = "alloc")]
     /// Returns the integer in the given base in little-endian digit order.
     ///
     /// # Panics
@@ -505,6 +508,7 @@ impl<const N: usize> BUintD8<N> {
         }
     }
 
+    #[cfg(feature = "alloc")]
     fn to_bitwise_digits_le(self, bits: u8) -> Vec<u8> {
         // TODO: can use u128
         let last_digit_index = self.last_digit_index();
@@ -528,6 +532,7 @@ impl<const N: usize> BUintD8<N> {
         out
     }
 
+    #[cfg(feature = "alloc")]
     fn to_inexact_bitwise_digits_le(self, bits: u8) -> Vec<u8> {
         // TODO: can use u128
         let mask: Digit = (1 << bits) - 1;
@@ -558,6 +563,7 @@ impl<const N: usize> BUintD8<N> {
         out
     }
 
+    #[cfg(feature = "alloc")]
     fn to_radix_digits_le(self, radix: u32) -> Vec<u8> {
         let radix_digits = div_ceil(self.bits(), ilog2(radix) as ExpType);
         let mut out = Vec::with_capacity(radix_digits as usize);
@@ -592,7 +598,7 @@ impl<const N: usize> FromStr for BUintD8<N> {
 #[cfg(test)]
 mod tests {
     use crate::test::types::*;
-    use crate::test::{self, quickcheck_from_to_radix, test_bignum};
+    use crate::test::test_bignum;
     use crate::BUintD8;
     use core::str::FromStr;
 
@@ -638,9 +644,12 @@ mod tests {
         ]
     }
 
-    quickcheck_from_to_radix!(utest, radix_be, 256);
-    quickcheck_from_to_radix!(utest, radix_le, 256);
-    quickcheck_from_to_radix!(utest, str_radix, 36);
+    #[cfg(feature = "alloc")]
+    crate::test::quickcheck_from_to_radix!(utest, radix_be, 256);
+    #[cfg(feature = "alloc")]
+    crate::test::quickcheck_from_to_radix!(utest, radix_le, 256);
+    #[cfg(feature = "alloc")]
+    crate::test::quickcheck_from_to_radix!(utest, str_radix, 36);
 
     #[test]
     #[should_panic(expected = "attempt to parse integer from empty string")]
@@ -660,9 +669,12 @@ mod tests {
         assert_eq!(UTEST::from_radix_le(&[], 10), Some(UTEST::ZERO));
     }
 
-    test::quickcheck_from_str_radix!(utest, "+" | "");
-    test::quickcheck_from_str!(utest);
+    #[cfg(feature = "alloc")]
+    crate::test::quickcheck_from_str_radix!(utest, "+" | "");
+    #[cfg(feature = "alloc")]
+    crate::test::quickcheck_from_str!(utest);
 
+    #[cfg(feature = "alloc")]
     #[test]
     fn parse_bytes() {
         let src = "134957dkbhadoinegrhi983475hdgkhgdhiu3894hfd";

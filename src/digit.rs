@@ -1,4 +1,4 @@
-mod types {
+pub mod types {
     pub type Digit = u8;
 
     pub type SignedDigit = i8;
@@ -76,51 +76,6 @@ pub const fn borrowing_sub_u128(a: u128, b: u128, borrow: bool) -> (u128, bool) 
 }
 
 #[inline]
-pub const fn carrying_add_signed(
-    a: SignedDigit,
-    b: SignedDigit,
-    carry: bool,
-) -> (SignedDigit, bool) {
-    let (s1, o1) = a.overflowing_add(b);
-    if carry {
-        let (s2, o2) = s1.overflowing_add(1);
-        (s2, o1 != o2)
-    } else {
-        (s1, o1)
-    }
-}
-
-#[inline]
-pub const fn carrying_add_signed_i128(
-    a: i128,
-    b: i128,
-    carry: bool,
-) -> (i128, bool) {
-    let (s1, o1) = a.overflowing_add(b);
-    if carry {
-        let (s2, o2) = s1.overflowing_add(1);
-        (s2, o1 != o2)
-    } else {
-        (s1, o1)
-    }
-}
-
-#[inline]
-pub const fn borrowing_sub_signed(
-    a: SignedDigit,
-    b: SignedDigit,
-    borrow: bool,
-) -> (SignedDigit, bool) {
-    let (s1, o1) = a.overflowing_sub(b);
-    if borrow {
-        let (s2, o2) = s1.overflowing_sub(1);
-        (s2, o1 != o2)
-    } else {
-        (s1, o1)
-    }
-}
-
-#[inline]
 pub const fn widening_mul(a: Digit, b: Digit) -> (Digit, Digit) {
     let prod = a as DoubleDigit * b as DoubleDigit;
     (prod as Digit, (prod >> BITS) as Digit)
@@ -134,6 +89,23 @@ pub const fn carrying_mul(a: Digit, b: Digit, carry: Digit, current: Digit) -> (
 }
 
 #[inline]
+pub const fn carrying_mul_u128(a: u128, b: u128, carry: u128, current: u128) -> (u128, u128) {
+    let (a_lo, a_hi) = (a as u64, (a >> 64) as u64);
+    let (b_lo, b_hi) = (b as u64, (b >> 64) as u64);
+    let (c_lo, c_hi) = (carry as u64, (carry >> 64) as u64);
+    let (d_lo, d_hi) = (current as u64, (current >> 64) as u64);
+    let x = (a_lo as u128) * (b_lo as u128) + (c_lo as u128) + (d_lo as u128);
+    let y = (a_lo as u128) * (b_hi as u128) + (c_hi as u128) + (d_hi as u128);
+    let (y, carry_y) = y.overflowing_add((a_hi as u128) * (b_lo as u128));
+    let (x, carry_x) = x.overflowing_add(y << 64);
+    let carry2 = if carry_y { 1 << 64 } else { 0 };
+    let carry3 = if carry_x { 1 } else { 0 };
+    let z = (a_hi as u128) * (b_hi as u128) + carry2 + carry3 + (y >> 64);
+
+    (x, z)
+}
+
+#[inline]
 pub const fn div_rem_wide(low: Digit, high: Digit, rhs: Digit) -> (Digit, Digit) {
     debug_assert!(high < rhs);
 
@@ -143,5 +115,3 @@ pub const fn div_rem_wide(low: Digit, high: Digit, rhs: Digit) -> (Digit, Digit)
         (a % rhs as DoubleDigit) as Digit,
     )
 }
-
-pub const HEX_PADDING: usize = BITS as usize / 4;

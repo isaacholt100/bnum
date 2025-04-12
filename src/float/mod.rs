@@ -1,5 +1,7 @@
 use crate::{BUintD8, BIntD8, ExpType};
 use crate::doc;
+#[cfg(test)]
+use crate::cast::As;
 
 type Digit = u8;
 
@@ -13,7 +15,7 @@ pub type F32 = Float<4, 23>;
 impl From<f64> for F64 {
     #[inline]
     fn from(f: f64) -> Self {
-        Self::from_bits(f.to_bits().into())
+        Self::from_bits(f.to_bits().as_())
     }
 }
 
@@ -21,7 +23,7 @@ impl From<f64> for F64 {
 impl From<f32> for F32 {
     #[inline]
     fn from(f: f32) -> Self {
-        Self::from_bits(f.to_bits().into())
+        Self::from_bits(f.to_bits().as_())
     }
 }
 

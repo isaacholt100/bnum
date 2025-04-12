@@ -5,12 +5,18 @@ macro_rules! test_types {
                 #[allow(non_camel_case_types)]
                 pub type utest = [<u $bits>];
 
+                #[cfg(feature = "signed")]
                 #[allow(non_camel_case_types)]
                 pub type itest = [<i $bits>];
 
                 #[allow(non_camel_case_types)]
+                #[cfg(feature = "float")]
+                pub type ftest = [<f $bits>];
+
+                #[allow(non_camel_case_types)]
                 pub type UTEST = crate::BUintD8<{ $bits / 8 }>;
 
+                #[cfg(feature = "signed")]
                 #[allow(non_camel_case_types)]
                 pub type ITEST = crate::BIntD8<{ $bits / 8 }>;
             }

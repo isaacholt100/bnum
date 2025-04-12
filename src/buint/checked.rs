@@ -3,7 +3,7 @@ use crate::doc;
 use crate::errors::div_zero;
 use crate::helpers::tuple_to_option;
 use crate::ExpType;
-use crate::{digit, BIntD8, Digit};
+use crate::{digit, Digit};
 
 #[doc = doc::checked::impl_desc!()]
 impl<const N: usize> BUintD8<N> {
@@ -14,10 +14,11 @@ impl<const N: usize> BUintD8<N> {
         tuple_to_option(self.overflowing_add(rhs))
     }
 
+    #[cfg(feature = "signed")]
     #[doc = doc::checked::checked_add_signed!(U)]
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn checked_add_signed(self, rhs: BIntD8<N>) -> Option<Self> {
+    pub const fn checked_add_signed(self, rhs: crate::BIntD8<N>) -> Option<Self> {
         tuple_to_option(self.overflowing_add_signed(rhs))
     }
 
@@ -273,6 +274,7 @@ mod tests {
             (utest::MAX, 1u8)
         ]
     }
+    #[cfg(feature = "signed")]
     test_bignum! {
         function: <utest>::checked_add_signed(a: utest, b: itest)
     }

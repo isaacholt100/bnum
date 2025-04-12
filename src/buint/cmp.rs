@@ -1,5 +1,4 @@
 use super::BUintD8;
-use crate::{digit, Digit};
 use core::cmp::{Ord, Ordering, PartialOrd};
 
 impl<const N: usize> PartialOrd for BUintD8<N> {

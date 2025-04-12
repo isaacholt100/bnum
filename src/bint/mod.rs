@@ -1,4 +1,4 @@
-use crate::{BUintD8, Digit};
+use crate::BUintD8;
 
 macro_rules! ilog {
     ($method: ident $(, $base: ident : $ty: ty)?) => {
@@ -29,7 +29,7 @@ use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "borsh")]
 use ::{
-    alloc::string::ToString,
+    // alloc::string::ToString,
     borsh::{BorshDeserialize, BorshSchema, BorshSerialize},
 };
 
@@ -227,15 +227,15 @@ impl<const N: usize> BIntD8<N> {
     }
 
     #[doc = doc::doc_comment! {
-                I 256,
-                "Returns `true` if and only if `self == 2^k` for some integer `k`.",
+        I 256,
+        "Returns `true` if and only if `self == 2^k` for some integer `k`.",
 
-                "let n = " stringify!(I256) "::from(1i16 << 12);\n"
-                "assert!(n.is_power_of_two());\n"
-                "let m = " stringify!(I256) "::from(90i8);\n"
-                "assert!(!m.is_power_of_two());\n"
-                "assert!(!((-n).is_power_of_two()));"
-            }]
+        "let n = " stringify!(I256) "::from(1i16 << 12);\n"
+        "assert!(n.is_power_of_two());\n"
+        "let m = " stringify!(I256) "::from(90i8);\n"
+        "assert!(!m.is_power_of_two());\n"
+        "assert!(!((-n).is_power_of_two()));"
+    }]
     #[must_use]
     #[inline]
     pub const fn is_power_of_two(self) -> bool {
@@ -454,9 +454,11 @@ mod tests {
         function: <itest>::cast_unsigned(a: itest)
     }
 
+    use crate::cast::{As, CastFrom};
+
     #[test]
     fn bit() {
-        let i = ITEST::from(0b10100101010101i16);
+        let i = ITEST::cast_from(0b10100101010101i16);
         assert!(i.bit(2));
         assert!(!i.bit(3));
         assert!(i.bit(8));
@@ -480,20 +482,20 @@ mod tests {
 
     #[test]
     fn bits() {
-        let u = ITEST::from(0b10100101010101i16);
+        let u = ITEST::cast_from(0b10100101010101i16);
         assert_eq!(u.bits(), 14);
     }
 
     #[test]
     fn default() {
-        assert_eq!(ITEST::default(), itest::default().into());
+        assert_eq!(ITEST::default(), itest::default().as_());
     }
 
     #[test]
     fn is_power_of_two() {
-        assert!(!ITEST::from(-1273i16).is_power_of_two());
-        assert!(!ITEST::from(8945i16).is_power_of_two());
-        assert!(ITEST::from(1i16 << 14).is_power_of_two());
+        assert!(!ITEST::cast_from(-1273i16).is_power_of_two());
+        assert!(!ITEST::cast_from(8945i16).is_power_of_two());
+        assert!(ITEST::cast_from(1i16 << 14).is_power_of_two());
     }
 
     #[test]
@@ -525,6 +527,7 @@ mod const_trait_fillers;
 mod consts;
 mod convert;
 mod endian;
+#[cfg(feature = "alloc")]
 mod fmt;
 #[cfg(feature = "numtraits")]
 mod numtraits;
@@ -535,3 +538,11 @@ mod saturating;
 mod strict;
 mod unchecked;
 mod wrapping;
+
+// implementation if we don't have alloc, as otherwise can't call assert_eq! (since this requires Debug)
+#[cfg(all(test, not(feature = "alloc")))]
+impl<const N: usize> core::fmt::Debug for BIntD8<N> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        core::fmt::Debug::fmt(&self.bits, f)
+    }
+}

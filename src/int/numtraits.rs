@@ -167,6 +167,7 @@ macro_rules! impls {
             }
         }
 
+        #[cfg(feature = "signed")]
         impl<const N: usize, const M: usize> AsPrimitive<crate::BIntD8<M>> for $Int<N> {
             #[inline]
             fn as_(self) -> crate::BIntD8<M> {
@@ -174,47 +175,43 @@ macro_rules! impls {
             }
         }
 
-        // #[cfg(feature = "nightly")]
-        // #[doc = crate::doc::requires_feature!("nightly")]
-        // impl<const N: usize> FromBytes for $Int<N> {
-        //     type Bytes = [u8; BUintD8::<N>::BYTES_USIZE];
+        impl<const N: usize> FromBytes for $Int<N> {
+            type Bytes = [u8; N];
 
-        //     #[inline]
-        //     fn from_be_bytes(&self) -> Self::BYTES {
-        //         Self::to_be_bytes(*self)
-        //     }
+            #[inline]
+            fn from_be_bytes(bytes: &[u8; N]) -> Self {
+                Self::from_be_bytes(*bytes)
+            }
 
-        //     #[inline]
-        //     fn from_le_bytes(&self) -> Self::BYTES {
-        //         Self::to_le_bytes(*self)
-        //     }
+            #[inline]
+            fn from_le_bytes(bytes: &[u8; N]) -> Self {
+                Self::from_le_bytes(*bytes)
+            }
 
-        //     #[inline]
-        //     fn from_ne_bytes(&self) -> Self::BYTES {
-        //         Self::to_ne_bytes(*self)
-        //     }
-        // }
+            #[inline]
+            fn from_ne_bytes(bytes: &[u8; N]) -> Self {
+                Self::from_ne_bytes(*bytes)
+            }
+        }
 
-        // #[cfg(feature = "nightly")]
-        // #[doc = crate::doc::requires_feature!("nightly")]
-        // impl<const N: usize> ToBytes for $Int<N> {
-        //     type Bytes = [u8; BUintD8::<N>::BYTES_USIZE];
+        impl<const N: usize> ToBytes for $Int<N> {
+            type Bytes = [u8; N];
 
-        //     #[inline]
-        //     fn to_be_bytes(&self) -> Self::BYTES {
-        //         Self::to_be_bytes(*self)
-        //     }
+            #[inline]
+            fn to_be_bytes(&self) -> [u8; N] {
+                Self::to_be_bytes(*self)
+            }
 
-        //     #[inline]
-        //     fn to_le_bytes(&self) -> Self::BYTES {
-        //         Self::to_le_bytes(*self)
-        //     }
+            #[inline]
+            fn to_le_bytes(&self) -> [u8; N] {
+                Self::to_le_bytes(*self)
+            }
 
-        //     #[inline]
-        //     fn to_ne_bytes(&self) -> Self::BYTES {
-        //         Self::to_ne_bytes(*self)
-        //     }
-        // }
+            #[inline]
+            fn to_ne_bytes(&self) -> [u8; N] {
+                Self::to_ne_bytes(*self)
+            }
+        }
 
         impl<const N: usize> MulAdd for $Int<N> {
             type Output = Self;
@@ -259,9 +256,9 @@ macro_rules! impls {
             }
         }
 
-        // impl<const N: usize> ConstOne for $Int<N> {
-        //     const ONE: Self = Self::ONE;
-        // }
+        impl<const N: usize> ConstOne for $Int<N> {
+            const ONE: Self = Self::ONE;
+        }
 
         impl<const N: usize> Zero for $Int<N> {
             #[inline]
@@ -275,9 +272,9 @@ macro_rules! impls {
             }
         }
 
-        // impl<const N: usize> ConstZero for $Int<N> {
-        //     const ZERO: Self = Self::ZERO;
-        // }
+        impl<const N: usize> ConstZero for $Int<N> {
+            const ZERO: Self = Self::ZERO;
+        }
     }
 }
 

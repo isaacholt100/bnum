@@ -1,8 +1,8 @@
 use crate::cast::float::{FloatCastHelper, FloatMantissa};
+use crate::helpers::Zero;
 
 use super::{Float, FloatExponent};
 use crate::cast::CastFrom;
-use crate::doc;
 use crate::{BUintD8, BIntD8};
 use crate::ExpType;
 
@@ -10,7 +10,6 @@ macro_rules! uint_as_float {
     ($($uint: ident $(<$N: ident>)?), *) => {
         $(
             impl<const W: usize, const MB: usize $(, const $N: usize)?> CastFrom<$uint $(<$N>)?> for Float<W, MB> {
-                #[must_use = doc::must_use_op!()]
                 #[inline]
                 fn cast_from(from: $uint $(<$N>)?) -> Self {
                     crate::cast::float::cast_float_from_uint(from)
@@ -90,7 +89,6 @@ macro_rules! float_as_uint {
     ($($uint: ident $(<$N: ident>)?), *) => {
         $(
             impl<const W: usize, const MB: usize $(, const $N: usize)?> CastFrom<Float<W, MB>> for $uint $(<$N>)? {
-                #[must_use = doc::must_use_op!()]
                 #[inline]
                 fn cast_from(value: Float<W, MB>) -> Self {
                     crate::cast::float::cast_uint_from_float(value)
@@ -180,7 +178,6 @@ where
 }
 
 impl<const W1: usize, const MB1: usize, const W2: usize, const MB2: usize> CastFrom<Float<W2, MB2>> for Float<W1, MB1> {
-    #[must_use = doc::must_use_op!()]
     #[inline]
     fn cast_from(from: Float<W2, MB2>) -> Self {
         cast_float_from_float(from)
@@ -191,7 +188,6 @@ macro_rules! primitive_and_big_float_cast {
     ($($primitive_float_type: ty), *) => {
         $(
             impl<const W: usize, const MB: usize> CastFrom<$primitive_float_type> for Float<W, MB> {
-                #[must_use = doc::must_use_op!()]
                 #[inline]
                 fn cast_from(from: $primitive_float_type) -> Self {
                     cast_float_from_float(from)
@@ -199,7 +195,6 @@ macro_rules! primitive_and_big_float_cast {
             }
 
             impl<const W: usize, const MB: usize> CastFrom<Float<W, MB>> for $primitive_float_type {
-                #[must_use = doc::must_use_op!()]
                 #[inline]
                 fn cast_from(from: Float<W, MB>) -> Self {
                     cast_float_from_float(from)
@@ -216,12 +211,12 @@ mod tests {
     use super::CastFrom;
     use crate::cast::CastTo;
     use crate::test::{test_from, test_into};
-    use crate::test::types::{ftest, FTEST};
+    use crate::test::types::{ftest, FTEST, UTEST, ITEST};
     use crate::test::cast_types::*;
 
     test_from! {
         function: <ftest as CastFrom>::cast_from,
-        from_types: (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64, UTESTD8, UTESTD16, UTESTD32, UTESTD64, TestUint1, TestUint2, TestUint3, TestUint4, TestUint5, TestUint6, TestUint7, TestUint8, TestUint9, TestUint10, ITESTD8, ITESTD16, ITESTD32, ITESTD64, TestInt1, TestInt2, TestInt3, TestInt4, TestInt5, TestInt6, TestInt7, TestInt8, TestInt9, TestInt10)
+        from_types: (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64, UTEST, ITEST, TestUint1, TestUint2, TestUint3, TestUint4, TestUint5, TestUint6, TestUint7, TestUint8, TestUint9, TestUint10, TestInt1, TestInt2, TestInt3, TestInt4, TestInt5, TestInt6, TestInt7, TestInt8, TestInt9, TestInt10)
     }
 
     test_into! {

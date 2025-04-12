@@ -1,5 +1,5 @@
 use crate::errors::{self, option_expect};
-use crate::{digit, BIntD8, Digit};
+use crate::{digit, Digit};
 
 use crate::doc;
 use crate::ExpType;
@@ -13,7 +13,7 @@ use ::{
 
 #[cfg(feature = "borsh")]
 use ::{
-    alloc::string::ToString,
+    // alloc::string::ToString,
     borsh::{BorshDeserialize, BorshSchema, BorshSerialize},
 };
 
@@ -78,12 +78,31 @@ impl<const N: usize> BUintD8<N> {
         while i > 0 {
             i -= 1;
             let digit = self.digits[i];
-            zeros += digit.leading_zeros() as ExpType;
+            zeros += digit.leading_zeros();
             if digit != Digit::MIN {
                 break;
             }
         }
         zeros
+    }
+
+    // this method breaks early if the threshold is exceeded, which provides a speed up when converting between different width integer types
+    pub(crate) const fn leading_zeros_at_least_threshold(&self, threshold: ExpType) -> bool {
+        // don't need to use larger digits, the compiler optimises this code well
+        let mut zeros = 0;
+        let mut i = N;
+        while i > 0 {
+            i -= 1;
+            let digit = self.digits[i];
+            zeros += digit.leading_zeros();
+            if zeros >= threshold {
+                return true;
+            }
+            if digit != Digit::MIN {
+                break;
+            }
+        }
+        false
     }
 
     #[doc = doc::trailing_zeros!(U 1024)]
@@ -92,16 +111,40 @@ impl<const N: usize> BUintD8<N> {
     pub const fn trailing_zeros(self) -> ExpType {
         let mut zeros = 0;
         let mut i = 0;
-        while i < Self::U128_DIGITS {
-            let digit = self.u128_digit_one_pad(i);
-            let tz = digit.trailing_zeros() as ExpType;
-            zeros += tz;
-            if tz != u128::BITS {
+        unsafe {
+            while i < Self::U128_DIGITS - 1 {
+                let digit = self.as_u128_digits().get(i);
+                let tz = digit.trailing_zeros();
+                zeros += tz;
+                if tz != u128::BITS {
+                    return zeros;
+                }
+                i += 1;
+            }
+        }
+        // zeros
+        let last_tz = self.as_u128_digits().last_padded::<true>().trailing_zeros();
+        zeros + last_tz
+    }
+
+    // this method breaks early if the threshold is exceeded, which provides a speed up when converting between different width integer types
+    #[cfg(feature = "signed")]
+    pub(crate) const fn leading_ones_at_least_threshold(&self, threshold: ExpType) -> bool {
+        // don't need to use larger digits, the compiler optimises this code well
+        let mut ones = 0;
+        let mut i = N;
+        while i > 0 {
+            i -= 1;
+            let digit = self.digits[i];
+            ones += digit.leading_ones();
+            if ones >= threshold {
+                return true;
+            }
+            if digit != Digit::MAX {
                 break;
             }
-            i += 1;
         }
-        zeros
+        false
     }
 
     #[doc = doc::leading_ones!(U 1024, MAX)]
@@ -114,7 +157,7 @@ impl<const N: usize> BUintD8<N> {
         while i > 0 {
             i -= 1;
             let digit = self.digits[i];
-            ones += digit.leading_ones() as ExpType;
+            ones += digit.leading_ones();
             if digit != Digit::MAX {
                 break;
             }
@@ -128,23 +171,27 @@ impl<const N: usize> BUintD8<N> {
     pub const fn trailing_ones(self) -> ExpType {
         let mut ones = 0;
         let mut i = 0;
-        while i < Self::U128_DIGITS {
-            let digit = self.u128_digit(i);
-            let to = digit.trailing_ones() as ExpType;
-            ones += to;
-            if to != u128::BITS {
-                break;
+        unsafe {
+            while i < Self::U128_DIGITS - 1 {
+                let digit = self.as_u128_digits().get(i);
+                let to = digit.trailing_ones();
+                ones += to;
+                if to != u128::BITS {
+                    return ones;
+                }
+                i += 1;
             }
-            i += 1;
         }
-        ones
+        let last_to = self.as_u128_digits().last().trailing_ones();
+        ones + last_to
     }
 
+    #[cfg(feature = "signed")]
     #[doc = doc::cast_signed!(U)]
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn cast_signed(self) -> BIntD8<N> {
-        BIntD8::<N>::from_bits(self)
+    pub const fn cast_signed(self) -> crate::BIntD8<N> {
+        crate::BIntD8::<N>::from_bits(self)
     }
 
     #[inline]
@@ -175,15 +222,18 @@ impl<const N: usize> BUintD8<N> {
 
         if bit_shift != 0 {
             let carry_shift = 128 - bit_shift;
-            let mut carry = (out.digits[N - 1] >> (8 - bit_shift)) as u128;
+            // let mut carry = (out.digits[N - 1] >> (8 - bit_shift)) as u128;
+            let mut carry = out.as_u128_digits().last() >> (carry_shift - 8 * Self::U128_DIGIT_REMAINDER as u32);
 
             let mut i = 0;
-            while i < Self::U128_DIGITS {
-                let current_digit = out.u128_digit(i);
-                out.set_u128_digit(i, (current_digit << bit_shift) | carry);
+            while i < Self::U128_DIGITS - 1 {
+                let current_digit = out.as_u128_digits().get(i);
+                out.as_u128_digits_mut().set(i, (current_digit << bit_shift) | carry);
                 carry = current_digit >> carry_shift;
                 i += 1;
             }
+            let current_digit = out.as_u128_digits().last();
+            out.as_u128_digits_mut().set(i, (current_digit << bit_shift) | carry);
         }
 
         out
@@ -213,16 +263,15 @@ impl<const N: usize> BUintD8<N> {
         let mut out = Self::ZERO;
         let mut i = 0;
         while i < Self::FULL_U128_DIGITS {
-            let d = self.u128_digit(i).swap_bytes();
+            let d = unsafe { self.as_u128_digits().get(i).swap_bytes() };
             let j = N - (i + 1) * 16;
-            out.set_u128_digit(j, d);
+            out.set_u128_digit(j, d); // TODO: this is NOT correct
             i += 1;
         }
         if Self::U128_DIGIT_REMAINDER != 0 {
             let d = self.u128_digit(i).swap_bytes().to_le_bytes();
             unsafe {
-                d
-                    .as_ptr()
+                d.as_ptr()
                     .add(16 - Self::U128_DIGIT_REMAINDER)
                     .copy_to_nonoverlapping(out.digits.as_mut_ptr(), Self::U128_DIGIT_REMAINDER);
             }
@@ -238,15 +287,14 @@ impl<const N: usize> BUintD8<N> {
         let mut i = 0;
         while i < Self::FULL_U128_DIGITS {
             let d = self.u128_digit(i).reverse_bits();
-            let j = N - (i + 1) * 16;
+            let j = N - (i + 1) * 16; // TODO: this is NOT correct
             out.set_u128_digit(j, d);
             i += 1;
         }
         if Self::U128_DIGIT_REMAINDER != 0 {
             let d = self.u128_digit(i).reverse_bits().to_le_bytes();
             unsafe {
-                d
-                    .as_ptr()
+                d.as_ptr()
                     .add(16 - Self::U128_DIGIT_REMAINDER)
                     .copy_to_nonoverlapping(out.digits.as_mut_ptr(), Self::U128_DIGIT_REMAINDER);
             }
@@ -293,13 +341,16 @@ impl<const N: usize> BUintD8<N> {
     pub const fn is_power_of_two(self) -> bool {
         let mut i = 0;
         let mut ones = 0;
-        while i < Self::U128_DIGITS {
-            ones += self.u128_digit(i).count_ones();
-            if ones > 1 {
-                return false;
+        unsafe {
+            while i < Self::U128_DIGITS - 1 {
+                ones += self.as_u128_digits().get(i).count_ones();
+                if ones > 1 {
+                    return false;
+                }
+                i += 1;
             }
-            i += 1;
         }
+        ones += self.as_u128_digits().last().count_ones();
         ones == 1
     }
 
@@ -456,19 +507,24 @@ impl<const N: usize> BUintD8<N> {
             let mut i = digit_shift;
             while i + 15 < N {
                 let offset = N - 16 - i;
-                let current_digit = out.u128_digit_at_offset::<0>(offset);
-                out.set_u128_digit_at_offset(offset, (current_digit >> bit_shift) | carry);
+                let current_digit = out.as_u128_digits().get_at_offset(offset);
+                out.as_u128_digits_mut().set_at_offset(offset, (current_digit >> bit_shift) | carry);
                 carry = current_digit << carry_shift;
                 i += 16;
             }
             let rem = (N - digit_shift) % 16;
             if rem != 0 {
                 let mut bytes = [0; 16];
-                bytes.as_mut_ptr().add(16 - rem).copy_from_nonoverlapping(out.digits.as_ptr(), rem);
+                bytes
+                    .as_mut_ptr()
+                    .add(16 - rem)
+                    .copy_from_nonoverlapping(out.digits.as_ptr(), rem);
                 let digit = u128::from_le_bytes(bytes);
                 let shifted = (digit >> bit_shift) | carry;
                 let bytes = shifted.to_le_bytes();
-                out.digits.as_mut_ptr().copy_from_nonoverlapping(bytes.as_ptr().add(16 - rem), rem);
+                out.digits
+                    .as_mut_ptr()
+                    .copy_from_nonoverlapping(bytes.as_ptr().add(16 - rem), rem);
             }
 
             if NEG {
@@ -572,30 +628,37 @@ impl<const N: usize> BUintD8<N> {
     #[inline]
     pub const fn is_zero(&self) -> bool {
         let mut i = 0;
-        while i < Self::U128_DIGITS {
-            if self.u128_digit(i) != 0 {
-                return false;
+        unsafe {
+            while i < Self::U128_DIGITS - 1 {
+                if self.as_u128_digits().get(i) != 0 {
+                    return false;
+                }
+                i += 1;
             }
-            i += 1;
         }
-        true
+        self.as_u128_digits().last() == 0
     }
 
     #[doc = doc::is_one!(U 256)]
     #[must_use]
     #[inline]
     pub const fn is_one(&self) -> bool {
-        if self.u128_digit(0) != 1 {
-            return false;
+        if Self::U128_DIGITS == 1 {
+            return self.as_u128_digits().last() == 1;
         }
-        let mut i = 1;
-        while i < Self::U128_DIGITS {
-            if self.u128_digit(i) != 0 {
+        unsafe {
+            if self.as_u128_digits().get(0) != 1 {
                 return false;
             }
-            i += 1;
+            let mut i = 1;
+            while i < Self::U128_DIGITS - 1 {
+                if self.as_u128_digits().get(i) != 0 {
+                    return false;
+                }
+                i += 1;
+            }
         }
-        true
+        self.as_u128_digits().last() == 0
     }
 
     // TODO: maybe don't need this method once using u128 digits for relevant methods
@@ -619,17 +682,137 @@ impl<const N: usize> BUintD8<N> {
         // TODO: optimise this method, this will make exponentiation by squaring faster
         self * self
     }
+
+    #[inline]
+    pub(crate) const fn as_u128_digits(&self) -> U128Digits<N> {
+        U128Digits::new(self)
+    }
+
+    #[inline]
+    pub(crate) const fn as_u128_digits_mut(&mut self) -> U128DigitsMut<N> {
+        U128DigitsMut::new(self)
+    }
+}
+
+pub struct U128Digits<'a, const N: usize> {
+    bits: &'a BUintD8<N>,
+}
+
+impl<'a, const N: usize> U128Digits<'a, N> {
+    const LAST_DIGIT_BYTES: usize = if N % 16 == 0 { 16 } else { N % 16 };
+    const LAST_LE_DIGIT_OFFSET: usize = N - Self::LAST_DIGIT_BYTES;
+
+    #[inline]
+    pub const fn new(bits: &'a BUintD8<N>) -> Self {
+        Self { bits }
+    }
+
+    #[inline]
+    pub const unsafe fn get_at_offset(&self, offset: usize) -> u128 {
+        let mut bytes = [0; 16];
+        let c = N - offset;
+        let count = c & (16 ^ (-((16 > c) as isize) as usize)); // this is a bit hack for min(c, 16)
+        self.bits
+            .digits
+            .as_ptr()
+            .add(offset)
+            .copy_to_nonoverlapping(bytes.as_mut_ptr(), count);
+        u128::from_le_bytes(bytes)
+    }
+
+    #[inline]
+    pub const unsafe fn get(&self, index: usize) -> u128 {
+        let mut bytes = [0; 16];
+        self.bits
+            .digits
+            .as_ptr()
+            .add(index * 16)
+            .copy_to_nonoverlapping(bytes.as_mut_ptr(), 16);
+        u128::from_le_bytes(bytes)
+    }
+
+    #[inline]
+    pub const unsafe fn get_with_correct_count(&self, index: usize) -> u128 {
+        self.get_at_offset(index * 16)
+    } 
+
+    #[inline]
+    pub const fn last_padded<const ONES: bool>(&self) -> u128 {
+        let mut bytes = if ONES { [u8::MAX; 16] } else { [0; 16] };
+        unsafe {
+            self.bits
+                .digits
+                .as_ptr()
+                .add(Self::LAST_LE_DIGIT_OFFSET)
+                .copy_to_nonoverlapping(bytes.as_mut_ptr(), Self::LAST_DIGIT_BYTES);
+        }
+        u128::from_le_bytes(bytes)
+    }
+
+    #[inline]
+    pub const fn last(&self) -> u128 {
+        self.last_padded::<false>()
+    }
+}
+
+pub struct U128DigitsMut<'a, const N: usize> {
+    bits: &'a mut BUintD8<N>,
+}
+
+impl<'a, const N: usize> U128DigitsMut<'a, N> {
+    #[inline]
+    pub const fn new(bits: &'a mut BUintD8<N>) -> Self {
+        Self { bits }
+    }
+
+    #[inline]
+    pub const unsafe fn set(&mut self, index: usize, value: u128) {
+        let out_bytes = value.to_le_bytes();
+        unsafe {
+            out_bytes
+                .as_ptr()
+                .copy_to_nonoverlapping(self.bits.digits.as_mut_ptr().add(index * 16), 16);
+        }
+    }
+
+    #[inline]
+    pub const unsafe fn set_at_offset(&mut self, offset: usize, value: u128) {
+        let out_bytes = value.to_le_bytes();
+        let c = N - offset;
+        let count = c & (16 ^ (-((16 > c) as isize) as usize)); // this is a bit hack for min(c, 16)
+        unsafe {
+            out_bytes
+                .as_ptr()
+                .copy_to_nonoverlapping(self.bits.digits.as_mut_ptr().add(offset), count);
+        }
+    }
+
+    #[inline]
+    pub const fn set_last(&mut self, value: u128) {
+        let bytes = value.to_le_bytes();
+        unsafe {
+            self.bits
+                .digits
+                .as_mut_ptr()
+                .add(U128Digits::<N>::LAST_LE_DIGIT_OFFSET)
+                .copy_from_nonoverlapping(bytes.as_ptr(), U128Digits::<N>::LAST_DIGIT_BYTES);
+        }
+    }
 }
 
 impl<const N: usize> BUintD8<N> {
     // TODO: should probably make these unsafe or add checks in
+    // TODO: multiplication is much slower when the min is calculated. need to remove it and use only when needed
     #[inline]
     const fn u128_digit_at_offset<const PAD: u8>(&self, offset: usize) -> u128 {
         let mut bytes = [PAD; 16];
         let c = N - offset;
         let count = c & (16 ^ (-((16 > c) as isize) as usize)); // this is a bit hack for min(c, 16)
         unsafe {
-            self.digits.as_ptr().add(offset).copy_to_nonoverlapping(bytes.as_mut_ptr(), count);
+            self.digits
+                .as_ptr()
+                .add(offset)
+                .copy_to_nonoverlapping(bytes.as_mut_ptr(), count);
         }
         u128::from_le_bytes(bytes)
     }
@@ -646,11 +829,6 @@ impl<const N: usize> BUintD8<N> {
     }
 
     #[inline]
-    const fn u128_digit_one_pad(&self, i: usize) -> u128 {
-        self.u128_digit_pad::<{u8::MAX}>(i)
-    }
-
-    #[inline]
     const fn set_u128_digit(&mut self, i: usize, value: u128) {
         self.set_u128_digit_at_offset(i * 16, value);
     }
@@ -661,13 +839,16 @@ impl<const N: usize> BUintD8<N> {
         let c = N - offset;
         let count = c & (16 ^ (-((16 > c) as isize) as usize)); // this is a bit hack for min(c, 16)
         unsafe {
-            out_bytes.as_ptr().copy_to_nonoverlapping(self.digits.as_mut_ptr().add(offset), count);
+            out_bytes
+                .as_ptr()
+                .copy_to_nonoverlapping(self.digits.as_mut_ptr().add(offset), count);
         }
     }
 
     const U128_DIGITS: usize = N.div_ceil(16);
     pub(crate) const FULL_U128_DIGITS: usize = N / 16;
     pub(crate) const U128_DIGIT_REMAINDER: usize = N % 16;
+    pub(crate) const U128_BITS_REMAINDER: ExpType = Self::BITS % 128;
 }
 
 impl<const N: usize> Default for BUintD8<N> {
@@ -711,11 +892,15 @@ impl<const N: usize> quickcheck::Arbitrary for BUintD8<N> {
     fn arbitrary(g: &mut quickcheck::Gen) -> Self {
         let mut out = Self::ZERO;
         let mut i = 0;
-        while i < Self::U128_DIGITS {
-            let a = <u128 as quickcheck::Arbitrary>::arbitrary(g);
-            out.set_u128_digit(i, a);
-            i += 1;
+        unsafe {
+            while i < Self::U128_DIGITS - 1 { // TODO: this and other loops could be done with i < Self::FULL_DIGITS then a check if Self::U128_DIGIT_REMAINDER != 0 at the end
+                let a = <u128 as quickcheck::Arbitrary>::arbitrary(g);
+                out.as_u128_digits_mut().set(i, a);
+                i += 1;
+            }
         }
+        let a = <u128 as quickcheck::Arbitrary>::arbitrary(g);
+        out.as_u128_digits_mut().set_last(a);
         out
     }
 }
@@ -733,13 +918,9 @@ mod tests {
     test_bignum! {
         function: <utest>::is_power_of_two(a: utest)
     }
+    #[cfg(feature = "signed")]
     test_bignum! {
         function: <utest>::cast_signed(a: utest)
-    }
-
-    test_bignum! {
-        function: <itest>::overflowing_shr,
-        cases: [(-1, 9u8)]
     }
 
     #[test]
@@ -749,9 +930,11 @@ mod tests {
         assert_eq!(a, UTEST::from_digits(digits));
     }
 
+    use crate::cast::{As, CastFrom};
+
     #[test]
     fn bit() {
-        let u = UTEST::from(0b001010100101010101u64);
+        let u = UTEST::cast_from(0b001010100101010101u64);
         assert!(u.bit(0));
         assert!(!u.bit(1));
         // assert!(!u.bit(17));
@@ -779,7 +962,7 @@ mod tests {
 
     #[test]
     fn bits() {
-        let u = UTEST::from(0b1010100101010101u128);
+        let u = UTEST::cast_from(0b1010100101010101u128);
         assert_eq!(u.bits(), 16);
 
         let u = UTEST::power_of_two(7);
@@ -788,7 +971,7 @@ mod tests {
 
     #[test]
     fn default() {
-        assert_eq!(UTEST::default(), utest::default().into());
+        assert_eq!(UTEST::default(), utest::default().as_());
     }
 
     #[test]
@@ -821,6 +1004,7 @@ mod consts;
 mod convert;
 mod div;
 mod endian;
+#[cfg(feature = "alloc")]
 mod fmt;
 mod mask;
 mod mul;
@@ -833,3 +1017,17 @@ mod saturating;
 mod strict;
 mod unchecked;
 mod wrapping;
+
+// implementation if we don't have alloc, as otherwise can't call assert_eq! (since this requires Debug)
+#[cfg(all(test, not(feature = "alloc")))]
+impl<const N: usize> core::fmt::Debug for BUintD8<N> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        for digit in self.digits.iter().rev() {
+            write!(f, "{:02x}", digit)?;
+        }
+        if self.is_zero() {
+            write!(f, "0")?;
+        }
+        Ok(())
+    }
+}

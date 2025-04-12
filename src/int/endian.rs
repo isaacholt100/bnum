@@ -1,5 +1,4 @@
-#[cfg(test)]
-#[cfg(feature = "nightly")]
+#[cfg(all(test, feature = "alloc"))]
 macro_rules! test_from_endian_slice {
     ($int: ty, $endian: ident) => {
         paste::paste! {
@@ -61,20 +60,16 @@ macro_rules! test_from_endian_slice {
     };
 }
 
-#[cfg(test)]
-#[cfg(feature = "nightly")]
+#[cfg(all(test, feature = "alloc"))]
 pub(crate) use test_from_endian_slice;
 
-#[cfg(test)]
-#[cfg(feature = "nightly")]
+#[cfg(all(test, feature = "alloc"))]
 use alloc::vec::Vec;
 
-#[cfg(test)]
-#[cfg(feature = "nightly")]
+#[cfg(all(test, feature = "alloc"))]
 use core::ops::{Range, RangeFrom};
 
-#[cfg(feature = "nightly")]
-#[cfg(test)]
+#[cfg(all(test, feature = "alloc"))]
 /// Pad a slice of bytes with leading pad bits so that the resulting vector of bytes represents the same integer as the original slice
 pub fn be_bytes_vec(bytes: &[u8], pad_bits: u8, pad_length: usize) -> Vec<u8> {
     let mut bytes_vec = vec![pad_bits; pad_length];
@@ -82,14 +77,12 @@ pub fn be_bytes_vec(bytes: &[u8], pad_bits: u8, pad_length: usize) -> Vec<u8> {
     bytes_vec
 }
 
-#[cfg(feature = "nightly")]
-#[cfg(test)]
+#[cfg(all(test, feature = "alloc"))]
 pub fn be_pad(pad_length: usize, _bits: u32) -> (usize, Range<usize>, RangeFrom<usize>) {
     (pad_length, 0..pad_length, pad_length..)
 }
 
-#[cfg(feature = "nightly")]
-#[cfg(test)]
+#[cfg(all(test, feature = "alloc"))]
 /// Pad a slice of bytes with trailing pad bits so that the resulting vector of bytes represents the same integer as the original slice
 pub fn le_bytes_vec(bytes: &[u8], pad_bits: u8, pad_length: usize) -> Vec<u8> {
     let mut bytes_vec = bytes.to_vec();
@@ -97,8 +90,7 @@ pub fn le_bytes_vec(bytes: &[u8], pad_bits: u8, pad_length: usize) -> Vec<u8> {
     bytes_vec
 }
 
-#[cfg(feature = "nightly")]
-#[cfg(test)]
+#[cfg(all(test, feature = "alloc"))]
 pub fn le_pad(pad_length: usize, bits: u32) -> (usize, Range<usize>, Range<usize>) {
     let bytes = bits as usize / 8;
     (
@@ -111,7 +103,6 @@ pub fn le_pad(pad_length: usize, bits: u32) -> (usize, Range<usize>, Range<usize
 #[cfg(test)]
 macro_rules! tests {
     ($int: ty) => {
-        #[cfg(feature = "nightly")]
         use crate::test::U8ArrayWrapper;
 
         test_bignum! {
@@ -127,40 +118,34 @@ macro_rules! tests {
             function: <$int>::to_le(a: $int)
         }
 
-        #[cfg(feature = "nightly")]
         test_bignum! {
             function: <$int>::to_be_bytes(a: $int)
         }
 
-        #[cfg(feature = "nightly")]
         test_bignum! {
             function: <$int>::to_le_bytes(a: $int)
         }
 
-        #[cfg(feature = "nightly")]
         test_bignum! {
             function: <$int>::to_ne_bytes(a: $int)
         }
 
-        #[cfg(feature = "nightly")]
         test_bignum! {
             function: <$int>::from_be_bytes(a: U8ArrayWrapper<{<$int>::BITS as usize / 8}>)
         }
 
-        #[cfg(feature = "nightly")]
         test_bignum! {
             function: <$int>::from_le_bytes(a: U8ArrayWrapper<{<$int>::BITS as usize / 8}>)
         }
 
-        #[cfg(feature = "nightly")]
         test_bignum! {
             function: <$int>::from_ne_bytes(a: U8ArrayWrapper<{<$int>::BITS as usize / 8}>)
         }
 
-        #[cfg(feature = "nightly")]
+        #[cfg(feature = "alloc")]
         crate::int::endian::test_from_endian_slice!($int, be);
 
-        #[cfg(feature = "nightly")]
+        #[cfg(feature = "alloc")]
         crate::int::endian::test_from_endian_slice!($int, le);
     };
 }

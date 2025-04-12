@@ -54,20 +54,6 @@ macro_rules! arithmetic_impl_desc {
 
 pub(crate) use arithmetic_impl_desc;
 
-#[cfg(feature = "nightly")]
-macro_rules! requires_feature {
-    ($feature: literal) => {
-        concat!(
-            "\n\nThis is supported on the crate feature `",
-            $feature,
-            "` only."
-        )
-    };
-}
-
-#[cfg(feature = "nightly")]
-pub(crate) use requires_feature;
-
 macro_rules! type_str {
     ($sign: ident $bits: literal) => {
         concat!(stringify!($sign), $bits)
@@ -443,8 +429,12 @@ crate::doc::link_doc_comment_method! {
     is_negative,
     cast_signed,
     cast_unsigned,
-    midpoint,
-    copysign,
+    midpoint
+}
+
+#[cfg(feature = "float")]
+crate::doc::link_doc_comment_method! {
     next_up,
-    next_down
+    next_down,
+    copysign
 }

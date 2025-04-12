@@ -1,7 +1,6 @@
 use super::BUintD8;
 use crate::errors::option_expect;
 use crate::ExpType;
-use crate::{digit, BIntD8, Digit};
 use crate::{doc, errors};
 
 #[doc = doc::wrapping::impl_desc!()]
@@ -13,10 +12,11 @@ impl<const N: usize> BUintD8<N> {
         self.overflowing_add(rhs).0
     }
 
+    #[cfg(feature = "signed")]
     #[doc = doc::wrapping::wrapping_add_signed!(U)]
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn wrapping_add_signed(self, rhs: BIntD8<N>) -> Self {
+    pub const fn wrapping_add_signed(self, rhs: crate::BIntD8<N>) -> Self {
         self.overflowing_add_signed(rhs).0
     }
 
@@ -142,6 +142,7 @@ mod tests {
     test_bignum! {
         function: <utest>::wrapping_add(a: utest, b: utest)
     }
+    #[cfg(feature = "signed")]
     test_bignum! {
         function: <utest>::wrapping_add_signed(a: utest, b: itest)
     }
@@ -179,6 +180,7 @@ mod tests {
     test_bignum! {
         function: <utest>::wrapping_pow(a: utest, b: u16)
     }
+    #[cfg(feature = "nightly")] // since wrapping_next_power_of_two only available on nightly
     test_bignum! {
         function: <utest>::wrapping_next_power_of_two(a: utest),
         cases: [

@@ -1,4 +1,5 @@
 use crate::{float::{FloatExponent, UnsignedFloatExponent}, BIntD8, BUintD8};
+use crate::cast::CastFrom;
 use super::Float;
 
 impl<const W: usize, const MB: usize> Float<W, MB> {
@@ -17,7 +18,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             return Self::from_bits(u);*/
         }
 
-        let tiny = Self::from_bits(BUintD8::from(0b11011u8) << Self::MB); // TODO: may not work for exponents stored with very few bits
+        let tiny = Self::from_bits(BUintD8::cast_from(0b11011u8) << Self::MB); // TODO: may not work for exponents stored with very few bits
 
         let mut ix = BIntD8::from_bits(bits);
         let mut i: FloatExponent;

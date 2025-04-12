@@ -30,7 +30,7 @@ macro_rules! impls {
 
 pub(crate) use impls;
 
-#[cfg(test)]
+#[cfg(all(test, feature = "nightly"))] // since bigint_helper_methods are not stable yet
 macro_rules! tests {
     ($int: ty) => {
         use crate::test::{test_bignum, types::*};
@@ -52,5 +52,5 @@ macro_rules! tests {
     };
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "nightly"))] // since bigint_helper_methods are not stable ye
 pub(crate) use tests;

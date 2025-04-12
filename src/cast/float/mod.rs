@@ -1,4 +1,4 @@
-use crate::helpers::Bits;
+use crate::helpers::{Bits, One, Zero};
 use crate::ExpType;
 use core::ops::{Add, BitAnd, Neg, Shl, Shr};
 
@@ -15,14 +15,12 @@ pub trait FloatMantissa:
     + BitAnd<Self, Output = Self>
     + PartialEq
     + Bits
+    + One
+    + Zero
 {
-    const ZERO: Self;
-    const ONE: Self;
     const TWO: Self;
     const MAX: Self;
 
-    fn leading_zeros(self) -> ExpType;
-    fn checked_shr(self, n: ExpType) -> Option<Self>;
     fn is_power_of_two(self) -> bool;
 }
 
@@ -30,20 +28,8 @@ macro_rules! impl_float_mantissa_for_uint {
     ($($uint: ty), *) => {
         $(
             impl FloatMantissa for $uint {
-                const ZERO: Self = 0;
-                const ONE: Self = 1;
                 const TWO: Self = 2;
                 const MAX: Self = Self::MAX;
-
-                #[inline]
-                fn leading_zeros(self) -> ExpType {
-                    Self::leading_zeros(self) as ExpType
-                }
-
-                #[inline]
-                fn checked_shr(self, n: ExpType) -> Option<Self> {
-                    Self::checked_shr(self, n as u32)
-                }
 
                 #[inline]
                 fn is_power_of_two(self) -> bool {

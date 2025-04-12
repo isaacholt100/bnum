@@ -3,11 +3,10 @@ pub mod cast;
 pub mod checked;
 pub mod cmp;
 pub mod endian;
+#[cfg(feature = "alloc")]
 pub mod fmt;
-
 #[cfg(feature = "numtraits")]
 pub mod numtraits;
-
 pub mod ops;
 pub mod radix;
 pub mod strict;
@@ -76,17 +75,21 @@ macro_rules! tests {
             function: <$int>::ilog10(a: $int),
             skip: a <= 0
         }
+        #[cfg(feature = "nightly")] // since int_roundings are not stable yet
         test_bignum! {
             function: <$int>::checked_next_multiple_of(a: $int, b: $int)
         }
+        #[cfg(feature = "nightly")] // since int_roundings are not stable yet
         test_bignum! {
             function: <$int>::next_multiple_of(a: $int, b: $int),
             skip: crate::test::debug_skip!(a.checked_next_multiple_of(b).is_none()) || b == 0
         }
+        #[cfg(feature = "nightly")] // since int_roundings are not stable yet
         test_bignum! {
             function: <$int>::div_floor(a: $int, b: $int),
             skip: a.checked_div(b).is_none()
         }
+        #[cfg(feature = "nightly")] // since int_roundings are not stable yet
         test_bignum! {
             function: <$int>::div_ceil(a: $int, b: $int),
             skip: a.checked_div(b).is_none()

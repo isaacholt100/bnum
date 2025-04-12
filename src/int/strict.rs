@@ -102,7 +102,7 @@ macro_rules! impls {
 
 pub(crate) use impls;
 
-#[cfg(test)]
+#[cfg(all(test, feature = "nightly"))] // since strict_overflow_ops are not stable yet
 macro_rules! tests {
     ($int: ty) => {
         use crate::test::{test_bignum, types::*};
@@ -154,5 +154,5 @@ macro_rules! tests {
     };
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "nightly"))] // since strict_overflow_ops are not stable yet
 pub(crate) use tests;

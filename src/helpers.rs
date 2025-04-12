@@ -43,18 +43,10 @@ impl<const N: usize> crate::helpers::Bits for crate::BUintD8<N> {
 
 pub trait Zero: Sized + PartialEq {
     const ZERO: Self;
-
-    fn is_zero(&self) -> bool {
-        self == &Self::ZERO
-    }
 }
 
 pub trait One: Sized + PartialEq {
     const ONE: Self;
-
-    fn is_one(&self) -> bool {
-        self == &Self::ONE
-    }
 }
 
 macro_rules! impl_zero_for_uint {

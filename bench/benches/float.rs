@@ -1,13 +1,15 @@
+use bnum_old::cast::CastFrom as CastFromOld;
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use rand::prelude::*;
 use bnum::cast::CastFrom;
 
 mod unzip;
 
-const SAMPLE_SIZE: usize = 10000;
+const SAMPLE_SIZE: usize = 500;
 
 use bnum::{BIntD8, BUintD8};
 use bnum::Float;
+use bnum::cast::As;
 
 type F256 = Float<32, 236>;
 type F128 = Float<32, 236>;
@@ -26,7 +28,7 @@ fn bench_fibs(c: &mut Criterion) {
         .map(|_| rng.gen::<(u64, u64)>())
         .map(|(a, b)| (
             (f64::from_bits(a >> 1), f64::from_bits(b >> 1)),
-            (F64::from_bits((a >> 1).into()), F64::from_bits((b >> 1).into()))
+            (F64::from_bits((a >> 1).as_()), F64::from_bits((b >> 1).as_()))
         ));
     let (prim_inputs, big_inputs) = unzip::unzip2(inputs);
 
@@ -57,6 +59,32 @@ fn bench_fibs(c: &mut Criterion) {
 //     group.bench_with_input(BenchmarkId::new("u128", "u128"), &input, |b, input| b.iter(|| input.digit(0)));
 // }
 
+trait BFrom<T> {
+    fn bfrom(t: T) -> Self;
+}
+
+macro_rules! new_to_old {
+    ($($N: expr), *) => {
+        $(
+            impl BFrom<BUintD8<{$N * 8}>> for bnum_old::BUint<$N> {
+                fn bfrom(b: BUintD8<{$N * 8}>) -> Self {
+                    let digits = *b.digits();
+                    let old_d8 = bnum_old::BUintD8::from_digits(digits);
+                    let out = <Self as bnum_old::cast::CastFrom<bnum_old::BUintD8<{$N * 8}>>>::cast_from(old_d8);
+                    // assert_eq!(out.to_str_radix(16), b.to_str_radix(16));
+                    out
+                }
+            }
+
+            impl BFrom<BIntD8<{$N * 8}>> for bnum_old::BInt<$N> {
+                fn bfrom(b: BIntD8<{$N * 8}>) -> Self {
+                    Self::from_bits(bnum_old::BUint::bfrom(b.to_bits()))
+                }
+            }
+        )*
+    }
+}
+
 const fn last_digit_index<const N: usize>(b: &bnum_old::BUint<N>) -> usize {
     let digits = b.digits();
     let mut index = 0;
@@ -70,14 +98,16 @@ const fn last_digit_index<const N: usize>(b: &bnum_old::BUint<N>) -> usize {
     index
 }
 
+new_to_old!(62);
+
 fn bench_add(c: &mut Criterion) {
     let mut group = c.benchmark_group("round");
     let mut rng = rand::rngs::StdRng::seed_from_u64(0);
-    const N: usize = 17;
+    const N: usize = 62;
     let big_inputs = (0..SAMPLE_SIZE)
-        .map(|_| rng.gen::<(BUintD8<{N*8}>, BUintD8<{N*8}>)>())
+        .map(|_| rng.gen::<(BIntD8<{N*8}>, i128)>())
         .map(|(a, b)| (
-            ((a, b), (unsafe { core::mem::transmute::<_, bnum_old::BUint<N>>(a) }, unsafe { core::mem::transmute::<_, bnum_old::BUint<N>>(b) }))
+            ((a, b), (bnum_old::BInt::bfrom(a), b))
         ));
     let (inputs1, inputs2) = unzip::unzip2(big_inputs);
 
@@ -88,12 +118,12 @@ fn bench_add(c: &mut Criterion) {
     // }));
     group.bench_with_input(BenchmarkId::new("Iterative", "d8"), &inputs1, |b, inputs| b.iter(|| {
         inputs.iter().cloned().map(|(a, b)| {
-            a >> 47
+            i128::try_from(a)
         }).collect::<Vec<_>>()
     }));
     group.bench_with_input(BenchmarkId::new("Iterative", "d64"), &inputs2, |b, inputs| b.iter(|| {
         inputs.iter().cloned().map(|(a, b)| {
-            a >> 47
+            i128::try_from(a)
         }).collect::<Vec<_>>()
     }));
     group.finish();

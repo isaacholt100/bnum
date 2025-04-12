@@ -25,13 +25,12 @@ impl_cast_uint_from_float_helper_for_primitive_uint!(u8, u16, u32, u64, u128, us
 
 pub fn cast_uint_from_float<F, U>(value: F) -> U
 where
-    F: FloatCastHelper + core::fmt::Debug,
+    F: FloatCastHelper,
     F::Mantissa: Bits,
     ExpType: TryFrom<F::SignedExp>,
     U: CastUintFromFloatHelper
         + CastFrom<F::Mantissa>
-        + Shl<ExpType, Output = U>
-        + core::fmt::Debug,
+        + Shl<ExpType, Output = U>,
     F::SignedExp: One + Neg<Output = F::SignedExp>,
 {
     if value.is_nan() {

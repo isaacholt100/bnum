@@ -1,5 +1,4 @@
 use super::BIntD8;
-use crate::{BUintD8, Digit};
 
 use core::cmp::{Ord, Ordering, PartialOrd};
 
@@ -34,7 +33,5 @@ impl<const N: usize> Ord for BIntD8<N> {
 
 #[cfg(test)]
 mod tests {
-    use crate::test::types::*;
-
     crate::int::cmp::tests!(itest);
 }
