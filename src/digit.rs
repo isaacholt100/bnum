@@ -39,7 +39,6 @@ pub const fn carrying_add_u128(a: u128, b: u128, carry: bool) -> (u128, bool) {
     }
 }
 
-
 #[inline]
 pub const fn carrying_add(a: Digit, b: Digit, carry: bool) -> (Digit, bool) {
     let (s1, o1) = a.overflowing_add(b);

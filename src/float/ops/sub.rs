@@ -1,10 +1,10 @@
-use core::num::FpCategory;
+use super::Float;
 use crate::cast::{As, CastFrom};
 use crate::float::FloatExponent;
 use crate::float::UnsignedFloatExponent;
 use crate::BUintD8;
 use crate::ExpType;
-use super::Float;
+use core::num::FpCategory;
 
 // TODO: this very occasionally fails quickcheck tests, need to fix
 impl<const W: usize, const MB: usize> Float<W, MB> {
@@ -28,8 +28,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         let sticky_bit2 = exp_diff != 0
             && exp_diff < BUintD8::<W>::BITS.into()
             && b_mant.bit(exp_diff.as_::<ExpType>() - 1);
-        let all_zeros =
-            exp_diff != 0 && b_mant.trailing_zeros() + 1 == exp_diff.as_::<ExpType>();
+        let all_zeros = exp_diff != 0 && b_mant.trailing_zeros() + 1 == exp_diff.as_::<ExpType>();
 
         // Append extra bits to the mantissas to ensure correct rounding
         a_mant = a_mant << 1 as ExpType;

@@ -165,7 +165,7 @@ macro_rules! quickcheck_from_to_radix {
             quickcheck::quickcheck! {
                 fn [<quickcheck_from_to_ $name>](u: crate::test::types::$primitive, radix: crate::test::Radix<$max>) -> quickcheck::TestResult {
                     use crate::cast::CastFrom;
-                    
+
                     let radix = radix.0;
                     let u = <[<$primitive:upper>]>::cast_from(u);
                     let v = u.[<to_ $name>](radix as u32);

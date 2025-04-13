@@ -1,7 +1,7 @@
 use super::Float;
+use crate::doc;
 use crate::BUintD8;
 use core::num::FpCategory;
-use crate::doc;
 
 type Digit = u8;
 

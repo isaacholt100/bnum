@@ -1,6 +1,6 @@
 use super::Float;
-use crate::BIntD8;
 use crate::doc;
+use crate::BIntD8;
 use core::cmp::{Ordering, PartialEq, PartialOrd};
 
 #[doc = doc::cmp::impl_desc!()]
@@ -71,7 +71,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         }
         x
     }
-    
+
     #[doc = doc::cmp::total_cmp!(F)]
     #[must_use]
     #[inline]

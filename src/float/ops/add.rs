@@ -1,6 +1,6 @@
-use core::num::FpCategory;
-use crate::{float::UnsignedFloatExponent, BUintD8, ExpType};
 use super::Float;
+use crate::{float::UnsignedFloatExponent, BUintD8, ExpType};
+use core::num::FpCategory;
 
 impl<const W: usize, const MB: usize> Float<W, MB> {
     #[inline]
@@ -14,34 +14,42 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         let (_, a_exp, a_mant) = a.into_normalised_signed_parts();
         let (_, b_exp, b_mant) = b.into_normalised_signed_parts();
         let exp_diff = (a_exp - b_exp) as UnsignedFloatExponent; // guaranteed to be non-negative since a >= b
-        
+
         // If the shift causes an overflow, the b_mant is too small so is set to 0
-        let (exp, mant) = if UnsignedFloatExponent::BITS - exp_diff.leading_zeros() <= ExpType::BITS { // number of bits needed to store exp_diff is less than bit width of ExpType, so can cast
+        let (exp, mant) = if UnsignedFloatExponent::BITS - exp_diff.leading_zeros() <= ExpType::BITS
+        {
+            // number of bits needed to store exp_diff is less than bit width of ExpType, so can cast
             let exp_diff = exp_diff as ExpType;
-            match b_mant.checked_shr(exp_diff) { // shift b_mant so it is aligned (in terms of exponents) with a_mant, so we can add them
+            match b_mant.checked_shr(exp_diff) {
+                // shift b_mant so it is aligned (in terms of exponents) with a_mant, so we can add them
                 Some(shifted) => {
                     let mut mant = a_mant + shifted;
-                    if mant.bit(Self::MB + 1) { // overflow occurred
+                    if mant.bit(Self::MB + 1) {
+                        // overflow occurred
                         let mut shifted_mant: BUintD8<W> = mant >> 1;
                         let gte_half = mant.is_odd(); // if discarded bits are at least a half
-                        let round_up = gte_half && !(b_mant.trailing_zeros() >= exp_diff && shifted_mant.is_even()); // round by ties-to-even
+                        let round_up = gte_half
+                            && !(b_mant.trailing_zeros() >= exp_diff && shifted_mant.is_even()); // round by ties-to-even
                         if round_up {
                             shifted_mant += BUintD8::ONE;
                         }
                         (a_exp + 1, shifted_mant)
-                    } else { // no overflow yet, but still need to check for overflow when performing ties-to-even rounding
-                        let round_up = b_mant.bit(exp_diff - 1) && !(b_mant.trailing_zeros() >= exp_diff - 1 && mant.is_even()); // round according to ties-to-even. exp_diff - 1 will be non-negative, since if exp_diff = 0, then we would have had the overflow condition earlier
+                    } else {
+                        // no overflow yet, but still need to check for overflow when performing ties-to-even rounding
+                        let round_up = b_mant.bit(exp_diff - 1)
+                            && !(b_mant.trailing_zeros() >= exp_diff - 1 && mant.is_even()); // round according to ties-to-even. exp_diff - 1 will be non-negative, since if exp_diff = 0, then we would have had the overflow condition earlier
                         if round_up {
                             mant += BUintD8::ONE;
                         }
-                        if mant.bit(Self::MB + 1) { // overflow occurred
+                        if mant.bit(Self::MB + 1) {
+                            // overflow occurred
                             debug_assert!(mant.is_even()); // since overflow occurred and we added one, the result must be even
                             (a_exp + 1, mant >> 1) // don't need to worry about checking for round up here, as mantissa is even, so when right shifted by 1, the discarded bits will be less than half (i.e. no round up)
                         } else {
                             (a_exp, mant)
                         }
                     }
-                },
+                }
                 None => (a_exp, a_mant), // no round up since the type holding b_mant has bit-width <= exp_diff, and b_mant has bit-width strictly smaller than the type's bit-width (since we enforce the float exponent to be at least one bit wide)
             }
         } else {
@@ -79,8 +87,11 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         b_mant <<= 2 as ExpType;
 
         // If the shift causes an overflow, the b_mant is too small so is set to 0
-        b_mant = if UnsignedFloatExponent::BITS - exp_diff.leading_zeros() <= ExpType::BITS { // number of bits needed to store exp_diff is less than bit width of ExpType, so can cast
-            b_mant.checked_shr(exp_diff as ExpType).unwrap_or(BUintD8::ZERO)
+        b_mant = if UnsignedFloatExponent::BITS - exp_diff.leading_zeros() <= ExpType::BITS {
+            // number of bits needed to store exp_diff is less than bit width of ExpType, so can cast
+            b_mant
+                .checked_shr(exp_diff as ExpType)
+                .unwrap_or(BUintD8::ZERO)
         } else {
             BUintD8::ZERO
         };
@@ -92,9 +103,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
         let overflow = !(mant >> (MB + 3)).is_zero();
         if !overflow {
-            if mant.digits[0] & 0b11 == 0b11
-                || mant.digits[0] & 0b110 == 0b110
-            {
+            if mant.digits[0] & 0b11 == 0b11 || mant.digits[0] & 0b110 == 0b110 {
                 mant += BUintD8::FOUR; // += 0b100
                 if !(mant >> (MB + 3)).is_zero() {
                     mant >>= 1 as ExpType;
@@ -140,7 +149,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     pub(crate) fn add(self, rhs: Self) -> Self {
         let self_negative = self.is_sign_negative();
         let rhs_negative = rhs.is_sign_negative();
-        
+
         match (self.classify(), rhs.classify()) {
             (FpCategory::Nan, _) => self,
             (_, FpCategory::Nan) => rhs,

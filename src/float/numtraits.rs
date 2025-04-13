@@ -1,6 +1,6 @@
 use super::Float;
-use num_traits::{Bounded, ConstZero, ConstOne, One, Zero, AsPrimitive, float::TotalOrder};
 use crate::cast::CastFrom;
+use num_traits::{float::TotalOrder, AsPrimitive, Bounded, ConstOne, ConstZero, One, Zero};
 
 impl<const W: usize, const MB: usize> Bounded for Float<W, MB> {
     #[inline]
@@ -108,9 +108,9 @@ impl<const W: usize, const MB: usize> TotalOrder for Float<W, MB> {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::test::test_bignum;
     use crate::test::types::{ftest, FTEST};
-    use super::*;
 
     test_bignum! {
         function: <ftest as Zero>::is_zero(a: ref &ftest)

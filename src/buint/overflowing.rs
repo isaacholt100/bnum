@@ -1,8 +1,8 @@
 use super::BUintD8;
+use crate::digit;
 use crate::digit::SignedDigit;
 use crate::doc;
 use crate::ExpType;
-use crate::digit;
 
 #[doc = doc::overflowing::impl_desc!()]
 impl<const N: usize> BUintD8<N> {

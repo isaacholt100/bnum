@@ -584,8 +584,8 @@ impl<const N: usize> FromStr for BUintD8<N> {
 
 #[cfg(test)]
 mod tests {
-    use crate::test::types::*;
     use crate::test::test_bignum;
+    use crate::test::types::*;
     use core::str::FromStr;
 
     test_bignum! {
@@ -664,7 +664,7 @@ mod tests {
     #[test]
     fn parse_bytes() {
         use crate::BUintD8;
-        
+
         let src = "134957dkbhadoinegrhi983475hdgkhgdhiu3894hfd";
         let u = BUintD8::<100>::parse_bytes(src.as_bytes(), 35).unwrap();
         let v = BUintD8::<100>::from_str_radix(src, 35).unwrap();

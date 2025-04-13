@@ -1,6 +1,6 @@
 use super::Float;
-use crate::BUintD8;
 use crate::doc;
+use crate::BUintD8;
 
 impl<const W: usize, const MB: usize> Float<W, MB> {
     #[doc = doc::endian::to_be_bytes!(F)]

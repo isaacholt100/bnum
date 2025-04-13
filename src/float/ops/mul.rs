@@ -32,9 +32,10 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             0
         };
 
-        let mut exp =
-            (exp_a as FloatExponent) - Self::EXP_BIAS + (exp_b as FloatExponent) + (extra_bits as FloatExponent)
-                - (MB as FloatExponent);
+        let mut exp = (exp_a as FloatExponent) - Self::EXP_BIAS
+            + (exp_b as FloatExponent)
+            + (extra_bits as FloatExponent)
+            - (MB as FloatExponent);
 
         if exp > Self::MAX_EXP + Self::EXP_BIAS - 1 {
             return if negative {

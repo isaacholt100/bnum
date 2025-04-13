@@ -64,36 +64,35 @@ impl<T> DerefMut for Slice<T> {
 /// let mut v = vec![I256::ZERO; 10];
 /// let mut rng = StdRng::seed_from_u64(0);
 ///
-/// random::try_fill_slice(&mut v, &mut rng).unwrap();
+/// random::fill_slice(&mut v, &mut rng).unwrap();
 /// // each initial `I256::ZERO` is replaced with a random `I256`
 ///
 /// println!("{:?}", v);
 /// ```
-pub fn try_fill_slice<T, R: Rng + ?Sized>(slice: &mut [T], rng: &mut R) -> Result<(), Error>
+pub fn fill_slice<T, R: Rng + ?Sized>(slice: &mut [T], rng: &mut R)
 where
     Slice<T>: Fill,
 {
     let slice = unsafe { &mut *(slice as *mut _ as *mut Slice<T>) };
-    Fill::try_fill(slice, rng)
+    Fill::fill(slice, rng)
 }
 
 macro_rules! fill_impl {
     ($ty: ty) => {
         impl<const N: usize> Fill for crate::random::Slice<$ty> {
             #[inline(never)]
-            fn try_fill<R: Rng + ?Sized>(&mut self, rng: &mut R) -> Result<(), Error> {
+            fn fill<R: Rng + ?Sized>(&mut self, rng: &mut R) {
                 if self.0.len() > 0 {
-                    rng.try_fill_bytes(unsafe {
+                    rng.fill_bytes(unsafe {
                         core::slice::from_raw_parts_mut(
                             self.0.as_mut_ptr() as *mut u8,
                             self.0.len() * core::mem::size_of::<$ty>(),
                         )
-                    })?;
+                    });
                     for x in &mut self.0 {
                         *x = x.to_le();
                     }
                 }
-                Ok(())
             }
         }
     };
@@ -109,29 +108,30 @@ macro_rules! uniform_int_impl {
             type X = $ty;
 
             #[inline]
-            fn new<B1, B2>(low_b: B1, high_b: B2) -> Self
+            fn new<B1, B2>(low_b: B1, high_b: B2) -> Result<Self, rand::distr::uniform::Error>
             where
                 B1: SampleBorrow<Self::X> + Sized,
                 B2: SampleBorrow<Self::X> + Sized,
             {
                 let low = *low_b.borrow();
                 let high = *high_b.borrow();
-                assert!(low < high, "Uniform::new called with `low >= high`");
+                if high <= low {
+                    return Err(rand::distr::uniform::Error::EmptyRange);
+                }
                 UniformSampler::new_inclusive(low, high - <$ty>::ONE)
             }
 
             #[inline]
-            fn new_inclusive<B1, B2>(low_b: B1, high_b: B2) -> Self
+            fn new_inclusive<B1, B2>(low_b: B1, high_b: B2) -> Result<Self, rand::distr::uniform::Error>
             where
                 B1: SampleBorrow<Self::X> + Sized,
                 B2: SampleBorrow<Self::X> + Sized,
             {
                 let low = *low_b.borrow();
                 let high = *high_b.borrow();
-                assert!(
-                    low <= high,
-                    "Uniform::new_inclusive called with `low > high`"
-                );
+                if high < low {
+                    return Err(rand::distr::uniform::Error::EmptyRange);
+                }
 
                 let range = high.wrapping_sub(low).wrapping_add(<$ty>::ONE)$(.$as_unsigned())?;
                 let ints_to_reject = if !range.is_zero() {
@@ -140,11 +140,11 @@ macro_rules! uniform_int_impl {
                     <$u_large>::ZERO
                 };
 
-                UniformInt {
+                Ok(UniformInt {
                     low,
                     range: $(<$ty>::$as_signed)?(range),
                     z: $(<$ty>::$as_signed)?(ints_to_reject),
-                }
+                })
             }
 
             #[inline]
@@ -153,41 +153,45 @@ macro_rules! uniform_int_impl {
                 if !range.is_zero() {
                     let zone = <$u_large>::MAX - (self.z)$(.$as_unsigned())?;
                     loop {
-                        let v: $u_large = rng.gen();
+                        let v: $u_large = rng.random();
                         let (lo, hi) = v.widening_mul(range);
                         if lo <= zone {
                             return self.low.wrapping_add($(<$ty>::$as_signed)?(hi));
                         }
                     }
                 } else {
-                    rng.gen()
+                    rng.random()
                 }
             }
 
             #[inline]
-            fn sample_single<R: Rng + ?Sized, B1, B2>(low_b: B1, high_b: B2, rng: &mut R) -> Self::X
+            fn sample_single<R: Rng + ?Sized, B1, B2>(low_b: B1, high_b: B2, rng: &mut R) -> Result<Self::X, rand::distr::uniform::Error>
             where
                 B1: SampleBorrow<Self::X> + Sized,
                 B2: SampleBorrow<Self::X> + Sized,
             {
                 let low = *low_b.borrow();
                 let high = *high_b.borrow();
-                assert!(low < high, "UniformSampler::sample_single: low >= high");
+                if high <= low {
+                    return Err(rand::distr::uniform::Error::EmptyRange);
+                }
                 Self::sample_single_inclusive(low, high - <$ty>::ONE, rng)
             }
 
             #[inline]
-            fn sample_single_inclusive<R: Rng + ?Sized, B1, B2>(low_b: B1, high_b: B2, rng: &mut R) -> Self::X
+            fn sample_single_inclusive<R: Rng + ?Sized, B1, B2>(low_b: B1, high_b: B2, rng: &mut R) -> Result<Self::X, rand::distr::uniform::Error>
             where
                 B1: SampleBorrow<Self::X> + Sized,
                 B2: SampleBorrow<Self::X> + Sized,
             {
                 let low = *low_b.borrow();
                 let high = *high_b.borrow();
-                assert!(low <= high, "UniformSampler::sample_single_inclusive: low > high");
+                if high < low {
+                    return Err(rand::distr::uniform::Error::EmptyRange);
+                }
                 let range = high.wrapping_sub(low).wrapping_add(<$ty>::ONE)$(.$as_unsigned())?;
                 if range.is_zero() {
-                    return rng.gen();
+                    return Ok(rng.random());
                 }
 
                 let zone = if <$u_large>::MAX.bits() <= 16 {
@@ -198,10 +202,10 @@ macro_rules! uniform_int_impl {
                 };
 
                 loop {
-                    let v: $u_large = rng.gen();
+                    let v: $u_large = rng.random();
                     let (lo, hi) = v.widening_mul(range);
                     if lo <= zone {
-                        return low.wrapping_add($(<$ty>::$as_signed)?(hi));
+                        return Ok(low.wrapping_add($(<$ty>::$as_signed)?(hi)));
                     }
                 }
             }
@@ -224,8 +228,8 @@ macro_rules! test_random {
 
                         let (mut rng, mut rng2) = seeded_rngs::<$Rng>(seed);
 
-                        let big = rng.gen::<[<$int:upper>]>();
-                        let primitive = rng2.gen::<$int>();
+                        let big = rng.random::<[<$int:upper>]>();
+                        let primitive = rng2.random::<$int>();
 
                         convert::test_eq(big, primitive)
                     }
@@ -243,9 +247,9 @@ macro_rules! test_random {
                         let mut big_array = [<[<$int:upper>]>::MIN; SLICE_LENGTH];
                         let mut primitive_array = [<$int>::MIN; SLICE_LENGTH];
 
-                        crate::random::try_fill_slice(&mut big_array, &mut rng).unwrap();
+                        crate::random::fill_slice(&mut big_array, &mut rng);
 
-                        primitive_array.try_fill(&mut rng2).unwrap();
+                        primitive_array.fill(&mut rng2);
 
                         big_array
                             .into_iter()
@@ -268,13 +272,13 @@ macro_rules! test_random {
 						let min_big = [<$int:upper>]::cast_from(min);
 						let max_big = [<$int:upper>]::cast_from(max);
 
-						let big = rng.gen_range(min_big..max_big);
-						let primitive = rng2.gen_range(min..max);
+						let big = rng.random_range(min_big..max_big);
+						let primitive = rng2.random_range(min..max);
 
                         let mut result = convert::test_eq(big, primitive);
 
-						let big = rng.gen_range(min_big..=max_big);
-						let primitive = rng2.gen_range(min..=max);
+						let big = rng.random_range(min_big..=max_big);
+						let primitive = rng2.random_range(min..=max);
 
                         result &= convert::test_eq(big, primitive);
 
@@ -297,14 +301,14 @@ pub struct UniformInt<X> {
     z: X,
 }
 
-use crate::BUintD8;
 #[cfg(feature = "signed")]
 use crate::BIntD8;
-use rand::distributions::uniform::{SampleBorrow, SampleUniform, UniformSampler};
-use rand::distributions::{Distribution, Standard};
-use rand::{Error, Fill, Rng};
+use crate::BUintD8;
+use rand::distr::uniform::{SampleBorrow, SampleUniform, UniformSampler};
+use rand::distr::{Distribution, StandardUniform};
+use rand::{Fill, Rng};
 
-impl<const N: usize> Distribution<BUintD8<N>> for Standard {
+impl<const N: usize> Distribution<BUintD8<N>> for StandardUniform {
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> BUintD8<N> {
         let mut digits = [0; N];
@@ -314,10 +318,10 @@ impl<const N: usize> Distribution<BUintD8<N>> for Standard {
 }
 
 #[cfg(feature = "signed")]
-impl<const N: usize> Distribution<BIntD8<N>> for Standard {
+impl<const N: usize> Distribution<BIntD8<N>> for StandardUniform {
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> BIntD8<N> {
-        BIntD8::from_bits(rng.gen())
+        BIntD8::from_bits(rng.random())
     }
 }
 

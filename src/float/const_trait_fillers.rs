@@ -1,6 +1,6 @@
+use super::Float;
 use crate::doc;
 use crate::BUintD8;
-use super::Float;
 use core::cmp::Ordering;
 
 #[doc = doc::const_trait_fillers::impl_desc!()]
@@ -32,7 +32,10 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
     #[inline]
     pub const fn le(&self, other: &Self) -> bool {
-        matches!(self.partial_cmp(&other), Some(Ordering::Less | Ordering::Equal))
+        matches!(
+            self.partial_cmp(&other),
+            Some(Ordering::Less | Ordering::Equal)
+        )
     }
 
     #[inline]
@@ -42,7 +45,10 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
     #[inline]
     pub const fn ge(&self, other: &Self) -> bool {
-        matches!(self.partial_cmp(&other), Some(Ordering::Greater | Ordering::Equal))
+        matches!(
+            self.partial_cmp(&other),
+            Some(Ordering::Greater | Ordering::Equal)
+        )
     }
 
     #[inline]

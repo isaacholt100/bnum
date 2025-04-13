@@ -1,10 +1,10 @@
-use core::num::FpCategory;
-use crate::float::FloatExponent;
-use crate::float::UnsignedFloatExponent;
-use crate::ExpType;
-use crate::BUintD8;
 use super::Float;
 use crate::cast::As;
+use crate::float::FloatExponent;
+use crate::float::UnsignedFloatExponent;
+use crate::BUintD8;
+use crate::ExpType;
+use core::num::FpCategory;
 
 impl<const W: usize, const MB: usize> Float<W, MB> {
     #[inline]
@@ -30,7 +30,8 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             e = 1;
         }
 
-        let total_shift = (MB as FloatExponent + 1 + b2 as FloatExponent - b1 as FloatExponent) - (extra_shift as FloatExponent);
+        let total_shift = (MB as FloatExponent + 1 + b2 as FloatExponent - b1 as FloatExponent)
+            - (extra_shift as FloatExponent);
 
         let large = if !total_shift.is_negative() {
             (s1.as_::<BUintD8<{ W * 2 }>>()) << total_shift

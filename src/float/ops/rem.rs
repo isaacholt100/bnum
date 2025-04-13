@@ -1,8 +1,8 @@
-use crate::float::UnsignedFloatExponent;
-use crate::BUintD8;
-use crate::BIntD8;
-use crate::ExpType;
 use super::Float;
+use crate::float::UnsignedFloatExponent;
+use crate::BIntD8;
+use crate::BUintD8;
+use crate::ExpType;
 
 impl<const W: usize, const MB: usize> Float<W, MB> {
     #[inline]
@@ -105,7 +105,8 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         /* scale result up */
         if ex.is_positive() {
             uxi -= BUintD8::ONE << Self::MB;
-            uxi |= BUintD8::cast_from_unsigned_float_exponent(ex as UnsignedFloatExponent) << Self::MB;
+            uxi |=
+                BUintD8::cast_from_unsigned_float_exponent(ex as UnsignedFloatExponent) << Self::MB;
         } else {
             uxi >>= -ex + 1;
         }

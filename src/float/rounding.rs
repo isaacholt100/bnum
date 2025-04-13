@@ -1,8 +1,8 @@
-use crate::float::UnsignedFloatExponent;
-use crate::{BIntD8, BUintD8};
-use crate::doc;
-use crate::ExpType;
 use super::{Float, FloatExponent};
+use crate::doc;
+use crate::float::UnsignedFloatExponent;
+use crate::ExpType;
+use crate::{BIntD8, BUintD8};
 
 type Digit = u8;
 
@@ -44,7 +44,8 @@ impl<const W: usize> BUintD8<W> {
     pub(crate) const fn from_exp_type(int: ExpType) -> Option<Self> {
         let mut out = Self::ZERO;
         let mut i = 0;
-        while i << crate::digit::BIT_SHIFT < ExpType::BITS as usize { // TODO: make sure to generalise when using general digits
+        while i << crate::digit::BIT_SHIFT < ExpType::BITS as usize {
+            // TODO: make sure to generalise when using general digits
             let d = (int >> (i << crate::digit::BIT_SHIFT)) as Digit; // TODO: make sure to generalise when using general digits
             if d != 0 {
                 if i < W {
@@ -166,11 +167,13 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         let (fract, trunc) = self.fract_trunc();
         match fract.abs().total_cmp(&Self::HALF) {
             Ordering::Less => trunc,
-            Ordering::Greater => if trunc.is_sign_negative() {
-                trunc - Self::ONE
-            } else {
-                trunc + Self::ONE
-            },
+            Ordering::Greater => {
+                if trunc.is_sign_negative() {
+                    trunc - Self::ONE
+                } else {
+                    trunc + Self::ONE
+                }
+            }
             Ordering::Equal => {
                 let (_, exponent, mantissa) = trunc.into_signed_parts();
                 let mantissa_length = (Self::MB - mantissa.trailing_zeros()) as FloatExponent;
@@ -183,7 +186,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                 } else {
                     trunc + Self::ONE
                 }
-            },
+            }
         }
     }
 
@@ -199,7 +202,8 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
         let (sign, exponent, mantissa) = self.into_signed_parts();
 
-        if exponent.is_negative() { // exponent is negative, so absolute value must be < 1, so truncate to 0
+        if exponent.is_negative() {
+            // exponent is negative, so absolute value must be < 1, so truncate to 0
             return if sign {
                 (self, Self::NEG_ZERO)
             } else {
@@ -207,13 +211,15 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             };
         }
         // exponent is >= 0, so can take unsigned_abs without changing its value
-        
+
         debug_assert!(!self.is_subnormal()); // exponent >= 0 so number should be normal, so mantissa has implicit leading one
 
         let abs_exponent = exponent.unsigned_abs();
-        if UnsignedFloatExponent::BITS - abs_exponent.leading_zeros() <= ExpType::BITS { // if number of bits needed to store abs_exponent is less than bit width of ExpType, then can cast
+        if UnsignedFloatExponent::BITS - abs_exponent.leading_zeros() <= ExpType::BITS {
+            // if number of bits needed to store abs_exponent is less than bit width of ExpType, then can cast
             let small_exponent = abs_exponent as ExpType;
-            if small_exponent >= Self::MB { // if the exponent exceeds the number of mantissa bits, then the number is an integer so truncation does nothing and fractional part is zero
+            if small_exponent >= Self::MB {
+                // if the exponent exceeds the number of mantissa bits, then the number is an integer so truncation does nothing and fractional part is zero
                 (Self::ZERO, self)
             } else {
                 let mask = BUintD8::<W>::MAX.shl(Self::MB - small_exponent);
@@ -224,8 +230,8 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                     Self::ZERO
                 } else {
                     let unshifted_mantissa = mantissa.bitand(mask.not());
-                    let shift = Self::MB + 1 - unshifted_mantissa.bits(); // amount of zeros before the first 1 in the fractional part 0.0...01... 
-                    // debug_assert!(shift > 0);
+                    let shift = Self::MB + 1 - unshifted_mantissa.bits(); // amount of zeros before the first 1 in the fractional part 0.0...01...
+                                                                          // debug_assert!(shift > 0);
                     let fract_mantissa = unshifted_mantissa.shl(shift);
                     let abs_fract_exponent = (shift - small_exponent) as UnsignedFloatExponent; // absolute value of exponent of fractional part
                     let fract_exponent = -(abs_fract_exponent as FloatExponent);

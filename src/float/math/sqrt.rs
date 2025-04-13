@@ -1,6 +1,9 @@
-use crate::{float::{FloatExponent, UnsignedFloatExponent}, BIntD8, BUintD8};
-use crate::cast::CastFrom;
 use super::Float;
+use crate::cast::CastFrom;
+use crate::{
+    float::{FloatExponent, UnsignedFloatExponent},
+    BIntD8, BUintD8,
+};
 
 impl<const W: usize, const MB: usize> Float<W, MB> {
     pub(super) fn sqrt_internal(self) -> Self {
@@ -74,7 +77,8 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         }
 
         ix = (q >> 1u8) + BIntD8::from_bits((BUintD8::MAX << (Self::MB + 1 + 2)) >> 2u8);
-        ix += (BUintD8::cast_from_unsigned_float_exponent(m as UnsignedFloatExponent) << Self::MB).cast_signed();
+        ix += (BUintD8::cast_from_unsigned_float_exponent(m as UnsignedFloatExponent) << Self::MB)
+            .cast_signed();
         Self::from_bits(ix.to_bits())
     }
 }

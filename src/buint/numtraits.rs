@@ -49,14 +49,14 @@ use crate::ExpType;
 use num_integer::{Integer, Roots};
 use num_traits::{
     AsPrimitive, Bounded, CheckedAdd, CheckedDiv, CheckedEuclid, CheckedMul, CheckedNeg,
-    CheckedRem, CheckedShl, CheckedShr, CheckedSub, ConstOne, ConstZero, Euclid, FromBytes, FromPrimitive,
-    MulAdd, MulAddAssign, Num, One, Pow, PrimInt, Saturating, SaturatingAdd, SaturatingMul,
-    SaturatingSub, ToBytes, ToPrimitive, Unsigned, WrappingAdd, WrappingMul, WrappingNeg,
-    WrappingShl, WrappingShr, WrappingSub, Zero,
+    CheckedRem, CheckedShl, CheckedShr, CheckedSub, ConstOne, ConstZero, Euclid, FromBytes,
+    FromPrimitive, MulAdd, MulAddAssign, Num, One, Pow, PrimInt, Saturating, SaturatingAdd,
+    SaturatingMul, SaturatingSub, ToBytes, ToPrimitive, Unsigned, WrappingAdd, WrappingMul,
+    WrappingNeg, WrappingShl, WrappingShr, WrappingSub, Zero,
 };
 
-use crate::cast::CastFrom;
 use crate::cast::float::ConvertFloatParts;
+use crate::cast::CastFrom;
 use crate::helpers::Bits;
 use crate::int::numtraits::num_trait_impl;
 
@@ -263,9 +263,11 @@ impl<const N: usize> PrimInt for BUintD8<N> {
 
         #[cfg(debug_assertions)]
         if overflow {
-            panic!(crate::errors::err_msg!("attempt to shift right with overflow"))
+            panic!(crate::errors::err_msg!(
+                "attempt to shift right with overflow"
+            ))
         }
-        
+
         u
     }
 

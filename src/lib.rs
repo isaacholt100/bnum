@@ -1,9 +1,6 @@
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![cfg_attr(feature = "nightly", allow(incomplete_features))]
-#![cfg_attr(
-    feature = "nightly",
-    feature(generic_const_exprs)
-)]
+#![cfg_attr(feature = "nightly", feature(generic_const_exprs))]
 #![cfg_attr(
     all(test, feature = "nightly"),
     feature(
@@ -55,9 +52,9 @@ use test::types::*;
 
 type ExpType = u32;
 
-pub use buint::BUintD8;
 #[cfg(feature = "signed")]
 pub use bint::BIntD8;
+pub use buint::BUintD8;
 
 type Digit = u8;
 

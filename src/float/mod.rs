@@ -1,7 +1,7 @@
-use crate::{BUintD8, BIntD8, ExpType};
-use crate::doc;
 #[cfg(test)]
 use crate::cast::As;
+use crate::doc;
+use crate::{BIntD8, BUintD8, ExpType};
 
 type Digit = u8;
 
@@ -38,8 +38,8 @@ macro_rules! handle_nan {
 mod cast;
 mod classify;
 mod cmp;
-mod consts;
 mod const_trait_fillers;
+mod consts;
 mod convert;
 mod endian;
 mod math;
@@ -120,7 +120,8 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         debug_assert!(exponent >= Self::MIN_EXP_MINUS_ONE);
         debug_assert!(exponent < Self::MAX_EXP);
         let biased_exponent = exponent + Self::EXP_BIAS;
-        let exponent_bits = BUintD8::cast_from_unsigned_float_exponent(biased_exponent as UnsignedFloatExponent);
+        let exponent_bits =
+            BUintD8::cast_from_unsigned_float_exponent(biased_exponent as UnsignedFloatExponent);
         let float_bits = exponent_bits.shl(Self::MB);
         Self::from_bits(float_bits)
     }

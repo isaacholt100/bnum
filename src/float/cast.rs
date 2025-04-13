@@ -3,8 +3,8 @@ use crate::helpers::Zero;
 
 use super::{Float, FloatExponent};
 use crate::cast::CastFrom;
-use crate::{BUintD8, BIntD8};
 use crate::ExpType;
+use crate::{BIntD8, BUintD8};
 
 macro_rules! uint_as_float {
     ($($uint: ident $(<$N: ident>)?), *) => {
@@ -127,18 +127,15 @@ where
     U: FloatCastHelper,
     U::Mantissa: CastFrom<T::Mantissa>,
     U::SignedExp: CastFrom<T::SignedExp>,
-    T::SignedExp: CastFrom<U::SignedExp>
+    T::SignedExp: CastFrom<U::SignedExp>,
 {
     // deal with zero cases as this means mantissa must have leading one
     let (sign, mut exponent, mantissa) = f.into_normalised_signed_parts();
     if mantissa == T::Mantissa::ZERO {
-        return if sign {
-            U::NEG_ZERO
-        } else {
-            U::ZERO
-        };
+        return if sign { U::NEG_ZERO } else { U::ZERO };
     }
-    if exponent == T::MAX_EXP { // the float is either infinity or NaN
+    if exponent == T::MAX_EXP {
+        // the float is either infinity or NaN
         let out_mantissa = if T::MANTISSA_DIGITS <= U::MANTISSA_DIGITS {
             U::Mantissa::cast_from(mantissa) << (U::MANTISSA_DIGITS - T::MANTISSA_DIGITS)
         } else {
@@ -146,38 +143,39 @@ where
         };
         return U::from_normalised_signed_parts(sign, U::MAX_EXP, out_mantissa);
     }
-    let out_mantissa = if T::MANTISSA_DIGITS <= U::MANTISSA_DIGITS { // in this case, the mantissa can be converted exactly
+    let out_mantissa = if T::MANTISSA_DIGITS <= U::MANTISSA_DIGITS {
+        // in this case, the mantissa can be converted exactly
         U::Mantissa::cast_from(mantissa) << (U::MANTISSA_DIGITS - T::MANTISSA_DIGITS)
     } else {
-        let (e, m) = T::round_exponent_mantissa::<true>(exponent, mantissa, T::MANTISSA_DIGITS - U::MANTISSA_DIGITS);
+        let (e, m) = T::round_exponent_mantissa::<true>(
+            exponent,
+            mantissa,
+            T::MANTISSA_DIGITS - U::MANTISSA_DIGITS,
+        );
         exponent = e;
 
         U::Mantissa::cast_from(m)
     };
 
-    let out_exponent = if T::EXPONENT_BITS <= U::EXPONENT_BITS { // in this case, we will never have overflow or underflow
+    let out_exponent = if T::EXPONENT_BITS <= U::EXPONENT_BITS {
+        // in this case, we will never have overflow or underflow
         U::SignedExp::cast_from(exponent)
     } else {
-        if T::SignedExp::cast_from(U::MAX_EXP) <= exponent { // exponent is too large to fit into output exponent
-            return if sign {
-                -U::INFINITY
-            } else {
-                U::INFINITY
-            };
+        if T::SignedExp::cast_from(U::MAX_EXP) <= exponent {
+            // exponent is too large to fit into output exponent
+            return if sign { -U::INFINITY } else { U::INFINITY };
         }
         if exponent < T::SignedExp::cast_from(U::MIN_SUBNORMAL_EXP) {
-            return if sign {
-                U::NEG_ZERO
-            } else {
-                U::ZERO
-            };
+            return if sign { U::NEG_ZERO } else { U::ZERO };
         }
         U::SignedExp::cast_from(exponent)
     };
     U::from_normalised_signed_parts(sign, out_exponent, out_mantissa)
 }
 
-impl<const W1: usize, const MB1: usize, const W2: usize, const MB2: usize> CastFrom<Float<W2, MB2>> for Float<W1, MB1> {
+impl<const W1: usize, const MB1: usize, const W2: usize, const MB2: usize> CastFrom<Float<W2, MB2>>
+    for Float<W1, MB1>
+{
     #[inline]
     fn cast_from(from: Float<W2, MB2>) -> Self {
         cast_float_from_float(from)
@@ -210,9 +208,9 @@ primitive_and_big_float_cast!(f32, f64);
 mod tests {
     use super::CastFrom;
     use crate::cast::CastTo;
-    use crate::test::{test_from, test_into};
-    use crate::test::types::{ftest, FTEST, UTEST, ITEST};
     use crate::test::cast_types::*;
+    use crate::test::types::{ftest, FTEST, ITEST, UTEST};
+    use crate::test::{test_from, test_into};
 
     test_from! {
         function: <ftest as CastFrom>::cast_from,

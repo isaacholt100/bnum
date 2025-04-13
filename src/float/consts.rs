@@ -32,9 +32,10 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     #[doc = doc::consts::EPSILON!(F)]
     pub const EPSILON: Self = Self::normal_power_of_two(-Self::MB_AS_FLOAT_EXP);
 
-    pub(crate) const HALF_EPSILON: Self = Self::normal_power_of_two(-(Self::MB as FloatExponent + 1));
+    pub(crate) const HALF_EPSILON: Self =
+        Self::normal_power_of_two(-(Self::MB as FloatExponent + 1));
 
-    pub const EXP_BIAS: FloatExponent = (1 << (Self::EXPONENT_BITS - 1)) - 1;// UnsignedFloatExponent::MAX.wrapping_shr(Self::MB + 1) as _;
+    pub const EXP_BIAS: FloatExponent = (1 << (Self::EXPONENT_BITS - 1)) - 1; // UnsignedFloatExponent::MAX.wrapping_shr(Self::MB + 1) as _;
 
     #[doc = doc::consts::MIN!(F)]
     pub const MIN: Self = {
@@ -54,22 +55,24 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     #[doc = doc::consts::MAX!(F)]
     pub const MAX: Self = Self::MIN.abs();
 
-
     #[doc = doc::consts::MIN_EXP!(F)]
     pub const MIN_EXP: FloatExponent = -Self::EXP_BIAS + 2;
 
-    pub(crate) const MIN_SUBNORMAL_EXP: FloatExponent = -Self::EXP_BIAS + 1 - Self::MB as FloatExponent; // TODO: need to check that this fits into FloatExponent
+    pub(crate) const MIN_SUBNORMAL_EXP: FloatExponent =
+        -Self::EXP_BIAS + 1 - Self::MB as FloatExponent; // TODO: need to check that this fits into FloatExponent
 
     #[doc = doc::consts::MAX_EXP!(F)]
     pub const MAX_EXP: FloatExponent = Self::EXP_BIAS + 1;
 
-    pub const MAX_UNBIASED_EXP: UnsignedFloatExponent = (Self::EXP_BIAS as UnsignedFloatExponent) * 2;
+    pub const MAX_UNBIASED_EXP: UnsignedFloatExponent =
+        (Self::EXP_BIAS as UnsignedFloatExponent) * 2;
 
     pub const MIN_10_EXP: Self = todo!();
 
     pub const MAX_10_EXP: Self = todo!();
 
-    pub const MAX_SUBNORMAL: Self = Self::from_bits(BUintD8::MAX.wrapping_shr(Self::EXPONENT_BITS + 1));
+    pub const MAX_SUBNORMAL: Self =
+        Self::from_bits(BUintD8::MAX.wrapping_shr(Self::EXPONENT_BITS + 1));
 
     pub const MIN_SUBNORMAL: Self = Self::MAX_SUBNORMAL.neg();
 
@@ -184,7 +187,6 @@ mod tests {
         (TWO, 2)
     ];
 
-    
     test_constant!(F64::BITS == 64 as ExpType);
     test_constant!(F32::BITS == 32 as ExpType);
     test_constant!(F64::EXPONENT_BITS == 11 as ExpType);

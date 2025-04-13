@@ -1,6 +1,6 @@
 use super::BIntD8;
-use crate::BUintD8;
 use crate::cast;
+use crate::BUintD8;
 
 macro_rules! bint_as_primitive {
     ($($int: ty), *) => {

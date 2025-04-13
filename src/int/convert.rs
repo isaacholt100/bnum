@@ -61,7 +61,9 @@ macro_rules! impl_int_convert_helper_for_primitive_int {
     };
 }
 
-impl_int_convert_helper_for_primitive_int!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
+impl_int_convert_helper_for_primitive_int!(
+    u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize
+);
 
 macro_rules! impl_signed_int_convert_helper_for_primitive_int {
     ($($int: ty), *) => {
@@ -82,9 +84,6 @@ macro_rules! impl_signed_int_convert_helper_for_primitive_int {
 }
 
 impl_signed_int_convert_helper_for_primitive_int!(i8, i16, i32, i64, i128, isize);
-
-
-
 
 // Conversion functions
 

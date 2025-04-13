@@ -28,9 +28,7 @@ where
     F: FloatCastHelper,
     F::Mantissa: Bits,
     ExpType: TryFrom<F::SignedExp>,
-    U: CastUintFromFloatHelper
-        + CastFrom<F::Mantissa>
-        + Shl<ExpType, Output = U>,
+    U: CastUintFromFloatHelper + CastFrom<F::Mantissa> + Shl<ExpType, Output = U>,
     F::SignedExp: One + Neg<Output = F::SignedExp>,
 {
     if value.is_nan() {

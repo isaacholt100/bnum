@@ -1,13 +1,13 @@
 use super::Float;
 use core::iter::{Iterator, Product, Sum};
-use core::ops::{Add, Div, Mul, Neg, Rem, Sub, AddAssign, SubAssign, MulAssign, RemAssign};
+use core::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Rem, RemAssign, Sub, SubAssign};
 
 mod add;
-mod sub;
-mod mul;
 #[cfg(feature = "nightly")]
 mod div;
+mod mul;
 mod rem;
+mod sub;
 
 macro_rules! impl_assign_op {
     ($AssignTrait: ident, $assign_fn: ident, $op_fn: ident) => {

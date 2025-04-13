@@ -1,7 +1,6 @@
 use super::BUintD8;
 use core::fmt::{Binary, Debug, Display, Formatter, LowerExp, LowerHex, Octal, UpperExp, UpperHex};
 
-
 impl<const N: usize> Binary for BUintD8<N> {
     #[inline]
     fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {

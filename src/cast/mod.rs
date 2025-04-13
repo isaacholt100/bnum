@@ -96,7 +96,9 @@ multiple_impls!(u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32,
 
 pub(crate) mod float;
 
-pub(crate) const fn bytes_cast<const N: usize, const M: usize, const SIGNED: bool>(from: [u8; N]) -> [u8; M] {
+pub(crate) const fn bytes_cast<const N: usize, const M: usize, const SIGNED: bool>(
+    from: [u8; N],
+) -> [u8; M] {
     let pad = if SIGNED && M > N && (from[N - 1] as i8).is_negative() {
         u8::MAX
     } else {

@@ -31,7 +31,7 @@ impl<const N: usize> BUintD8<N> {
                 self_digit_i,
                 unsafe { rhs.as_u128_digits().get_with_correct_count(j) },
                 carry,
-                out.as_u128_digits().last()
+                out.as_u128_digits().last(),
             );
             out.as_u128_digits_mut().set_last(prod);
             if Self::U128_DIGIT_REMAINDER != 0 {
