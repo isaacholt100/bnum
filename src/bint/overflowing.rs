@@ -50,8 +50,6 @@ impl<const N: usize> BIntD8<N> {
         (sum, rhs.is_negative() != overflow)
     }
 
-    const BITS_MINUS_1: ExpType = (Self::BITS - 1) as ExpType;
-
     #[doc = doc::overflowing::overflowing_mul!(I)]
     #[must_use = doc::must_use_op!()]
     #[inline]

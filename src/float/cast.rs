@@ -1,4 +1,4 @@
-use crate::cast::float::{FloatCastHelper, FloatMantissa};
+use crate::cast::float::FloatCastHelper;
 use crate::helpers::Zero;
 
 use super::{Float, FloatExponent};

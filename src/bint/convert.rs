@@ -1,39 +1,32 @@
 use super::BIntD8;
-use crate::{BUintD8, Digit};
+use crate::BUintD8;
 
-macro_rules! int_try_from_primitive_int {
-    ($($int: tt),*) => {
+macro_rules! int_try_from_to_primitive_int {
+    ($($int: ty),*) => {
         $(
             impl<const N: usize> TryFrom<$int> for BIntD8<N> {
                 type Error = TryFromIntError;
 
                 #[inline]
                 fn try_from(from: $int) -> Result<Self, Self::Error> {
-                    if <$int>::BITS <= Self::BITS {
-                        return Ok(Self::cast_from(from));
-                    }
-                    if from.is_negative() {
-                        if from.leading_ones() >= <$int>::BITS - Self::BITS + 1 {
-                            Ok(Self::cast_from(from))
-                        } else {
-                            Err(TryFromIntError(()))
-                        }
-                    } else {
-                        if from.leading_zeros() >= <$int>::BITS - Self::BITS + 1 {
-                            Ok(Self::cast_from(from))
-                        } else {
-                            Err(TryFromIntError(()))
-                        }
-                    }
+                    crate::int::convert::int_try_from_int(from)
+                }
+            }
+
+            impl<const N: usize> TryFrom<BIntD8<N>> for $int {
+                type Error = TryFromIntError;
+
+                fn try_from(from: BIntD8<N>) -> Result<Self, Self::Error> {
+                    crate::int::convert::int_try_from_int(from)
                 }
             }
         )*
     }
 }
 
-int_try_from_primitive_int!(i8, i16, i32, i64, i128, isize);
+int_try_from_to_primitive_int!(i8, i16, i32, i64, i128, isize);
 
-macro_rules! int_try_from_primitive_uint {
+macro_rules! int_try_from_to_primitive_uint {
     ($($uint: ty), *) => {
         $(
             impl<const N: usize> TryFrom<$uint> for BIntD8<N> {
@@ -41,75 +34,25 @@ macro_rules! int_try_from_primitive_uint {
 
                 #[inline]
                 fn try_from(uint: $uint) -> Result<Self, Self::Error> {
-                    if <$uint>::BITS <= Self::BITS - 1 || uint.leading_zeros() >= <$uint>::BITS - Self::BITS + 1 {
-                        Ok(Self::cast_from(uint))
-                    } else {
-                        Err(TryFromIntError(()))
-                    }
+                    crate::int::convert::int_try_from_uint(uint)
+                }
+            }
+
+            impl<const N: usize> TryFrom<BIntD8<N>> for $uint {
+                type Error = TryFromIntError;
+
+                #[inline]
+                fn try_from(int: BIntD8<N>) -> Result<$uint, Self::Error> {
+                    crate::int::convert::uint_try_from_int(int)
                 }
             }
         )*
     }
 }
 
-int_try_from_primitive_uint!(u8, u16, u32, u64, u128, usize);
-
-macro_rules! primitive_int_try_from_int {
-    { $($int: ty), * }  => {
-        $(
-            impl<const N: usize> TryFrom<BIntD8<N>> for $int {
-                type Error = TryFromIntError;
-
-                fn try_from(from: BIntD8<N>) -> Result<Self, Self::Error> {
-                    if BIntD8::<N>::BITS <= Self::BITS {
-                        return Ok(Self::cast_from(from));
-                    }
-                    if from.is_negative() {
-                        if from.leading_ones() >= BIntD8::<N>::BITS - Self::BITS + 1 {
-                            Ok(Self::cast_from(from))
-                        } else {
-                            Err(TryFromIntError(()))
-                        }
-                    } else {
-                        if from.leading_zeros() >= BIntD8::<N>::BITS - Self::BITS + 1 {
-                            Ok(Self::cast_from(from))
-                        } else {
-                            Err(TryFromIntError(()))
-                        }
-                    }
-                }
-            }
-        )*
-    };
-}
-
-primitive_int_try_from_int!(i8, i16, i32, i64, i128, isize);
-
-macro_rules! primitive_uint_try_from_int {
-    ($($uint: ty), *) => {
-        $(
-            impl<const N: usize> TryFrom<BIntD8<N>> for $uint {
-                type Error = TryFromIntError;
-
-                #[inline]
-                fn try_from(int: BIntD8<N>) -> Result<$uint, Self::Error> {
-                    if int.is_negative() {
-                        return Err(TryFromIntError(()));
-                    }
-                    if BIntD8::<N>::BITS - 1 <= Self::BITS || int.bits.leading_zeros_at_least_threshold(BIntD8::<N>::BITS - Self::BITS) {
-                        Ok(Self::cast_from(int))
-                    } else {
-                        Err(TryFromIntError(()))
-                    }
-                }
-            }
-        )*
-    };
-}
-primitive_uint_try_from_int!(u8, u16, u32, u64, u128, usize);
+int_try_from_to_primitive_uint!(u8, u16, u32, u64, u128, usize);
 
 use crate::cast::CastFrom;
-use crate::digit;
 use crate::errors::{ParseIntError, TryFromIntError};
 use core::str::FromStr;
 
@@ -133,15 +76,7 @@ impl<const N: usize, const M: usize> TryFrom<BIntD8<N>> for BUintD8<M> {
     type Error = TryFromIntError;
 
     fn try_from(from: BIntD8<N>) -> Result<Self, Self::Error> {
-        if from.is_negative() {
-            Err(TryFromIntError(()))
-        } else {
-            if BIntD8::<N>::BITS - 1 <= Self::BITS || from.bits.leading_zeros_at_least_threshold(BIntD8::<N>::BITS - Self::BITS) {
-                Ok(Self::cast_from(from))
-            } else {
-                Err(TryFromIntError(()))
-            }
-        }
+        crate::int::convert::uint_try_from_int(from)
     }
 }
 
@@ -149,11 +84,7 @@ impl<const N: usize, const M: usize> TryFrom<BUintD8<N>> for BIntD8<M> {
     type Error = TryFromIntError;
 
     fn try_from(from: BUintD8<N>) -> Result<Self, Self::Error> {
-        if BUintD8::<N>::BITS <= Self::BITS - 1 || from.leading_zeros_at_least_threshold(BUintD8::<N>::BITS - Self::BITS + 1) { // Self::BITS - 1 as otherwise return value would be negative
-            Ok(Self::cast_from(from))
-        } else {
-            Err(TryFromIntError(()))
-        }
+        crate::int::convert::int_try_from_uint(from)
     }
 }
 
@@ -161,22 +92,7 @@ impl<const M: usize, const N: usize> crate::BTryFrom<BIntD8<M>> for BIntD8<N> {
     type Error = TryFromIntError;
 
     fn try_from(from: BIntD8<M>) -> Result<Self, Self::Error> {
-        if BIntD8::<M>::BITS <= Self::BITS {
-            return Ok(Self::cast_from(from));
-        }
-        if from.is_negative() {
-            if from.bits.leading_ones_at_least_threshold(BIntD8::<M>::BITS - Self::BITS + 1) {
-                Ok(Self::cast_from(from))
-            } else {
-                Err(TryFromIntError(()))
-            }
-        } else {
-            if from.bits.leading_zeros_at_least_threshold(BIntD8::<M>::BITS - Self::BITS + 1) {
-                Ok(Self::cast_from(from))
-            } else {
-                Err(TryFromIntError(()))
-            }
-        }
+        crate::int::convert::int_try_from_int(from)
     }
 }
 

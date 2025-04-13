@@ -1,5 +1,4 @@
 use super::BUintD8;
-use crate::errors::option_expect;
 use crate::ExpType;
 use crate::{doc, errors};
 
@@ -38,10 +37,8 @@ impl<const N: usize> BUintD8<N> {
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn wrapping_div(self, rhs: Self) -> Self {
-        option_expect!(
-            self.checked_div(rhs),
-            errors::err_msg!(errors::div_by_zero_message!())
-        )
+        self.checked_div(rhs)
+            .expect(errors::err_msg!(errors::div_by_zero_message!()))
     }
 
     #[doc = doc::wrapping::wrapping_div_euclid!(U)]
@@ -55,10 +52,8 @@ impl<const N: usize> BUintD8<N> {
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn wrapping_rem(self, rhs: Self) -> Self {
-        option_expect!(
-            self.checked_rem(rhs),
-            errors::err_msg!(errors::rem_by_zero_message!())
-        )
+        self.checked_rem(rhs)
+            .expect(errors::err_msg!(errors::rem_by_zero_message!()))
     }
 
     #[doc = doc::wrapping::wrapping_rem_euclid!(U)]

@@ -13,10 +13,7 @@ macro_rules! impl_desc {
 pub(crate) use impl_desc;
 
 doc::link_doc_comment_method!(
-    checked_abs,
     checked_add,
-    checked_add_signed,
-    checked_add_unsigned,
     checked_div,
     checked_div_euclid,
     checked_ilog,
@@ -30,7 +27,14 @@ doc::link_doc_comment_method!(
     checked_rem_euclid,
     checked_shl,
     checked_shr,
-    checked_sub,
+    checked_sub
+);
+
+#[cfg(feature = "signed")]
+doc::link_doc_comment_method!(
+    checked_abs,
+    checked_add_signed,
+    checked_add_unsigned,
     checked_sub_unsigned
 );
 

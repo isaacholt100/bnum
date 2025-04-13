@@ -7,14 +7,18 @@ macro_rules! impl_desc {
 pub(crate) use impl_desc;
 
 crate::doc::link_doc_comment_method!(
-    saturating_abs,
     saturating_add,
-    saturating_add_signed,
-    saturating_add_unsigned,
     saturating_div,
     saturating_mul,
-    saturating_neg,
     saturating_pow,
-    saturating_sub,
-    saturating_sub_unsigned
+    saturating_sub
 );
+
+#[cfg(feature = "signed")]
+crate::doc::link_doc_comment_method! {
+    saturating_abs,
+    saturating_add_signed,
+    saturating_add_unsigned,
+    saturating_neg,
+    saturating_sub_unsigned
+}

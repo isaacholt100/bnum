@@ -9,11 +9,7 @@ macro_rules! primitive_uint_try_from_into_uint {
 
                 #[inline]
                 fn try_from(uint: BUintD8<N>) -> Result<Self, Self::Error> {
-                    if BUintD8::<N>::BITS <= Self::BITS || uint.leading_zeros_at_least_threshold(BUintD8::<N>::BITS - Self::BITS) {
-                        Ok(Self::cast_from(uint))
-                    } else {
-                        Err(TryFromIntError(()))
-                    }
+                    crate::int::convert::uint_try_from_uint(uint)
                 }
             }
 
@@ -22,11 +18,7 @@ macro_rules! primitive_uint_try_from_into_uint {
 
                 #[inline]
                 fn try_from(uint: $uint) -> Result<Self, Self::Error> {
-                    if <$uint>::BITS <= Self::BITS || uint.leading_zeros() >= <$uint>::BITS - Self::BITS {
-                        Ok(Self::cast_from(uint))
-                    } else {
-                        Err(TryFromIntError(()))
-                    }
+                    crate::int::convert::uint_try_from_uint(uint)
                 }
             }
         )*
@@ -35,7 +27,7 @@ macro_rules! primitive_uint_try_from_into_uint {
 
 primitive_uint_try_from_into_uint!(u8, u16, u32, u64, u128, usize);
 
-macro_rules! uint_try_from_primitive_int {
+macro_rules! uint_try_from_to_primitive_int {
     ($($int: ty),*) => {
         $(
             impl<const N: usize> TryFrom<$int> for BUintD8<N> {
@@ -43,51 +35,28 @@ macro_rules! uint_try_from_primitive_int {
 
                 #[inline]
                 fn try_from(int: $int) -> Result<Self, Self::Error> {
-                    if int.is_negative() {
-                        return Err(TryFromIntError(()));
-                    }
-                    if <$int>::BITS - 1 <= Self::BITS || int.leading_zeros() >= <$int>::BITS - Self::BITS {
-                        Ok(Self::cast_from(int))
-                    } else {
-                        Err(TryFromIntError(()))
-                    }
+                    crate::int::convert::uint_try_from_int(int)
                 }
             }
-        )*
-    }
-}
-uint_try_from_primitive_int!(i8, i16, i32, i64, i128, isize);
 
-macro_rules! primitive_int_try_from_uint {
-    ($($int: ty), *) => {
-        $(
             impl<const N: usize> TryFrom<BUintD8<N>> for $int {
                 type Error = TryFromIntError;
 
                 #[inline]
                 fn try_from(uint: BUintD8<N>) -> Result<Self, Self::Error> {
-                    if BUintD8::<N>::BITS <= Self::BITS - 1 || uint.leading_zeros_at_least_threshold(BUintD8::<N>::BITS - Self::BITS + 1) {
-                        Ok(Self::cast_from(uint))
-                    } else {
-                        Err(TryFromIntError(()))
-                    }
+                    crate::int::convert::int_try_from_uint(uint)
                 }
             }
         )*
-    };
+    }
 }
-
-primitive_int_try_from_uint!(i8, i16, i32, i64, i128, isize);
+uint_try_from_to_primitive_int!(i8, i16, i32, i64, i128, isize);
 
 impl<const N: usize, const M: usize> BTryFrom<BUintD8<M>> for BUintD8<N> {
     type Error = TryFromIntError;
 
     fn try_from(from: BUintD8<M>) -> Result<Self, Self::Error> {
-        if BUintD8::<M>::BITS <= Self::BITS || BUintD8::<M>::BITS - from.leading_zeros() <= Self::BITS {
-            Ok(Self::cast_from(from))
-        } else {
-            Err(TryFromIntError(()))
-        }
+        crate::int::convert::uint_try_from_uint(from)
     }
 }
 

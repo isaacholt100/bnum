@@ -9,10 +9,8 @@ impl<const N: usize> BUintD8<N> {
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn strict_add_signed(self, rhs: crate::BIntD8<N>) -> Self {
-        crate::errors::option_expect!(
-            self.checked_add_signed(rhs),
-            crate::errors::err_msg!("attempt to add with overflow")
-        )
+        self.checked_add_signed(rhs)
+            .expect(crate::errors::err_msg!("attempt to add with overflow"))
     }
 }
 

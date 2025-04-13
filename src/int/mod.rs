@@ -1,6 +1,7 @@
 pub mod bigint_helpers;
 pub mod cast;
 pub mod checked;
+pub mod convert;
 pub mod cmp;
 pub mod endian;
 #[cfg(feature = "alloc")]

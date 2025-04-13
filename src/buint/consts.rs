@@ -27,7 +27,7 @@ impl<const N: usize> BUintD8<N> {
     #[doc = doc::consts::bytes!(U 512, 512)]
     pub const BYTES: ExpType = Self::BITS / 8;
 
-    #[doc = doc::consts::zero!(U 512)]
+    #[doc = doc::consts::value_desc!(0)]
     pub const ZERO: Self = Self::MIN;
 
     pos_const!(ONE 1, TWO 2, THREE 3, FOUR 4, FIVE 5, SIX 6, SEVEN 7, EIGHT 8, NINE 9, TEN 10);

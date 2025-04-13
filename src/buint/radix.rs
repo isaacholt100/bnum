@@ -11,27 +11,13 @@ use super::BUintD8;
 use crate::doc;
 use crate::errors::ParseIntError;
 use crate::int::radix::assert_range;
-use crate::ExpType;
 use crate::{digit, Digit};
 #[cfg(feature = "alloc")]
 use alloc::{string::String, vec::Vec};
+#[cfg(feature = "alloc")]
 use core::iter::Iterator;
 use core::num::IntErrorKind;
 use core::str::FromStr;
-
-#[inline]
-const fn ilog2(a: u32) -> u8 {
-    31 - a.leading_zeros() as u8
-}
-
-#[inline]
-const fn div_ceil(a: ExpType, b: ExpType) -> ExpType {
-    if a % b == 0 {
-        a / b
-    } else {
-        (a / b) + 1
-    }
-}
 
 #[doc = doc::radix::impl_desc!(BUintD8)]
 impl<const N: usize> BUintD8<N> {
@@ -51,6 +37,7 @@ impl<const N: usize> BUintD8<N> {
         }
     }
 
+    #[cfg(feature = "alloc")]
     #[inline]
     const fn radix_base_half(radix: u32) -> (Digit, usize) {
         const HALF_BITS_MAX: Digit = Digit::MAX >> (Digit::BITS / 2);
@@ -228,7 +215,7 @@ impl<const N: usize> BUintD8<N> {
         match radix {
             2 | 4 | 16 | 256 => {
                 let mut out = Self::ZERO;
-                let base_digits_per_digit = (digit::BITS_U8 / ilog2(radix)) as usize;
+                let base_digits_per_digit = (Digit::BITS / radix.ilog2()) as usize;
                 let full_digits = input_digits_len / base_digits_per_digit as usize;
                 let remaining_digits = input_digits_len % base_digits_per_digit as usize;
                 let radix_u8 = radix as u8;
@@ -248,7 +235,7 @@ impl<const N: usize> BUintD8<N> {
                     });
                 }
 
-                let log2r = ilog2(radix);
+                let log2r = radix.ilog2();
 
                 let mut i = 0;
                 while i < full_digits {
@@ -293,7 +280,7 @@ impl<const N: usize> BUintD8<N> {
                 // TODO: for now, we don't use this, as hard to get the errors right
                 let mut out = Self::ZERO;
                 let radix_u8 = radix as u8;
-                let log2r = ilog2(radix);
+                let log2r = radix.ilog2();
 
                 let mut index = 0;
                 let mut shift = 0;
@@ -312,8 +299,8 @@ impl<const N: usize> BUintD8<N> {
                     }
                     out.digits[index] |= (d as Digit) << shift;
                     shift += log2r;
-                    if shift >= digit::BITS_U8 {
-                        shift -= digit::BITS_U8;
+                    if shift >= Digit::BITS {
+                        shift -= Digit::BITS;
                         let carry = (d as Digit) >> (log2r - shift);
                         index += 1;
                         if index == N {
@@ -495,8 +482,8 @@ impl<const N: usize> BUintD8<N> {
                     .collect(); // we can cast to `u8` here as the underlying digit must be a `u8` anyway
             }
 
-            let bits = ilog2(radix);
-            if digit::BITS_U8 % bits == 0 {
+            let bits = radix.ilog2();
+            if Digit::BITS % bits == 0 {
                 self.to_bitwise_digits_le(bits)
             } else {
                 self.to_inexact_bitwise_digits_le(bits)
@@ -509,12 +496,12 @@ impl<const N: usize> BUintD8<N> {
     }
 
     #[cfg(feature = "alloc")]
-    fn to_bitwise_digits_le(self, bits: u8) -> Vec<u8> {
+    fn to_bitwise_digits_le(self, bits: u32) -> Vec<u8> {
         // TODO: can use u128
         let last_digit_index = self.last_digit_index();
         let mask: Digit = (1 << bits) - 1;
-        let digits_per_big_digit = digit::BITS_U8 / bits;
-        let digits = div_ceil(self.bits(), bits as ExpType);
+        let digits_per_big_digit = Digit::BITS / bits;
+        let digits = self.bits().div_ceil(bits);
         let mut out = Vec::with_capacity(digits as usize);
 
         let mut r = self.digits[last_digit_index];
@@ -533,23 +520,23 @@ impl<const N: usize> BUintD8<N> {
     }
 
     #[cfg(feature = "alloc")]
-    fn to_inexact_bitwise_digits_le(self, bits: u8) -> Vec<u8> {
+    fn to_inexact_bitwise_digits_le(self, bits: u32) -> Vec<u8> {
         // TODO: can use u128
         let mask: Digit = (1 << bits) - 1;
-        let digits = div_ceil(self.bits(), bits as ExpType);
+        let digits = self.bits().div_ceil(bits);
         let mut out = Vec::with_capacity(digits as usize);
         let mut r = 0;
         let mut rbits = 0;
         for c in self.digits {
             r |= c << rbits;
-            rbits += digit::BITS_U8;
+            rbits += Digit::BITS;
 
             while rbits >= bits {
                 out.push((r & mask) as u8);
                 r >>= bits;
 
-                if rbits > digit::BITS_U8 {
-                    r = c >> (digit::BITS_U8 - (rbits - bits));
+                if rbits > Digit::BITS {
+                    r = c >> (Digit::BITS - (rbits - bits));
                 }
                 rbits -= bits;
             }
@@ -565,7 +552,7 @@ impl<const N: usize> BUintD8<N> {
 
     #[cfg(feature = "alloc")]
     fn to_radix_digits_le(self, radix: u32) -> Vec<u8> {
-        let radix_digits = div_ceil(self.bits(), ilog2(radix) as ExpType);
+        let radix_digits = self.bits().div_ceil(radix.ilog2());
         let mut out = Vec::with_capacity(radix_digits as usize);
         let (base, power) = Self::radix_base_half(radix);
         let radix = radix as Digit;
@@ -599,7 +586,6 @@ impl<const N: usize> FromStr for BUintD8<N> {
 mod tests {
     use crate::test::types::*;
     use crate::test::test_bignum;
-    use crate::BUintD8;
     use core::str::FromStr;
 
     test_bignum! {
@@ -677,6 +663,8 @@ mod tests {
     #[cfg(feature = "alloc")]
     #[test]
     fn parse_bytes() {
+        use crate::BUintD8;
+        
         let src = "134957dkbhadoinegrhi983475hdgkhgdhiu3894hfd";
         let u = BUintD8::<100>::parse_bytes(src.as_bytes(), 35).unwrap();
         let v = BUintD8::<100>::from_str_radix(src, 35).unwrap();

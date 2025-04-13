@@ -32,32 +32,6 @@ macro_rules! max {
 
 pub(crate) use max;
 
-macro_rules! zero {
-    ($sign: ident $bits: literal) => {
-        doc::doc_comment! {
-            $sign $bits,
-            doc::consts::value_desc!(0),
-
-            "assert_eq!(" doc::type_str!($sign $bits) "::ZERO, " doc::type_str!($sign $bits) "::from(0u8));"
-        }
-    }
-}
-
-pub(crate) use zero;
-
-macro_rules! one {
-    ($sign: ident $bits: literal) => {
-        doc::doc_comment! {
-            $sign $bits,
-            doc::consts::value_desc!(1),
-
-            "assert_eq!(" doc::type_str!($sign $bits) "::ONE, " doc::type_str!($sign $bits) "::from(1u8));"
-        }
-    }
-}
-
-pub(crate) use one;
-
 macro_rules! bits {
     ($sign: ident $bits: literal, $digit_bits: literal) => {
         doc::doc_comment! {

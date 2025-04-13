@@ -67,6 +67,7 @@ pub trait ConvertFloatParts {
         mantissa: Self::Mantissa,
         shift: ExpType,
     ) -> (Self::SignedExp, Self::Mantissa);
+    #[allow(unused)] // since needed if float feature enabled
     fn from_normalised_signed_parts(
         sign: bool,
         exponent: Self::SignedExp,

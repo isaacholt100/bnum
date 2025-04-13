@@ -7,10 +7,7 @@ macro_rules! impl_desc {
 pub(crate) use impl_desc;
 
 crate::doc::link_doc_comment_method!(
-    strict_abs,
     strict_add,
-    strict_add_signed,
-    strict_add_unsigned,
     strict_div,
     strict_div_euclid,
     strict_mul,
@@ -20,6 +17,13 @@ crate::doc::link_doc_comment_method!(
     strict_rem_euclid,
     strict_shl,
     strict_shr,
-    strict_sub,
-    strict_sub_unsigned
+    strict_sub
 );
+
+#[cfg(feature = "signed")]
+crate::doc::link_doc_comment_method! {
+    strict_abs,
+    strict_add_signed,
+    strict_add_unsigned,
+    strict_sub_unsigned
+}

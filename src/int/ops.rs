@@ -76,11 +76,13 @@ macro_rules! try_shift_impl {
                 #[inline]
                 fn $method(self, rhs: $rhs) -> Self {
                     use crate::ExpType;
+
                     #[cfg(debug_assertions)]
-                    let rhs: ExpType = crate::errors::result_expect!(ExpType::try_from(rhs), crate::errors::err_msg!($err));
+                    let rhs: ExpType = ExpType::try_from(rhs).expect( crate::errors::err_msg!($err));
 
                     #[cfg(not(debug_assertions))]
                     let rhs = rhs as ExpType;
+
                     self.$method(rhs)
                 }
             }
@@ -97,10 +99,7 @@ macro_rules! shift_self_impl {
             #[inline]
             fn $method(self, rhs: $rhs<M>) -> Self {
                 use crate::ExpType;
-                let rhs: ExpType = crate::errors::result_expect!(
-                    ExpType::try_from(rhs),
-                    crate::errors::err_msg!($err)
-                );
+                let rhs: ExpType = ExpType::try_from(rhs).expect(crate::errors::err_msg!($err));
                 self.$method(rhs)
             }
         }

@@ -1,4 +1,4 @@
-use crate::errors::{self, option_expect};
+use crate::errors;
 use crate::{digit, Digit};
 
 use crate::doc;
@@ -223,17 +223,20 @@ impl<const N: usize> BUintD8<N> {
         if bit_shift != 0 {
             let carry_shift = 128 - bit_shift;
             // let mut carry = (out.digits[N - 1] >> (8 - bit_shift)) as u128;
-            let mut carry = out.as_u128_digits().last() >> (carry_shift - 8 * Self::U128_DIGIT_REMAINDER as u32);
+            let mut carry = out.as_u128_digits().last()
+                >> (carry_shift - 8 * Self::U128_DIGIT_REMAINDER as u32);
 
             let mut i = 0;
             while i < Self::U128_DIGITS - 1 {
                 let current_digit = out.as_u128_digits().get(i);
-                out.as_u128_digits_mut().set(i, (current_digit << bit_shift) | carry);
+                out.as_u128_digits_mut()
+                    .set(i, (current_digit << bit_shift) | carry);
                 carry = current_digit >> carry_shift;
                 i += 1;
             }
             let current_digit = out.as_u128_digits().last();
-            out.as_u128_digits_mut().set(i, (current_digit << bit_shift) | carry);
+            out.as_u128_digits_mut()
+                .set(i, (current_digit << bit_shift) | carry);
         }
 
         out
@@ -359,10 +362,9 @@ impl<const N: usize> BUintD8<N> {
     #[inline]
     pub const fn next_power_of_two(self) -> Self {
         #[cfg(debug_assertions)]
-        return option_expect!(
-            self.checked_next_power_of_two(),
-            errors::err_msg!("attempt to calculate next power of two with overflow")
-        );
+        return self.checked_next_power_of_two().expect(errors::err_msg!(
+            "attempt to calculate next power of two with overflow"
+        ));
         #[cfg(not(debug_assertions))]
         self.wrapping_next_power_of_two()
     }
@@ -379,20 +381,16 @@ impl<const N: usize> BUintD8<N> {
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn ilog2(self) -> ExpType {
-        option_expect!(
-            self.checked_ilog2(),
-            errors::err_msg!(errors::non_positive_log_message!())
-        )
+        self.checked_ilog2()
+            .expect(errors::err_msg!(errors::non_positive_log_message!()))
     }
 
     #[doc = doc::ilog10!(U)]
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn ilog10(self) -> ExpType {
-        option_expect!(
-            self.checked_ilog10(),
-            errors::err_msg!(errors::non_positive_log_message!())
-        )
+        self.checked_ilog10()
+            .expect(errors::err_msg!(errors::non_positive_log_message!()))
     }
 
     #[doc = doc::ilog!(U)]
@@ -402,10 +400,8 @@ impl<const N: usize> BUintD8<N> {
         if base.le(&Self::ONE) {
             panic!("{}", errors::err_msg!(errors::invalid_log_base!()));
         }
-        option_expect!(
-            self.checked_ilog(base),
-            errors::err_msg!(errors::non_positive_log_message!())
-        )
+        self.checked_ilog(base)
+            .expect(errors::err_msg!(errors::non_positive_log_message!()))
     }
 
     #[doc = doc::abs_diff!(U)]
@@ -508,7 +504,8 @@ impl<const N: usize> BUintD8<N> {
             while i + 15 < N {
                 let offset = N - 16 - i;
                 let current_digit = out.as_u128_digits().get_at_offset(offset);
-                out.as_u128_digits_mut().set_at_offset(offset, (current_digit >> bit_shift) | carry);
+                out.as_u128_digits_mut()
+                    .set_at_offset(offset, (current_digit >> bit_shift) | carry);
                 carry = current_digit << carry_shift;
                 i += 16;
             }
@@ -734,7 +731,7 @@ impl<'a, const N: usize> U128Digits<'a, N> {
     #[inline]
     pub const unsafe fn get_with_correct_count(&self, index: usize) -> u128 {
         self.get_at_offset(index * 16)
-    } 
+    }
 
     #[inline]
     pub const fn last_padded<const ONES: bool>(&self) -> u128 {
@@ -893,7 +890,8 @@ impl<const N: usize> quickcheck::Arbitrary for BUintD8<N> {
         let mut out = Self::ZERO;
         let mut i = 0;
         unsafe {
-            while i < Self::U128_DIGITS - 1 { // TODO: this and other loops could be done with i < Self::FULL_DIGITS then a check if Self::U128_DIGIT_REMAINDER != 0 at the end
+            while i < Self::U128_DIGITS - 1 {
+                // TODO: this and other loops could be done with i < Self::FULL_DIGITS then a check if Self::U128_DIGIT_REMAINDER != 0 at the end
                 let a = <u128 as quickcheck::Arbitrary>::arbitrary(g);
                 out.as_u128_digits_mut().set(i, a);
                 i += 1;

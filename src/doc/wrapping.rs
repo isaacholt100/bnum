@@ -7,10 +7,7 @@ macro_rules! impl_desc {
 pub(crate) use impl_desc;
 
 crate::doc::link_doc_comment_method!(
-    wrapping_abs,
     wrapping_add,
-    wrapping_add_signed,
-    wrapping_add_unsigned,
     wrapping_div,
     wrapping_div_euclid,
     wrapping_mul,
@@ -20,9 +17,16 @@ crate::doc::link_doc_comment_method!(
     wrapping_rem_euclid,
     wrapping_shl,
     wrapping_shr,
-    wrapping_sub,
-    wrapping_sub_unsigned
+    wrapping_sub
 );
+
+#[cfg(feature = "signed")]
+crate::doc::link_doc_comment_method! {
+    wrapping_abs,
+    wrapping_add_signed,
+    wrapping_add_unsigned,
+    wrapping_sub_unsigned
+}
 
 macro_rules! wrapping_next_power_of_two {
     ($sign: ident $bits: literal) => {

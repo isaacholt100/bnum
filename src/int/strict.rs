@@ -4,30 +4,24 @@ macro_rules! impls {
         #[must_use = doc::must_use_op!()]
         #[inline]
         pub const fn strict_add(self, rhs: Self) -> Self {
-            crate::errors::option_expect!(
-                self.checked_add(rhs),
-                crate::errors::err_msg!("attempt to add with overflow")
-            )
+            self.checked_add(rhs)
+                .expect(crate::errors::err_msg!("attempt to add with overflow"))
         }
 
         #[doc = doc::strict::strict_sub!($sign)]
         #[must_use = doc::must_use_op!()]
         #[inline]
         pub const fn strict_sub(self, rhs: Self) -> Self {
-            crate::errors::option_expect!(
-                self.checked_sub(rhs),
-                crate::errors::err_msg!("attempt to subtract with overflow")
-            )
+            self.checked_sub(rhs)
+                .expect(crate::errors::err_msg!("attempt to subtract with overflow"))
         }
 
         #[doc = doc::strict::strict_mul!($sign)]
         #[must_use = doc::must_use_op!()]
         #[inline]
         pub const fn strict_mul(self, rhs: Self) -> Self {
-            crate::errors::option_expect!(
-                self.checked_mul(rhs),
-                crate::errors::err_msg!("attempt to multiply with overflow")
-            )
+            self.checked_mul(rhs)
+                .expect(crate::errors::err_msg!("attempt to multiply with overflow"))
         }
 
         #[doc = doc::strict::strict_div!($sign)]
@@ -62,40 +56,35 @@ macro_rules! impls {
         #[must_use = doc::must_use_op!()]
         #[inline]
         pub const fn strict_neg(self) -> Self {
-            crate::errors::option_expect!(
-                self.checked_neg(),
-                crate::errors::err_msg!("attempt to negate with overflow")
-            )
+            self.checked_neg()
+                .expect(crate::errors::err_msg!("attempt to negate with overflow"))
         }
 
         #[doc = doc::strict::strict_shl!($sign)]
         #[must_use = doc::must_use_op!()]
         #[inline]
         pub const fn strict_shl(self, rhs: crate::ExpType) -> Self {
-            crate::errors::option_expect!(
-                self.checked_shl(rhs),
-                crate::errors::err_msg!("attempt to shift left with overflow")
-            )
+            self.checked_shl(rhs).expect(crate::errors::err_msg!(
+                "attempt to shift left with overflow"
+            ))
         }
 
         #[doc = doc::strict::strict_shr!($sign)]
         #[must_use = doc::must_use_op!()]
         #[inline]
         pub const fn strict_shr(self, rhs: crate::ExpType) -> Self {
-            crate::errors::option_expect!(
-                self.checked_shr(rhs),
-                crate::errors::err_msg!("attempt to shift right with overflow")
-            )
+            self.checked_shr(rhs).expect(crate::errors::err_msg!(
+                "attempt to shift right with overflow"
+            ))
         }
 
         #[doc = doc::strict::strict_pow!($sign)]
         #[must_use = doc::must_use_op!()]
         #[inline]
         pub const fn strict_pow(self, exp: crate::ExpType) -> Self {
-            crate::errors::option_expect!(
-                self.checked_pow(exp),
-                crate::errors::err_msg!("attempt to calculate power with overflow")
-            )
+            self.checked_pow(exp).expect(crate::errors::err_msg!(
+                "attempt to calculate power with overflow"
+            ))
         }
     };
 }

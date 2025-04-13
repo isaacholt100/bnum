@@ -413,7 +413,6 @@ macro_rules! is_one {
 pub(crate) use is_one;
 
 crate::doc::link_doc_comment_method! {
-    unsigned_abs,
     div_euclid,
     rem_euclid,
     ilog2,
@@ -423,13 +422,18 @@ crate::doc::link_doc_comment_method! {
     next_multiple_of,
     div_floor,
     div_ceil,
-    abs,
+    midpoint
+}
+
+#[cfg(feature = "signed")]
+crate::doc::link_doc_comment_method! {
+    cast_unsigned,
+    cast_signed,
+    unsigned_abs,
     signum,
     is_positive,
     is_negative,
-    cast_signed,
-    cast_unsigned,
-    midpoint
+    abs
 }
 
 #[cfg(feature = "float")]

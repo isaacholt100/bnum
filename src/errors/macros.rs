@@ -65,24 +65,3 @@ macro_rules! rem_zero {
 }
 
 pub(crate) use rem_zero;
-
-// TODO: this will become unnecessary when `const_option` is stabilised: https://github.com/rust-lang/rust/issues/67441.
-macro_rules! option_expect {
-    ($option: expr, $msg: expr) => {
-        match $option {
-            Some(value) => value,
-            _ => panic!($msg),
-        }
-    };
-}
-pub(crate) use option_expect;
-
-macro_rules! result_expect {
-    ($option: expr, $msg: expr) => {
-        match $option {
-            Ok(value) => value,
-            _ => panic!($msg),
-        }
-    };
-}
-pub(crate) use result_expect;

@@ -48,13 +48,7 @@ impl<const N: usize> BIntD8<N> {
     #[doc = doc::consts::bytes!(I 512, 512)]
     pub const BYTES: ExpType = BUintD8::<N>::BYTES;
 
-    #[doc = doc::consts::zero!(I 512)]
-    pub const ZERO: Self = Self::from_bits(BUintD8::ZERO);
-
-    #[doc = doc::consts::one!(I 512)]
-    pub const ONE: Self = Self::from_bits(BUintD8::ONE);
-
-    pos_const!(TWO 2, THREE 3, FOUR 4, FIVE 5, SIX 6, SEVEN 7, EIGHT 8, NINE 9, TEN 10);
+    pos_const!(ZERO 0, ONE 1, TWO 2, THREE 3, FOUR 4, FIVE 5, SIX 6, SEVEN 7, EIGHT 8, NINE 9, TEN 10);
 
     neg_const!(NEG_ONE 1, NEG_TWO 2, NEG_THREE 3, NEG_FOUR 4, NEG_FIVE 5, NEG_SIX 6, NEG_SEVEN 7, NEG_EIGHT 8, NEG_NINE 9, NEG_TEN 10);
 

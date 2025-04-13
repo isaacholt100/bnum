@@ -12,8 +12,6 @@ pub use types::*;
 
 pub const BITS: ExpType = Digit::BITS as ExpType;
 
-pub const BITS_U8: u8 = BITS as u8;
-
 pub const BITS_MINUS_1: ExpType = BITS - 1;
 
 pub const BYTES: ExpType = BITS / 8;

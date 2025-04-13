@@ -1,3 +1,8 @@
 - Add FromBytes, ToBytes, ConstZero, ConstOne from num_traits
 - unchecked methods const on stable
 - change BTryFrom to TryFrom for BUint to BInt, BInt to BUint
+- remove Add<Digit> implementation
+- make TryFrom<primitive> instead of From
+- only 8 bit digits
+- rename to Uint, Int
+- add alloc and signed features
