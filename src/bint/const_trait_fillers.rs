@@ -71,7 +71,9 @@ impl<const N: usize> BIntD8<N> {
             panic!(crate::errors::err_msg!("attempt to divide with overflow"))
         } else {
             if rhs.is_zero() {
-                crate::errors::div_zero!()
+                panic!(crate::errors::err_msg!(
+                    crate::errors::div_by_zero_message!()
+                ));
             }
             self.div_rem_unchecked(rhs).0
         }
@@ -85,7 +87,9 @@ impl<const N: usize> BIntD8<N> {
             ))
         } else {
             if rhs.is_zero() {
-                crate::errors::rem_zero!()
+                panic!(crate::errors::err_msg!(
+                    crate::errors::rem_by_zero_message!()
+                ));
             }
             self.div_rem_unchecked(rhs).1
         }

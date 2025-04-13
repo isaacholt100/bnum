@@ -398,7 +398,7 @@ impl<const N: usize> BUintD8<N> {
     #[inline]
     pub const fn ilog(self, base: Self) -> ExpType {
         if base.le(&Self::ONE) {
-            panic!("{}", errors::err_msg!(errors::invalid_log_base!()));
+            panic!("{}", errors::err_msg!(errors::invalid_log_base_message!()));
         }
         self.checked_ilog(base)
             .expect(errors::err_msg!(errors::non_positive_log_message!()))

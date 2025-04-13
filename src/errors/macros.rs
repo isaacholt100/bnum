@@ -22,16 +22,6 @@ macro_rules! div_by_zero_message {
 
 pub(crate) use div_by_zero_message;
 
-macro_rules! div_zero {
-    () => {
-        panic!(crate::errors::err_msg!(
-            crate::errors::div_by_zero_message!()
-        ))
-    };
-}
-
-pub(crate) use div_zero;
-
 macro_rules! rem_by_zero_message {
     () => {
         "attempt to calculate the remainder with a divisor of zero"
@@ -48,20 +38,10 @@ macro_rules! non_positive_log_message {
 
 pub(crate) use non_positive_log_message;
 
-macro_rules! invalid_log_base {
+macro_rules! invalid_log_base_message {
     () => {
         "base of integer logarithm must be at least 2"
     };
 }
 
-pub(crate) use invalid_log_base;
-
-macro_rules! rem_zero {
-    () => {
-        panic!(crate::errors::err_msg!(
-            crate::errors::rem_by_zero_message!()
-        ))
-    };
-}
-
-pub(crate) use rem_zero;
+pub(crate) use invalid_log_base_message;

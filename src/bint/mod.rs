@@ -8,7 +8,7 @@ macro_rules! ilog {
         pub const fn $method(self, $($base : $ty),*) -> ExpType {
             $(
                 if $base.le(&<$ty>::ONE) {
-                    panic!(errors::err_msg!(errors::invalid_log_base!()))
+                    panic!(errors::err_msg!(errors::invalid_log_base_message!()))
                 }
             ), *
             if self.is_negative() {
@@ -292,7 +292,9 @@ impl<const N: usize> BIntD8<N> {
     #[inline]
     pub const fn div_floor(self, rhs: Self) -> Self {
         if rhs.is_zero() {
-            errors::div_zero!();
+            panic!(crate::errors::err_msg!(
+                crate::errors::div_by_zero_message!()
+            ));
         }
         let (div, rem) = self.div_rem_unchecked(rhs);
         if rem.is_zero() || self.is_negative() == rhs.is_negative() {
@@ -307,7 +309,9 @@ impl<const N: usize> BIntD8<N> {
     #[inline]
     pub const fn div_ceil(self, rhs: Self) -> Self {
         if rhs.is_zero() {
-            errors::div_zero!();
+            panic!(crate::errors::err_msg!(
+                crate::errors::div_by_zero_message!()
+            ));
         }
         let (div, rem) = self.div_rem_unchecked(rhs);
         if rem.is_zero() || self.is_negative() != rhs.is_negative() {

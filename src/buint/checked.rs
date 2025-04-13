@@ -1,6 +1,5 @@
 use super::BUintD8;
 use crate::doc;
-use crate::errors::div_zero;
 use crate::helpers::tuple_to_option;
 use crate::ExpType;
 use crate::{digit, Digit};
@@ -76,7 +75,9 @@ impl<const N: usize> BUintD8<N> {
     #[inline]
     pub(crate) const fn div_rem(self, rhs: Self) -> (Self, Self) {
         if rhs.is_zero() {
-            div_zero!()
+            panic!(crate::errors::err_msg!(
+                crate::errors::div_by_zero_message!()
+            ));
         } else {
             self.div_rem_unchecked(rhs)
         }

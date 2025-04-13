@@ -1,7 +1,6 @@
 use super::BIntD8;
 use crate::BUintD8;
 
-use crate::errors::div_zero;
 use crate::{doc, ExpType};
 
 #[doc = doc::overflowing::impl_desc!()]
@@ -87,7 +86,9 @@ impl<const N: usize> BIntD8<N> {
     #[inline]
     pub const fn overflowing_div(self, rhs: Self) -> (Self, bool) {
         if rhs.is_zero() {
-            div_zero!()
+            panic!(crate::errors::err_msg!(
+                crate::errors::div_by_zero_message!()
+            ));
         }
         if self.eq(&Self::MIN) {
             if rhs.eq(&Self::NEG_ONE) {
@@ -104,7 +105,9 @@ impl<const N: usize> BIntD8<N> {
     #[inline]
     pub const fn overflowing_div_euclid(self, rhs: Self) -> (Self, bool) {
         if rhs.is_zero() {
-            div_zero!()
+            panic!(crate::errors::err_msg!(
+                crate::errors::div_by_zero_message!()
+            ));
         }
         if self.eq(&Self::MIN) {
             if rhs.eq(&Self::NEG_ONE) {
@@ -132,7 +135,9 @@ impl<const N: usize> BIntD8<N> {
     #[inline]
     pub const fn overflowing_rem(self, rhs: Self) -> (Self, bool) {
         if rhs.is_zero() {
-            div_zero!()
+            panic!(crate::errors::err_msg!(
+                crate::errors::rem_by_zero_message!()
+            ));
         }
         if self.eq(&Self::MIN) && rhs.eq(&Self::NEG_ONE) {
             (Self::ZERO, true)
@@ -146,7 +151,9 @@ impl<const N: usize> BIntD8<N> {
     #[inline]
     pub const fn overflowing_rem_euclid(self, rhs: Self) -> (Self, bool) {
         if rhs.is_zero() {
-            div_zero!()
+            panic!(crate::errors::err_msg!(
+                crate::errors::rem_by_zero_message!()
+            ));
         }
         if self.eq(&Self::MIN) && rhs.eq(&Self::NEG_ONE) {
             (Self::ZERO, true)
