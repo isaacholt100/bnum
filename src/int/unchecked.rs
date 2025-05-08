@@ -1,41 +1,38 @@
 macro_rules! impls {
-    ($Int: ident, $sign: ident) => {
-        #[doc = doc::unchecked::impl_desc!()]
-        impl<const N: usize> $Int<N> {
-            #[doc = doc::unchecked::unchecked_add!($sign)]
-            #[must_use = doc::must_use_op!()]
-            #[inline]
-            pub const unsafe fn unchecked_add(self, rhs: Self) -> Self {
-                self.checked_add(rhs).unwrap_unchecked()
-            }
+    ($sign: ident) => {
+        #[doc = doc::unchecked::unchecked_add!($sign)]
+        #[must_use = doc::must_use_op!()]
+        #[inline]
+        pub const unsafe fn unchecked_add(self, rhs: Self) -> Self {
+            unsafe { self.checked_add(rhs).unwrap_unchecked() }
+        }
 
-            #[doc = doc::unchecked::unchecked_sub!($sign)]
-            #[must_use = doc::must_use_op!()]
-            #[inline]
-            pub const unsafe fn unchecked_sub(self, rhs: Self) -> Self {
-                self.checked_sub(rhs).unwrap_unchecked()
-            }
+        #[doc = doc::unchecked::unchecked_sub!($sign)]
+        #[must_use = doc::must_use_op!()]
+        #[inline]
+        pub const unsafe fn unchecked_sub(self, rhs: Self) -> Self {
+            unsafe { self.checked_sub(rhs).unwrap_unchecked() }
+        }
 
-            #[doc = doc::unchecked::unchecked_mul!($sign)]
-            #[must_use = doc::must_use_op!()]
-            #[inline]
-            pub const unsafe fn unchecked_mul(self, rhs: Self) -> Self {
-                self.checked_mul(rhs).unwrap_unchecked()
-            }
+        #[doc = doc::unchecked::unchecked_mul!($sign)]
+        #[must_use = doc::must_use_op!()]
+        #[inline]
+        pub const unsafe fn unchecked_mul(self, rhs: Self) -> Self {
+            unsafe { self.checked_mul(rhs).unwrap_unchecked() }
+        }
 
-            #[doc = doc::unchecked::unchecked_shl!($sign)]
-            #[must_use = doc::must_use_op!()]
-            #[inline]
-            pub const unsafe fn unchecked_shl(self, rhs: crate::ExpType) -> Self {
-                self.checked_shl(rhs).unwrap_unchecked()
-            }
+        #[doc = doc::unchecked::unchecked_shl!($sign)]
+        #[must_use = doc::must_use_op!()]
+        #[inline]
+        pub const unsafe fn unchecked_shl(self, rhs: crate::ExpType) -> Self {
+            unsafe { self.checked_shl(rhs).unwrap_unchecked() }
+        }
 
-            #[doc = doc::unchecked::unchecked_shr!($sign)]
-            #[must_use = doc::must_use_op!()]
-            #[inline]
-            pub const unsafe fn unchecked_shr(self, rhs: crate::ExpType) -> Self {
-                self.checked_shr(rhs).unwrap_unchecked()
-            }
+        #[doc = doc::unchecked::unchecked_shr!($sign)]
+        #[must_use = doc::must_use_op!()]
+        #[inline]
+        pub const unsafe fn unchecked_shr(self, rhs: crate::ExpType) -> Self {
+            unsafe { self.checked_shr(rhs).unwrap_unchecked() }
         }
     };
 }

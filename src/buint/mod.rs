@@ -553,7 +553,7 @@ impl<const N: usize> BUintD8<N> {
 
     #[doc = doc::set_bit!(U 256)]
     #[inline]
-    pub fn set_bit(&mut self, index: ExpType, value: bool) {
+    pub const fn set_bit(&mut self, index: ExpType, value: bool) {
         let digit = &mut self.digits[index as usize >> digit::BIT_SHIFT];
         let shift = index & digit::BITS_MINUS_1;
         if value {
@@ -600,7 +600,7 @@ impl<const N: usize> BUintD8<N> {
     /// Returns the digits stored in `self` as a mutable array. Digits are little endian (least significant digit first).
     #[must_use]
     #[inline(always)]
-    pub fn digits_mut(&mut self) -> &mut [Digit; N] {
+    pub const fn digits_mut(&mut self) -> &mut [Digit; N] {
         &mut self.digits
     }
 

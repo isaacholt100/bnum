@@ -1,6 +1,9 @@
 use super::BIntD8;
 
-crate::int::unchecked::impls!(BIntD8, I);
+#[doc = doc::unchecked::impl_desc!()]
+impl<const N: usize> BIntD8<N> {
+    crate::int::unchecked::impls!(I);
+}
 
 #[cfg(test)]
 mod tests {
