@@ -10,6 +10,7 @@
         wrapping_next_power_of_two,
         unchecked_shifts,
         strict_overflow_ops,
+        unbounded_shifts
     )
 )]
 #![doc = include_str!("../README.md")]

@@ -40,6 +40,14 @@ macro_rules! tests {
         test_bignum! {
             function: <$int>::rotate_right(a: $int, b: u8)
         }
+        #[cfg(feature = "nightly")] // as unbounded_shifts not yet stabilised
+        test_bignum! {
+            function: <$int>::unbounded_shl(a: $int, b: u16)
+        }
+        #[cfg(feature = "nightly")] // as unbounded_shifts not yet stabilised
+        test_bignum! {
+            function: <$int>::unbounded_shr(a: $int, b: u16)
+        }
         test_bignum! {
             function: <$int>::swap_bytes(a: $int)
         }
@@ -61,6 +69,7 @@ macro_rules! tests {
         test_bignum! {
             function: <$int>::abs_diff(a: $int, b: $int)
         }
+        #[cfg(feature = "nightly")] // as num_midpoint_signed not yet stabilised
         test_bignum! {
             function: <$int>::midpoint(a: $int, b: $int)
         }

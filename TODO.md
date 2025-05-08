@@ -1,4 +1,5 @@
-Floats:
+## Floats
+
 - FromStr trait: REMEMBER: the num_traits crate has a general from_str_radix method for floats, could use if stuck
 - Display, debug, upper exp, lower exp traits
 - Transcendental functions:
@@ -28,13 +29,13 @@ Floats:
 	- atanh
 	- to_degrees
 	- to_radians
-    * powf
-    * gamma
-    * ln_gamma
+    - powf
+    - gamma
+    - ln_gamma
 - Other functions:
-    * mul_add
-    * midpoint
-    * recip
+    - mul_add
+    - midpoint
+    - recip
 - Optimised division algorithm depending on size of mantissa
 - Optimised multiplication algorithm depending on size of mantissa
 - Constants:
@@ -62,13 +63,14 @@ Floats:
 	- TAU
 - FloatToInt trait
 - From/TryFrom trait for ints, other floats
-- Float type aliases from IEEE standard: f16, f32, f64, f80, f128, f256. (Include f32 and f64 as allows const methods which aren't available on the primitives)
+- Float type aliases from IEEE standard: f16, f32, f64, f80, f128. (Include f32 and f64 as allows const methods which aren't available on the primitives)
 - Rand:
-    * gen_range stuff
+    - gen_range stuff
 - num_traits::{Bounded, Float, FloatConst, FloatCore, AsPrimitive, FromPrimitive, ToPrimitive, FromBytes, ToBytes, Inv, MulAdd, MulAddAssign, Pow, Signed, Euclid, Num}
 - Division algorithm which doesn't need where clause
 
-Ints:
+## Ints
+
 - big idea: could only use u8 digits, but for calculations (would need to do this as BUintD8 is noticeably slower than BUint), use u64s or u128s, e.g. when iterating, iterate in batches of 8, use u64::from_ne_bytes/u64::from_le_bytes - this is a transmute so should be very small overhead (this might sacrifice some code readability)
 - unsigned_signed_diff methods
 - isqrt methods
@@ -84,6 +86,7 @@ Ints:
 Other stuff:
 - Think about removing BTryFrom and just implementing TryFrom (no From for now), then can use CastFrom/As trait for Result-less conversions
 - Replace bitors, bitands, shifts, masks etc. with more efficient implementations (e.g. using set_bit, flip_bit, one-less-than-power-of-two methods, methods for efficiently generating masks/getting certain range of bits of integer)
+- Consider putting floats and signed integers behind optional features (which are enabled by default)
 - Add 16 bit and 32 bit width types to the test widths, so test u16, u32, f16, f32 as well (just make the digit sizes that are too wide not do anything for those tests)
 - Consider removing implementation of AsPrimitive<BUint> for primitive ints
 - Consider removing Add<Digit> and Div<Digit> impls
@@ -96,4 +99,3 @@ Other stuff:
 - include list of difference with primitives in README, e.g. overflow_checks not detected yet, serde implementation different, memory layout different (always little endian - although maybe this could be changed? probably not a good idea though)
 - test using stable, only use nightly when need to test be_bytes methods
 - check you're happy with the layout of the random crate-level module
-- include proper docs for all methods (as well as links to the primitive equivalents)

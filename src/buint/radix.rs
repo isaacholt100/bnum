@@ -423,6 +423,7 @@ impl<const N: usize> BUintD8<N> {
     /// ```
     #[inline]
     pub fn to_str_radix(&self, radix: u32) -> String {
+                assert_range!(radix, 36);
         let mut out = Self::to_radix_be(self, radix);
 
         for byte in out.iter_mut() {
@@ -472,6 +473,7 @@ impl<const N: usize> BUintD8<N> {
     /// ```
     pub fn to_radix_le(&self, radix: u32) -> Vec<u8> {
         // TODO: can use u128
+                assert_range!(radix, 256);
         if self.is_zero() {
             vec![0]
         } else if radix.is_power_of_two() {
@@ -647,6 +649,24 @@ mod tests {
     #[should_panic(expected = "attempt to parse integer from string containing invalid digit")]
     fn parse_str_radix_invalid_char() {
         let _ = UTEST::parse_str_radix("a", 10);
+    }
+
+    #[test]
+    #[should_panic(expected = "Radix must be in range [2, 36]")]
+    fn parse_str_radix_invalid_radix() {
+        let _ = UTEST::parse_str_radix("1234", 37);
+    }
+
+    #[test]
+    #[should_panic(expected = "Radix must be in range [2, 256]")]
+    fn from_radix_be_invalid_radix() {
+        let _ = UTEST::from_radix_be(&[1], 257);
+    }
+
+    #[test]
+    #[should_panic(expected = "Radix must be in range [2, 256]")]
+    fn from_radix_le_invalid_radix() {
+        let _ = UTEST::from_radix_le(&[1], 257);
     }
 
     #[test]

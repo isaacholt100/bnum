@@ -32,23 +32,23 @@ fn bench_fibs(c: &mut Criterion) {
         ));
     let (prim_inputs, big_inputs) = unzip::unzip2(inputs);
 
-    // group.bench_with_input(BenchmarkId::new("Recursive", "new"), &big_inputs, |b, inputs| b.iter(|| {
-    //     for a in inputs.iter().cloned() {
-    //         let _ = black_box(a).floor();
-    //     }
-    // }));
-    group.bench_with_input(BenchmarkId::new("Iterative", "old"), &big_inputs, |b, inputs| b.iter(|| {
-        inputs.iter().cloned().for_each(|(a, b)| {
-            let _ = black_box(a) + black_box(b);
-        })
-    }));
-    group.bench_with_input(BenchmarkId::new("Iterative", "prim"), &prim_inputs, |b, inputs| b.iter(|| {
-        inputs.iter().cloned().for_each(|(a, b)| {
-            let _ = black_box(a) + black_box(b);
-        })
-    }));
-    group.finish();
-}
+//     // group.bench_with_input(BenchmarkId::new("Recursive", "new"), &big_inputs, |b, inputs| b.iter(|| {
+//     //     for a in inputs.iter().cloned() {
+//     //         let _ = black_box(a).floor();
+//     //     }
+//     // }));
+//     group.bench_with_input(BenchmarkId::new("Iterative", "old"), &big_inputs, |b, inputs| b.iter(|| {
+//         inputs.iter().cloned().for_each(|(a, b)| {
+//             let _ = black_box(a) + black_box(b);
+//         })
+//     }));
+//     group.bench_with_input(BenchmarkId::new("Iterative", "prim"), &prim_inputs, |b, inputs| b.iter(|| {
+//         inputs.iter().cloned().for_each(|(a, b)| {
+//             let _ = black_box(a) + black_box(b);
+//         })
+//     }));
+//     group.finish();
+// }
 
 // benchmark for time taken to call BUintD8::u128_digit, using one random fixed input, no benchmark groups, just a standalone benchmark
 // fn bench_u128_digit(c: &mut Criterion) {

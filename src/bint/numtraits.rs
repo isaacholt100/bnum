@@ -168,6 +168,7 @@ use num_traits::{
     SaturatingMul, SaturatingSub, Signed, ToBytes, ToPrimitive, WrappingAdd, WrappingMul,
     WrappingNeg, WrappingShl, WrappingShr, WrappingSub, Zero,
 };
+use num_traits::ops::overflowing::{OverflowingAdd, OverflowingSub};
 
 use crate::cast::CastFrom;
 use crate::int::numtraits::num_trait_impl;

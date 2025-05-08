@@ -54,6 +54,8 @@ use num_traits::{
     SaturatingMul, SaturatingSub, ToBytes, ToPrimitive, Unsigned, WrappingAdd, WrappingMul,
     WrappingNeg, WrappingShl, WrappingShr, WrappingSub, Zero,
 };
+use num_traits::ops::overflowing::{OverflowingAdd, OverflowingSub};
+
 
 use crate::cast::float::ConvertFloatParts;
 use crate::cast::CastFrom;

@@ -440,5 +440,7 @@ crate::doc::link_doc_comment_method! {
 crate::doc::link_doc_comment_method! {
     next_up,
     next_down,
-    copysign
+    copysign,
+    unbounded_shl,
+    unbounded_shr
 }
