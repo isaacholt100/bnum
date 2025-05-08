@@ -9,12 +9,11 @@
 - MSRV 1.65.0 -> 1.83.0
 - use 2024 edition
 - use rand 0.9.0, so update try_fill_slice to fill_slice (no option returned)
+- make as_bits_mut, digits_mut, set_bit const
 - TODO:
-    - make as_bits_mut, digits_mut, set_bit const
     - carrying_mul_add
     - isqrt (including checked for signed ints)
     - from_ascii
     - from_ascii_radix
-    - unbounded_shl, shr methods
     - unchecked_disjoint_bitor (can do by iterating unchecked_disjoint bitor on u8s/u128 digits, can only add this once it is stablised for primitives though, not much point adding on nightly only)
     - complete documentation (not just links to the Rust primitive equivalent)

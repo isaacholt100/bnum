@@ -1,8 +1,8 @@
 use crate::errors;
-use crate::{digit, Digit};
+use crate::{Digit, digit};
 
-use crate::doc;
 use crate::ExpType;
+use crate::doc;
 // use core::mem::MaybeUninit;
 
 #[cfg(feature = "serde")]
@@ -251,39 +251,37 @@ impl<const N: usize> BUintD8<N> {
         unsafe { self.unchecked_rotate_left(n & Self::BITS_MINUS_1) }
     }
 
-            #[doc = doc::rotate_right!(U 256, "u")]
-            #[must_use = doc::must_use_op!()]
-            #[inline]
-            pub const fn rotate_right(self, n: ExpType) -> Self {
-                let n = n & Self::BITS_MINUS_1;
-                unsafe {
-                    self.unchecked_rotate_left(Self::BITS as ExpType - n)
-                }
-            }
+    #[doc = doc::rotate_right!(U 256, "u")]
+    #[must_use = doc::must_use_op!()]
+    #[inline]
+    pub const fn rotate_right(self, n: ExpType) -> Self {
+        let n = n & Self::BITS_MINUS_1;
+        unsafe { self.unchecked_rotate_left(Self::BITS as ExpType - n) }
+    }
 
-            #[doc = doc::unbounded_shl!(U)]
-            #[must_use = doc::must_use_op!()]
-            #[inline]
-            pub const fn unbounded_shl(self, rhs: ExpType) -> Self {
-                if rhs >= Self::BITS {
-                    Self::ZERO
-                } else {
-                    unsafe { self.unchecked_shl_internal(rhs) }
-                }
-            }
+    #[doc = doc::unbounded_shl!(U)]
+    #[must_use = doc::must_use_op!()]
+    #[inline]
+    pub const fn unbounded_shl(self, rhs: ExpType) -> Self {
+        if rhs >= Self::BITS {
+            Self::ZERO
+        } else {
+            unsafe { self.unchecked_shl_internal(rhs) }
+        }
+    }
 
-            #[doc = doc::unbounded_shr!(U)]
-            #[must_use = doc::must_use_op!()]
-            #[inline]
-            pub const fn unbounded_shr(self, rhs: ExpType) -> Self {
-                if rhs >= Self::BITS {
-                    Self::ZERO
-                } else {
-                    unsafe { self.unchecked_shr_pad_internal::<false>(rhs) }
-                }
-            }
+    #[doc = doc::unbounded_shr!(U)]
+    #[must_use = doc::must_use_op!()]
+    #[inline]
+    pub const fn unbounded_shr(self, rhs: ExpType) -> Self {
+        if rhs >= Self::BITS {
+            Self::ZERO
+        } else {
+            unsafe { self.unchecked_shr_pad_internal::<false>(rhs) }
+        }
+    }
 
-            const N_MINUS_1: usize = N - 1;
+    const N_MINUS_1: usize = N - 1;
 
     #[doc = doc::swap_bytes!(U 256, "u")]
     #[must_use = doc::must_use_op!()]
@@ -577,13 +575,13 @@ impl<const N: usize> BUintD8<N> {
         digit & (1 << (index & digit::BITS_MINUS_1)) != 0
     }
 
-            #[doc = doc::set_bit!(U 256)]
-            #[inline]
-            pub fn set_bit(&mut self, index: ExpType, value: bool) {
-                let digit = &mut self.digits[index as usize >> digit::BIT_SHIFT];
-                let shift = index & digit::BITS_MINUS_1;
-                *digit = *digit & !(1 << shift) | ((value as Digit) << shift);
-            }
+    #[doc = doc::set_bit!(U 256)]
+    #[inline]
+    pub const fn set_bit(&mut self, index: ExpType, value: bool) {
+        let digit = &mut self.digits[index as usize >> digit::BIT_SHIFT];
+        let shift = index & digit::BITS_MINUS_1;
+        *digit = *digit & !(1 << shift) | ((value as Digit) << shift);
+    }
 
     /// Returns an integer whose value is `2^power`. This is faster than using a shift left on `Self::ONE`.
     ///
@@ -938,7 +936,7 @@ mod tests {
     test_bignum! {
         function: <utest>::is_power_of_two(a: utest)
     }
-    #[cfg(feature = "signed")]
+    #[cfg(all(feature = "signed", feature = "nightly"))]
     test_bignum! {
         function: <utest>::cast_signed(a: utest)
     }

@@ -421,7 +421,7 @@ impl<const N: usize> BIntD8<N> {
     /// This simply returns a mutable reference to the underlying representation of the integer in two's complement, as an unsigned integer.
     #[must_use]
     #[inline(always)]
-    pub fn as_bits_mut(&mut self) -> &mut BUintD8<N> {
+    pub const fn as_bits_mut(&mut self) -> &mut BUintD8<N> {
         &mut self.bits
     }
 }

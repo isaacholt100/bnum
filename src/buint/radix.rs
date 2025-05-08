@@ -11,7 +11,7 @@ use super::BUintD8;
 use crate::doc;
 use crate::errors::ParseIntError;
 use crate::int::radix::assert_range;
-use crate::{digit, Digit};
+use crate::{Digit, digit};
 #[cfg(feature = "alloc")]
 use alloc::{string::String, vec::Vec};
 #[cfg(feature = "alloc")]
@@ -395,7 +395,7 @@ impl<const N: usize> BUintD8<N> {
                         None => {
                             return Err(ParseIntError {
                                 kind: IntErrorKind::PosOverflow,
-                            })
+                            });
                         }
                     };
                     start = end;
@@ -423,7 +423,7 @@ impl<const N: usize> BUintD8<N> {
     /// ```
     #[inline]
     pub fn to_str_radix(&self, radix: u32) -> String {
-                assert_range!(radix, 36);
+        assert_range!(radix, 36);
         let mut out = Self::to_radix_be(self, radix);
 
         for byte in out.iter_mut() {
@@ -473,7 +473,7 @@ impl<const N: usize> BUintD8<N> {
     /// ```
     pub fn to_radix_le(&self, radix: u32) -> Vec<u8> {
         // TODO: can use u128
-                assert_range!(radix, 256);
+        assert_range!(radix, 256);
         if self.is_zero() {
             vec![0]
         } else if radix.is_power_of_two() {

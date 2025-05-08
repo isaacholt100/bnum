@@ -422,7 +422,9 @@ crate::doc::link_doc_comment_method! {
     next_multiple_of,
     div_floor,
     div_ceil,
-    midpoint
+    midpoint,
+    unbounded_shl,
+    unbounded_shr
 }
 
 #[cfg(feature = "signed")]
@@ -440,7 +442,5 @@ crate::doc::link_doc_comment_method! {
 crate::doc::link_doc_comment_method! {
     next_up,
     next_down,
-    copysign,
-    unbounded_shl,
-    unbounded_shr
+    copysign
 }
