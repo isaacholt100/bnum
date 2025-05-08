@@ -146,9 +146,9 @@ impl<const N: usize> BIntD8<N> {
                 } else {
                     let u = unsafe {
                         if self.is_negative() {
-                            $BUint::unchecked_shr_pad_internal::<true>(self.bits, rhs)
+                            BUintD8::unchecked_shr_pad_internal::<true>(self.bits, rhs)
                         } else {
-                            $BUint::unchecked_shr_pad_internal::<false>(self.bits, rhs)
+                            BUintD8::unchecked_shr_pad_internal::<false>(self.bits, rhs)
                         }
                     };
                     Self::from_bits(u)
@@ -398,33 +398,33 @@ impl<const N: usize> BIntD8<N> {
         Self { bits }
     }
 
-            /// This simply returns the underlying representation of the integer in two's complement, as an unsigned integer.
-            ///
-            /// This method is faster for casting from a
-            #[doc = concat!("[`", stringify!($BInt), "`]")]
-            /// to a
-            #[doc = concat!("[`", stringify!($BUint), "`]")]
-            /// of the same size than using the `As` trait.
-            #[must_use]
-            #[inline(always)]
-            pub const fn to_bits(self) -> $BUint<N> {
-                self.bits
-            }
+    /// This simply returns the underlying representation of the integer in two's complement, as an unsigned integer.
+    ///
+    /// This method is faster for casting from a
+    #[doc = concat!("[`", stringify!($BInt), "`]")]
+    /// to a
+    #[doc = concat!("[`", stringify!($BUint), "`]")]
+    /// of the same size than using the `As` trait.
+    #[must_use]
+    #[inline(always)]
+    pub const fn to_bits(self) -> BUintD8<N> {
+        self.bits
+    }
 
-            /// This simply returns a reference to the underlying representation of the integer in two's complement, as an unsigned integer.
-            #[must_use]
-            #[inline(always)]
-            pub const fn as_bits(&self) -> &$BUint<N> {
-                &self.bits
-            }
+    /// This simply returns a reference to the underlying representation of the integer in two's complement, as an unsigned integer.
+    #[must_use]
+    #[inline(always)]
+    pub const fn as_bits(&self) -> &BUintD8<N> {
+        &self.bits
+    }
 
-            /// This simply returns a mutable reference to the underlying representation of the integer in two's complement, as an unsigned integer.
-            #[must_use]
-            #[inline(always)]
-            pub fn as_bits_mut(&mut self) -> &mut $BUint<N> {
-                &mut self.bits
-            }
-        }
+    /// This simply returns a mutable reference to the underlying representation of the integer in two's complement, as an unsigned integer.
+    #[must_use]
+    #[inline(always)]
+    pub fn as_bits_mut(&mut self) -> &mut BUintD8<N> {
+        &mut self.bits
+    }
+}
 
 impl<const N: usize> Default for BIntD8<N> {
     #[doc = doc::default!()]

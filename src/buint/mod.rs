@@ -580,9 +580,9 @@ impl<const N: usize> BUintD8<N> {
             #[doc = doc::set_bit!(U 256)]
             #[inline]
             pub fn set_bit(&mut self, index: ExpType, value: bool) {
-                let digit = &mut self.digits[index as usize >> digit::$Digit::BIT_SHIFT];
-                let shift = index & digit::$Digit::BITS_MINUS_1;
-                *digit = *digit & !(1 << shift) | ((value as $Digit) << shift);
+                let digit = &mut self.digits[index as usize >> digit::BIT_SHIFT];
+                let shift = index & digit::BITS_MINUS_1;
+                *digit = *digit & !(1 << shift) | ((value as Digit) << shift);
             }
 
     /// Returns an integer whose value is `2^power`. This is faster than using a shift left on `Self::ONE`.
@@ -964,7 +964,7 @@ mod tests {
 
     #[test]
     fn set_bit() {
-        let mut u = UTEST::from(0b001010100101010101u64);
+        let mut u = UTEST::cast_from(0b001010100101010101u64);
         u.set_bit(1, true);
         assert!(u.bit(1));
         u.set_bit(1, false);

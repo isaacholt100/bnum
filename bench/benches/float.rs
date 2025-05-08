@@ -48,7 +48,7 @@ fn bench_fibs(c: &mut Criterion) {
 //         })
 //     }));
 //     group.finish();
-// }
+}
 
 // benchmark for time taken to call BUintD8::u128_digit, using one random fixed input, no benchmark groups, just a standalone benchmark
 // fn bench_u128_digit(c: &mut Criterion) {
