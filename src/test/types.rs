@@ -14,11 +14,11 @@ macro_rules! test_types {
                 pub type ftest = [<f $bits>];
 
                 #[allow(non_camel_case_types)]
-                pub type UTEST = crate::BUintD8<{ $bits / 8 }>;
+                pub type UTEST = crate::Uint<{ $bits / 8 }>;
 
                 #[cfg(feature = "signed")]
                 #[allow(non_camel_case_types)]
-                pub type ITEST = crate::BIntD8<{ $bits / 8 }>;
+                pub type ITEST = crate::Int<{ $bits / 8 }>;
             }
         }
     };

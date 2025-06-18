@@ -1,11 +1,11 @@
-use super::BIntD8;
-use crate::{BUintD8, Digit};
+use super::Int;
+use crate::{Uint, Digit};
 
 macro_rules! pos_const {
     ($($name: ident $num: literal), *) => {
         $(
             #[doc = doc::consts::value_desc!($num)]
-            pub const $name: Self = Self::from_bits(BUintD8::$name);
+            pub const $name: Self = Self::from_bits(Uint::$name);
         )*
     }
 }
@@ -15,7 +15,7 @@ macro_rules! neg_const {
         $(
             #[doc = doc::consts::value_desc!("-" $num)]
             pub const $name: Self = {
-                let mut u = BUintD8::MAX;
+                let mut u = Uint::MAX;
                 u.digits[0] -= ($num - 1);
                 Self::from_bits(u)
             };
@@ -27,26 +27,26 @@ use crate::doc;
 use crate::ExpType;
 
 #[doc = doc::consts::impl_desc!()]
-impl<const N: usize> BIntD8<N> {
+impl<const N: usize> Int<N> {
     #[doc = doc::consts::min!(I 512)]
     pub const MIN: Self = {
         let mut digits = [0; N];
         digits[N - 1] = 1 << (Digit::BITS - 1);
-        Self::from_bits(BUintD8::from_digits(digits))
+        Self::from_bits(Uint::from_digits(digits))
     };
 
     #[doc = doc::consts::max!(I 512)]
     pub const MAX: Self = {
         let mut digits = [Digit::MAX; N];
         digits[N - 1] >>= 1;
-        Self::from_bits(BUintD8::from_digits(digits))
+        Self::from_bits(Uint::from_digits(digits))
     };
 
     #[doc = doc::consts::bits!(I 512, 512)]
-    pub const BITS: ExpType = BUintD8::<N>::BITS;
+    pub const BITS: ExpType = Uint::<N>::BITS;
 
     #[doc = doc::consts::bytes!(I 512, 512)]
-    pub const BYTES: ExpType = BUintD8::<N>::BYTES;
+    pub const BYTES: ExpType = Uint::<N>::BYTES;
 
     pos_const!(ZERO 0, ONE 1, TWO 2, THREE 3, FOUR 4, FIVE 5, SIX 6, SEVEN 7, EIGHT 8, NINE 9, TEN 10);
 

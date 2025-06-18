@@ -11,6 +11,8 @@
 - use rand 0.9.0, so update try_fill_slice to fill_slice (no option returned)
 - make as_bits_mut, digits_mut, set_bit const
 - TODO:
+    - complete use of u128 digit methods where needed
+    - fix doctests
     - carrying_mul_add
     - isqrt (including checked for signed ints)
     - from_ascii

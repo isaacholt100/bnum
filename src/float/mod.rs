@@ -1,7 +1,7 @@
 #[cfg(test)]
 use crate::cast::As;
 use crate::doc;
-use crate::{BIntD8, BUintD8, ExpType};
+use crate::{Int, Uint, ExpType};
 
 type Digit = u8;
 
@@ -61,7 +61,7 @@ use serde::{Deserialize, Serialize};
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[repr(transparent)]
 pub struct Float<const W: usize, const MB: usize> {
-    bits: BUintD8<W>,
+    bits: Uint<W>,
 }
 
 pub(crate) type FloatExponent = i128;
@@ -71,18 +71,18 @@ pub(crate) type UnsignedFloatExponent = u128;
 
 impl<const W: usize, const MB: usize> Float<W, MB> {
     const MB: ExpType = MB as _;
-    const BITS: ExpType = BUintD8::<W>::BITS;
+    const BITS: ExpType = Uint::<W>::BITS;
 
     const EXPONENT_BITS: ExpType = Self::BITS - Self::MB - 1;
 
-    const MANTISSA_MASK: BUintD8<W> = BUintD8::MAX.wrapping_shr(Self::EXPONENT_BITS + 1);
+    const MANTISSA_MASK: Uint<W> = Uint::MAX.wrapping_shr(Self::EXPONENT_BITS + 1);
 
-    const SIGN_MASK: BUintD8<W> = BIntD8::MAX.to_bits();
+    const SIGN_MASK: Uint<W> = Int::MAX.to_bits();
 
-    const MANTISSA_IMPLICIT_LEADING_ONE_MASK: BUintD8<W> = BUintD8::ONE.shl(Self::MB);
+    const MANTISSA_IMPLICIT_LEADING_ONE_MASK: Uint<W> = Uint::ONE.shl(Self::MB);
 }
 
-impl<const W: usize> BUintD8<W> {
+impl<const W: usize> Uint<W> {
     #[inline]
     pub(crate) const fn cast_from_unsigned_float_exponent(mut exp: UnsignedFloatExponent) -> Self {
         let mut out = Self::MIN;
@@ -121,7 +121,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         debug_assert!(exponent < Self::MAX_EXP);
         let biased_exponent = exponent + Self::EXP_BIAS;
         let exponent_bits =
-            BUintD8::cast_from_unsigned_float_exponent(biased_exponent as UnsignedFloatExponent);
+            Uint::cast_from_unsigned_float_exponent(biased_exponent as UnsignedFloatExponent);
         let float_bits = exponent_bits.shl(Self::MB);
         Self::from_bits(float_bits)
     }
@@ -146,7 +146,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         } else {
             self_words[W - 1] &= (!0) >> 1;
         }
-        Self::from_bits(BUintD8::from_digits(self_words))
+        Self::from_bits(Uint::from_digits(self_words))
     }
 
     #[doc = doc::next_up!(F)]
@@ -166,9 +166,9 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             FpCategory::Zero => Self::MIN_POSITIVE_SUBNORMAL,
             _ => {
                 if self.is_sign_negative() {
-                    Self::from_bits(self.to_bits().sub(BUintD8::ONE))
+                    Self::from_bits(self.to_bits().sub(Uint::ONE))
                 } else {
-                    Self::from_bits(self.to_bits().add(BUintD8::ONE))
+                    Self::from_bits(self.to_bits().add(Uint::ONE))
                 }
             }
         }
@@ -191,9 +191,9 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             FpCategory::Zero => Self::MAX_NEGATIVE_SUBNORMAL,
             _ => {
                 if self.is_sign_negative() {
-                    Self::from_bits(self.to_bits().add(BUintD8::ONE))
+                    Self::from_bits(self.to_bits().add(Uint::ONE))
                 } else {
-                    Self::from_bits(self.to_bits().sub(BUintD8::ONE))
+                    Self::from_bits(self.to_bits().sub(Uint::ONE))
                 }
             }
         }
@@ -210,7 +210,7 @@ impl<const W: usize, const MB: usize> Default for Float<W, MB> {
 #[cfg(any(test, feature = "quickcheck"))]
 impl<const W: usize, const MB: usize> quickcheck::Arbitrary for crate::Float<W, MB> {
     fn arbitrary(g: &mut quickcheck::Gen) -> Self {
-        Self::from_bits(BUintD8::arbitrary(g))
+        Self::from_bits(Uint::arbitrary(g))
     }
 }
 

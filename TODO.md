@@ -71,7 +71,7 @@
 
 ## Ints
 
-- big idea: could only use u8 digits, but for calculations (would need to do this as BUintD8 is noticeably slower than BUint), use u64s or u128s, e.g. when iterating, iterate in batches of 8, use u64::from_ne_bytes/u64::from_le_bytes - this is a transmute so should be very small overhead (this might sacrifice some code readability)
+- big idea: could only use u8 digits, but for calculations (would need to do this as Uint is noticeably slower than BUint), use u64s or u128s, e.g. when iterating, iterate in batches of 8, use u64::from_ne_bytes/u64::from_le_bytes - this is a transmute so should be very small overhead (this might sacrifice some code readability)
 - unsigned_signed_diff methods
 - isqrt methods
 - unbounded shr, shl methods

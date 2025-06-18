@@ -1,5 +1,5 @@
-use super::BIntD8;
-use crate::BUintD8;
+use super::Int;
+use crate::Uint;
 
 use crate::ExpType;
 use core::ops::{
@@ -7,7 +7,7 @@ use core::ops::{
     Mul, MulAssign, Neg, Not, Rem, RemAssign, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign,
 };
 
-impl<const N: usize> Neg for BIntD8<N> {
+impl<const N: usize> Neg for Int<N> {
     type Output = Self;
 
     #[inline]
@@ -16,16 +16,16 @@ impl<const N: usize> Neg for BIntD8<N> {
     }
 }
 
-impl<const N: usize> Neg for &BIntD8<N> {
-    type Output = BIntD8<N>;
+impl<const N: usize> Neg for &Int<N> {
+    type Output = Int<N>;
 
     #[inline]
-    fn neg(self) -> BIntD8<N> {
-        BIntD8::neg(*self)
+    fn neg(self) -> Int<N> {
+        Int::neg(*self)
     }
 }
 
-impl<const N: usize> BitAnd for BIntD8<N> {
+impl<const N: usize> BitAnd for Int<N> {
     type Output = Self;
 
     #[inline]
@@ -34,7 +34,7 @@ impl<const N: usize> BitAnd for BIntD8<N> {
     }
 }
 
-impl<const N: usize> BitOr for BIntD8<N> {
+impl<const N: usize> BitOr for Int<N> {
     type Output = Self;
 
     #[inline]
@@ -43,7 +43,7 @@ impl<const N: usize> BitOr for BIntD8<N> {
     }
 }
 
-impl<const N: usize> BitXor for BIntD8<N> {
+impl<const N: usize> BitXor for Int<N> {
     type Output = Self;
 
     #[inline]
@@ -52,7 +52,7 @@ impl<const N: usize> BitXor for BIntD8<N> {
     }
 }
 
-impl<const N: usize> Div for BIntD8<N> {
+impl<const N: usize> Div for Int<N> {
     type Output = Self;
 
     #[inline]
@@ -61,7 +61,7 @@ impl<const N: usize> Div for BIntD8<N> {
     }
 }
 
-impl<const N: usize> Not for BIntD8<N> {
+impl<const N: usize> Not for Int<N> {
     type Output = Self;
 
     fn not(self) -> Self {
@@ -69,7 +69,7 @@ impl<const N: usize> Not for BIntD8<N> {
     }
 }
 
-impl<const N: usize> Rem for BIntD8<N> {
+impl<const N: usize> Rem for Int<N> {
     type Output = Self;
 
     #[inline]
@@ -78,7 +78,7 @@ impl<const N: usize> Rem for BIntD8<N> {
     }
 }
 
-crate::int::ops::impls!(BIntD8);
+crate::int::ops::impls!(Int);
 
 #[cfg(test)]
 mod tests {

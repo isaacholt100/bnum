@@ -1,6 +1,6 @@
 use super::Float;
 use crate::doc;
-use crate::BUintD8;
+use crate::Uint;
 use core::cmp::Ordering;
 
 #[doc = doc::const_trait_fillers::impl_desc!()]
@@ -8,7 +8,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     #[inline]
     pub const fn eq(&self, other: &Self) -> bool {
         handle_nan!(false; self, other);
-        (self.is_zero() && other.is_zero()) || BUintD8::eq(&self.to_bits(), &other.to_bits())
+        (self.is_zero() && other.is_zero()) || Uint::eq(&self.to_bits(), &other.to_bits())
     }
 
     #[inline]

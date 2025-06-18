@@ -7,7 +7,7 @@ Copyright (c) 2014 The Rust Project Developers
 The original license file and copyright notice for `num_bigint` can be found in this project's root at licenses/LICENSE-num-bigint.
 */
 
-use super::BUintD8;
+use super::Uint;
 use crate::doc;
 use crate::errors::ParseIntError;
 use crate::int::radix::assert_range;
@@ -19,8 +19,8 @@ use core::iter::Iterator;
 use core::num::IntErrorKind;
 use core::str::FromStr;
 
-#[doc = doc::radix::impl_desc!(BUintD8)]
-impl<const N: usize> BUintD8<N> {
+#[doc = doc::radix::impl_desc!(Uint)]
+impl<const N: usize> Uint<N> {
     #[inline]
     const fn radix_base(radix: u32) -> (Digit, usize) {
         let mut power: usize = 1;
@@ -186,7 +186,7 @@ impl<const N: usize> BUintD8<N> {
         Self::from_buf_radix_internal::<true, true>(buf, radix, leading_plus)
     }
 
-    #[doc = doc::radix::parse_str_radix!(BUintD8)]
+    #[doc = doc::radix::parse_str_radix!(Uint)]
     #[inline]
     pub const fn parse_str_radix(src: &str, radix: u32) -> Self {
         match Self::from_str_radix(src, radix) {
@@ -576,7 +576,7 @@ impl<const N: usize> BUintD8<N> {
     }
 }
 
-impl<const N: usize> FromStr for BUintD8<N> {
+impl<const N: usize> FromStr for Uint<N> {
     type Err = ParseIntError;
 
     fn from_str(src: &str) -> Result<Self, Self::Err> {
@@ -683,16 +683,16 @@ mod tests {
     #[cfg(feature = "alloc")]
     #[test]
     fn parse_bytes() {
-        use crate::BUintD8;
+        use crate::Uint;
 
         let src = "134957dkbhadoinegrhi983475hdgkhgdhiu3894hfd";
-        let u = BUintD8::<100>::parse_bytes(src.as_bytes(), 35).unwrap();
-        let v = BUintD8::<100>::from_str_radix(src, 35).unwrap();
+        let u = Uint::<100>::parse_bytes(src.as_bytes(), 35).unwrap();
+        let v = Uint::<100>::from_str_radix(src, 35).unwrap();
         assert_eq!(u, v);
         assert_eq!(v.to_str_radix(35), src);
 
         let bytes = b"345977fsuudf0350845";
-        let option = BUintD8::<100>::parse_bytes(bytes, 20);
+        let option = Uint::<100>::parse_bytes(bytes, 20);
         assert!(option.is_none());
     }
 }

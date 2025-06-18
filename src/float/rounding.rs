@@ -2,11 +2,11 @@ use super::{Float, FloatExponent};
 use crate::doc;
 use crate::float::UnsignedFloatExponent;
 use crate::ExpType;
-use crate::{BIntD8, BUintD8};
+use crate::{Int, Uint};
 
 type Digit = u8;
 
-impl<const W: usize> BUintD8<W> {
+impl<const W: usize> Uint<W> {
     #[inline]
     pub(crate) const fn to_exp_type(&self) -> Option<ExpType> {
         let mut out = 0;
@@ -83,7 +83,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             return self;
         }
         if !e.is_negative() {
-            let m = (BUintD8::MAX >> (Self::BITS - Self::MB)) >> e;
+            let m = (Uint::MAX >> (Self::BITS - Self::MB)) >> e;
             if (bits & m).is_zero() {
                 return self;
             }
@@ -120,7 +120,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             return self;
         }
         if !e.is_negative() {
-            let m = (BUintD8::MAX >> (Self::BITS - Self::MB)) >> e;
+            let m = (Uint::MAX >> (Self::BITS - Self::MB)) >> e;
             if (u & m).is_zero() {
                 return self;
             }
@@ -222,7 +222,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                 // if the exponent exceeds the number of mantissa bits, then the number is an integer so truncation does nothing and fractional part is zero
                 (Self::ZERO, self)
             } else {
-                let mask = BUintD8::<W>::MAX.shl(Self::MB - small_exponent);
+                let mask = Uint::<W>::MAX.shl(Self::MB - small_exponent);
                 let trunc_mantissa = mantissa.bitand(mask); // set the last MB - exponent bits of the mantissa to zero - this is the fractional part
 
                 let trunc = Self::from_signed_parts(sign, exponent, trunc_mantissa);

@@ -163,18 +163,18 @@ macro_rules! impls {
 
         crate::int::numtraits::as_bigint_impl!([u8, u16, u32, usize, u64, u128, i8, i16, i32, isize, i64, i128, char, bool, f32, f64] as $Int);
 
-        impl<const N: usize, const M: usize> AsPrimitive<crate::BUintD8<M>> for $Int<N> {
+        impl<const N: usize, const M: usize> AsPrimitive<crate::Uint<M>> for $Int<N> {
             #[inline]
-            fn as_(self) -> crate::BUintD8<M> {
-                crate::BUintD8::<M>::cast_from(self)
+            fn as_(self) -> crate::Uint<M> {
+                crate::Uint::<M>::cast_from(self)
             }
         }
 
         #[cfg(feature = "signed")]
-        impl<const N: usize, const M: usize> AsPrimitive<crate::BIntD8<M>> for $Int<N> {
+        impl<const N: usize, const M: usize> AsPrimitive<crate::Int<M>> for $Int<N> {
             #[inline]
-            fn as_(self) -> crate::BIntD8<M> {
-                crate::BIntD8::<M>::cast_from(self)
+            fn as_(self) -> crate::Int<M> {
+                crate::Int::<M>::cast_from(self)
             }
         }
 

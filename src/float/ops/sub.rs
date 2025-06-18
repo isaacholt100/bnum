@@ -2,7 +2,7 @@ use super::Float;
 use crate::cast::{As, CastFrom};
 use crate::float::FloatExponent;
 use crate::float::UnsignedFloatExponent;
-use crate::BUintD8;
+use crate::Uint;
 use crate::ExpType;
 use core::num::FpCategory;
 
@@ -26,7 +26,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         let mut a_exp = a_exp as FloatExponent;
 
         let sticky_bit2 = exp_diff != 0
-            && exp_diff < BUintD8::<W>::BITS.into()
+            && exp_diff < Uint::<W>::BITS.into()
             && b_mant.bit(exp_diff.as_::<ExpType>() - 1);
         let all_zeros = exp_diff != 0 && b_mant.trailing_zeros() + 1 == exp_diff.as_::<ExpType>();
 
@@ -38,8 +38,8 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
         // If the shift causes an overflow, the b_mant is too small so is set to 0
         let shifted_b_mant = match exp_diff.try_into().ok() {
-            Some(exp_diff) => b_mant.checked_shr(exp_diff).unwrap_or(BUintD8::ZERO),
-            None => BUintD8::ZERO,
+            Some(exp_diff) => b_mant.checked_shr(exp_diff).unwrap_or(Uint::ZERO),
+            None => Uint::ZERO,
         };
 
         // If the shift causes an overflow, the b_mant is too small so is set to 0
@@ -51,8 +51,8 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         let mut mant = a_mant - shifted_b_mant;
 
         if mant.bits() == Self::MB + 2 {
-            if mant & BUintD8::cast_from(0b10u8) == BUintD8::cast_from(0b10u8) && !sticky_bit {
-                mant += BUintD8::ONE;
+            if mant & Uint::cast_from(0b10u8) == Uint::cast_from(0b10u8) && !sticky_bit {
+                mant += Uint::ONE;
             }
 
             mant >>= 1 as ExpType;
@@ -65,8 +65,8 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
             // If the shift causes an overflow, the b_mant is too small so is set to 0
             let shifted_b_mant = match exp_diff.try_into().ok() {
-                Some(exp_diff) => b_mant.checked_shr(exp_diff).unwrap_or(BUintD8::ZERO),
-                None => BUintD8::ZERO,
+                Some(exp_diff) => b_mant.checked_shr(exp_diff).unwrap_or(Uint::ZERO),
+                None => Uint::ZERO,
             };
 
             // If the shift causes an overflow, the b_mant is too small so is set to 0
@@ -78,8 +78,8 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             mant = a_mant - shifted_b_mant;
 
             if mant.bits() == Self::MB + 2 {
-                if mant & BUintD8::cast_from(0b10u8) == BUintD8::cast_from(0b10u8) && !sticky_bit {
-                    mant += BUintD8::ONE;
+                if mant & Uint::cast_from(0b10u8) == Uint::cast_from(0b10u8) && !sticky_bit {
+                    mant += Uint::ONE;
                 }
 
                 mant >>= 1 as ExpType;
@@ -88,9 +88,9 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                 if sticky_bit2 && !all_zeros
                     || (sticky_bit2
                         && all_zeros
-                        && b_mant & BUintD8::cast_from(0b1u8) == BUintD8::cast_from(0b1u8))
+                        && b_mant & Uint::cast_from(0b1u8) == Uint::cast_from(0b1u8))
                 {
-                    mant -= BUintD8::ONE;
+                    mant -= Uint::ONE;
                 }
                 let bits = mant.bits();
                 mant <<= Self::MB + 1 - bits;
@@ -105,7 +105,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         if (mant >> Self::MB).is_zero() {
             a_exp = 0;
         } else {
-            mant ^= BUintD8::ONE << Self::MB;
+            mant ^= Uint::ONE << Self::MB;
         }
 
         Self::from_raw_parts(negative, a_exp as UnsignedFloatExponent, mant)

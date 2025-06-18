@@ -4,7 +4,7 @@ use crate::helpers::Zero;
 use super::{Float, FloatExponent};
 use crate::cast::CastFrom;
 use crate::ExpType;
-use crate::{BIntD8, BUintD8};
+use crate::{Int, Uint};
 
 macro_rules! uint_as_float {
     ($($uint: ident $(<$N: ident>)?), *) => {
@@ -19,7 +19,7 @@ macro_rules! uint_as_float {
     };
 }
 
-uint_as_float!(u8, u16, u32, u64, u128, usize, BUintD8<N>);
+uint_as_float!(u8, u16, u32, u64, u128, usize, Uint<N>);
 
 macro_rules! int_as_float {
     ($($int: ty), *) => {
@@ -40,8 +40,8 @@ macro_rules! int_as_float {
 
 int_as_float!(i8, i16, i32, i64, i128, isize);
 
-impl<const W: usize, const MB: usize, const N: usize> CastFrom<BIntD8<N>> for Float<W, MB> {
-    fn cast_from(from: BIntD8<N>) -> Self {
+impl<const W: usize, const MB: usize, const N: usize> CastFrom<Int<N>> for Float<W, MB> {
+    fn cast_from(from: Int<N>) -> Self {
         let pos_cast = Self::cast_from(from.unsigned_abs());
         if from.is_negative() {
             -pos_cast
@@ -51,7 +51,7 @@ impl<const W: usize, const MB: usize, const N: usize> CastFrom<BIntD8<N>> for Fl
     }
 }
 
-impl<const W: usize, const MB: usize, const N: usize> CastFrom<Float<W, MB>> for BIntD8<N> {
+impl<const W: usize, const MB: usize, const N: usize> CastFrom<Float<W, MB>> for Int<N> {
     crate::bint::cast::bint_cast_from_float!(Float<W, MB>);
 }
 
@@ -99,7 +99,7 @@ macro_rules! float_as_uint {
     };
 }
 
-float_as_uint!(BUintD8<N>, u8, u16, u32, u64, u128, usize);
+float_as_uint!(Uint<N>, u8, u16, u32, u64, u128, usize);
 
 impl<const W: usize, const MB: usize> FloatCastHelper for Float<W, MB> {
     const BITS: ExpType = Self::BITS;

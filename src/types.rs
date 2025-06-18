@@ -10,11 +10,11 @@ macro_rules! int_types {
     { $($bits: literal $u: ident $i: ident; ) *}  => {
         $(
             #[doc = int_type_doc!($bits, "unsigned")]
-            pub type $u = crate::BUintD8::<{$bits / 8}>;
+            pub type $u = crate::Uint::<{$bits / 8}>;
 
             #[cfg(feature = "signed")]
             #[doc = int_type_doc!($bits, "signed")]
-            pub type $i = crate::BIntD8::<{$bits / 8}>;
+            pub type $i = crate::Int::<{$bits / 8}>;
         )*
     };
 }

@@ -1,7 +1,7 @@
-use super::BIntD8;
+use super::Int;
 
 #[doc = doc::unchecked::impl_desc!()]
-impl<const N: usize> BIntD8<N> {
+impl<const N: usize> Int<N> {
     crate::int::unchecked::impls!(I);
 }
 

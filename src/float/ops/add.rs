@@ -1,5 +1,5 @@
 use super::Float;
-use crate::{float::UnsignedFloatExponent, BUintD8, ExpType};
+use crate::{float::UnsignedFloatExponent, Uint, ExpType};
 use core::num::FpCategory;
 
 impl<const W: usize, const MB: usize> Float<W, MB> {
@@ -26,12 +26,12 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                     let mut mant = a_mant + shifted;
                     if mant.bit(Self::MB + 1) {
                         // overflow occurred
-                        let mut shifted_mant: BUintD8<W> = mant >> 1;
+                        let mut shifted_mant: Uint<W> = mant >> 1;
                         let gte_half = mant.is_odd(); // if discarded bits are at least a half
                         let round_up = gte_half
                             && !(b_mant.trailing_zeros() >= exp_diff && shifted_mant.is_even()); // round by ties-to-even
                         if round_up {
-                            shifted_mant += BUintD8::ONE;
+                            shifted_mant += Uint::ONE;
                         }
                         (a_exp + 1, shifted_mant)
                     } else {
@@ -39,7 +39,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                         let round_up = b_mant.bit(exp_diff - 1)
                             && !(b_mant.trailing_zeros() >= exp_diff - 1 && mant.is_even()); // round according to ties-to-even. exp_diff - 1 will be non-negative, since if exp_diff = 0, then we would have had the overflow condition earlier
                         if round_up {
-                            mant += BUintD8::ONE;
+                            mant += Uint::ONE;
                         }
                         if mant.bit(Self::MB + 1) {
                             // overflow occurred
@@ -91,12 +91,12 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             // number of bits needed to store exp_diff is less than bit width of ExpType, so can cast
             b_mant
                 .checked_shr(exp_diff as ExpType)
-                .unwrap_or(BUintD8::ZERO)
+                .unwrap_or(Uint::ZERO)
         } else {
-            BUintD8::ZERO
+            Uint::ZERO
         };
         if sticky_bit {
-            b_mant |= BUintD8::ONE; // round up
+            b_mant |= Uint::ONE; // round up
         }
 
         let mut mant = a_mant + b_mant;
@@ -104,7 +104,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         let overflow = !(mant >> (MB + 3)).is_zero();
         if !overflow {
             if mant.digits[0] & 0b11 == 0b11 || mant.digits[0] & 0b110 == 0b110 {
-                mant += BUintD8::FOUR; // += 0b100
+                mant += Uint::FOUR; // += 0b100
                 if !(mant >> (MB + 3)).is_zero() {
                     mant >>= 1 as ExpType;
                     a_exp += 1;
@@ -113,11 +113,11 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         } else {
             match mant.digits[0] & 0b111 {
                 0b111 | 0b110 | 0b101 => {
-                    mant += BUintD8::EIGHT; // 0b1000
+                    mant += Uint::EIGHT; // 0b1000
                 }
                 0b100 => {
                     if mant.digits[0] & 0b1000 == 0b1000 {
-                        mant += BUintD8::EIGHT; // 0b1000
+                        mant += Uint::EIGHT; // 0b1000
                     }
                 }
                 _ => {}
@@ -139,7 +139,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         if (mant >> Self::MB).is_zero() {
             a_exp = 0;
         } else {
-            mant ^= BUintD8::ONE << Self::MB;
+            mant ^= Uint::ONE << Self::MB;
         }
         let a = Self::from_raw_parts(negative, a_exp, mant);
         a

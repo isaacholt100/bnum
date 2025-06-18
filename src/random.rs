@@ -17,7 +17,7 @@ use core::ops::{Deref, DerefMut};
 
 /// Wrapper type designed to be filled with random big integers.
 ///
-/// This type exists because [`rand::Fill`](https://docs.rs/rand/latest/rand/trait.Fill.html) can't be implemented for `[BUintD8<N>]` or `[BIntD8<N>]` due to Rust's orphan rules. Instead, it is implemented for `Slice<BUintD8<N>>` and `Slice<BIntD8<N>>`. The underlying slice can then be accessed by calling [`AsRef::as_ref`](https://doc.rust-lang.org/core/convert/trait.AsRef.html#tymethod.as_ref) or [`AsMut::as_mut`](https://doc.rust-lang.org/core/convert/trait.AsMut.html#tymethod.as_mut) on the wrapper, or deferencing it. An alternative way of filling a slice with random big integers is using the [`try_fill_slice`] method in this crate's [`random`](crate::random) module.
+/// This type exists because [`rand::Fill`](https://docs.rs/rand/latest/rand/trait.Fill.html) can't be implemented for `[Uint<N>]` or `[Int<N>]` due to Rust's orphan rules. Instead, it is implemented for `Slice<Uint<N>>` and `Slice<Int<N>>`. The underlying slice can then be accessed by calling [`AsRef::as_ref`](https://doc.rust-lang.org/core/convert/trait.AsRef.html#tymethod.as_ref) or [`AsMut::as_mut`](https://doc.rust-lang.org/core/convert/trait.AsMut.html#tymethod.as_mut) on the wrapper, or deferencing it. An alternative way of filling a slice with random big integers is using the [`try_fill_slice`] method in this crate's [`random`](crate::random) module.
 #[repr(transparent)]
 pub struct Slice<T>(pub [T]);
 
@@ -302,37 +302,37 @@ pub struct UniformInt<X> {
 }
 
 #[cfg(feature = "signed")]
-use crate::BIntD8;
-use crate::BUintD8;
+use crate::Int;
+use crate::Uint;
 use rand::distr::uniform::{SampleBorrow, SampleUniform, UniformSampler};
 use rand::distr::{Distribution, StandardUniform};
 use rand::{Fill, Rng};
 
-impl<const N: usize> Distribution<BUintD8<N>> for StandardUniform {
+impl<const N: usize> Distribution<Uint<N>> for StandardUniform {
     #[inline]
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> BUintD8<N> {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Uint<N> {
         let mut digits = [0; N];
         rng.fill(&mut digits);
-        BUintD8::from_digits(digits)
+        Uint::from_digits(digits)
     }
 }
 
 #[cfg(feature = "signed")]
-impl<const N: usize> Distribution<BIntD8<N>> for StandardUniform {
+impl<const N: usize> Distribution<Int<N>> for StandardUniform {
     #[inline]
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> BIntD8<N> {
-        BIntD8::from_bits(rng.random())
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Int<N> {
+        Int::from_bits(rng.random())
     }
 }
 
-fill_impl!(BUintD8<N>);
+fill_impl!(Uint<N>);
 #[cfg(feature = "signed")]
-fill_impl!(BIntD8<N>);
+fill_impl!(Int<N>);
 
-uniform_int_impl!(BUintD8<N>, BUintD8<N>);
+uniform_int_impl!(Uint<N>, Uint<N>);
 
 #[cfg(feature = "signed")]
-uniform_int_impl!(BIntD8<N>, BUintD8<N>, to_bits, from_bits);
+uniform_int_impl!(Int<N>, Uint<N>, to_bits, from_bits);
 
 #[cfg(test)]
 mod tests {

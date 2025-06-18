@@ -1,6 +1,6 @@
 // macro_rules! mask {
-//     (BUintD8: ident, BIntD8: ident, Digit: ident) => {
-//         impl<const N: usize> BUintD8<N> {
+//     (Uint: ident, Int: ident, Digit: ident) => {
+//         impl<const N: usize> Uint<N> {
 //             #[inline]
 //             pub(crate) const fn least_significant_n_bits(self, n: ExpType) -> Self {
 //                 let mut mask = Self::ZERO;

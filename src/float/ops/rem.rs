@@ -1,7 +1,7 @@
 use super::Float;
 use crate::float::UnsignedFloatExponent;
-use crate::BIntD8;
-use crate::BUintD8;
+use crate::Int;
+use crate::Uint;
 use crate::ExpType;
 
 impl<const W: usize, const MB: usize> Float<W, MB> {
@@ -44,33 +44,33 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         /* normalize x and y */
         if ex == 0 {
             i = uxi << (Self::BITS - Self::MB);
-            while !BIntD8::from_bits(i).is_negative() {
+            while !Int::from_bits(i).is_negative() {
                 ex -= 1;
                 i <<= 1 as ExpType;
             }
 
             uxi <<= -ex + 1;
         } else {
-            uxi &= BUintD8::MAX >> (Self::BITS - Self::MB);
-            uxi |= BUintD8::ONE << Self::MB;
+            uxi &= Uint::MAX >> (Self::BITS - Self::MB);
+            uxi |= Uint::ONE << Self::MB;
         }
 
         if ey == 0 {
             i = uyi << (Self::BITS - Self::MB);
-            while !BIntD8::from_bits(i).is_negative() {
+            while !Int::from_bits(i).is_negative() {
                 ey -= 1;
                 i <<= 1 as ExpType;
             }
 
             uyi <<= -ey + 1;
         } else {
-            uyi &= BUintD8::MAX >> (Self::BITS - Self::MB);
-            uyi |= BUintD8::ONE << Self::MB;
+            uyi &= Uint::MAX >> (Self::BITS - Self::MB);
+            uyi |= Uint::ONE << Self::MB;
         }
         /* x mod y */
         while ex > ey {
             i = uxi.wrapping_sub(uyi);
-            if !BIntD8::from_bits(i).is_negative() {
+            if !Int::from_bits(i).is_negative() {
                 if i.is_zero() {
                     return if self.is_sign_negative() {
                         Self::NEG_ZERO
@@ -86,7 +86,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         }
 
         i = uxi.wrapping_sub(uyi);
-        if !BIntD8::from_bits(i).is_negative() {
+        if !Int::from_bits(i).is_negative() {
             if i.is_zero() {
                 return if self.is_sign_negative() {
                     Self::NEG_ZERO
@@ -104,9 +104,9 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
         /* scale result up */
         if ex.is_positive() {
-            uxi -= BUintD8::ONE << Self::MB;
+            uxi -= Uint::ONE << Self::MB;
             uxi |=
-                BUintD8::cast_from_unsigned_float_exponent(ex as UnsignedFloatExponent) << Self::MB;
+                Uint::cast_from_unsigned_float_exponent(ex as UnsignedFloatExponent) << Self::MB;
         } else {
             uxi >>= -ex + 1;
         }

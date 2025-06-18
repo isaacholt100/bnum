@@ -1,5 +1,5 @@
-use super::BIntD8;
-use crate::BUintD8;
+use super::Int;
+use crate::Uint;
 
 use crate::doc;
 use crate::errors::ParseIntError;
@@ -8,8 +8,8 @@ use crate::int::radix::assert_range;
 use alloc::{string::String, vec::Vec};
 use core::num::IntErrorKind;
 
-#[doc = doc::radix::impl_desc!(BIntD8)]
-impl<const N: usize> BIntD8<N> {
+#[doc = doc::radix::impl_desc!(Int)]
+impl<const N: usize> Int<N> {
     /// Converts a byte slice in a given base to an integer. The input slice must contain ascii/utf8 characters in [0-9a-zA-Z].
     ///
     /// This function is equivalent to the [`from_str_radix`](#method.from_str_radix) function for a string slice equivalent to the byte slice and the same radix.
@@ -24,10 +24,10 @@ impl<const N: usize> BIntD8<N> {
     /// Converts a slice of big-endian digits in the given radix to an integer. The digits are first converted to an unsigned integer, then this is transmuted to a signed integer. Each `u8` of the slice is interpreted as one digit of base `radix` of the number, so this function will return `None` if any digit is greater than or equal to `radix`, otherwise the integer is wrapped in `Some`.
     ///
     /// For examples, see the
-    #[doc = concat!("[`from_radix_be`](crate::", stringify!(BUintD8), "::from_radix_be) method documentation for [`", stringify!(BUintD8), "`](crate::", stringify!(BUintD8), ").")]
+    #[doc = concat!("[`from_radix_be`](crate::", stringify!(Uint), "::from_radix_be) method documentation for [`", stringify!(Uint), "`](crate::", stringify!(Uint), ").")]
     #[inline]
     pub const fn from_radix_be(buf: &[u8], radix: u32) -> Option<Self> {
-        match BUintD8::from_radix_be(buf, radix) {
+        match Uint::from_radix_be(buf, radix) {
             // TODO: use Option::map when stable
             Some(uint) => Some(Self::from_bits(uint)),
             None => None,
@@ -37,10 +37,10 @@ impl<const N: usize> BIntD8<N> {
     /// Converts a slice of big-endian digits in the given radix to an integer. The digits are first converted to an unsigned integer, then this is transmuted to a signed integer. Each `u8` of the slice is interpreted as one digit of base `radix` of the number, so this function will return `None` if any digit is greater than or equal to `radix`, otherwise the integer is wrapped in `Some`.
     ///
     /// For examples, see the
-    #[doc = concat!("[`from_radix_le`](crate::", stringify!(BUintD8), "::from_radix_le) method documentation for [`", stringify!(BUintD8), "`](crate::", stringify!(BUintD8), ").")]
+    #[doc = concat!("[`from_radix_le`](crate::", stringify!(Uint), "::from_radix_le) method documentation for [`", stringify!(Uint), "`](crate::", stringify!(Uint), ").")]
     #[inline]
     pub const fn from_radix_le(buf: &[u8], radix: u32) -> Option<Self> {
-        match BUintD8::from_radix_le(buf, radix) {
+        match Uint::from_radix_le(buf, radix) {
             // TODO: use Option::map when stable
             Some(uint) => Some(Self::from_bits(uint)),
             None => None,
@@ -60,7 +60,7 @@ impl<const N: usize> BIntD8<N> {
     /// This function panics if `radix` is not in the range from 2 to 36 inclusive.
     ///
     /// For examples, see the
-    #[doc = concat!("[`from_str_radix`](crate::", stringify!(BUintD8), "::from_str_radix) method documentation for [`", stringify!(BUintD8), "`](crate::", stringify!(BUintD8), ").")]
+    #[doc = concat!("[`from_str_radix`](crate::", stringify!(Uint), "::from_str_radix) method documentation for [`", stringify!(Uint), "`](crate::", stringify!(Uint), ").")]
     #[inline]
     pub const fn from_str_radix(src: &str, radix: u32) -> Result<Self, ParseIntError> {
         assert_range!(radix, 36);
@@ -79,7 +79,7 @@ impl<const N: usize> BIntD8<N> {
             leading_sign = true;
         }
 
-        match BUintD8::from_buf_radix_internal::<true, true>(buf, radix, leading_sign) {
+        match Uint::from_buf_radix_internal::<true, true>(buf, radix, leading_sign) {
             Ok(uint) => {
                 if negative {
                     if uint.bit(Self::BITS - 1) && uint.trailing_zeros() != Self::BITS - 1 {
@@ -113,7 +113,7 @@ impl<const N: usize> BIntD8<N> {
         }
     }
 
-    #[doc = doc::radix::parse_str_radix!(BUintD8)]
+    #[doc = doc::radix::parse_str_radix!(Uint)]
     #[inline]
     pub const fn parse_str_radix(src: &str, radix: u32) -> Self {
         match Self::from_str_radix(src, radix) {
@@ -130,7 +130,7 @@ impl<const N: usize> BIntD8<N> {
     /// This function panics if `radix` is not in the range from 2 to 36 inclusive.
     ///
     /// For examples, see the
-    #[doc = concat!("[`to_str_radix`](crate::", stringify!(BUintD8), "::to_str_radix) method documentation for [`", stringify!(BUintD8), "`](crate::", stringify!(BUintD8), ").")]
+    #[doc = concat!("[`to_str_radix`](crate::", stringify!(Uint), "::to_str_radix) method documentation for [`", stringify!(Uint), "`](crate::", stringify!(Uint), ").")]
     #[inline]
     pub fn to_str_radix(&self, radix: u32) -> String {
         if self.is_negative() {
@@ -148,7 +148,7 @@ impl<const N: usize> BIntD8<N> {
     /// This function panics if `radix` is not in the range from 2 to 256 inclusive.
     ///
     /// For examples, see the
-    #[doc = concat!("[`to_radix_be`](crate::", stringify!(BUintD8), "::to_radix_be) method documentation for [`", stringify!(BUintD8), "`]")]
+    #[doc = concat!("[`to_radix_be`](crate::", stringify!(Uint), "::to_radix_be) method documentation for [`", stringify!(Uint), "`]")]
     #[inline]
     pub fn to_radix_be(&self, radix: u32) -> Vec<u8> {
         self.bits.to_radix_be(radix)
@@ -162,7 +162,7 @@ impl<const N: usize> BIntD8<N> {
     /// This function panics if `radix` is not in the range from 2 to 256 inclusive.
     ///
     /// For examples, see the
-    #[doc = concat!("[`to_radix_le`](crate::", stringify!(BUintD8), "::to_radix_le) method documentation for [`", stringify!(BUintD8), "`](crate::", stringify!(BUintD8), ").")]
+    #[doc = concat!("[`to_radix_le`](crate::", stringify!(Uint), "::to_radix_le) method documentation for [`", stringify!(Uint), "`](crate::", stringify!(Uint), ").")]
     #[inline]
     pub fn to_radix_le(&self, radix: u32) -> Vec<u8> {
         self.bits.to_radix_le(radix)
@@ -174,7 +174,7 @@ mod tests {
     use crate::test::types::*;
     use crate::test::{self, test_bignum};
     #[cfg(feature = "alloc")]
-    use crate::BIntD8;
+    use crate::Int;
 
     test_bignum! {
         function: <itest>::from_str_radix,
@@ -217,14 +217,14 @@ mod tests {
             61, 45, 48, 20, 37, 59, 53, 28, 28, 52, 54, 13, 44, 3, 46, 42, 20, 46, 37, 32, 13, 27,
             47, 30, 33, 25, 3, 32, 4, 54, 53, 6, 44, 25, 10, 22, 33, 48, 7, 17,
         ];
-        let u = BIntD8::<100>::from_radix_le(buf, 64).unwrap();
+        let u = Int::<100>::from_radix_le(buf, 64).unwrap();
         let v = u.to_radix_le(64);
         assert_eq!(v, buf);
 
         let buf = &[
             33, 34, 61, 53, 74, 67, 54, 62, 22, 29, 4, 2, 43, 73, 74, 24, 8, 74, 65, 3, 78,
         ];
-        let option = BIntD8::<100>::from_radix_le(buf, 78);
+        let option = Int::<100>::from_radix_le(buf, 78);
         assert!(option.is_none());
 
         let buf = &[
@@ -232,7 +232,7 @@ mod tests {
             4, 1, 2, 2, 1, 3, 0, 2, 1, 2, 3, 1, 1, 0, 2, 2, 1, 1, 2, 1, 0, 0, 0, 3, 3, 3, 0, 0, 4,
             4, 2,
         ];
-        let u = BIntD8::<100>::from_radix_le(buf, 5).unwrap();
+        let u = Int::<100>::from_radix_le(buf, 5).unwrap();
         let v = u.to_radix_le(5);
         assert_eq!(v, buf);
     }
@@ -244,7 +244,7 @@ mod tests {
             29, 89, 92, 118, 69, 140, 141, 70, 71, 76, 66, 13, 30, 28, 38, 145, 40, 7, 57, 18, 25,
             65, 150, 119, 155, 18, 64, 76, 106, 87,
         ];
-        let u = BIntD8::<100>::from_radix_be(buf, 157).unwrap();
+        let u = Int::<100>::from_radix_be(buf, 157).unwrap();
         let v = u.to_radix_be(157);
         assert_eq!(v, buf);
 
@@ -254,7 +254,7 @@ mod tests {
             0, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0,
             0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1,
         ];
-        let u = BIntD8::<100>::from_radix_be(buf, 2).unwrap();
+        let u = Int::<100>::from_radix_be(buf, 2).unwrap();
         let v = u.to_radix_be(2);
         assert_eq!(v, buf);
 
@@ -262,14 +262,14 @@ mod tests {
             91, 167, 5, 99, 61, 38, 158, 149, 115, 79, 13, 118, 53, 16, 144, 123, 70, 81, 78, 61,
             39, 6, 34, 95, 98, 23, 175, 182,
         ];
-        let option = BIntD8::<100>::from_radix_le(buf, 180);
+        let option = Int::<100>::from_radix_le(buf, 180);
         assert!(option.is_none());
 
         let buf = &[
             39, 90, 119, 93, 95, 7, 70, 81, 3, 100, 39, 107, 98, 31, 61, 5, 36, 19, 18, 124, 4, 77,
             119, 17, 121, 116, 24, 35,
         ];
-        let u = BIntD8::<100>::from_radix_be(buf, 128).unwrap();
+        let u = Int::<100>::from_radix_be(buf, 128).unwrap();
         let v = u.to_radix_be(128);
         assert_eq!(v, buf);
     }
@@ -278,20 +278,20 @@ mod tests {
     #[test]
     fn from_to_str_radix() {
         let src = "-293487598aashkhkhakb8345cbvjkus";
-        let u = BIntD8::<100>::from_str_radix(src, 35).unwrap();
+        let u = Int::<100>::from_str_radix(src, 35).unwrap();
         let v = u.to_str_radix(35);
         assert_eq!(v, src);
 
         let src = "zzzzzzzzzzzzzzzzzzzzzzzzz";
-        let result = BIntD8::<1>::from_str_radix(src, 36);
+        let result = Int::<1>::from_str_radix(src, 36);
         assert!(result.is_err());
 
         let invalid = "inval_id string";
-        let result = BIntD8::<1>::from_str_radix(invalid, 36);
+        let result = Int::<1>::from_str_radix(invalid, 36);
         assert!(result.is_err());
 
         let src = "72954hslfhbui79845y6audfgiu984h5ihhhdfg";
-        let u = BIntD8::<100>::from_str_radix(src, 36).unwrap();
+        let u = Int::<100>::from_str_radix(src, 36).unwrap();
         assert_eq!(u.to_str_radix(36), src);
     }
 
@@ -299,13 +299,13 @@ mod tests {
     #[test]
     fn parse_bytes() {
         let src = "1797972456987acbdead7889";
-        let u = BIntD8::<100>::parse_bytes(src.as_bytes(), 16).unwrap();
-        let v = BIntD8::<100>::from_str_radix(src, 16).unwrap();
+        let u = Int::<100>::parse_bytes(src.as_bytes(), 16).unwrap();
+        let v = Int::<100>::from_str_radix(src, 16).unwrap();
         assert_eq!(u, v);
         assert_eq!(v.to_str_radix(16), src);
 
         let bytes = b"279874657dgfhjh";
-        let option = BIntD8::<100>::parse_bytes(bytes, 11);
+        let option = Int::<100>::parse_bytes(bytes, 11);
         assert!(option.is_none());
     }
 

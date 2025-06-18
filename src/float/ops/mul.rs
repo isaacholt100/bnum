@@ -1,8 +1,8 @@
 use super::Float;
 use crate::float::FloatExponent;
 use crate::float::UnsignedFloatExponent;
-use crate::BIntD8;
-use crate::BUintD8;
+use crate::Int;
+use crate::Uint;
 use crate::ExpType;
 use core::num::FpCategory;
 
@@ -63,26 +63,26 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         let mut mant = match ExpType::try_from(total_shift - 1) {
             Ok(sub) => {
                 if sub > Self::BITS * 2 {
-                    (BUintD8::ZERO, BUintD8::ZERO)
+                    (Uint::ZERO, Uint::ZERO)
                 } else if sub >= Self::BITS {
-                    (mant_prod.1 >> (sub - Self::BITS), BUintD8::ZERO)
+                    (mant_prod.1 >> (sub - Self::BITS), Uint::ZERO)
                 } else {
-                    let mask = BUintD8::MAX >> (Self::BITS - sub);
+                    let mask = Uint::MAX >> (Self::BITS - sub);
                     let carry = mant_prod.1 & mask;
                     mant_prod.1 >>= sub;
                     mant_prod.0 = (mant_prod.0 >> sub) | (carry << (Self::BITS - sub));
                     mant_prod
                 }
             }
-            Err(_) => (BUintD8::ZERO, BUintD8::ZERO),
+            Err(_) => (Uint::ZERO, Uint::ZERO),
         };
         if mant.0.bit(0) {
             if sticky_bit || mant.0.bit(1) {
                 // Round up
-                let (sum, carry) = mant.0.overflowing_add(BUintD8::ONE);
+                let (sum, carry) = mant.0.overflowing_add(Uint::ONE);
                 mant.0 = sum;
                 if carry {
-                    mant.1 += BUintD8::ONE;
+                    mant.1 += Uint::ONE;
                 }
             }
         }
@@ -91,7 +91,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             //mant.1 >>= 1 as ExpType;
             mant.0 >>= 1 as ExpType;
             if carry {
-                mant.0 |= BIntD8::MIN.to_bits();
+                mant.0 |= Int::MIN.to_bits();
             }
         }
 
@@ -123,8 +123,8 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         if exp == 1 && m1b < Self::MB + 1 {
             return Self::from_raw_parts(negative, 0, mant.0);
         }
-        //if mant >> Self::MB != BUintD8::ZERO {
-        mant.0 ^= BUintD8::ONE << Self::MB;
+        //if mant >> Self::MB != Uint::ZERO {
+        mant.0 ^= Uint::ONE << Self::MB;
         //}
         Self::from_raw_parts(negative, exp as UnsignedFloatExponent, mant.0)
     }

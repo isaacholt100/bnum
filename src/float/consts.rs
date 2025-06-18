@@ -1,10 +1,10 @@
 use super::{Float, FloatExponent, UnsignedFloatExponent};
-use crate::buint::BUintD8;
+use crate::buint::Uint;
 use crate::doc;
 
-const fn buint_from_usize<const N: usize>(u: usize) -> BUintD8<N> {
+const fn buint_from_usize<const N: usize>(u: usize) -> Uint<N> {
     const UINT_BITS: usize = <usize>::BITS as usize;
-    let mut out = BUintD8::ZERO;
+    let mut out = Uint::ZERO;
     let mut i = 0;
     while i << crate::digit::BIT_SHIFT < UINT_BITS {
         let d = (u >> (i << crate::digit::BIT_SHIFT)) as u8;
@@ -25,7 +25,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     pub const MANTISSA_DIGITS: u32 = MB as u32 + 1;
 
     #[doc = doc::consts::DIGITS!(F)]
-    pub const DIGITS: u32 = BUintD8::<W>::ONE.wrapping_shl(Self::MB).ilog10() as u32;
+    pub const DIGITS: u32 = Uint::<W>::ONE.wrapping_shl(Self::MB).ilog10() as u32;
 
     pub(crate) const MB_AS_FLOAT_EXP: FloatExponent = Self::MB as FloatExponent;
 
@@ -39,16 +39,16 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
     #[doc = doc::consts::MIN!(F)]
     pub const MIN: Self = {
-        let mut e = BUintD8::MAX;
+        let mut e = Uint::MAX;
         e = e.wrapping_shr(Self::MB + 1);
         e = e.wrapping_shl(Self::MB + 1);
-        let mut m = BUintD8::MAX;
+        let mut m = Uint::MAX;
         m = m.wrapping_shr(Self::EXPONENT_BITS + 1);
         Self::from_bits(e.bitor(m))
     };
 
     #[doc = doc::consts::MIN_POSITIVE!(F)]
-    pub const MIN_POSITIVE: Self = Self::from_bits(BUintD8::ONE.wrapping_shl(Self::MB));
+    pub const MIN_POSITIVE: Self = Self::from_bits(Uint::ONE.wrapping_shl(Self::MB));
 
     pub const MAX_NEGATIVE: Self = Self::MIN_POSITIVE.neg();
 
@@ -72,17 +72,17 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     pub const MAX_10_EXP: Self = todo!();
 
     pub const MAX_SUBNORMAL: Self =
-        Self::from_bits(BUintD8::MAX.wrapping_shr(Self::EXPONENT_BITS + 1));
+        Self::from_bits(Uint::MAX.wrapping_shr(Self::EXPONENT_BITS + 1));
 
     pub const MIN_SUBNORMAL: Self = Self::MAX_SUBNORMAL.neg();
 
-    pub const MIN_POSITIVE_SUBNORMAL: Self = Self::from_bits(BUintD8::ONE);
+    pub const MIN_POSITIVE_SUBNORMAL: Self = Self::from_bits(Uint::ONE);
 
     pub const MAX_NEGATIVE_SUBNORMAL: Self = Self::MIN_POSITIVE_SUBNORMAL.neg();
 
     #[doc = doc::consts::NAN!(F)]
     pub const NAN: Self = {
-        let mut u = BUintD8::MAX;
+        let mut u = Uint::MAX;
         u = u.wrapping_shl(1);
         u = u.wrapping_shr(Self::MB);
         u = u.wrapping_shl(Self::MB - 1);
@@ -91,7 +91,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
     // pub const QNAN: Self = {
     //     let bits = Self::NAN.to_bits();
-    //     Self::from_bits(bits.bitor(BUintD8::ONE.shl(Self::MB - 1)))
+    //     Self::from_bits(bits.bitor(Uint::ONE.shl(Self::MB - 1)))
     // };
 
     pub const NEG_NAN: Self = Self::NAN.neg();
@@ -100,7 +100,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
     #[doc = doc::consts::INFINITY!(F)]
     pub const INFINITY: Self = {
-        let mut u = BUintD8::MAX;
+        let mut u = Uint::MAX;
         u = u.wrapping_shl(1);
         u = u.wrapping_shr(1 + Self::MB);
         u = u.wrapping_shl(Self::MB);
@@ -109,13 +109,13 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
     #[doc = doc::consts::NEG_INFINITY!(F)]
     pub const NEG_INFINITY: Self = {
-        let mut u = BUintD8::MAX;
+        let mut u = Uint::MAX;
         u = u.wrapping_shr(Self::MB);
         u = u.wrapping_shl(Self::MB);
         Self::from_bits(u)
     };
 
-    pub const ZERO: Self = Self::from_bits(BUintD8::ZERO);
+    pub const ZERO: Self = Self::from_bits(Uint::ZERO);
 
     pub const NEG_ZERO: Self = Self::ZERO.neg();
 

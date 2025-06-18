@@ -1,10 +1,10 @@
-use super::BUintD8;
+use super::Uint;
 use crate::doc;
 use crate::ExpType;
 use core::cmp::Ordering;
 
 #[doc = doc::const_trait_fillers::impl_desc!()]
-impl<const N: usize> BUintD8<N> {
+impl<const N: usize> Uint<N> {
     #[inline]
     pub const fn bitand(self, rhs: Self) -> Self {
         let mut out = Self::ZERO;

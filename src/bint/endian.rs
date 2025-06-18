@@ -1,5 +1,5 @@
-use super::BIntD8;
-use crate::{BUintD8, Digit};
+use super::Int;
+use crate::{Uint, Digit};
 
 use crate::digit;
 use crate::doc;
@@ -21,20 +21,20 @@ macro_rules! set_digit {
     };
 }
 
-#[doc = doc::endian::impl_desc!(BIntD8)]
-impl<const N: usize> BIntD8<N> {
+#[doc = doc::endian::impl_desc!(Int)]
+impl<const N: usize> Int<N> {
     #[doc = doc::endian::from_be!(I 256)]
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn from_be(x: Self) -> Self {
-        Self::from_bits(BUintD8::from_be(x.bits))
+        Self::from_bits(Uint::from_be(x.bits))
     }
 
     #[doc = doc::endian::from_le!(I 256)]
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn from_le(x: Self) -> Self {
-        Self::from_bits(BUintD8::from_le(x.bits))
+        Self::from_bits(Uint::from_le(x.bits))
     }
 
     #[doc = doc::endian::to_be!(I 256)]
@@ -58,9 +58,9 @@ impl<const N: usize> BIntD8<N> {
     /// If the length of the slice is longer than `Self::BYTES`, `None` will be returned, unless the bytes represent a non-negative integer and leading zeros from the slice can be removed until the length of the slice equals `Self::BYTES`, or if the bytes represent a negative integer and leading ones from the slice can be removed until the length of the slice equals `Self::BYTES`.
     ///
     /// For examples, see the
-    #[doc = concat!("[`from_be_slice`](crate::", stringify!(BUintD8), "::from_be_slice)")]
+    #[doc = concat!("[`from_be_slice`](crate::", stringify!(Uint), "::from_be_slice)")]
     /// method documentation for
-    #[doc = concat!("[`", stringify!(BUintD8), "`](crate::", stringify!(BUintD8), ").")]
+    #[doc = concat!("[`", stringify!(Uint), "`](crate::", stringify!(Uint), ").")]
     #[must_use = doc::must_use_op!()]
     pub const fn from_be_slice(slice: &[u8]) -> Option<Self> {
         let len = slice.len();
@@ -86,7 +86,7 @@ impl<const N: usize> BIntD8<N> {
         }
         let rem = len & (digit::BYTES as usize - 1);
         if rem == 0 {
-            Some(Self::from_bits(BUintD8::from_digits(out_digits)))
+            Some(Self::from_bits(Uint::from_digits(out_digits)))
         } else {
             let pad_byte = if is_negative { u8::MAX } else { 0 };
             let mut last_digit_bytes = [pad_byte; digit::BYTES as usize];
@@ -97,7 +97,7 @@ impl<const N: usize> BIntD8<N> {
             }
             let digit = Digit::from_be_bytes(last_digit_bytes);
             set_digit!(out_digits, i, digit, is_negative, sign_bits);
-            Some(Self::from_bits(BUintD8::from_digits(out_digits)))
+            Some(Self::from_bits(Uint::from_digits(out_digits)))
         }
     }
 
@@ -108,9 +108,9 @@ impl<const N: usize> BIntD8<N> {
     /// If the length of the slice is longer than `Self::BYTES`, `None` will be returned, unless the bytes represent a non-negative integer and trailing zeros from the slice can be removed until the length of the slice equals `Self::BYTES`, or if the bytes represent a negative integer and trailing ones from the slice can be removed until the length of the slice equals `Self::BYTES`.
     ///
     /// For examples, see the
-    #[doc = concat!("[`from_le_slice`](crate::", stringify!(BUintD8), "::from_le_slice)")]
+    #[doc = concat!("[`from_le_slice`](crate::", stringify!(Uint), "::from_le_slice)")]
     /// method documentation for
-    #[doc = concat!("[`", stringify!(BUintD8), "`](crate::", stringify!(BUintD8), ").")]
+    #[doc = concat!("[`", stringify!(Uint), "`](crate::", stringify!(Uint), ").")]
     #[must_use = doc::must_use_op!()]
     pub const fn from_le_slice(slice: &[u8]) -> Option<Self> {
         let len = slice.len();
@@ -137,7 +137,7 @@ impl<const N: usize> BIntD8<N> {
             i += 1;
         }
         if len & (digit::BYTES as usize - 1) == 0 {
-            Some(Self::from_bits(BUintD8::from_digits(out_digits)))
+            Some(Self::from_bits(Uint::from_digits(out_digits)))
         } else {
             let pad_byte = if is_negative { u8::MAX } else { 0 };
             let mut last_digit_bytes = [pad_byte; digit::BYTES as usize];
@@ -149,7 +149,7 @@ impl<const N: usize> BIntD8<N> {
             }
             let digit = Digit::from_le_bytes(last_digit_bytes);
             set_digit!(out_digits, i, digit, is_negative, sign_bits);
-            Some(Self::from_bits(BUintD8::from_digits(out_digits)))
+            Some(Self::from_bits(Uint::from_digits(out_digits)))
         }
     }
 
@@ -178,21 +178,21 @@ impl<const N: usize> BIntD8<N> {
     #[must_use]
     #[inline]
     pub const fn from_be_bytes(bytes: [u8; N]) -> Self {
-        Self::from_bits(BUintD8::from_be_bytes(bytes))
+        Self::from_bits(Uint::from_be_bytes(bytes))
     }
 
     #[doc = doc::endian::from_le_bytes!(I)]
     #[must_use]
     #[inline]
     pub const fn from_le_bytes(bytes: [u8; N]) -> Self {
-        Self::from_bits(BUintD8::from_le_bytes(bytes))
+        Self::from_bits(Uint::from_le_bytes(bytes))
     }
 
     #[doc = doc::endian::from_ne_bytes!(I)]
     #[must_use]
     #[inline]
     pub const fn from_ne_bytes(bytes: [u8; N]) -> Self {
-        Self::from_bits(BUintD8::from_ne_bytes(bytes))
+        Self::from_bits(Uint::from_ne_bytes(bytes))
     }
 }
 

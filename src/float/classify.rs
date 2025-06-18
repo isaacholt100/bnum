@@ -1,6 +1,6 @@
 use super::Float;
 use crate::doc;
-use crate::BUintD8;
+use crate::Uint;
 use core::num::FpCategory;
 
 type Digit = u8;
@@ -8,7 +8,7 @@ type Digit = u8;
 struct Masks<const W: usize, const MB: usize>;
 
 impl<const W: usize, const MB: usize> Masks<W, MB> {
-    const FINITE_MASK: BUintD8<W> = Float::<W, MB>::INFINITY.to_bits();
+    const FINITE_MASK: Uint<W> = Float::<W, MB>::INFINITY.to_bits();
 }
 
 #[doc = doc::classify::impl_desc!()]

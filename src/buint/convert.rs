@@ -1,19 +1,19 @@
-use super::BUintD8;
+use super::Uint;
 use crate::Digit;
 
 macro_rules! primitive_uint_try_from_into_uint {
     ($($uint: ty), *) => {
         $(
-            impl<const N: usize> TryFrom<BUintD8<N>> for $uint {
+            impl<const N: usize> TryFrom<Uint<N>> for $uint {
                 type Error = TryFromIntError;
 
                 #[inline]
-                fn try_from(uint: BUintD8<N>) -> Result<Self, Self::Error> {
+                fn try_from(uint: Uint<N>) -> Result<Self, Self::Error> {
                     crate::int::convert::uint_try_from_uint(uint)
                 }
             }
 
-            impl<const N: usize> TryFrom<$uint> for BUintD8<N> {
+            impl<const N: usize> TryFrom<$uint> for Uint<N> {
                 type Error = TryFromIntError;
 
                 #[inline]
@@ -30,7 +30,7 @@ primitive_uint_try_from_into_uint!(u8, u16, u32, u64, u128, usize);
 macro_rules! uint_try_from_to_primitive_int {
     ($($int: ty),*) => {
         $(
-            impl<const N: usize> TryFrom<$int> for BUintD8<N> {
+            impl<const N: usize> TryFrom<$int> for Uint<N> {
                 type Error = TryFromIntError;
 
                 #[inline]
@@ -39,11 +39,11 @@ macro_rules! uint_try_from_to_primitive_int {
                 }
             }
 
-            impl<const N: usize> TryFrom<BUintD8<N>> for $int {
+            impl<const N: usize> TryFrom<Uint<N>> for $int {
                 type Error = TryFromIntError;
 
                 #[inline]
-                fn try_from(uint: BUintD8<N>) -> Result<Self, Self::Error> {
+                fn try_from(uint: Uint<N>) -> Result<Self, Self::Error> {
                     crate::int::convert::int_try_from_uint(uint)
                 }
             }
@@ -52,10 +52,10 @@ macro_rules! uint_try_from_to_primitive_int {
 }
 uint_try_from_to_primitive_int!(i8, i16, i32, i64, i128, isize);
 
-impl<const N: usize, const M: usize> BTryFrom<BUintD8<M>> for BUintD8<N> {
+impl<const N: usize, const M: usize> BTryFrom<Uint<M>> for Uint<N> {
     type Error = TryFromIntError;
 
-    fn try_from(from: BUintD8<M>) -> Result<Self, Self::Error> {
+    fn try_from(from: Uint<M>) -> Result<Self, Self::Error> {
         crate::int::convert::uint_try_from_uint(from)
     }
 }
@@ -63,7 +63,7 @@ impl<const N: usize, const M: usize> BTryFrom<BUintD8<M>> for BUintD8<N> {
 use crate::cast::CastFrom;
 use crate::errors::TryFromIntError;
 
-impl<const N: usize> From<bool> for BUintD8<N> {
+impl<const N: usize> From<bool> for Uint<N> {
     #[inline]
     fn from(small: bool) -> Self {
         Self::cast_from(small)
@@ -71,7 +71,7 @@ impl<const N: usize> From<bool> for BUintD8<N> {
 }
 
 // TODO: make this TryFrom instead
-impl<const N: usize> From<char> for BUintD8<N> {
+impl<const N: usize> From<char> for Uint<N> {
     #[inline]
     fn from(c: char) -> Self {
         Self::cast_from(c)
@@ -80,16 +80,16 @@ impl<const N: usize> From<char> for BUintD8<N> {
 
 use crate::BTryFrom;
 
-impl<const N: usize> From<[Digit; N]> for BUintD8<N> {
+impl<const N: usize> From<[Digit; N]> for Uint<N> {
     #[inline]
     fn from(digits: [Digit; N]) -> Self {
         Self::from_digits(digits)
     }
 }
 
-impl<const N: usize> From<BUintD8<N>> for [Digit; N] {
+impl<const N: usize> From<Uint<N>> for [Digit; N] {
     #[inline]
-    fn from(uint: BUintD8<N>) -> Self {
+    fn from(uint: Uint<N>) -> Self {
         uint.digits
     }
 }

@@ -1,22 +1,22 @@
-use super::BUintD8;
+use super::Uint;
 use crate::doc;
 use crate::ExpType;
 
 #[doc = doc::saturating::impl_desc!()]
-impl<const N: usize> BUintD8<N> {
+impl<const N: usize> Uint<N> {
     #[inline]
-    const fn saturate_up((int, overflow): (BUintD8<N>, bool)) -> BUintD8<N> {
+    const fn saturate_up((int, overflow): (Uint<N>, bool)) -> Uint<N> {
         if overflow {
-            BUintD8::MAX
+            Uint::MAX
         } else {
             int
         }
     }
 
     #[inline]
-    const fn saturate_down((int, overflow): (BUintD8<N>, bool)) -> BUintD8<N> {
+    const fn saturate_down((int, overflow): (Uint<N>, bool)) -> Uint<N> {
         if overflow {
-            BUintD8::MIN
+            Uint::MIN
         } else {
             int
         }
@@ -33,7 +33,7 @@ impl<const N: usize> BUintD8<N> {
     #[doc = doc::saturating::saturating_add_signed!(U)]
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn saturating_add_signed(self, rhs: crate::BIntD8<N>) -> Self {
+    pub const fn saturating_add_signed(self, rhs: crate::Int<N>) -> Self {
         if rhs.is_negative() {
             Self::saturate_down(self.overflowing_add_signed(rhs))
         } else {

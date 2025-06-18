@@ -3,13 +3,13 @@ impl super::F32 {
     #[inline]
     pub fn recip(self) -> Self {
         /*let (_, e, m) = self.into_biased_parts();
-        let normalised = Self::from_raw_parts(self.is_sign_negative(), Self::EXP_BIAS.to_bits() - BUintD8::ONE, m);
+        let normalised = Self::from_raw_parts(self.is_sign_negative(), Self::EXP_BIAS.to_bits() - Uint::ONE, m);
         println!("norm: {}", normalised.to_f64());
         let r = normalised.recip_internal();
         let e = self.exponent() - Self::EXP_BIAS;
         //println!("{}", e);
         let e = (-e) + Self::EXP_BIAS;
-        Self::from_raw_parts(self.is_sign_negative(), e.to_bits() - BUintD8::ONE, r.into_biased_parts().2)*/
+        Self::from_raw_parts(self.is_sign_negative(), e.to_bits() - Uint::ONE, r.into_biased_parts().2)*/
         self.recip_internal()
     }
 
@@ -24,15 +24,15 @@ impl super::F32 {
         // = x_n + (x_n - b x_n^2)
         // = x_n (2 - b x_n)
         let (_, e, m) = self.into_signed_parts();
-        let inv_e = (-e + Self::EXP_BIAS).to_bits() - BUintD8::ONE;
+        let inv_e = (-e + Self::EXP_BIAS).to_bits() - Uint::ONE;
         //println!("{}", e);
-        let normalised = Self::from_raw_parts(false, Self::EXP_BIAS.to_bits() - BUintD8::ONE, m);
+        let normalised = Self::from_raw_parts(false, Self::EXP_BIAS.to_bits() - Uint::ONE, m);
         if normalised == Self::ONE {
-            return Self::from_raw_parts(self.is_sign_negative(), inv_e + 1, BUintD8::ZERO);
+            return Self::from_raw_parts(self.is_sign_negative(), inv_e + 1, Uint::ZERO);
         }
         //println!("norm init: {:064b}", normalised.to_bits());
         let mut x_n = Self::from_bits(
-            (normalised * Self::HALF).to_bits() ^ (BUintD8::MAX >> (Self::BITS - Self::MB)),
+            (normalised * Self::HALF).to_bits() ^ (Uint::MAX >> (Self::BITS - Self::MB)),
         );
 
         let mut m_n = x_n.into_biased_parts().2 << 1;
@@ -67,7 +67,7 @@ impl super::F32 {
                 //println!("norm: {:064b}", x_n_1.to_bits());
                 let mut m = x_n_1.into_biased_parts().2;
                 if m.bit(Self::MB) {
-                    m ^= BUintD8::ONE << Self::MB;
+                    m ^= Uint::ONE << Self::MB;
                 }
                 let unnormalised = Self::from_raw_parts(self.is_sign_negative(), inv_e, m);
                 // println!("iters: {}", iters);

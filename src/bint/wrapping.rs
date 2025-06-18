@@ -1,10 +1,10 @@
-use super::BIntD8;
-use crate::BUintD8;
+use super::Int;
+use crate::Uint;
 
 use crate::{doc, ExpType};
 
 #[doc = doc::wrapping::impl_desc!()]
-impl<const N: usize> BIntD8<N> {
+impl<const N: usize> Int<N> {
     #[doc = doc::wrapping::wrapping_add!(I)]
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -15,7 +15,7 @@ impl<const N: usize> BIntD8<N> {
     #[doc = doc::wrapping::wrapping_add_unsigned!(I)]
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn wrapping_add_unsigned(self, rhs: BUintD8<N>) -> Self {
+    pub const fn wrapping_add_unsigned(self, rhs: Uint<N>) -> Self {
         self.overflowing_add_unsigned(rhs).0
     }
 
@@ -29,7 +29,7 @@ impl<const N: usize> BIntD8<N> {
     #[doc = doc::wrapping::wrapping_sub_unsigned!(I)]
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn wrapping_sub_unsigned(self, rhs: BUintD8<N>) -> Self {
+    pub const fn wrapping_sub_unsigned(self, rhs: Uint<N>) -> Self {
         self.overflowing_sub_unsigned(rhs).0
     }
 

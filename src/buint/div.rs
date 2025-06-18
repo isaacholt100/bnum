@@ -1,8 +1,8 @@
-use super::BUintD8;
+use super::Uint;
 use crate::ExpType;
 use crate::{digit, Digit};
 
-impl<const N: usize> BUintD8<N> {
+impl<const N: usize> Uint<N> {
     pub(crate) const fn basecase_div_rem(self, mut v: Self, n: usize) -> (Self, Self) {
         // TODO: can use u128
         // The Art of Computer Programming Volume 2 by Donald Knuth, Section 4.3.1, Algorithm D
@@ -25,8 +25,8 @@ impl<const N: usize> BUintD8<N> {
                     self.rest[index - 1]
                 }
             }
-            const fn shr(self, shift: ExpType) -> BUintD8<M> {
-                let mut out = BUintD8::ZERO;
+            const fn shr(self, shift: ExpType) -> Uint<M> {
+                let mut out = Uint::ZERO;
                 let mut i = 0;
                 while i < M {
                     out.digits[i] = self.digit(i) >> shift;
@@ -41,7 +41,7 @@ impl<const N: usize> BUintD8<N> {
                 }
                 out
             }
-            const fn new(uint: BUintD8<M>, shift: ExpType) -> Self {
+            const fn new(uint: Uint<M>, shift: ExpType) -> Self {
                 let first = uint.digits[0] << shift;
                 let rest = uint.wrapping_shr(digit::BITS - shift);
                 Self {
@@ -68,7 +68,7 @@ impl<const N: usize> BUintD8<N> {
                     }
                     borrow
                 }
-                const fn add(&mut self, rhs: BUintD8<M>, start: usize, range: usize) -> () {
+                const fn add(&mut self, rhs: Uint<M>, start: usize, range: usize) -> () {
                     let mut carry = false;
                     let mut i = 0;
                     while i < range {
@@ -98,7 +98,7 @@ impl<const N: usize> BUintD8<N> {
                 }
                 (self, borrow)
             }
-            const fn add(mut self, rhs: BUintD8<M>, start: usize, range: usize) -> Self {
+            const fn add(mut self, rhs: Uint<M>, start: usize, range: usize) -> Self {
                 let mut carry = false;
                 let mut i = 0;
                 while i < range {
@@ -129,7 +129,7 @@ impl<const N: usize> BUintD8<N> {
             rest: [Digit; M],
         }
         impl<const M: usize> Mul<M> {
-            const fn new(uint: BUintD8<M>, rhs: Digit) -> Self {
+            const fn new(uint: Uint<M>, rhs: Digit) -> Self {
                 let mut rest = [0; M];
                 let mut carry: Digit = 0;
                 let mut i = 0;

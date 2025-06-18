@@ -1,4 +1,4 @@
-use super::BUintD8;
+use super::Uint;
 use crate::Digit;
 
 macro_rules! to_int {
@@ -62,7 +62,7 @@ use crate::cast::CastFrom;
 use crate::helpers::Bits;
 use crate::int::numtraits::num_trait_impl;
 
-crate::int::numtraits::impls!(BUintD8);
+crate::int::numtraits::impls!(Uint);
 
 macro_rules! from_float {
     ($method: ident, $float: ty, $decoder: ident, $mant_bits: ident) => {
@@ -106,11 +106,11 @@ macro_rules! from_float {
     };
 }
 
-impl<const N: usize> FromPrimitive for BUintD8<N> {
+impl<const N: usize> FromPrimitive for Uint<N> {
     #[inline]
     fn from_u64(int: u64) -> Option<Self> {
         const UINT_BITS: usize = u64::BITS as usize;
-        let mut out = BUintD8::ZERO;
+        let mut out = Uint::ZERO;
         let mut i = 0;
         while i << crate::digit::BIT_SHIFT < UINT_BITS {
             let d = (int >> (i << crate::digit::BIT_SHIFT)) as Digit;
@@ -137,7 +137,7 @@ impl<const N: usize> FromPrimitive for BUintD8<N> {
     #[inline]
     fn from_u128(int: u128) -> Option<Self> {
         const UINT_BITS: usize = u128::BITS as usize;
-        let mut out = BUintD8::ZERO;
+        let mut out = Uint::ZERO;
         let mut i = 0;
         while i << crate::digit::BIT_SHIFT < UINT_BITS {
             let d = (int >> (i << crate::digit::BIT_SHIFT)) as Digit;
@@ -166,7 +166,7 @@ impl<const N: usize> FromPrimitive for BUintD8<N> {
     from_float!(from_f64, f64, decode_f64, u64_bits);
 }
 
-impl<const N: usize> Integer for BUintD8<N> {
+impl<const N: usize> Integer for Uint<N> {
     #[inline]
     fn div_floor(&self, other: &Self) -> Self {
         *self / *other
@@ -251,7 +251,7 @@ impl<const N: usize> Integer for BUintD8<N> {
     }
 }
 
-impl<const N: usize> PrimInt for BUintD8<N> {
+impl<const N: usize> PrimInt for Uint<N> {
     crate::int::numtraits::prim_int_methods!();
 
     #[inline]
@@ -293,7 +293,7 @@ Copyright (c) 2014 The Rust Project Developers
 The original license file and copyright notice for `num_bigint` can be found in this project's root at licenses/LICENSE-num-bigint.
 */
 
-impl<const N: usize> BUintD8<N> {
+impl<const N: usize> Uint<N> {
     #[inline]
     fn fixpoint<F>(mut self, max_bits: ExpType, f: F) -> Self
     where
@@ -316,7 +316,7 @@ impl<const N: usize> BUintD8<N> {
     }
 }
 
-impl<const N: usize> Roots for BUintD8<N> {
+impl<const N: usize> Roots for Uint<N> {
     #[inline]
     fn sqrt(&self) -> Self {
         if self.is_zero() || self.is_one() {
@@ -399,7 +399,7 @@ impl<const N: usize> Roots for BUintD8<N> {
     }
 }
 
-impl<const N: usize> ToPrimitive for BUintD8<N> {
+impl<const N: usize> ToPrimitive for Uint<N> {
     to_int! {
         to_u8 -> u8,
         to_u16 -> u16,
@@ -427,7 +427,7 @@ impl<const N: usize> ToPrimitive for BUintD8<N> {
     }
 }
 
-impl<const N: usize> Unsigned for BUintD8<N> {}
+impl<const N: usize> Unsigned for Uint<N> {}
 
 #[cfg(test)]
 mod tests {

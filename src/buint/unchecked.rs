@@ -1,7 +1,7 @@
-use super::BUintD8;
+use super::Uint;
 
 #[doc = doc::unchecked::impl_desc!()]
-impl<const N: usize> BUintD8<N> {
+impl<const N: usize> Uint<N> {
     crate::int::unchecked::impls!(U);
 }
 

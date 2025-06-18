@@ -1,10 +1,10 @@
-use super::BIntD8;
-use crate::BUintD8;
+use super::Int;
+use crate::Uint;
 
 use crate::{doc, ExpType};
 
 #[doc = doc::overflowing::impl_desc!()]
-impl<const N: usize> BIntD8<N> {
+impl<const N: usize> Int<N> {
     #[doc = doc::overflowing::overflowing_add!(I)]
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -21,7 +21,7 @@ impl<const N: usize> BIntD8<N> {
     #[doc = doc::overflowing::overflowing_add_unsigned!(I)]
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn overflowing_add_unsigned(self, rhs: BUintD8<N>) -> (Self, bool) {
+    pub const fn overflowing_add_unsigned(self, rhs: Uint<N>) -> (Self, bool) {
         let rhs = Self::from_bits(rhs);
         let (sum, overflow) = self.overflowing_add(rhs);
         (sum, rhs.is_negative() != overflow)
@@ -43,7 +43,7 @@ impl<const N: usize> BIntD8<N> {
     #[doc = doc::overflowing::overflowing_sub_unsigned!(I)]
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn overflowing_sub_unsigned(self, rhs: BUintD8<N>) -> (Self, bool) {
+    pub const fn overflowing_sub_unsigned(self, rhs: Uint<N>) -> (Self, bool) {
         let rhs = Self::from_bits(rhs);
         let (sum, overflow) = self.overflowing_sub(rhs);
         (sum, rhs.is_negative() != overflow)

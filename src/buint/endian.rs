@@ -1,10 +1,10 @@
-use super::BUintD8;
+use super::Uint;
 use crate::doc;
 use crate::{digit, Digit};
 // use core::mem::MaybeUninit;
 
-#[doc = doc::endian::impl_desc!(BUintD8)]
-impl<const N: usize> BUintD8<N> {
+#[doc = doc::endian::impl_desc!(Uint)]
+impl<const N: usize> Uint<N> {
     #[doc = doc::endian::from_be!(U 256)]
     #[must_use]
     #[inline]

@@ -9,7 +9,7 @@ use rand::prelude::*;
 mod unzip;
 use unzip::unzip2;
 
-type U128 = bnum::BUintD8::<16>;
+type U128 = bnum::Uint::<16>;
 
 // use super::unzip2;
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};

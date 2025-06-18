@@ -1,9 +1,9 @@
-use super::BUintD8;
+use super::Uint;
 use crate::ExpType;
 use crate::{doc, errors};
 
 #[doc = doc::wrapping::impl_desc!()]
-impl<const N: usize> BUintD8<N> {
+impl<const N: usize> Uint<N> {
     #[doc = doc::wrapping::wrapping_add!(U)]
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -15,7 +15,7 @@ impl<const N: usize> BUintD8<N> {
     #[doc = doc::wrapping::wrapping_add_signed!(U)]
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn wrapping_add_signed(self, rhs: crate::BIntD8<N>) -> Self {
+    pub const fn wrapping_add_signed(self, rhs: crate::Int<N>) -> Self {
         self.overflowing_add_signed(rhs).0
     }
 

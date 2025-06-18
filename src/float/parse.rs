@@ -1,4 +1,4 @@
-use crate::BUintD8;
+use crate::Uint;
 use crate::ExpType;
 use crate::cast::{As, CastFrom};
 use super::Float;

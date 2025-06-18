@@ -2,5 +2,5 @@
 
 pub use crate::cast::{As, CastFrom};
 #[cfg(feature = "signed")]
-pub use crate::BIntD8;
-pub use crate::BUintD8;
+pub use crate::Int;
+pub use crate::Uint;

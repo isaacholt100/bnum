@@ -1,12 +1,12 @@
-use super::BIntD8;
-use crate::BUintD8;
+use super::Int;
+use crate::Uint;
 
 use crate::doc;
 use crate::ExpType;
 use core::cmp::Ordering;
 
 #[doc = doc::const_trait_fillers::impl_desc!()]
-impl<const N: usize> BIntD8<N> {
+impl<const N: usize> Int<N> {
     #[inline]
     pub const fn bitand(self, rhs: Self) -> Self {
         Self::from_bits(self.bits.bitand(rhs.bits))
@@ -29,7 +29,7 @@ impl<const N: usize> BIntD8<N> {
 
     #[inline]
     pub const fn eq(&self, other: &Self) -> bool {
-        BUintD8::eq(&self.bits, &other.bits)
+        Uint::eq(&self.bits, &other.bits)
     }
 
     #[inline]
@@ -45,7 +45,7 @@ impl<const N: usize> BIntD8<N> {
         // Don't use match here as `cmp` is not yet const for primitive integers
         #[allow(clippy::comparison_chain)]
         if s1 == s2 {
-            BUintD8::cmp(&self.bits, &other.bits)
+            Uint::cmp(&self.bits, &other.bits)
         } else if s1 > s2 {
             Ordering::Greater
         } else {

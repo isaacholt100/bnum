@@ -1,10 +1,10 @@
 use super::{Float, FloatExponent, UnsignedFloatExponent};
 use crate::cast::float::ConvertFloatParts;
-use crate::{BIntD8, BUintD8, ExpType};
+use crate::{Int, Uint, ExpType};
 
 type Digit = u8;
 
-impl<const W: usize> BUintD8<W> {
+impl<const W: usize> Uint<W> {
     #[inline]
     pub(crate) const fn is_even(&self) -> bool {
         self.digits[0] & 1 == 0
@@ -18,18 +18,18 @@ impl<const W: usize> BUintD8<W> {
 
 impl<const W: usize, const MB: usize> Float<W, MB> {
     #[inline(always)]
-    pub const fn to_bits(self) -> BUintD8<W> {
+    pub const fn to_bits(self) -> Uint<W> {
         self.bits
     }
 
     #[inline(always)]
-    pub const fn from_bits(v: BUintD8<W>) -> Self {
+    pub const fn from_bits(v: Uint<W>) -> Self {
         Self { bits: v }
     }
 
     #[inline(always)]
     pub(crate) const fn from_words(words: [Digit; W]) -> Self {
-        Self::from_bits(BUintD8::from_digits(words))
+        Self::from_bits(Uint::from_digits(words))
     }
 
     #[inline(always)]
@@ -38,13 +38,13 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     }
 
     #[inline(always)]
-    pub(crate) const fn to_signed_bits(self) -> BIntD8<W> {
-        BIntD8::from_bits(self.to_bits())
+    pub(crate) const fn to_signed_bits(self) -> Int<W> {
+        Int::from_bits(self.to_bits())
     }
 }
 
 impl<const W: usize, const MB: usize> ConvertFloatParts for Float<W, MB> {
-    type Mantissa = BUintD8<W>;
+    type Mantissa = Uint<W>;
     type SignedExp = FloatExponent;
     type UnsignedExp = UnsignedFloatExponent;
 
@@ -126,7 +126,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
     // split into sign, exponent and mantissa
     #[inline]
-    pub(crate) const fn into_raw_parts(self) -> (bool, UnsignedFloatExponent, BUintD8<W>) {
+    pub(crate) const fn into_raw_parts(self) -> (bool, UnsignedFloatExponent, Uint<W>) {
         let sign = self.is_sign_negative();
         let exp = self.bits.bitand(Self::SIGN_MASK).shr(Self::MB);
         let mant = self.bits.bitand(Self::MANTISSA_MASK);
@@ -139,10 +139,10 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     pub(crate) const fn from_raw_parts(
         sign: bool,
         exponent: UnsignedFloatExponent,
-        mantissa: BUintD8<W>,
+        mantissa: Uint<W>,
     ) -> Self {
         debug_assert!(mantissa.bits() <= Self::MB);
-        let mut bits = BUintD8::cast_from_unsigned_float_exponent(exponent)
+        let mut bits = Uint::cast_from_unsigned_float_exponent(exponent)
             .shl(Self::MB)
             .bitor(mantissa);
         if sign {
@@ -153,7 +153,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
     /// split into sign, exponent and mantissa and adjust to reflect actual numerical represenation, but without taking exponent bias into account
     #[inline]
-    pub(crate) const fn into_biased_parts(self) -> (bool, UnsignedFloatExponent, BUintD8<W>) {
+    pub(crate) const fn into_biased_parts(self) -> (bool, UnsignedFloatExponent, Uint<W>) {
         let (sign, exp, mant) = self.into_raw_parts();
         if exp == 0 {
             (sign, 1, mant)
@@ -170,7 +170,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     pub(crate) const fn from_biased_parts(
         sign: bool,
         mut exponent: UnsignedFloatExponent,
-        mut mantissa: BUintD8<W>,
+        mut mantissa: Uint<W>,
     ) -> Self {
         debug_assert!(exponent != 0); // exponent should not be zero as should be 1 for subnormal numbers
         if mantissa.bit(Self::MB) {
@@ -184,7 +184,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     }
 
     #[inline]
-    pub(crate) const fn into_signed_biased_parts(self) -> (bool, i128, BUintD8<W>) {
+    pub(crate) const fn into_signed_biased_parts(self) -> (bool, i128, Uint<W>) {
         let (sign, exp, mant) = self.into_biased_parts();
         (sign, exp as i128, mant)
     }
@@ -193,7 +193,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     pub(crate) const fn from_signed_biased_parts(
         sign: bool,
         exponent: FloatExponent,
-        mantissa: BUintD8<W>,
+        mantissa: Uint<W>,
     ) -> Self {
         debug_assert!(!exponent.is_negative());
         let exponent = exponent as UnsignedFloatExponent;
@@ -201,7 +201,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     }
 
     #[inline]
-    pub(crate) const fn into_signed_parts(self) -> (bool, FloatExponent, BUintD8<W>) {
+    pub(crate) const fn into_signed_parts(self) -> (bool, FloatExponent, Uint<W>) {
         let (sign, exp, mant) = self.into_signed_biased_parts();
         (sign, exp - Self::EXP_BIAS, mant)
     }
@@ -210,7 +210,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     pub(crate) const fn from_signed_parts(
         sign: bool,
         exponent: FloatExponent,
-        mantissa: BUintD8<W>,
+        mantissa: Uint<W>,
     ) -> Self {
         let exponent = exponent + Self::EXP_BIAS;
         Self::from_signed_biased_parts(sign, exponent, mantissa)
@@ -218,7 +218,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
     /// mantissa is normalised so that it is always of the form 1.*...*
     #[inline]
-    pub(crate) const fn into_normalised_signed_parts(self) -> (bool, FloatExponent, BUintD8<W>) {
+    pub(crate) const fn into_normalised_signed_parts(self) -> (bool, FloatExponent, Uint<W>) {
         let (sign, exp, mant) = self.into_signed_parts();
         let shift = Self::MB + 1 - mant.bits();
         if shift == 0 {
@@ -235,20 +235,20 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     #[inline]
     pub(crate) const fn round_exponent_mantissa<const TIES_EVEN: bool>(
         mut exponent: FloatExponent,
-        mantissa: BUintD8<W>,
+        mantissa: Uint<W>,
         shift: ExpType,
-    ) -> (FloatExponent, BUintD8<W>) {
+    ) -> (FloatExponent, Uint<W>) {
         // we allow current_width to be specified so that we don't have to recompute mantissa.bits() if already known
         let mut shifted_mantissa = unsafe { mantissa.unchecked_shr_pad_internal::<false>(shift) };
         if !TIES_EVEN {
             return (exponent, shifted_mantissa); // if not TIES_EVEN, then we truncate
         }
-        let discarded_shifted_bits = mantissa.bitand(BUintD8::MAX.shr(Self::BITS - shift));
+        let discarded_shifted_bits = mantissa.bitand(Uint::MAX.shr(Self::BITS - shift));
         if discarded_shifted_bits.bit(shift - 1) {
             // in this case, the discarded portion is at least a half
             if shifted_mantissa.is_odd() || !discarded_shifted_bits.is_power_of_two() {
                 // in this case, ties to even says we round up. checking if not a power of two tells us that there is at least one bit set to 1 (after the most significant bit set to 1). we check in this order as is_odd is O(1) whereas is_power_of_two is O(N)
-                shifted_mantissa = shifted_mantissa.add(BUintD8::ONE);
+                shifted_mantissa = shifted_mantissa.add(Uint::ONE);
                 if shifted_mantissa.bit(shift) {
                     // check for overflow (with respect to the mantissa bit width)
                     exponent += 1;
@@ -264,7 +264,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     pub(crate) const fn from_normalised_signed_parts(
         sign: bool,
         exponent: FloatExponent,
-        mantissa: BUintD8<W>,
+        mantissa: Uint<W>,
     ) -> Self {
         debug_assert!(mantissa.is_zero() || mantissa.bits() == Self::MB + 1);
 

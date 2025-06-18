@@ -210,7 +210,7 @@ macro_rules! all_shift_impls {
 
         crate::int::ops::shift_self_impl!(
             $Struct;
-            Shl<BUintD8>,
+            Shl<Uint>,
             shl,
             ShlAssign,
             shl_assign,
@@ -219,7 +219,7 @@ macro_rules! all_shift_impls {
 
         crate::int::ops::shift_self_impl!(
             $Struct;
-            Shr<BUintD8>,
+            Shr<Uint>,
             shr,
             ShrAssign,
             shr_assign,
@@ -229,7 +229,7 @@ macro_rules! all_shift_impls {
         #[cfg(feature = "signed")]
         crate::int::ops::shift_self_impl!(
             $Struct;
-            Shl<BIntD8>,
+            Shl<Int>,
             shl,
             ShlAssign,
             shl_assign,
@@ -239,7 +239,7 @@ macro_rules! all_shift_impls {
         #[cfg(feature = "signed")]
         crate::int::ops::shift_self_impl!(
             $Struct;
-            Shr<BIntD8>,
+            Shr<Int>,
             shr,
             ShrAssign,
             shr_assign,

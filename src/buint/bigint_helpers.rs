@@ -1,9 +1,9 @@
-use super::BUintD8;
+use super::Uint;
 use crate::doc;
 use crate::{digit, Digit};
 
 #[doc = doc::bigint_helpers::impl_desc!()]
-impl<const N: usize> BUintD8<N> {
+impl<const N: usize> Uint<N> {
     crate::int::bigint_helpers::impls!(U);
 
     #[doc = doc::bigint_helpers::widening_mul!(U)]

@@ -1,7 +1,7 @@
-use super::BIntD8;
+use super::Int;
 
 #[doc = doc::bigint_helpers::impl_desc!()]
-impl<const N: usize> BIntD8<N> {
+impl<const N: usize> Int<N> {
     crate::int::bigint_helpers::impls!(I);
 }
 

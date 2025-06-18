@@ -1,4 +1,4 @@
-use super::BUintD8;
+use super::Uint;
 use crate::Digit;
 use crate::ExpType;
 use core::ops::{
@@ -7,7 +7,7 @@ use core::ops::{
 };
 
 // TODO: mark that this has been removed
-// impl<const N: usize> Add<Digit> for BUintD8<N> {
+// impl<const N: usize> Add<Digit> for Uint<N> {
 //     type Output = Self;
 
 //     #[inline]
@@ -27,7 +27,7 @@ use core::ops::{
 //     }
 // }
 
-impl<const N: usize> BitAnd for BUintD8<N> {
+impl<const N: usize> BitAnd for Uint<N> {
     type Output = Self;
 
     #[inline]
@@ -36,7 +36,7 @@ impl<const N: usize> BitAnd for BUintD8<N> {
     }
 }
 
-impl<const N: usize> BitOr for BUintD8<N> {
+impl<const N: usize> BitOr for Uint<N> {
     type Output = Self;
 
     #[inline]
@@ -45,7 +45,7 @@ impl<const N: usize> BitOr for BUintD8<N> {
     }
 }
 
-impl<const N: usize> BitXor for BUintD8<N> {
+impl<const N: usize> BitXor for Uint<N> {
     type Output = Self;
 
     #[inline]
@@ -54,7 +54,7 @@ impl<const N: usize> BitXor for BUintD8<N> {
     }
 }
 
-impl<const N: usize> Div for BUintD8<N> {
+impl<const N: usize> Div for Uint<N> {
     type Output = Self;
 
     #[inline]
@@ -63,7 +63,7 @@ impl<const N: usize> Div for BUintD8<N> {
     }
 }
 
-impl<const N: usize> Div<Digit> for BUintD8<N> {
+impl<const N: usize> Div<Digit> for Uint<N> {
     type Output = Self;
 
     #[inline]
@@ -72,7 +72,7 @@ impl<const N: usize> Div<Digit> for BUintD8<N> {
     }
 }
 
-impl<const N: usize> Not for BUintD8<N> {
+impl<const N: usize> Not for Uint<N> {
     type Output = Self;
 
     #[inline]
@@ -81,7 +81,7 @@ impl<const N: usize> Not for BUintD8<N> {
     }
 }
 
-impl<const N: usize> Rem for BUintD8<N> {
+impl<const N: usize> Rem for Uint<N> {
     type Output = Self;
 
     #[inline]
@@ -90,7 +90,7 @@ impl<const N: usize> Rem for BUintD8<N> {
     }
 }
 
-impl<const N: usize> Rem<Digit> for BUintD8<N> {
+impl<const N: usize> Rem<Digit> for Uint<N> {
     type Output = Digit;
 
     #[inline]
@@ -100,9 +100,9 @@ impl<const N: usize> Rem<Digit> for BUintD8<N> {
 }
 
 #[cfg(feature = "signed")]
-use crate::BIntD8;
+use crate::Int;
 
-crate::int::ops::impls!(BUintD8);
+crate::int::ops::impls!(Uint);
 
 #[cfg(test)]
 mod tests {

@@ -1,4 +1,4 @@
-use crate::{cast::CastFrom, errors::TryFromIntError, BUintD8, ExpType};
+use crate::{cast::CastFrom, errors::TryFromIntError, Uint, ExpType};
 
 pub trait IntConvertHelper {
     const BITS: ExpType;
@@ -12,7 +12,7 @@ pub trait SignedIntConvertHelper: IntConvertHelper {
     fn leading_ones_at_least_threshold(&self, threshold: ExpType) -> bool;
 }
 
-impl<const N: usize> IntConvertHelper for BUintD8<N> {
+impl<const N: usize> IntConvertHelper for Uint<N> {
     const BITS: ExpType = Self::BITS;
 
     #[inline]
@@ -22,17 +22,17 @@ impl<const N: usize> IntConvertHelper for BUintD8<N> {
 }
 
 #[cfg(feature = "signed")]
-impl<const N: usize> IntConvertHelper for crate::BIntD8<N> {
+impl<const N: usize> IntConvertHelper for crate::Int<N> {
     const BITS: ExpType = Self::BITS;
 
     #[inline]
     fn leading_zeros_at_least_threshold(&self, threshold: ExpType) -> bool {
-        BUintD8::leading_zeros_at_least_threshold(&self.bits, threshold)
+        Uint::leading_zeros_at_least_threshold(&self.bits, threshold)
     }
 }
 
 #[cfg(feature = "signed")]
-impl<const N: usize> SignedIntConvertHelper for crate::BIntD8<N> {
+impl<const N: usize> SignedIntConvertHelper for crate::Int<N> {
     #[inline]
     fn is_negative(&self) -> bool {
         use crate::digit::SignedDigit;

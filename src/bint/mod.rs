@@ -1,4 +1,4 @@
-use crate::BUintD8;
+use crate::Uint;
 
 macro_rules! ilog {
     ($method: ident $(, $base: ident : $ty: ty)?) => {
@@ -38,14 +38,14 @@ use core::default::Default;
 use core::iter::{Iterator, Product, Sum};
 
 /// Big signed integer type, of fixed size which must be known at compile time. Stored as a
-#[doc = concat!(" [`", stringify!(BUintD8), "`].")]
+#[doc = concat!(" [`", stringify!(Uint), "`].")]
 ///
 /// Digits of the underlying
-#[doc = concat!("[`", stringify!(BUintD8), "`](crate::", stringify!(BUintD8), ")")]
+#[doc = concat!("[`", stringify!(Uint), "`](crate::", stringify!(Uint), ")")]
 /// are stored in little endian (least significant digit first). This integer type aims to exactly replicate the behaviours of Rust's built-in signed integer types: [`i8`], [`i16`], [`i32`], [`i64`], [`i128`] and [`isize`]. The const generic parameter `N` is the number of digits that are stored in the underlying
-#[doc = concat!("[`", stringify!(BUintD8), "`].")]
+#[doc = concat!("[`", stringify!(Uint), "`].")]
 ///
-#[doc = doc::arithmetic_doc!(BIntD8)]
+#[doc = doc::arithmetic_doc!(Int)]
 #[derive(Clone, Copy, Hash, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
@@ -55,14 +55,14 @@ use core::iter::{Iterator, Product, Sum};
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[cfg_attr(feature = "valuable", derive(valuable::Valuable))]
 #[repr(transparent)]
-pub struct BIntD8<const N: usize> {
-    pub(crate) bits: BUintD8<N>,
+pub struct Int<const N: usize> {
+    pub(crate) bits: Uint<N>,
 }
 
 #[cfg(feature = "zeroize")]
-impl<const N: usize> zeroize::DefaultIsZeroes for BIntD8<N> {}
+impl<const N: usize> zeroize::DefaultIsZeroes for Int<N> {}
 
-impl<const N: usize> BIntD8<N> {
+impl<const N: usize> Int<N> {
     #[doc = doc::count_ones!(I 256)]
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -108,7 +108,7 @@ impl<const N: usize> BIntD8<N> {
     #[doc = doc::cast_unsigned!(I)]
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn cast_unsigned(self) -> BUintD8<N> {
+    pub const fn cast_unsigned(self) -> Uint<N> {
         self.to_bits()
     }
 
@@ -146,9 +146,9 @@ impl<const N: usize> BIntD8<N> {
                 } else {
                     let u = unsafe {
                         if self.is_negative() {
-                            BUintD8::unchecked_shr_pad_internal::<true>(self.bits, rhs)
+                            Uint::unchecked_shr_pad_internal::<true>(self.bits, rhs)
                         } else {
-                            BUintD8::unchecked_shr_pad_internal::<false>(self.bits, rhs)
+                            Uint::unchecked_shr_pad_internal::<false>(self.bits, rhs)
                         }
                     };
                     Self::from_bits(u)
@@ -172,7 +172,7 @@ impl<const N: usize> BIntD8<N> {
     #[doc = doc::unsigned_abs!(I)]
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn unsigned_abs(self) -> BUintD8<N> {
+    pub const fn unsigned_abs(self) -> Uint<N> {
         if self.is_negative() {
             self.wrapping_neg().bits
         } else {
@@ -280,7 +280,7 @@ impl<const N: usize> BIntD8<N> {
         let t = self.bitand(rhs).add(x.shr(1));
         if t.is_negative() && x.bits.digits[0] & 1 == 1 {
             // t is negative and
-            t.add(BIntD8::ONE)
+            t.add(Int::ONE)
         } else {
             t
         }
@@ -293,7 +293,7 @@ impl<const N: usize> BIntD8<N> {
     #[doc = doc::abs_diff!(I)]
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn abs_diff(self, other: Self) -> BUintD8<N> {
+    pub const fn abs_diff(self, other: Self) -> Uint<N> {
         if self.lt(&other) {
             other.wrapping_sub(self).to_bits()
         } else {
@@ -351,7 +351,7 @@ impl<const N: usize> BIntD8<N> {
     }
 }
 
-impl<const N: usize> BIntD8<N> {
+impl<const N: usize> Int<N> {
     #[doc = doc::bits!(I 256)]
     #[must_use]
     #[inline]
@@ -388,45 +388,45 @@ impl<const N: usize> BIntD8<N> {
     /// Creates a signed integer with `bits` as its underlying representation in two's complement.
     ///
     /// This method is faster for casting from a
-    #[doc = concat!("[`", stringify!(BUintD8), "`]")]
+    #[doc = concat!("[`", stringify!(Uint), "`]")]
     /// to a
-    #[doc = concat!("[`", stringify!(BIntD8), "`]")]
+    #[doc = concat!("[`", stringify!(Int), "`]")]
     /// of the same size than using the `As` trait.
     #[must_use]
     #[inline(always)]
-    pub const fn from_bits(bits: BUintD8<N>) -> Self {
+    pub const fn from_bits(bits: Uint<N>) -> Self {
         Self { bits }
     }
 
     /// This simply returns the underlying representation of the integer in two's complement, as an unsigned integer.
     ///
     /// This method is faster for casting from a
-    #[doc = concat!("[`", stringify!($BInt), "`]")]
+    #[doc = concat!("[`", stringify!(Int), "`]")]
     /// to a
-    #[doc = concat!("[`", stringify!($BUint), "`]")]
+    #[doc = concat!("[`", stringify!(Uint), "`]")]
     /// of the same size than using the `As` trait.
     #[must_use]
     #[inline(always)]
-    pub const fn to_bits(self) -> BUintD8<N> {
+    pub const fn to_bits(self) -> Uint<N> {
         self.bits
     }
 
     /// This simply returns a reference to the underlying representation of the integer in two's complement, as an unsigned integer.
     #[must_use]
     #[inline(always)]
-    pub const fn as_bits(&self) -> &BUintD8<N> {
+    pub const fn as_bits(&self) -> &Uint<N> {
         &self.bits
     }
 
     /// This simply returns a mutable reference to the underlying representation of the integer in two's complement, as an unsigned integer.
     #[must_use]
     #[inline(always)]
-    pub const fn as_bits_mut(&mut self) -> &mut BUintD8<N> {
+    pub const fn as_bits_mut(&mut self) -> &mut Uint<N> {
         &mut self.bits
     }
 }
 
-impl<const N: usize> Default for BIntD8<N> {
+impl<const N: usize> Default for Int<N> {
     #[doc = doc::default!()]
     #[inline]
     fn default() -> Self {
@@ -434,28 +434,28 @@ impl<const N: usize> Default for BIntD8<N> {
     }
 }
 
-impl<const N: usize> Product<Self> for BIntD8<N> {
+impl<const N: usize> Product<Self> for Int<N> {
     #[inline]
     fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.fold(Self::ONE, |a, b| a * b)
     }
 }
 
-impl<'a, const N: usize> Product<&'a Self> for BIntD8<N> {
+impl<'a, const N: usize> Product<&'a Self> for Int<N> {
     #[inline]
     fn product<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
         iter.fold(Self::ONE, |a, b| a * b)
     }
 }
 
-impl<const N: usize> Sum<Self> for BIntD8<N> {
+impl<const N: usize> Sum<Self> for Int<N> {
     #[inline]
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.fold(Self::ZERO, |a, b| a + b)
     }
 }
 
-impl<'a, const N: usize> Sum<&'a Self> for BIntD8<N> {
+impl<'a, const N: usize> Sum<&'a Self> for Int<N> {
     #[inline]
     fn sum<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
         iter.fold(Self::ZERO, |a, b| a + b)
@@ -463,10 +463,10 @@ impl<'a, const N: usize> Sum<&'a Self> for BIntD8<N> {
 }
 
 #[cfg(any(test, feature = "quickcheck"))]
-impl<const N: usize> quickcheck::Arbitrary for BIntD8<N> {
+impl<const N: usize> quickcheck::Arbitrary for Int<N> {
     #[inline]
     fn arbitrary(g: &mut quickcheck::Gen) -> Self {
-        Self::from_bits(<BUintD8<N> as quickcheck::Arbitrary>::arbitrary(g))
+        Self::from_bits(<Uint<N> as quickcheck::Arbitrary>::arbitrary(g))
     }
 }
 
@@ -589,7 +589,7 @@ mod wrapping;
 
 // implementation if we don't have alloc, as otherwise can't call assert_eq! (since this requires Debug)
 #[cfg(all(test, not(feature = "alloc")))]
-impl<const N: usize> core::fmt::Debug for BIntD8<N> {
+impl<const N: usize> core::fmt::Debug for Int<N> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         core::fmt::Debug::fmt(&self.bits, f)
     }

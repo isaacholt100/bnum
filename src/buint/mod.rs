@@ -29,7 +29,7 @@ use core::iter::{Iterator, Product, Sum};
 #[doc = concat!("`", stringify!(Digit), "`")]
 /// digits that are stored.
 ///
-#[doc = doc::arithmetic_doc!(BUintD8)]
+#[doc = doc::arithmetic_doc!(Uint)]
 #[derive(Clone, Copy, Hash, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
@@ -39,15 +39,15 @@ use core::iter::{Iterator, Product, Sum};
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[cfg_attr(feature = "valuable", derive(valuable::Valuable))]
 #[repr(transparent)]
-pub struct BUintD8<const N: usize> {
+pub struct Uint<const N: usize> {
     #[cfg_attr(feature = "serde", serde(with = "BigArray"))]
     pub(crate) digits: [Digit; N],
 }
 
 #[cfg(feature = "zeroize")]
-impl<const N: usize> zeroize::DefaultIsZeroes for BUintD8<N> {}
+impl<const N: usize> zeroize::DefaultIsZeroes for Uint<N> {}
 
-impl<const N: usize> BUintD8<N> {
+impl<const N: usize> Uint<N> {
     #[doc = doc::count_ones!(U 1024)]
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -190,8 +190,8 @@ impl<const N: usize> BUintD8<N> {
     #[doc = doc::cast_signed!(U)]
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn cast_signed(self) -> crate::BIntD8<N> {
-        crate::BIntD8::<N>::from_bits(self)
+    pub const fn cast_signed(self) -> crate::Int<N> {
+        crate::Int::<N>::from_bits(self)
     }
 
     #[inline]
@@ -471,10 +471,10 @@ impl<const N: usize> BUintD8<N> {
     }
 }
 
-impl<const N: usize> BUintD8<N> {
+impl<const N: usize> Uint<N> {
     #[inline]
     pub(crate) const unsafe fn unchecked_shl_internal(self, rhs: ExpType) -> Self {
-        let mut out = BUintD8::ZERO;
+        let mut out = Uint::ZERO;
         let digit_shift = (rhs / 8) as usize;
         let bit_shift = rhs % 8;
 
@@ -507,7 +507,7 @@ impl<const N: usize> BUintD8<N> {
         self,
         rhs: ExpType,
     ) -> Self {
-        let mut out = if NEG { BUintD8::MAX } else { BUintD8::ZERO };
+        let mut out = if NEG { Uint::MAX } else { Uint::ZERO };
         let digit_shift = (rhs / 8) as usize;
         let bit_shift = rhs % 8;
 
@@ -556,7 +556,7 @@ impl<const N: usize> BUintD8<N> {
         out
     }
 
-    pub(crate) const unsafe fn unchecked_shr_internal(u: BUintD8<N>, rhs: ExpType) -> BUintD8<N> {
+    pub(crate) const unsafe fn unchecked_shr_internal(u: Uint<N>, rhs: ExpType) -> Uint<N> {
         Self::unchecked_shr_pad_internal::<false>(u, rhs)
     }
 
@@ -712,7 +712,7 @@ impl<const N: usize> BUintD8<N> {
 }
 
 pub struct U128Digits<'a, const N: usize> {
-    bits: &'a BUintD8<N>,
+    bits: &'a Uint<N>,
 }
 
 impl<'a, const N: usize> U128Digits<'a, N> {
@@ -720,7 +720,7 @@ impl<'a, const N: usize> U128Digits<'a, N> {
     const LAST_LE_DIGIT_OFFSET: usize = N - Self::LAST_DIGIT_BYTES;
 
     #[inline]
-    pub const fn new(bits: &'a BUintD8<N>) -> Self {
+    pub const fn new(bits: &'a Uint<N>) -> Self {
         Self { bits }
     }
 
@@ -729,22 +729,26 @@ impl<'a, const N: usize> U128Digits<'a, N> {
         let mut bytes = [0; 16];
         let c = N - offset;
         let count = c & (16 ^ (-((16 > c) as isize) as usize)); // this is a bit hack for min(c, 16)
-        self.bits
-            .digits
-            .as_ptr()
-            .add(offset)
-            .copy_to_nonoverlapping(bytes.as_mut_ptr(), count);
+        unsafe {
+            self.bits
+                .digits
+                .as_ptr()
+                .add(offset)
+                .copy_to_nonoverlapping(bytes.as_mut_ptr(), count);
+        }
         u128::from_le_bytes(bytes)
     }
 
     #[inline]
     pub const unsafe fn get(&self, index: usize) -> u128 {
         let mut bytes = [0; 16];
-        self.bits
-            .digits
-            .as_ptr()
-            .add(index * 16)
-            .copy_to_nonoverlapping(bytes.as_mut_ptr(), 16);
+        unsafe {
+            self.bits
+                .digits
+                .as_ptr()
+                .add(index * 16)
+                .copy_to_nonoverlapping(bytes.as_mut_ptr(), 16);
+        }
         u128::from_le_bytes(bytes)
     }
 
@@ -773,12 +777,12 @@ impl<'a, const N: usize> U128Digits<'a, N> {
 }
 
 pub struct U128DigitsMut<'a, const N: usize> {
-    bits: &'a mut BUintD8<N>,
+    bits: &'a mut Uint<N>,
 }
 
 impl<'a, const N: usize> U128DigitsMut<'a, N> {
     #[inline]
-    pub const fn new(bits: &'a mut BUintD8<N>) -> Self {
+    pub const fn new(bits: &'a mut Uint<N>) -> Self {
         Self { bits }
     }
 
@@ -817,7 +821,7 @@ impl<'a, const N: usize> U128DigitsMut<'a, N> {
     }
 }
 
-impl<const N: usize> BUintD8<N> {
+impl<const N: usize> Uint<N> {
     // TODO: should probably make these unsafe or add checks in
     // TODO: multiplication is much slower when the min is calculated. need to remove it and use only when needed
     #[inline]
@@ -868,7 +872,7 @@ impl<const N: usize> BUintD8<N> {
     pub(crate) const U128_BITS_REMAINDER: ExpType = Self::BITS % 128;
 }
 
-impl<const N: usize> Default for BUintD8<N> {
+impl<const N: usize> Default for Uint<N> {
     #[doc = doc::default!()]
     #[inline]
     fn default() -> Self {
@@ -876,28 +880,28 @@ impl<const N: usize> Default for BUintD8<N> {
     }
 }
 
-impl<const N: usize> Product<Self> for BUintD8<N> {
+impl<const N: usize> Product<Self> for Uint<N> {
     #[inline]
     fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.fold(Self::ONE, |a, b| a * b)
     }
 }
 
-impl<'a, const N: usize> Product<&'a Self> for BUintD8<N> {
+impl<'a, const N: usize> Product<&'a Self> for Uint<N> {
     #[inline]
     fn product<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
         iter.fold(Self::ONE, |a, b| a * b)
     }
 }
 
-impl<const N: usize> Sum<Self> for BUintD8<N> {
+impl<const N: usize> Sum<Self> for Uint<N> {
     #[inline]
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.fold(Self::ZERO, |a, b| a + b)
     }
 }
 
-impl<'a, const N: usize> Sum<&'a Self> for BUintD8<N> {
+impl<'a, const N: usize> Sum<&'a Self> for Uint<N> {
     #[inline]
     fn sum<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
         iter.fold(Self::ZERO, |a, b| a + b)
@@ -905,7 +909,7 @@ impl<'a, const N: usize> Sum<&'a Self> for BUintD8<N> {
 }
 
 #[cfg(any(test, feature = "quickcheck"))]
-impl<const N: usize> quickcheck::Arbitrary for BUintD8<N> {
+impl<const N: usize> quickcheck::Arbitrary for Uint<N> {
     fn arbitrary(g: &mut quickcheck::Gen) -> Self {
         let mut out = Self::ZERO;
         let mut i = 0;
@@ -985,9 +989,9 @@ mod tests {
         assert!(UTEST::ONE.is_one());
         assert!(!UTEST::MAX.is_one());
         assert!(!UTEST::ZERO.is_one());
-        let mut digits = *super::BUintD8::<2>::MAX.digits();
+        let mut digits = *super::Uint::<2>::MAX.digits();
         digits[0] = 1;
-        let b = super::BUintD8::<2>::from_digits(digits);
+        let b = super::Uint::<2>::from_digits(digits);
         assert!(!b.is_one());
     }
 
@@ -1051,7 +1055,7 @@ mod wrapping;
 
 // implementation if we don't have alloc, as otherwise can't call assert_eq! (since this requires Debug)
 #[cfg(all(test, not(feature = "alloc")))]
-impl<const N: usize> core::fmt::Debug for BUintD8<N> {
+impl<const N: usize> core::fmt::Debug for Uint<N> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         for digit in self.digits.iter().rev() {
             write!(f, "{:02x}", digit)?;

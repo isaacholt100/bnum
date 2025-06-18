@@ -16,9 +16,9 @@ The aim of this crate is to provide integer types of arbitrary fixed size which 
 
 This crate uses Rust's const generics to allow creation of integers of arbitrary size that can be determined at compile time. Unsigned integers are stored as an array of digits (primitive unsigned integers) of length `N`. This means all `bnum` integers can be stored on the stack, as they are fixed size. Signed integers are simply stored as an unsigned integer in two's complement.
 
-`bnum` defines 4 unsigned integer types: each uses a different primitive integer as its digit type. `BUint` uses `u64` as its digit, `BUintD32` uses `u32`, `BUintD16` uses `u16` and `BUintD8` uses `u8`. The signed integer types `BInt`, `BIntD32`, `BIntD16` and `BIntD8` are represented by these unsigned integers respectively.
+`bnum` defines 4 unsigned integer types: each uses a different primitive integer as its digit type. `BUint` uses `u64` as its digit, `BUintD32` uses `u32`, `BUintD16` uses `u16` and `Uint` uses `u8`. The signed integer types `BInt`, `BIntD32`, `BIntD16` and `Int` are represented by these unsigned integers respectively.
 
-`BUint` and `BInt` are the fastest as they store (and so operate on) the least number of digits for a given bit size. However, the drawback is that the bit size must be a multiple of `64` (`bitsize = N * 64`). This is why other integer types are provided as well, as they allow the bit size to be a multiple of `32`, `16` or `8` instead. When choosing which of these types to use, determine which of `64, 32, 16, 8` is the largest divisor of the desired bit size, and use the corresponding type. For example, if you wanted a 96-bit unsigned integer, 32 is the largest divisor of 96 out of these, so use `BUintD32<3>`. A 40-bit signed integer would be `BIntD8<5>`.
+`BUint` and `BInt` are the fastest as they store (and so operate on) the least number of digits for a given bit size. However, the drawback is that the bit size must be a multiple of `64` (`bitsize = N * 64`). This is why other integer types are provided as well, as they allow the bit size to be a multiple of `32`, `16` or `8` instead. When choosing which of these types to use, determine which of `64, 32, 16, 8` is the largest divisor of the desired bit size, and use the corresponding type. For example, if you wanted a 96-bit unsigned integer, 32 is the largest divisor of 96 out of these, so use `BUintD32<3>`. A 40-bit signed integer would be `Int<5>`.
 
 ## Why bnum?
 
@@ -49,12 +49,12 @@ assert_eq!(format!("{:x}", RESULT_INT_FROM_HEXA_STR.unwrap().abs()), "1234567890
 ```rust
 // Calculate the `n`th Fibonacci number, using the type alias `U512`.
 
-use bnum::types::U512; // `U512` is a type alias for a `BUint` which contains 8 `u64` digits
+use bnum::types::U512; // `U512` is a type alias for a `Uint` which contains 64 `u8` digits
 
 // Calculate the nth Fibonacci number
 fn fibonacci(n: usize) -> U512 {
-    let mut f_n: U512 = U512::ZERO; // or `U512::from(0u8)`
-    let mut f_n_next: U512 = U512::ONE; // or `U512::from(1u8)`
+    let mut f_n: U512 = U512::ZERO;
+    let mut f_n_next: U512 = U512::ONE;
 
     for _ in 0..n {
         let temp = f_n_next;
@@ -87,41 +87,19 @@ assert_eq!(neg_one.count_ones(), 80); // signed integers are stored in two's com
 
 ## Features
 
-### Fuzzing
-
-The `arbitrary` feature derives the [`Arbitrary`](https://docs.rs/arbitrary/latest/arbitrary/trait.Arbitrary.html) trait from the [`arbitrary`](https://docs.rs/arbitrary/latest/arbitrary/) crate. **Note: currently, this feature cannot be used with `no_std` (see <https://github.com/rust-fuzz/arbitrary/issues/38>).**
-
-### Random Number Generation
-
-The `rand` feature allows creation of random `bnum` integers via the [`rand`](https://docs.rs/rand/latest/rand/) crate.
-
-### Serialization and Deserialization
-
-The `serde` feature enables serialization and deserialization of `bnum` integers via the [`serde`](https://docs.rs/serde/latest/serde/) and [`serde_big_array`](https://docs.rs/serde-big-array/latest/serde_big_array/) crates.
-
-The `borsh` feature enables serialization and deserialization of `bnum` integers via the [`borsh`](https://docs.rs/borsh/latest/borsh/) crate.
-
-### `num_traits` and `num_integer` trait implementations
-
-The `numtraits` feature includes implementations of traits from the [`num_traits`](https://docs.rs/num-traits/latest/num_traits/) and [`num_integer`](https://docs.rs/num-integer/latest/num_integer/) crates, e.g. [`AsPrimitive`](https://docs.rs/num-traits/latest/num_traits/cast/trait.AsPrimitive.html), [`Signed`](https://docs.rs/num-traits/latest/num_traits/sign/trait.Signed.html), [`Integer`](https://docs.rs/num-integer/latest/num_integer/trait.Integer.html) and [`Roots`](https://docs.rs/num-integer/latest/num_integer/trait.Roots.html).
-
-### Quickcheck
-
-The `quickcheck` feature enables the [`Arbitrary`](https://docs.rs/quickcheck/latest/quickcheck/trait.Arbitrary.html) trait from the [`quickcheck`](https://docs.rs/quickcheck/latest/quickcheck/) crate. **Note: currently, this feature cannot be used with `no_std`.**
-
-### Zeroize
-
-The `zeroize` feature enables the [`Zeroize`](https://docs.rs/zeroize/latest/zeroize/trait.Zeroize.html) trait from the [`zeroize`](https://docs.rs/zeroize/latest/zeroize/) crate.
-
-### Valuable
-
-The `valuable` feature enables the [`Valuable`](https://docs.rs/valuable/latest/valuable/trait.Valuable.html) trait from the [`valuable`](https://docs.rs/valuable/latest/valuable/) crate.
-
-### Nightly features
-
-Activating the `nightly` feature will enable the `from_be_bytes`, `from_le_bytes`, `from_ne_bytes`, `to_be_bytes`, `to_le_bytes` and `to_ne_bytes` methods on `bnum`'s unsigned and signed integers and will make the `unchecked_...` methods `const`. This comes at the cost of only being able to compile on nightly. The nightly features that this uses are [`generic_const_exprs`](https://github.com/rust-lang/rust/issues/76560), [`const_trait_impl`](https://github.com/rust-lang/rust/issues/67792) and [`const_option`](https://github.com/rust-lang/rust/issues/67441).
-
-The `nightly` feature is also required to test methods whose counterparts on the primitive integers are only available on nightly, e.g. the `div_floor` and all `strict_...` methods.
+| Feature name | Default? | Enables... |
+|--------------|----------|------------|
+| `signed`     | Yes      | The `Int` type. |
+| `alloc`      | Yes      | Methods which require a global allocator (i.e. formatting and radix conversion). |
+| `arbitrary`  | No       | The [`Arbitrary`](https://docs.rs/arbitrary/latest/arbitrary/trait.Arbitrary.html) trait from the [`arbitrary`](https://docs.rs/arbitrary/latest/arbitrary/) crate. **Note: currently, this feature cannot be used with `no_std` (see <https://github.com/rust-fuzz/arbitrary/issues/38>).** |
+| `rand`       | No       | Creation of random `bnum` types via the [`rand`](https://docs.rs/rand/latest/rand/) crate. |
+| `serde`      | No       | Serialization and deserialization via the [`serde`](https://docs.rs/serde/latest/serde/) and [`serde_big_array`](https://docs.rs/serde-big-array/latest/serde_big_array/) crates. |
+| `borsh`      | No       | Serialization and deserialization via the [`borsh`](https://docs.rs/borsh/latest/borsh/) crate. |
+| `numtraits`  | No       | Implementations of traits from the [`num_traits`](https://docs.rs/num-traits/latest/num_traits/) and [`num_integer`](https://docs.rs/num-integer/latest/num_integer/) crates, such as [`AsPrimitive`](https://docs.rs/num-traits/latest/num_traits/cast/trait.AsPrimitive.html), [`Signed`](https://docs.rs/num-traits/latest/num_traits/sign/trait.Signed.html), [`Integer`](https://docs.rs/num-integer/latest/num_integer/trait.Integer.html) and [`Roots`](https://docs.rs/num-integer/latest/num_integer/trait.Roots.html). |
+| `quickcheck` | No       | The [`Arbitrary`](https://docs.rs/quickcheck/latest/quickcheck/trait.Arbitrary.html) trait from the [`quickcheck`](https://docs.rs/quickcheck/latest/quickcheck/) crate. **Note: currently, this feature cannot be used with `no_std`.** |
+| `zeroize`    | No       | The [`Zeroize`](https://docs.rs/zeroize/latest/zeroize/trait.Zeroize.html) trait from the [`zeroize`](https://docs.rs/zeroize/latest/zeroize/) crate. |
+| `valuable`   | No       | The [`Valuable`](https://docs.rs/valuable/latest/valuable/trait.Valuable.html) trait from the [`valuable`](https://docs.rs/valuable/latest/valuable/) crate. |
+| `nightly`    | No       | Testing methods whose counterparts on the primitive integers are only available on nightly, such as the `div_floor` and all `strict_...` methods. |
 
 ## Testing
 
@@ -139,7 +117,7 @@ If a method is not documented explicitly, it will have a link to the equivalent 
 
 ## Known Issues
 
-At the moment, the [`From`](https://doc.rust-lang.org/core/convert/trait.From.html) trait is implemented for `bnum` integers, from all the Rust primitive integers. However, this behaviour is not quite correct. For example, if a 24-bit wide unsigned integer (`BUintD8<3>`) were created, this should not implement `From<u32>`, etc. and should implement `TryFrom<u32>` instead. To ensure correct behaviour, the [`FromPrimitive`](https://docs.rs/num-traits/latest/num_traits/cast/trait.FromPrimitive.html) trait from the [`num_traits`](https://docs.rs/num-traits/latest/num_traits/index.html) crate can be used instead, as this will always return an [`Option`](https://doc.rust-lang.org/core/option/enum.Option.html) rather than the integer itself.
+At the moment, the [`From`](https://doc.rust-lang.org/core/convert/trait.From.html) trait is implemented for `bnum` integers, from all the Rust primitive integers. However, this behaviour is not quite correct. For example, if a 24-bit wide unsigned integer (`Uint<3>`) were created, this should not implement `From<u32>`, etc. and should implement `TryFrom<u32>` instead. To ensure correct behaviour, the [`FromPrimitive`](https://docs.rs/num-traits/latest/num_traits/cast/trait.FromPrimitive.html) trait from the [`num_traits`](https://docs.rs/num-traits/latest/num_traits/index.html) crate can be used instead, as this will always return an [`Option`](https://doc.rust-lang.org/core/option/enum.Option.html) rather than the integer itself.
 
 The [`num_traits::NumCast`](https://docs.rs/num-traits/latest/num_traits/cast/trait.NumCast.html) trait is implemented for `bnum` integers but will intentionally panic if its method [`from`](https://docs.rs/num-traits/latest/num_traits/cast/trait.NumCast.html#tymethod.from) is called, as it is not possible to guarantee a correct conversion, due to trait bounds enforced by [`NumCast`](https://docs.rs/num-traits/latest/num_traits/cast/trait.NumCast.html). This trait should therefore never be used on `bnum` integers. The implementation exists only to allow implementation of the [`num_traits::PrimInt`](https://docs.rs/num-traits/latest/num_traits/int/trait.PrimInt.html) trait.
 

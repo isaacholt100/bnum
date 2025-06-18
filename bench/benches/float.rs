@@ -7,7 +7,7 @@ mod unzip;
 
 const SAMPLE_SIZE: usize = 500;
 
-use bnum::{BIntD8, BUintD8};
+use bnum::{Int, Uint};
 use bnum::Float;
 use bnum::cast::As;
 
@@ -16,9 +16,9 @@ type F128 = Float<32, 236>;
 type F64 = Float<8, 48>;
 type F32 = Float<4, 23>;
 
-type U256 = bnum::BUintD8<32>;
-type U1024 = bnum::BUintD8<128>;
-type I1024 = bnum::BIntD8<128>;
+type U256 = bnum::Uint<32>;
+type U1024 = bnum::Uint<128>;
+type I1024 = bnum::Int<128>;
 
 
 fn bench_fibs(c: &mut Criterion) {
@@ -50,7 +50,7 @@ fn bench_fibs(c: &mut Criterion) {
 //     group.finish();
 }
 
-// benchmark for time taken to call BUintD8::u128_digit, using one random fixed input, no benchmark groups, just a standalone benchmark
+// benchmark for time taken to call Uint::u128_digit, using one random fixed input, no benchmark groups, just a standalone benchmark
 // fn bench_u128_digit(c: &mut Criterion) {
 //     let mut group = c.benchmark_group("digit");
 //     let mut rng = rand::rngs::StdRng::seed_from_u64(0);
@@ -66,18 +66,18 @@ trait BFrom<T> {
 macro_rules! new_to_old {
     ($($N: expr), *) => {
         $(
-            impl BFrom<BUintD8<{$N * 8}>> for bnum_old::BUint<$N> {
-                fn bfrom(b: BUintD8<{$N * 8}>) -> Self {
+            impl BFrom<Uint<{$N * 8}>> for bnum_old::BUint<$N> {
+                fn bfrom(b: Uint<{$N * 8}>) -> Self {
                     let digits = *b.digits();
-                    let old_d8 = bnum_old::BUintD8::from_digits(digits);
-                    let out = <Self as bnum_old::cast::CastFrom<bnum_old::BUintD8<{$N * 8}>>>::cast_from(old_d8);
+                    let old_d8 = bnum_old::Uint::from_digits(digits);
+                    let out = <Self as bnum_old::cast::CastFrom<bnum_old::Uint<{$N * 8}>>>::cast_from(old_d8);
                     // assert_eq!(out.to_str_radix(16), b.to_str_radix(16));
                     out
                 }
             }
 
-            impl BFrom<BIntD8<{$N * 8}>> for bnum_old::BInt<$N> {
-                fn bfrom(b: BIntD8<{$N * 8}>) -> Self {
+            impl BFrom<Int<{$N * 8}>> for bnum_old::BInt<$N> {
+                fn bfrom(b: Int<{$N * 8}>) -> Self {
                     Self::from_bits(bnum_old::BUint::bfrom(b.to_bits()))
                 }
             }
@@ -105,7 +105,7 @@ fn bench_add(c: &mut Criterion) {
     let mut rng = rand::rngs::StdRng::seed_from_u64(0);
     const N: usize = 62;
     let big_inputs = (0..SAMPLE_SIZE)
-        .map(|_| rng.gen::<(BIntD8<{N*8}>, i128)>())
+        .map(|_| rng.gen::<(Int<{N*8}>, i128)>())
         .map(|(a, b)| (
             ((a, b), (bnum_old::BInt::bfrom(a), b))
         ));

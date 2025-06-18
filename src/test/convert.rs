@@ -37,10 +37,10 @@ macro_rules! test_convert_bigints {
     ($($bits: literal), *) => {
         paste::paste! {
             $(
-                test_convert_big!(BUintD8<{$bits / 8}>; [<u $bits>]);
+                test_convert_big!(Uint<{$bits / 8}>; [<u $bits>]);
 
                 #[cfg(feature = "signed")]
-                test_convert_big!(BIntD8<{$bits / 8}>; [<i $bits>]);
+                test_convert_big!(Int<{$bits / 8}>; [<i $bits>]);
             )*
         }
     };
@@ -48,12 +48,12 @@ macro_rules! test_convert_bigints {
 
 test_convert_bigints!(128, 64);
 
-test_convert_big!(BUintD8<{32 / 8}>; u32);
-test_convert_big!(BUintD8<{16 / 8}>; u16);
+test_convert_big!(Uint<{32 / 8}>; u32);
+test_convert_big!(Uint<{16 / 8}>; u16);
 #[cfg(feature = "signed")]
-test_convert_big!(BIntD8<{32 / 8}>; i32);
+test_convert_big!(Int<{32 / 8}>; i32);
 #[cfg(feature = "signed")]
-test_convert_big!(BIntD8<{16 / 8}>; i16);
+test_convert_big!(Int<{16 / 8}>; i16);
 
 impl<T: TestConvert> TestConvert for Option<T> {
     type Output = Option<<T as TestConvert>::Output>;

@@ -1,6 +1,6 @@
 use super::Float;
 use crate::doc;
-use crate::BUintD8;
+use crate::Uint;
 
 impl<const W: usize, const MB: usize> Float<W, MB> {
     #[doc = doc::endian::to_be_bytes!(F)]
@@ -28,21 +28,21 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     #[must_use]
     #[inline]
     pub const fn from_be_bytes(bytes: [u8; W]) -> Self {
-        Self::from_bits(BUintD8::from_be_bytes(bytes))
+        Self::from_bits(Uint::from_be_bytes(bytes))
     }
 
     #[doc = doc::endian::from_le_bytes!(F)]
     #[must_use]
     #[inline]
     pub const fn from_le_bytes(bytes: [u8; W]) -> Self {
-        Self::from_bits(BUintD8::from_le_bytes(bytes))
+        Self::from_bits(Uint::from_le_bytes(bytes))
     }
 
     #[doc = doc::endian::from_ne_bytes!(F)]
     #[must_use]
     #[inline]
     pub const fn from_ne_bytes(bytes: [u8; W]) -> Self {
-        Self::from_bits(BUintD8::from_ne_bytes(bytes))
+        Self::from_bits(Uint::from_ne_bytes(bytes))
     }
 }
 

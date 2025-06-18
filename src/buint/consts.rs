@@ -1,4 +1,4 @@
-use super::BUintD8;
+use super::Uint;
 use crate::{digit, Digit};
 
 macro_rules! pos_const {
@@ -14,7 +14,7 @@ use crate::doc;
 use crate::ExpType;
 
 #[doc = doc::consts::impl_desc!()]
-impl<const N: usize> BUintD8<N> {
+impl<const N: usize> Uint<N> {
     #[doc = doc::consts::min!(U 512)]
     pub const MIN: Self = Self::from_digits([Digit::MIN; N]);
 

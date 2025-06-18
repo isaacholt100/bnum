@@ -1,4 +1,4 @@
-use crate::{BIntD8, BUintD8};
+use crate::{Int, Uint};
 use crate::cast::As;
 use crate::doc;
 use crate::ExpType;
@@ -6,7 +6,7 @@ use super::Float;
 
 type Digit = u8;
 
-impl<const W: usize> BUintD8<W> {
+impl<const W: usize> Uint<W> {
     #[inline]
     const fn to_exp_type(&self) -> Option<ExpType> {
         let mut out = 0;
@@ -114,7 +114,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             return self;
         }
         if !e.is_negative() {
-            let m = (BUintD8::MAX >> (Self::BITS - Self::MB)) >> e;
+            let m = (Uint::MAX >> (Self::BITS - Self::MB)) >> e;
             if (u & m).is_zero() {
                 return self;
             }
@@ -183,7 +183,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             if small_exponent >= Self::MB { // if the exponent exceeds the number of mantissa bits, then the number is an integer so truncation does nothing and fractional part is zero
                 self
             } else {
-                let mask = BUintD8::<W>::MAX.shl(Self::MB - small_exponent);
+                let mask = Uint::<W>::MAX.shl(Self::MB - small_exponent);
                 let trunc_mantissa = mantissa.bitand(mask); // set the last MB - exponent bits of the mantissa to zero - this is the fractional part
 
                 let trunc = Self::from_signed_parts(sign, exponent, trunc_mantissa);
@@ -207,7 +207,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             return self;
         }
         if !e.is_negative() {
-            let m = (BUintD8::MAX >> (Self::BITS - Self::MB)) >> e;
+            let m = (Uint::MAX >> (Self::BITS - Self::MB)) >> e;
             if (bits & m).is_zero() {
                 return self;
             }
@@ -260,7 +260,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             if small_exponent >= Self::MB { // if the exponent exceeds the number of mantissa bits, then the number is an integer so truncation does nothing and fractional part is zero
                 (Self::ZERO, true, self)
             } else {
-                let mask = BUintD8::<W>::MAX.shl(Self::MB - small_exponent);
+                let mask = Uint::<W>::MAX.shl(Self::MB - small_exponent);
                 let trunc_mantissa = mantissa.bitand(mask); // set the last MB - exponent bits of the mantissa to zero - this is the fractional part
 
                 let trunc = Self::from_signed_parts(sign, exponent, trunc_mantissa);
@@ -268,8 +268,8 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                 let fract = if trunc_mantissa.eq(&mantissa) {
                     Self::ZERO
                 } else {
-                    // let half = BUintD8::<W>::power_of_two(Self::MB - small_exponent);
-                    // let fract_type = match unshifted_mantissa.cmp(&BUintD8::<W>::power_of_two(Self::MB - small_exponent)) {
+                    // let half = Uint::<W>::power_of_two(Self::MB - small_exponent);
+                    // let fract_type = match unshifted_mantissa.cmp(&Uint::<W>::power_of_two(Self::MB - small_exponent)) {
                     //     Ordering::Equal => FractType::AbsEqHalf,
                     //     Ordering::Greater => FractType::AbsGtHalf,
                     //     Ordering::Less => FractType::Other,
@@ -277,7 +277,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                     let shift = Self::MB + 1 - unshifted_mantissa.bits(); // amount of zeros before the first 1 in the fractional part 0.0...01... 
                     // debug_assert!(shift > 0);
                     let fract_mantissa = unshifted_mantissa.shl(shift);
-                    let abs_fract_exponent = BUintD8::<W>::from_exp_type(shift - small_exponent).unwrap(); // absolute value of exponent of fractional part
+                    let abs_fract_exponent = Uint::<W>::from_exp_type(shift - small_exponent).unwrap(); // absolute value of exponent of fractional part
                     let fract_exponent = abs_fract_exponent.cast_signed().neg();
                     let fract = Self::from_signed_parts(sign, fract_exponent, fract_mantissa);
 

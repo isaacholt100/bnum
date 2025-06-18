@@ -1,5 +1,5 @@
-use super::BIntD8;
-use crate::BUintD8;
+use super::Int;
+use crate::Uint;
 
 macro_rules! checked_ilog {
     ($method: ident $(, $base: ident: $ty: ty)?) => {
@@ -21,7 +21,7 @@ use crate::helpers::tuple_to_option;
 use crate::ExpType;
 
 #[doc = doc::checked::impl_desc!()]
-impl<const N: usize> BIntD8<N> {
+impl<const N: usize> Int<N> {
     #[doc = doc::checked::checked_add!(I)]
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -32,7 +32,7 @@ impl<const N: usize> BIntD8<N> {
     #[doc = doc::checked::checked_add_unsigned!(I)]
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn checked_add_unsigned(self, rhs: BUintD8<N>) -> Option<Self> {
+    pub const fn checked_add_unsigned(self, rhs: Uint<N>) -> Option<Self> {
         tuple_to_option(self.overflowing_add_unsigned(rhs))
     }
 
@@ -46,7 +46,7 @@ impl<const N: usize> BIntD8<N> {
     #[doc = doc::checked::checked_sub_unsigned!(I)]
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn checked_sub_unsigned(self, rhs: BUintD8<N>) -> Option<Self> {
+    pub const fn checked_sub_unsigned(self, rhs: Uint<N>) -> Option<Self> {
         tuple_to_option(self.overflowing_sub_unsigned(rhs))
     }
 

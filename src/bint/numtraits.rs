@@ -1,5 +1,5 @@
-use super::BIntD8;
-use crate::{BUintD8, Digit};
+use super::Int;
+use crate::{Uint, Digit};
 
 macro_rules! from_int {
     ($int: ty, $name: ident) => {
@@ -11,7 +11,7 @@ macro_rules! from_int {
             } else {
                 Digit::MIN
             };
-            let mut out = Self::from_bits(BUintD8::from_digits([initial_digit; N]));
+            let mut out = Self::from_bits(Uint::from_digits([initial_digit; N]));
             let mut i = 0;
             while i << crate::digit::BIT_SHIFT < INT_BITS {
                 let d = (n >> (i << crate::digit::BIT_SHIFT)) as Digit;
@@ -64,7 +64,7 @@ macro_rules! from_float {
         #[inline]
         fn $method(f: $float) -> Option<Self> {
             if f.is_sign_negative() {
-                let i = Self::from_bits(BUintD8::$method(-f)?);
+                let i = Self::from_bits(Uint::$method(-f)?);
                 if i == Self::MIN {
                     Some(Self::MIN)
                 } else if i.is_negative() {
@@ -73,7 +73,7 @@ macro_rules! from_float {
                     Some(-i)
                 }
             } else {
-                let i = Self::from_bits(BUintD8::$method(f)?);
+                let i = Self::from_bits(Uint::$method(f)?);
                 if i.is_negative() {
                     None
                 } else {
@@ -173,9 +173,9 @@ use num_traits::ops::overflowing::{OverflowingAdd, OverflowingSub};
 use crate::cast::CastFrom;
 use crate::int::numtraits::num_trait_impl;
 
-crate::int::numtraits::impls!(BIntD8);
+crate::int::numtraits::impls!(Int);
 
-impl<const N: usize> FromPrimitive for BIntD8<N> {
+impl<const N: usize> FromPrimitive for Int<N> {
     from_uint!(u8, from_u8);
     from_uint!(u16, from_u16);
     from_uint!(u32, from_u32);
@@ -193,7 +193,7 @@ impl<const N: usize> FromPrimitive for BIntD8<N> {
     from_float!(from_f64, f64);
 }
 
-impl<const N: usize> Integer for BIntD8<N> {
+impl<const N: usize> Integer for Int<N> {
     #[inline]
     fn div_floor(&self, other: &Self) -> Self {
         *self / *other
@@ -246,7 +246,7 @@ impl<const N: usize> Integer for BIntD8<N> {
     }
 }
 
-impl<const N: usize> PrimInt for BIntD8<N> {
+impl<const N: usize> PrimInt for Int<N> {
     crate::int::numtraits::prim_int_methods!();
 
     #[inline]
@@ -270,7 +270,7 @@ impl<const N: usize> PrimInt for BIntD8<N> {
     }
 }
 
-impl<const N: usize> Roots for BIntD8<N> {
+impl<const N: usize> Roots for Int<N> {
     #[inline]
     fn sqrt(&self) -> Self {
         if self.is_negative() {
@@ -311,7 +311,7 @@ impl<const N: usize> Roots for BIntD8<N> {
     }
 }
 
-impl<const N: usize> ToPrimitive for BIntD8<N> {
+impl<const N: usize> ToPrimitive for Int<N> {
     to_uint! {
         to_u8 -> u8,
         to_u16 -> u16,
@@ -341,7 +341,7 @@ impl<const N: usize> ToPrimitive for BIntD8<N> {
     }
 }
 
-impl<const N: usize> Signed for BIntD8<N> {
+impl<const N: usize> Signed for Int<N> {
     #[inline]
     fn abs(&self) -> Self {
         Self::abs(*self)

@@ -34,7 +34,7 @@ pub fn n(input: TokenStream) -> TokenStream {
             } else if bit_width % 16 == 0 {
                 (bit_width / 16, if unsigned { "BUintD16" } else { "BIntD16" })
             } else if bit_width % 8 == 0 {
-                (bit_width / 8, if unsigned { "BUintD8" } else { "BIntD8" })
+                (bit_width / 8, if unsigned { "Uint" } else { "Int" })
             } else {
                 let output = quote! {
                     compile_error!(concat!("invalid width `", #bit_width, "` for integer literal. the width must be a multiple of 8"))

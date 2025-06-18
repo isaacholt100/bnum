@@ -39,33 +39,33 @@ impl<const N: usize> Debug for U8ArrayWrapper<N> {
 
 #[cfg(feature = "signed")]
 mod cast_signed_types {
-    use crate::BIntD8;
+    use crate::Int;
 
-    pub type TestInt1 = BIntD8<10>;
-    pub type TestInt2 = BIntD8<8>;
-    pub type TestInt3 = BIntD8<6>;
-    pub type TestInt4 = BIntD8<11>;
-    pub type TestInt5 = BIntD8<5>;
-    pub type TestInt6 = BIntD8<7>;
-    pub type TestInt7 = BIntD8<3>;
-    pub type TestInt8 = BIntD8<1>;
-    pub type TestInt9 = BIntD8<15>;
-    pub type TestInt10 = BIntD8<17>;
+    pub type TestInt1 = Int<10>;
+    pub type TestInt2 = Int<8>;
+    pub type TestInt3 = Int<6>;
+    pub type TestInt4 = Int<11>;
+    pub type TestInt5 = Int<5>;
+    pub type TestInt6 = Int<7>;
+    pub type TestInt7 = Int<3>;
+    pub type TestInt8 = Int<1>;
+    pub type TestInt9 = Int<15>;
+    pub type TestInt10 = Int<17>;
 }
 
 pub mod cast_types {
-    use crate::BUintD8;
+    use crate::Uint;
 
-    pub type TestUint1 = BUintD8<10>;
-    pub type TestUint2 = BUintD8<8>;
-    pub type TestUint3 = BUintD8<6>;
-    pub type TestUint4 = BUintD8<11>;
-    pub type TestUint5 = BUintD8<5>;
-    pub type TestUint6 = BUintD8<7>;
-    pub type TestUint7 = BUintD8<3>;
-    pub type TestUint8 = BUintD8<1>;
-    pub type TestUint9 = BUintD8<15>;
-    pub type TestUint10 = BUintD8<17>;
+    pub type TestUint1 = Uint<10>;
+    pub type TestUint2 = Uint<8>;
+    pub type TestUint3 = Uint<6>;
+    pub type TestUint4 = Uint<11>;
+    pub type TestUint5 = Uint<5>;
+    pub type TestUint6 = Uint<7>;
+    pub type TestUint7 = Uint<3>;
+    pub type TestUint8 = Uint<1>;
+    pub type TestUint9 = Uint<15>;
+    pub type TestUint10 = Uint<17>;
 
     #[cfg(feature = "signed")]
     pub use super::cast_signed_types::*;

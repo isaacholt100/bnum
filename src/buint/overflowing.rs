@@ -1,11 +1,11 @@
-use super::BUintD8;
+use super::Uint;
 use crate::digit;
 use crate::digit::SignedDigit;
 use crate::doc;
 use crate::ExpType;
 
 #[doc = doc::overflowing::impl_desc!()]
-impl<const N: usize> BUintD8<N> {
+impl<const N: usize> Uint<N> {
     #[doc = doc::overflowing::overflowing_add!(U)]
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -41,7 +41,7 @@ impl<const N: usize> BUintD8<N> {
     #[doc = doc::overflowing::overflowing_add_signed!(U)]
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn overflowing_add_signed(self, rhs: crate::BIntD8<N>) -> (Self, bool) {
+    pub const fn overflowing_add_signed(self, rhs: crate::Int<N>) -> (Self, bool) {
         let (sum, overflow) = self.overflowing_add(rhs.to_bits());
         (sum, rhs.is_negative() != overflow)
     }

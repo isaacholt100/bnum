@@ -1,7 +1,7 @@
-use super::BUintD8;
+use super::Uint;
 use crate::digit;
 
-impl<const N: usize> BUintD8<N> {
+impl<const N: usize> Uint<N> {
     #[inline]
     pub(super) const fn long_mul(self, rhs: Self) -> (Self, bool) {
         let mut overflow = false;
@@ -64,7 +64,7 @@ impl<const N: usize> BUintD8<N> {
     }
 }
 
-// fn karatsuba<const N: usize>(a: BUintD8<N>, b: BUintD8<N>, start_index: usize, end_index: usize) -> BUintD8<N> {
+// fn karatsuba<const N: usize>(a: Uint<N>, b: Uint<N>, start_index: usize, end_index: usize) -> Uint<N> {
 //     if a.last_digit_index() == 0 {
 //         return b * a.digits[0];
 //     }

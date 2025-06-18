@@ -1,6 +1,6 @@
 use super::Float;
 use crate::doc;
-use crate::BIntD8;
+use crate::Int;
 use core::cmp::{Ordering, PartialEq, PartialOrd};
 
 #[doc = doc::cmp::impl_desc!()]
@@ -79,9 +79,9 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         let left = self.to_signed_bits();
         let right = other.to_signed_bits();
         if left.is_negative() && right.is_negative() {
-            BIntD8::cmp(&left, &right).reverse()
+            Int::cmp(&left, &right).reverse()
         } else {
-            BIntD8::cmp(&left, &right)
+            Int::cmp(&left, &right)
         }
     }
 }
