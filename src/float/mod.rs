@@ -1,7 +1,7 @@
 #[cfg(test)]
 use crate::cast::As;
 use crate::doc;
-use crate::{Int, Uint, ExpType};
+use crate::{ExpType, Int, Uint};
 
 type Digit = u8;
 
@@ -217,7 +217,7 @@ impl<const W: usize, const MB: usize> quickcheck::Arbitrary for crate::Float<W, 
 #[cfg(test)]
 mod tests {
     use crate::test::test_bignum;
-    use crate::test::types::{ftest, FTEST};
+    use crate::test::types::{FTEST, ftest};
 
     test_bignum! {
         function: <ftest>::copysign(a: ftest, b: ftest)

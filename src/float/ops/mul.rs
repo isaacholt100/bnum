@@ -1,9 +1,9 @@
 use super::Float;
-use crate::float::FloatExponent;
-use crate::float::UnsignedFloatExponent;
+use crate::ExpType;
 use crate::Int;
 use crate::Uint;
-use crate::ExpType;
+use crate::float::FloatExponent;
+use crate::float::UnsignedFloatExponent;
 use core::num::FpCategory;
 
 impl<const W: usize, const MB: usize> Float<W, MB> {

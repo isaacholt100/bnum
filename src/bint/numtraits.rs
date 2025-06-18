@@ -1,5 +1,5 @@
 use super::Int;
-use crate::{Uint, Digit};
+use crate::{Digit, Uint};
 
 macro_rules! from_int {
     ($int: ty, $name: ident) => {
@@ -74,11 +74,7 @@ macro_rules! from_float {
                 }
             } else {
                 let i = Self::from_bits(Uint::$method(f)?);
-                if i.is_negative() {
-                    None
-                } else {
-                    Some(i)
-                }
+                if i.is_negative() { None } else { Some(i) }
             }
         }
     };
@@ -157,10 +153,11 @@ macro_rules! to_int {
     };
 }
 
+use crate::ExpType;
 use crate::digit;
 use crate::errors;
-use crate::ExpType;
 use num_integer::{Integer, Roots};
+use num_traits::ops::overflowing::{OverflowingAdd, OverflowingSub};
 use num_traits::{
     AsPrimitive, Bounded, CheckedAdd, CheckedDiv, CheckedEuclid, CheckedMul, CheckedNeg,
     CheckedRem, CheckedShl, CheckedShr, CheckedSub, ConstOne, ConstZero, Euclid, FromBytes,
@@ -168,7 +165,6 @@ use num_traits::{
     SaturatingMul, SaturatingSub, Signed, ToBytes, ToPrimitive, WrappingAdd, WrappingMul,
     WrappingNeg, WrappingShl, WrappingShr, WrappingSub, Zero,
 };
-use num_traits::ops::overflowing::{OverflowingAdd, OverflowingSub};
 
 use crate::cast::CastFrom;
 use crate::int::numtraits::num_trait_impl;

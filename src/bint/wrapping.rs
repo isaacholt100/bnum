@@ -1,7 +1,7 @@
 use super::Int;
 use crate::Uint;
 
-use crate::{doc, ExpType};
+use crate::{ExpType, doc};
 
 #[doc = doc::wrapping::impl_desc!()]
 impl<const N: usize> Int<N> {

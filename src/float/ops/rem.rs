@@ -1,8 +1,8 @@
 use super::Float;
-use crate::float::UnsignedFloatExponent;
+use crate::ExpType;
 use crate::Int;
 use crate::Uint;
-use crate::ExpType;
+use crate::float::UnsignedFloatExponent;
 
 impl<const W: usize, const MB: usize> Float<W, MB> {
     #[inline]
@@ -105,17 +105,12 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         /* scale result up */
         if ex.is_positive() {
             uxi -= Uint::ONE << Self::MB;
-            uxi |=
-                Uint::cast_from_unsigned_float_exponent(ex as UnsignedFloatExponent) << Self::MB;
+            uxi |= Uint::cast_from_unsigned_float_exponent(ex as UnsignedFloatExponent) << Self::MB;
         } else {
             uxi >>= -ex + 1;
         }
 
         let f = Self::from_bits(uxi);
-        if self.is_sign_negative() {
-            -f
-        } else {
-            f
-        }
+        if self.is_sign_negative() { -f } else { f }
     }
 }

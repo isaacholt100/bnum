@@ -16,9 +16,9 @@ macro_rules! checked_ilog {
     }
 }
 
+use crate::ExpType;
 use crate::doc;
 use crate::helpers::tuple_to_option;
-use crate::ExpType;
 
 #[doc = doc::checked::impl_desc!()]
 impl<const N: usize> Int<N> {
@@ -138,18 +138,10 @@ impl<const N: usize> Int<N> {
                 let out = Self::from_bits(u);
                 let neg = self.is_negative();
                 if !neg || pow & 1 == 0 {
-                    if out.is_negative() {
-                        None
-                    } else {
-                        Some(out)
-                    }
+                    if out.is_negative() { None } else { Some(out) }
                 } else {
                     let out = out.wrapping_neg();
-                    if !out.is_negative() {
-                        None
-                    } else {
-                        Some(out)
-                    }
+                    if !out.is_negative() { None } else { Some(out) }
                 }
             }
             None => None,

@@ -67,7 +67,9 @@ macro_rules! impl_one_for_int {
     };
 }
 
-impl_one_for_int!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
+impl_one_for_int!(
+    u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize
+);
 
 impl<const N: usize> crate::helpers::Zero for crate::Uint<N> {
     const ZERO: Self = Self::ZERO;
@@ -79,9 +81,5 @@ impl<const N: usize> crate::helpers::One for crate::Uint<N> {
 
 #[inline]
 pub const fn tuple_to_option<T: Copy>((int, overflow): (T, bool)) -> Option<T> {
-    if overflow {
-        None
-    } else {
-        Some(int)
-    }
+    if overflow { None } else { Some(int) }
 }

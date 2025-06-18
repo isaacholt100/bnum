@@ -1,5 +1,5 @@
 use super::Int;
-use crate::{Uint, Digit};
+use crate::{Digit, Uint};
 
 macro_rules! pos_const {
     ($($name: ident $num: literal), *) => {
@@ -23,8 +23,8 @@ macro_rules! neg_const {
     }
 }
 
-use crate::doc;
 use crate::ExpType;
+use crate::doc;
 
 #[doc = doc::consts::impl_desc!()]
 impl<const N: usize> Int<N> {

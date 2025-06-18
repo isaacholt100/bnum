@@ -1,8 +1,8 @@
 use super::Uint;
+use crate::ExpType;
 use crate::digit;
 use crate::digit::SignedDigit;
 use crate::doc;
-use crate::ExpType;
 
 #[doc = doc::overflowing::impl_desc!()]
 impl<const N: usize> Uint<N> {

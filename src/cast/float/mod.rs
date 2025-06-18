@@ -1,5 +1,5 @@
-use crate::helpers::{Bits, One, Zero};
 use crate::ExpType;
+use crate::helpers::{Bits, One, Zero};
 use core::ops::{Add, BitAnd, Neg, Shl, Shr};
 
 mod float_from_uint;
@@ -55,7 +55,7 @@ pub trait ConvertFloatParts {
 
     fn from_raw_parts(sign: bool, exponent: Self::UnsignedExp, mantissa: Self::Mantissa) -> Self;
     fn from_biased_parts(sign: bool, exponent: Self::UnsignedExp, mantissa: Self::Mantissa)
-        -> Self;
+    -> Self;
     fn from_signed_biased_parts(
         sign: bool,
         exponent: Self::SignedExp,

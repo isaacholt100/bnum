@@ -1,6 +1,6 @@
 use super::Float;
-use crate::doc;
 use crate::Int;
+use crate::doc;
 use core::cmp::{Ordering, PartialEq, PartialOrd};
 
 #[doc = doc::cmp::impl_desc!()]
@@ -103,7 +103,7 @@ impl<const W: usize, const MB: usize> PartialOrd for Float<W, MB> {
 #[cfg(test)]
 mod tests {
     use crate::test::test_bignum;
-    use crate::test::types::{ftest, FTEST};
+    use crate::test::types::{FTEST, ftest};
 
     test_bignum! {
         function: <ftest>::max(a: ftest, b: ftest),

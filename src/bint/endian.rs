@@ -1,5 +1,5 @@
 use super::Int;
-use crate::{Uint, Digit};
+use crate::{Digit, Uint};
 
 use crate::digit;
 use crate::doc;

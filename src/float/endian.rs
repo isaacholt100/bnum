@@ -1,6 +1,6 @@
 use super::Float;
-use crate::doc;
 use crate::Uint;
+use crate::doc;
 
 impl<const W: usize, const MB: usize> Float<W, MB> {
     #[doc = doc::endian::to_be_bytes!(F)]
@@ -48,9 +48,9 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
 #[cfg(test)]
 mod tests {
-    use crate::test::test_bignum;
-    use crate::test::types::{ftest, FTEST};
     use crate::test::U8ArrayWrapper;
+    use crate::test::test_bignum;
+    use crate::test::types::{FTEST, ftest};
 
     test_bignum! {
         function: <ftest>::to_be_bytes(a: ftest)

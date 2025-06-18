@@ -1,8 +1,8 @@
 use super::Uint;
+use crate::ExpType;
 use crate::doc;
 use crate::helpers::tuple_to_option;
-use crate::ExpType;
-use crate::{digit, Digit};
+use crate::{Digit, digit};
 
 #[doc = doc::checked::impl_desc!()]
 impl<const N: usize> Uint<N> {
@@ -123,11 +123,7 @@ impl<const N: usize> Uint<N> {
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn checked_neg(self) -> Option<Self> {
-        if self.is_zero() {
-            Some(self)
-        } else {
-            None
-        }
+        if self.is_zero() { Some(self) } else { None }
     }
 
     #[doc = doc::checked::checked_shl!(U)]

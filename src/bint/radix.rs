@@ -171,10 +171,10 @@ impl<const N: usize> Int<N> {
 
 #[cfg(test)]
 mod tests {
-    use crate::test::types::*;
-    use crate::test::{self, test_bignum};
     #[cfg(feature = "alloc")]
     use crate::Int;
+    use crate::test::types::*;
+    use crate::test::{self, test_bignum};
 
     test_bignum! {
         function: <itest>::from_str_radix,

@@ -47,6 +47,7 @@ macro_rules! to_int {
 
 use crate::ExpType;
 use num_integer::{Integer, Roots};
+use num_traits::ops::overflowing::{OverflowingAdd, OverflowingSub};
 use num_traits::{
     AsPrimitive, Bounded, CheckedAdd, CheckedDiv, CheckedEuclid, CheckedMul, CheckedNeg,
     CheckedRem, CheckedShl, CheckedShr, CheckedSub, ConstOne, ConstZero, Euclid, FromBytes,
@@ -54,11 +55,9 @@ use num_traits::{
     SaturatingMul, SaturatingSub, ToBytes, ToPrimitive, Unsigned, WrappingAdd, WrappingMul,
     WrappingNeg, WrappingShl, WrappingShr, WrappingSub, Zero,
 };
-use num_traits::ops::overflowing::{OverflowingAdd, OverflowingSub};
 
-
-use crate::cast::float::ConvertFloatParts;
 use crate::cast::CastFrom;
+use crate::cast::float::ConvertFloatParts;
 use crate::helpers::Bits;
 use crate::int::numtraits::num_trait_impl;
 

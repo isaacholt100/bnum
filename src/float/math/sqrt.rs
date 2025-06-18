@@ -1,8 +1,8 @@
 use super::Float;
 use crate::cast::CastFrom;
 use crate::{
-    float::{FloatExponent, UnsignedFloatExponent},
     Int, Uint,
+    float::{FloatExponent, UnsignedFloatExponent},
 };
 
 impl<const W: usize, const MB: usize> Float<W, MB> {
@@ -36,8 +36,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             m -= i - 1;
         }
         m -= Self::EXP_BIAS; /* unbias exponent */
-        ix = (ix & Int::from_bits(Uint::MAX >> (Self::BITS - Self::MB)))
-            | (Int::ONE << Self::MB);
+        ix = (ix & Int::from_bits(Uint::MAX >> (Self::BITS - Self::MB))) | (Int::ONE << Self::MB);
         if m & 1 == 1 {
             /* odd m, double x to make it even */
             ix += ix;

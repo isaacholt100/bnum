@@ -1,6 +1,6 @@
 use super::Float;
-use crate::doc;
 use crate::Uint;
+use crate::doc;
 use core::cmp::Ordering;
 
 #[doc = doc::const_trait_fillers::impl_desc!()]

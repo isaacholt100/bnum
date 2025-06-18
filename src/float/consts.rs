@@ -133,9 +133,9 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 #[cfg(test)]
 mod tests {
     use super::super::{F32, F64};
-    use crate::test::types::{ftest, FTEST};
-    use crate::test::TestConvert;
     use crate::ExpType;
+    use crate::test::TestConvert;
+    use crate::test::types::{FTEST, ftest};
 
     macro_rules! test_constant {
         ($big: ident :: $constant: ident == $primitive: expr) => {

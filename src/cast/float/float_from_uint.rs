@@ -1,7 +1,7 @@
 use super::FloatCastHelper;
+use crate::ExpType;
 use crate::cast::CastFrom;
 use crate::helpers::{Bits, One};
-use crate::ExpType;
 use core::ops::{Add, Shr};
 
 pub trait CastFloatFromUintHelper: Bits + Shr<ExpType, Output = Self> {
@@ -31,7 +31,7 @@ where
     U: CastFloatFromUintHelper + Copy,
 {
     let bit_width = value.bits(); // number of bits needed to specify value = exponent of largest power of two smaller than value. so bit_width will be one less than the exponent of the float
-                                  // let mant = if F::M::BITS < U::BITS {
+    // let mant = if F::M::BITS < U::BITS {
 
     // }
     if bit_width == 0 {

@@ -11,7 +11,9 @@ macro_rules! format_trait {
 }
 
 #[cfg(test)]
-format_trait!(binary, lower_hex, upper_hex, octal, display, debug, lower_exp, upper_exp);
+format_trait!(
+    binary, lower_hex, upper_hex, octal, display, debug, lower_exp, upper_exp
+);
 
 #[cfg(test)]
 macro_rules! impl_format_method {

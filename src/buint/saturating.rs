@@ -1,25 +1,17 @@
 use super::Uint;
-use crate::doc;
 use crate::ExpType;
+use crate::doc;
 
 #[doc = doc::saturating::impl_desc!()]
 impl<const N: usize> Uint<N> {
     #[inline]
     const fn saturate_up((int, overflow): (Uint<N>, bool)) -> Uint<N> {
-        if overflow {
-            Uint::MAX
-        } else {
-            int
-        }
+        if overflow { Uint::MAX } else { int }
     }
 
     #[inline]
     const fn saturate_down((int, overflow): (Uint<N>, bool)) -> Uint<N> {
-        if overflow {
-            Uint::MIN
-        } else {
-            int
-        }
+        if overflow { Uint::MIN } else { int }
     }
 
     #[doc = doc::saturating::saturating_add!(U)]

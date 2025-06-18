@@ -1,4 +1,4 @@
-use crate::{cast::CastFrom, errors::TryFromIntError, Uint, ExpType};
+use crate::{ExpType, Uint, cast::CastFrom, errors::TryFromIntError};
 
 pub trait IntConvertHelper {
     const BITS: ExpType;

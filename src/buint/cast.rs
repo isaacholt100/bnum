@@ -40,10 +40,10 @@ macro_rules! buint_as_float {
     };
 }
 
+use crate::ExpType;
+use crate::cast::CastFrom;
 #[allow(unused_imports)]
 use crate::cast::float::{CastFloatFromUintHelper, CastUintFromFloatHelper, FloatMantissa};
-use crate::cast::CastFrom;
-use crate::ExpType;
 
 #[cfg(feature = "float")]
 impl<const N: usize> FloatMantissa for Uint<N> {
@@ -67,7 +67,9 @@ impl<const N: usize> CastFloatFromUintHelper for Uint<N> {
     }
 }
 
-cast_uint_from_to_prim_int!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
+cast_uint_from_to_prim_int!(
+    u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize
+);
 
 buint_as_float!(f32);
 buint_as_float!(f64);
@@ -75,11 +77,7 @@ buint_as_float!(f64);
 impl<const N: usize> CastFrom<bool> for Uint<N> {
     #[inline]
     fn cast_from(from: bool) -> Self {
-        if from {
-            Self::ONE
-        } else {
-            Self::ZERO
-        }
+        if from { Self::ONE } else { Self::ZERO }
     }
 }
 

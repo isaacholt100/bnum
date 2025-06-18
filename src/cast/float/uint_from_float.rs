@@ -1,8 +1,8 @@
 use super::FloatCastHelper;
 use super::FloatMantissa;
+use crate::ExpType;
 use crate::cast::CastFrom;
 use crate::helpers::{Bits, One, Zero};
-use crate::ExpType;
 use core::ops::{Neg, Shl};
 
 pub trait CastUintFromFloatHelper: Zero + One + Bits {

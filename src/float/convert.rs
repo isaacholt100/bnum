@@ -1,6 +1,6 @@
 use super::{Float, FloatExponent, UnsignedFloatExponent};
 use crate::cast::float::ConvertFloatParts;
-use crate::{Int, Uint, ExpType};
+use crate::{ExpType, Int, Uint};
 
 type Digit = u8;
 
@@ -308,7 +308,7 @@ macro_rules! test_reversible_conversion {
 mod tests {
     use super::super::{F32, F64};
     use crate::test::test_bignum;
-    use crate::test::types::{ftest, FTEST};
+    use crate::test::types::{FTEST, ftest};
 
     test_bignum! {
         function: <ftest>::to_bits(a: ftest)

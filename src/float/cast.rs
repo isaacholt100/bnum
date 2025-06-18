@@ -2,8 +2,8 @@ use crate::cast::float::FloatCastHelper;
 use crate::helpers::Zero;
 
 use super::{Float, FloatExponent};
-use crate::cast::CastFrom;
 use crate::ExpType;
+use crate::cast::CastFrom;
 use crate::{Int, Uint};
 
 macro_rules! uint_as_float {
@@ -209,7 +209,7 @@ mod tests {
     use super::CastFrom;
     use crate::cast::CastTo;
     use crate::test::cast_types::*;
-    use crate::test::types::{ftest, FTEST, ITEST, UTEST};
+    use crate::test::types::{FTEST, ITEST, UTEST, ftest};
     use crate::test::{test_from, test_into};
 
     test_from! {

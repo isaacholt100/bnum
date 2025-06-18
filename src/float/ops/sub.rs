@@ -1,9 +1,9 @@
 use super::Float;
+use crate::ExpType;
+use crate::Uint;
 use crate::cast::{As, CastFrom};
 use crate::float::FloatExponent;
 use crate::float::UnsignedFloatExponent;
-use crate::Uint;
-use crate::ExpType;
 use core::num::FpCategory;
 
 // TODO: this very occasionally fails quickcheck tests, need to fix

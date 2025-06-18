@@ -1,7 +1,7 @@
 use super::Int;
 use crate::Uint;
 
-use crate::{doc, ExpType};
+use crate::{ExpType, doc};
 
 #[doc = doc::saturating::impl_desc!()]
 impl<const N: usize> Int<N> {
@@ -78,11 +78,7 @@ impl<const N: usize> Int<N> {
     #[inline]
     pub const fn saturating_div(self, rhs: Self) -> Self {
         let (div, overflow) = self.overflowing_div(rhs);
-        if overflow {
-            Self::MAX
-        } else {
-            div
-        }
+        if overflow { Self::MAX } else { div }
     }
 
     #[doc = doc::saturating::saturating_neg!(I)]

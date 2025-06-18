@@ -1,6 +1,6 @@
 use super::Uint;
 use crate::ExpType;
-use crate::{digit, Digit};
+use crate::{Digit, digit};
 
 impl<const N: usize> Uint<N> {
     pub(crate) const fn basecase_div_rem(self, mut v: Self, n: usize) -> (Self, Self) {

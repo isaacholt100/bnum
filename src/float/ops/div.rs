@@ -1,9 +1,9 @@
 use super::Float;
+use crate::ExpType;
+use crate::Uint;
 use crate::cast::As;
 use crate::float::FloatExponent;
 use crate::float::UnsignedFloatExponent;
-use crate::Uint;
-use crate::ExpType;
 use core::num::FpCategory;
 
 impl<const W: usize, const MB: usize> Float<W, MB> {
@@ -45,10 +45,8 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             rem
         } else {
             e += 1;
-            division =
-                ((large >> 1 as ExpType) / (s2.as_::<Uint<{ W * 2 }>>())).as_::<Uint<W>>();
-            let rem =
-                ((large >> 1 as ExpType) % (s2.as_::<Uint<{ W * 2 }>>())).as_::<Uint<W>>();
+            division = ((large >> 1 as ExpType) / (s2.as_::<Uint<{ W * 2 }>>())).as_::<Uint<W>>();
+            let rem = ((large >> 1 as ExpType) % (s2.as_::<Uint<{ W * 2 }>>())).as_::<Uint<W>>();
             rem
         };
         if rem * Uint::TWO > s2 {

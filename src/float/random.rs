@@ -72,8 +72,8 @@ mod tests {
     use crate::{float::F32, test::convert};
     use rand::distr::OpenClosed01;
     use rand::rngs::StdRng;
-    use rand::{distr::Open01, rngs::SmallRng};
     use rand::{Rng, SeedableRng};
+    use rand::{distr::Open01, rngs::SmallRng};
 
     use super::seeded_rngs;
 

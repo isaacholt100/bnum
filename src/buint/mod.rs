@@ -215,31 +215,33 @@ impl<const N: usize> Uint<N> {
 
     #[inline]
     const unsafe fn unchecked_rotate_left(self, rhs: ExpType) -> Self {
-        let digit_shift = (rhs / 8) as usize;
-        let bit_shift = rhs % 8;
+        unsafe {
+            let digit_shift = (rhs / 8) as usize;
+            let bit_shift = rhs % 8;
 
-        let mut out = self.rotate_digits_left(digit_shift);
+            let mut out = self.rotate_digits_left(digit_shift);
 
-        if bit_shift != 0 {
-            let carry_shift = 128 - bit_shift;
-            // let mut carry = (out.digits[N - 1] >> (8 - bit_shift)) as u128;
-            let mut carry = out.as_u128_digits().last()
-                >> (carry_shift - 8 * Self::U128_DIGIT_REMAINDER as u32);
+            if bit_shift != 0 {
+                let carry_shift = 128 - bit_shift;
+                // let mut carry = (out.digits[N - 1] >> (8 - bit_shift)) as u128;
+                let mut carry = out.as_u128_digits().last()
+                    >> (carry_shift - 8 * Self::U128_DIGIT_REMAINDER as u32);
 
-            let mut i = 0;
-            while i < Self::U128_DIGITS - 1 {
-                let current_digit = out.as_u128_digits().get(i);
+                let mut i = 0;
+                while i < Self::U128_DIGITS - 1 {
+                    let current_digit = out.as_u128_digits().get(i);
+                    out.as_u128_digits_mut()
+                        .set(i, (current_digit << bit_shift) | carry);
+                    carry = current_digit >> carry_shift;
+                    i += 1;
+                }
+                let current_digit = out.as_u128_digits().last();
                 out.as_u128_digits_mut()
                     .set(i, (current_digit << bit_shift) | carry);
-                carry = current_digit >> carry_shift;
-                i += 1;
             }
-            let current_digit = out.as_u128_digits().last();
-            out.as_u128_digits_mut()
-                .set(i, (current_digit << bit_shift) | carry);
-        }
 
-        out
+            out
+        }
     }
 
     const BITS_MINUS_1: ExpType = (Self::BITS - 1) as ExpType;
@@ -280,8 +282,6 @@ impl<const N: usize> Uint<N> {
             unsafe { self.unchecked_shr_pad_internal::<false>(rhs) }
         }
     }
-
-    const N_MINUS_1: usize = N - 1;
 
     #[doc = doc::swap_bytes!(U 256, "u")]
     #[must_use = doc::must_use_op!()]
@@ -507,57 +507,59 @@ impl<const N: usize> Uint<N> {
         self,
         rhs: ExpType,
     ) -> Self {
-        let mut out = if NEG { Uint::MAX } else { Uint::ZERO };
-        let digit_shift = (rhs / 8) as usize;
-        let bit_shift = rhs % 8;
+        unsafe {
+            let mut out = if NEG { Uint::MAX } else { Uint::ZERO };
+            let digit_shift = (rhs / 8) as usize;
+            let bit_shift = rhs % 8;
 
-        let num_copies = N.unchecked_sub(digit_shift); // TODO: use unchecked_ methods from primitives when these are stablised and constified
-
-        let mut i = digit_shift;
-        while i < N {
-            // we start i at digit_shift, not 0, since the compiler can elide bounds checks when i < N
-            out.digits[i - digit_shift] = self.digits[i];
-            i += 1;
-        }
-
-        if bit_shift != 0 {
-            let carry_shift = 128 - bit_shift;
-            let mut carry = 0;
+            let num_copies = N.unchecked_sub(digit_shift); // TODO: use unchecked_ methods from primitives when these are stablised and constified
 
             let mut i = digit_shift;
-            while i + 15 < N {
-                let offset = N - 16 - i;
-                let current_digit = out.as_u128_digits().get_at_offset(offset);
-                out.as_u128_digits_mut()
-                    .set_at_offset(offset, (current_digit >> bit_shift) | carry);
-                carry = current_digit << carry_shift;
-                i += 16;
-            }
-            let rem = (N - digit_shift) % 16;
-            if rem != 0 {
-                let mut bytes = [0; 16];
-                bytes
-                    .as_mut_ptr()
-                    .add(16 - rem)
-                    .copy_from_nonoverlapping(out.digits.as_ptr(), rem);
-                let digit = u128::from_le_bytes(bytes);
-                let shifted = (digit >> bit_shift) | carry;
-                let bytes = shifted.to_le_bytes();
-                out.digits
-                    .as_mut_ptr()
-                    .copy_from_nonoverlapping(bytes.as_ptr().add(16 - rem), rem);
+            while i < N {
+                // we start i at digit_shift, not 0, since the compiler can elide bounds checks when i < N
+                out.digits[i - digit_shift] = self.digits[i];
+                i += 1;
             }
 
-            if NEG {
-                out.digits[num_copies - 1] |= Digit::MAX << (8 - bit_shift);
+            if bit_shift != 0 {
+                let carry_shift = 128 - bit_shift;
+                let mut carry = 0;
+
+                let mut i = digit_shift;
+                while i + 15 < N {
+                    let offset = N - 16 - i;
+                    let current_digit = out.as_u128_digits().get_at_offset(offset);
+                    out.as_u128_digits_mut()
+                        .set_at_offset(offset, (current_digit >> bit_shift) | carry);
+                    carry = current_digit << carry_shift;
+                    i += 16;
+                }
+                let rem = (N - digit_shift) % 16;
+                if rem != 0 {
+                    let mut bytes = [0; 16];
+                    bytes
+                        .as_mut_ptr()
+                        .add(16 - rem)
+                        .copy_from_nonoverlapping(out.digits.as_ptr(), rem);
+                    let digit = u128::from_le_bytes(bytes);
+                    let shifted = (digit >> bit_shift) | carry;
+                    let bytes = shifted.to_le_bytes();
+                    out.digits
+                        .as_mut_ptr()
+                        .copy_from_nonoverlapping(bytes.as_ptr().add(16 - rem), rem);
+                }
+
+                if NEG {
+                    out.digits[num_copies - 1] |= Digit::MAX << (8 - bit_shift);
+                }
             }
+
+            out
         }
-
-        out
     }
 
     pub(crate) const unsafe fn unchecked_shr_internal(u: Uint<N>, rhs: ExpType) -> Uint<N> {
-        Self::unchecked_shr_pad_internal::<false>(u, rhs)
+        unsafe { Self::unchecked_shr_pad_internal::<false>(u, rhs) }
     }
 
     #[doc = doc::bits!(U 256)]
@@ -754,7 +756,7 @@ impl<'a, const N: usize> U128Digits<'a, N> {
 
     #[inline]
     pub const unsafe fn get_with_correct_count(&self, index: usize) -> u128 {
-        self.get_at_offset(index * 16)
+        unsafe { self.get_at_offset(index * 16) }
     }
 
     #[inline]

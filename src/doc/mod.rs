@@ -128,6 +128,7 @@ macro_rules! link_doc_comment_method {
 
 pub(crate) use link_doc_comment_method;
 
+#[cfg(feature = "float")]
 macro_rules! link_doc_comment_constant {
     ($($name: ident), *) => {
         $(
@@ -145,6 +146,7 @@ macro_rules! link_doc_comment_constant {
     }
 }
 
+#[cfg(feature = "float")]
 pub(crate) use link_doc_comment_constant;
 
 pub(crate) use doc_comment;

@@ -98,10 +98,10 @@ impl<const M: usize, const N: usize> crate::BTryFrom<Int<M>> for Int<N> {
 
 #[cfg(test)]
 mod tests {
+    use crate::BTryFrom;
     use crate::test;
     use crate::test::cast_types::*;
     use crate::test::types::*;
-    use crate::BTryFrom;
 
     test::test_btryfrom!(itest; TestInt1, TestInt2, TestInt3, TestInt4, TestInt5, TestInt6, TestInt7, TestInt8, TestInt9, TestInt10);
 

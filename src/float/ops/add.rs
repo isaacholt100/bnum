@@ -1,5 +1,5 @@
 use super::Float;
-use crate::{float::UnsignedFloatExponent, Uint, ExpType};
+use crate::{ExpType, Uint, float::UnsignedFloatExponent};
 use core::num::FpCategory;
 
 impl<const W: usize, const MB: usize> Float<W, MB> {

@@ -1,7 +1,7 @@
 use super::{Float, FloatExponent};
+use crate::ExpType;
 use crate::doc;
 use crate::float::UnsignedFloatExponent;
-use crate::ExpType;
 use crate::{Int, Uint};
 
 type Digit = u8;
@@ -231,7 +231,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                 } else {
                     let unshifted_mantissa = mantissa.bitand(mask.not());
                     let shift = Self::MB + 1 - unshifted_mantissa.bits(); // amount of zeros before the first 1 in the fractional part 0.0...01...
-                                                                          // debug_assert!(shift > 0);
+                    // debug_assert!(shift > 0);
                     let fract_mantissa = unshifted_mantissa.shl(shift);
                     let abs_fract_exponent = (shift - small_exponent) as UnsignedFloatExponent; // absolute value of exponent of fractional part
                     let fract_exponent = -(abs_fract_exponent as FloatExponent);
@@ -264,7 +264,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 #[cfg(test)]
 mod tests {
     use crate::test::test_bignum;
-    use crate::test::types::{ftest, FTEST};
+    use crate::test::types::{FTEST, ftest};
 
     test_bignum! {
         function: <ftest>::floor(f: ftest)

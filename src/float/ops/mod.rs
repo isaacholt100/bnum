@@ -140,7 +140,7 @@ impl<const W: usize, const MB: usize> Neg for &Float<W, MB> {
 mod tests {
     use super::*;
     use crate::test::test_bignum;
-    use crate::test::types::{ftest, FTEST};
+    use crate::test::types::{FTEST, ftest};
 
     test_bignum! {
         function: <ftest as Add>::add(a: ftest, b: ftest),

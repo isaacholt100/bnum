@@ -1,8 +1,8 @@
 use super::Int;
 use crate::Uint;
 
-use crate::doc;
 use crate::ExpType;
+use crate::doc;
 use core::cmp::Ordering;
 
 #[doc = doc::const_trait_fillers::impl_desc!()]

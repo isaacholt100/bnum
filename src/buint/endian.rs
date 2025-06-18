@@ -1,6 +1,6 @@
 use super::Uint;
 use crate::doc;
-use crate::{digit, Digit};
+use crate::{Digit, digit};
 // use core::mem::MaybeUninit;
 
 #[doc = doc::endian::impl_desc!(Uint)]

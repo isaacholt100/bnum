@@ -1,6 +1,6 @@
 use super::Uint;
 use crate::doc;
-use crate::{digit, Digit};
+use crate::{Digit, digit};
 
 #[doc = doc::bigint_helpers::impl_desc!()]
 impl<const N: usize> Uint<N> {

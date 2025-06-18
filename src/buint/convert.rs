@@ -96,9 +96,9 @@ impl<const N: usize> From<Uint<N>> for [Digit; N] {
 
 #[cfg(test)]
 mod tests {
+    use crate::BTryFrom;
     use crate::test::cast_types::*;
     use crate::test::{self, types::*};
-    use crate::BTryFrom;
 
     test::test_btryfrom!(utest; TestUint1, TestUint2, TestUint3, TestUint4, TestUint5, TestUint6, TestUint7, TestUint8, TestUint9, TestUint10/*, u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize*/);
 
