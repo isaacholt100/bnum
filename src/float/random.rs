@@ -68,27 +68,27 @@ impl<const W: usize, const MB: usize> Distribution<Float<W, MB>> for Open01 {
 }
 
 #[cfg(test)]
-mod tests {
-    use crate::{float::F32, test::convert};
+crate::test::test_all_widths! {
+    use crate::test::convert;
     use rand::distr::OpenClosed01;
     use rand::rngs::StdRng;
     use rand::{Rng, SeedableRng};
     use rand::{distr::Open01, rngs::SmallRng};
 
-    use super::seeded_rngs;
+    use super::super::seeded_rngs;
 
     #[test]
     fn test_random() {
         let mut r = StdRng::seed_from_u64(0);
         let seed = r.random();
         let (mut r1, mut r2) = seeded_rngs::<SmallRng>(seed);
-        let big: F32 = r1.random();
-        let prim: f32 = r2.random();
+        let big: FTEST = r1.random();
+        let prim: ftest = r2.random();
 
         assert!(convert::test_eq(big, prim));
 
-        let big: F32 = r1.sample(OpenClosed01);
-        let prim: f32 = r2.sample(OpenClosed01);
+        let big: FTEST = r1.sample(OpenClosed01);
+        let prim: ftest = r2.sample(OpenClosed01);
 
         assert!(convert::test_eq(big, prim));
     }

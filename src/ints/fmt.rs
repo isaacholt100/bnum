@@ -44,7 +44,7 @@ macro_rules! impl_format {
     ($($ty: ty), *) => {
         $(
             impl Format for $ty {
-                crate::int::fmt::impl_format_method! {
+                crate::ints::fmt::impl_format_method! {
                     binary: "b",
                     lower_hex: "x",
                     upper_hex: "X",
@@ -79,8 +79,8 @@ pub(crate) use test_formats;
 #[cfg(test)]
 macro_rules! tests {
     ($ty: ty) => {
-        use crate::int::fmt::{Format, self};
-        use crate::test::{test_bignum, types::*};
+        use crate::ints::fmt::{Format, self};
+        use crate::test::test_bignum;
 
         paste::paste! {
             fmt::impl_format!([<$ty:upper>]);
@@ -94,4 +94,4 @@ macro_rules! tests {
 pub(crate) use tests;
 
 #[cfg(test)]
-crate::int::fmt::impl_format!(u128, i128, u64, i64, u32, i32, u16, i16);
+crate::ints::fmt::impl_format!(u128, i128, u64, i64, u32, i32, u16, i16);

@@ -2,14 +2,10 @@
 use crate::cast::As;
 use crate::doc;
 use crate::{ExpType, Int, Uint};
-
-type Digit = u8;
-
-#[cfg(test)]
-pub type F64 = Float<8, 52>;
+use crate::Digit;
 
 #[cfg(test)]
-pub type F32 = Float<4, 23>;
+use crate::types::{F32, F64};
 
 #[cfg(test)]
 impl From<f64> for F64 {
@@ -55,8 +51,6 @@ mod to_str;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-// TODO: THINK ABOUT MAKING FLOAT EXPONENT AT MOST ~128 BITS, THEN COULD USE I128 FOR EXPONENT CALCULATIONS, WOULD BE MUCH FASTER AND USE LESS SPACE
-
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[repr(transparent)]
@@ -64,7 +58,7 @@ pub struct Float<const W: usize, const MB: usize> {
     bits: Uint<W>,
 }
 
-pub(crate) type FloatExponent = i128;
+pub(crate) type FloatExponent = i128; // TODO: decide whether this should be i128 or i32 (or i64). benefit of i128: more exponents possible. benefit of i32: this is what f32, f64 use.
 pub(crate) type UnsignedFloatExponent = u128;
 
 // TODO: implement rand traits
@@ -140,13 +134,13 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     #[must_use = doc::must_use_op!(float)]
     #[inline]
     pub const fn copysign(self, sign: Self) -> Self {
-        let mut self_words = *self.words();
+        let mut bytes = self.to_le_bytes();
         if sign.is_sign_negative() {
-            self_words[W - 1] |= 1 << (Digit::BITS - 1);
+            bytes[W - 1] |= 1 << (Digit::BITS - 1);
         } else {
-            self_words[W - 1] &= (!0) >> 1;
+            bytes[W - 1] &= (!0) >> 1;
         }
-        Self::from_bits(Uint::from_digits(self_words))
+        Self::from_le_bytes(bytes)
     }
 
     #[doc = doc::next_up!(F)]
@@ -215,9 +209,8 @@ impl<const W: usize, const MB: usize> quickcheck::Arbitrary for crate::Float<W, 
 }
 
 #[cfg(test)]
-mod tests {
+crate::test::test_all_widths! {
     use crate::test::test_bignum;
-    use crate::test::types::{FTEST, ftest};
 
     test_bignum! {
         function: <ftest>::copysign(a: ftest, b: ftest)

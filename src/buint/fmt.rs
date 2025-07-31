@@ -79,6 +79,6 @@ impl<const N: usize> UpperExp for Uint<N> {
 }
 
 #[cfg(test)]
-mod tests {
-    crate::int::fmt::tests!(utest);
+crate::test::test_all_widths! {
+    crate::ints::fmt::tests!(utest);
 }

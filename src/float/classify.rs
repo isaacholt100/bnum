@@ -61,15 +61,15 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
     #[inline]
     pub const fn is_zero(&self) -> bool {
-        let words = self.words();
+        let bytes = self.bits.digits;
         let mut i = 0;
         while i < W - 1 {
-            if words[i] != 0 {
+            if bytes[i] != 0 {
                 return false;
             }
             i += 1;
         }
-        let last = words[W - 1];
+        let last = bytes[W - 1];
         last.trailing_zeros() >= Digit::BITS - 1
     }
 
@@ -95,9 +95,8 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 }
 
 #[cfg(test)]
-mod tests {
+crate::test::test_all_widths! {
     use crate::test::test_bignum;
-    use crate::test::types::{FTEST, ftest};
 
     test_bignum! {
         function: <ftest>::is_sign_positive(a: ftest)

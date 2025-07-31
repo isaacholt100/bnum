@@ -2,20 +2,6 @@ use super::{Float, FloatExponent, UnsignedFloatExponent};
 use crate::buint::Uint;
 use crate::doc;
 
-const fn buint_from_usize<const N: usize>(u: usize) -> Uint<N> {
-    const UINT_BITS: usize = <usize>::BITS as usize;
-    let mut out = Uint::ZERO;
-    let mut i = 0;
-    while i << crate::digit::BIT_SHIFT < UINT_BITS {
-        let d = (u >> (i << crate::digit::BIT_SHIFT)) as u8;
-        if d != 0 {
-            out.digits[i] = d;
-        }
-        i += 1;
-    }
-    out
-}
-
 #[doc = doc::consts::impl_desc!()]
 impl<const W: usize, const MB: usize> Float<W, MB> {
     #[doc = doc::consts::RADIX!(F)]
@@ -131,11 +117,10 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::super::{F32, F64};
+crate::test::test_all_widths! {
+    use crate::types::{F32, F64};
     use crate::ExpType;
     use crate::test::TestConvert;
-    use crate::test::types::{FTEST, ftest};
 
     macro_rules! test_constant {
         ($big: ident :: $constant: ident == $primitive: expr) => {

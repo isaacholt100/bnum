@@ -159,9 +159,9 @@ macro_rules! impls {
             }
         }
 
-        crate::int::numtraits::impl_as_primitive_big_num_for_primitive!($Int; u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64);
+        crate::ints::numtraits::impl_as_primitive_big_num_for_primitive!($Int; u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64);
 
-        crate::int::numtraits::as_bigint_impl!([u8, u16, u32, usize, u64, u128, i8, i16, i32, isize, i64, i128, char, bool, f32, f64] as $Int);
+        crate::ints::numtraits::as_bigint_impl!([u8, u16, u32, usize, u64, u128, i8, i16, i32, isize, i64, i128, char, bool, f32, f64] as $Int);
 
         impl<const N: usize, const M: usize> AsPrimitive<crate::Uint<M>> for $Int<N> {
             #[inline]
@@ -298,7 +298,7 @@ pub(crate) use prim_int_method;
 
 macro_rules! prim_int_methods {
     () => {
-        crate::int::numtraits::prim_int_method! {
+        crate::ints::numtraits::prim_int_method! {
             fn count_ones(self) -> u32;
             fn count_zeros(self) -> u32;
             fn leading_zeros(self) -> u32;
@@ -358,7 +358,6 @@ pub(crate) use test_from_primitive;
 #[cfg(test)]
 macro_rules! tests {
     ($int: ty) => {
-        use super::*;
         use num_traits::PrimInt;
         use crate::test::{test_bignum, TestConvert};
 
@@ -464,22 +463,22 @@ macro_rules! tests {
         paste::paste! {
             #[test]
             fn one() {
-                assert_eq!(1 as $int, TestConvert::into([<$int:upper>]::one()));
+                assert_eq!([<$int:upper>]::ONE, TestConvert::into([<$int:upper>]::one()));
             }
 
             #[test]
             fn zero() {
-                assert_eq!(0 as $int, TestConvert::into([<$int:upper>]::zero()));
+                assert_eq!([<$int:upper>]::ZERO, TestConvert::into([<$int:upper>]::zero()));
             }
 
             #[test]
             fn min_value() {
-                assert_eq!(<$int>::min_value(), TestConvert::into([<$int:upper>]::min_value()));
+                assert_eq!([<$int:upper>]::MIN, TestConvert::into([<$int:upper>]::min_value()));
             }
 
             #[test]
             fn max_value() {
-                assert_eq!(<$int>::max_value(), TestConvert::into([<$int:upper>]::max_value()));
+                assert_eq!([<$int:upper>]::MAX, TestConvert::into([<$int:upper>]::max_value()));
             }
         }
 
@@ -505,7 +504,7 @@ macro_rules! tests {
             }
         }
 
-        use crate::int::numtraits::{test_to_primitive, test_from_primitive};
+        use crate::ints::numtraits::{test_to_primitive, test_from_primitive};
 
         test_to_primitive!($int; u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64);
 

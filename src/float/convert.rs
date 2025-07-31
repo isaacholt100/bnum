@@ -28,16 +28,6 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     }
 
     #[inline(always)]
-    pub(crate) const fn from_words(words: [Digit; W]) -> Self {
-        Self::from_bits(Uint::from_digits(words))
-    }
-
-    #[inline(always)]
-    pub(crate) const fn words(&self) -> &[Digit; W] {
-        &self.bits.digits
-    }
-
-    #[inline(always)]
     pub(crate) const fn to_signed_bits(self) -> Int<W> {
         Int::from_bits(self.to_bits())
     }
@@ -305,10 +295,9 @@ macro_rules! test_reversible_conversion {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::super::{F32, F64};
+crate::test::test_all_widths! {
+    use crate::types::{F32, F64};
     use crate::test::test_bignum;
-    use crate::test::types::{FTEST, ftest};
 
     test_bignum! {
         function: <ftest>::to_bits(a: ftest)

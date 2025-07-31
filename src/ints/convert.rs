@@ -94,7 +94,7 @@ where
     U: IntConvertHelper,
     V: IntConvertHelper,
 {
-    if U::BITS <= V::BITS || uint.leading_zeros_at_least_threshold(U::BITS - V::BITS + 1) {
+    if U::BITS <= V::BITS || uint.leading_zeros_at_least_threshold(U::BITS - V::BITS) {
         Ok(V::cast_from(uint))
     } else {
         Err(TryFromIntError(()))

@@ -50,6 +50,6 @@ impl<const N: usize> UpperExp for Int<N> {
 fmt_trait!(UpperHex);
 
 #[cfg(test)]
-mod tests {
-    crate::int::fmt::tests!(itest);
+crate::test::test_all_widths! {
+    crate::ints::fmt::tests!(itest);
 }

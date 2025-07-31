@@ -205,11 +205,9 @@ macro_rules! primitive_and_big_float_cast {
 primitive_and_big_float_cast!(f32, f64);
 
 #[cfg(test)]
-mod tests {
-    use super::CastFrom;
-    use crate::cast::CastTo;
+crate::test::test_all_widths! {
+    use crate::cast::{CastFrom, CastTo};
     use crate::test::cast_types::*;
-    use crate::test::types::{FTEST, ITEST, UTEST, ftest};
     use crate::test::{test_from, test_into};
 
     test_from! {
@@ -227,12 +225,12 @@ mod tests {
         use crate::cast::As;
         let f1 = FTEST::from_bits(3472883712u32.as_());
         let f2 = f32::from_bits(3472883712u32);
-        dbg!(f2);
+        // dbg!(f2);
         let u1 = u32::cast_from(f1);
         let u2 = u32::cast_from(f2);
-        println!("{:?}", u1);
-        println!("{:?}", u2);
+        // println!("{:?}", u1);
+        // println!("{:?}", u2);
     }
 
-    // crate::int::cast::test_cast_to_bigint!(ftest; UTESTD8, UTESTD16, UTESTD32, UTESTD64, TestUint1, TestUint2, TestUint3, TestUint4, TestUint5, TestUint6, TestUint7, TestUint8, ITESTD8, ITESTD16, ITESTD32, ITESTD64, TestInt1, TestInt2, TestInt3, TestInt4, TestInt5, TestInt6, TestInt7, TestInt8);
+    // crate::ints::cast::test_cast_to_bigint!(ftest; UTESTD8, UTESTD16, UTESTD32, UTESTD64, TestUint1, TestUint2, TestUint3, TestUint4, TestUint5, TestUint6, TestUint7, TestUint8, ITESTD8, ITESTD16, ITESTD32, ITESTD64, TestInt1, TestInt2, TestInt3, TestInt4, TestInt5, TestInt6, TestInt7, TestInt8);
 }

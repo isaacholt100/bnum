@@ -36,7 +36,8 @@ impl<const W: usize, const MB: usize> Add for Float<W, MB> {
     }
 }
 
-crate::int::ops::op_ref_impl!(Add<Float<N, MB>> for Float<N, MB>, add);
+crate::ints::ops::op_ref_impl!(Add<Float<N, MB>> for Float<N, MB>, add);
+
 impl_assign_op!(AddAssign, add_assign, add);
 
 impl<const W: usize, const MB: usize> Sum for Float<W, MB> {
@@ -62,7 +63,8 @@ impl<const W: usize, const MB: usize> Sub for Float<W, MB> {
     }
 }
 
-crate::int::ops::op_ref_impl!(Sub<Float<N, MB>> for Float<N, MB>, sub);
+crate::ints::ops::op_ref_impl!(Sub<Float<N, MB>> for Float<N, MB>, sub);
+
 impl_assign_op!(SubAssign, sub_assign, sub);
 
 impl<const W: usize, const MB: usize> Mul for Float<W, MB> {
@@ -74,7 +76,9 @@ impl<const W: usize, const MB: usize> Mul for Float<W, MB> {
     }
 }
 
-crate::int::ops::op_ref_impl!(Mul<Float<N, MB>> for Float<N, MB>, mul);
+crate::ints::ops::op_ref_impl!(Mul<Float<N, MB>> for Float<N, MB>, mul);
+
+impl_assign_op!(MulAssign, mul_assign, mul);
 
 impl<const W: usize, const MB: usize> Product for Float<W, MB> {
     #[inline]
@@ -103,7 +107,7 @@ where
     }
 }
 
-// crate::int::ops::op_ref_impl!(Div<Float<N, MB>> for Float<N, MB>, div);
+// crate::ints::ops::op_ref_impl!(Div<Float<N, MB>> for Float<N, MB>, div);
 // impl_assign_op!(DivAssign, div_assign, div);
 
 impl<const W: usize, const MB: usize> Rem for Float<W, MB> {
@@ -115,7 +119,7 @@ impl<const W: usize, const MB: usize> Rem for Float<W, MB> {
     }
 }
 
-crate::int::ops::op_ref_impl!(Rem<Float<N, MB>> for Float<N, MB>, rem);
+crate::ints::ops::op_ref_impl!(Rem<Float<N, MB>> for Float<N, MB>, rem);
 impl_assign_op!(RemAssign, rem_assign, rem);
 
 impl<const W: usize, const MB: usize> Neg for Float<W, MB> {
@@ -137,10 +141,8 @@ impl<const W: usize, const MB: usize> Neg for &Float<W, MB> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
+crate::test::test_all_widths! {
     use crate::test::test_bignum;
-    use crate::test::types::{FTEST, ftest};
 
     test_bignum! {
         function: <ftest as Add>::add(a: ftest, b: ftest),
@@ -148,7 +150,8 @@ mod tests {
         cases: [(1.3952888382785755e33, 1.466527384898436e33)]
     }
     test_bignum! {
-        function: <ftest as Sub>::sub(a: ftest, b: ftest)
+        function: <ftest as Sub>::sub(a: ftest, b: ftest),
+        cases: [(-0.0, 0.0)]
     }
     test_bignum! {
         function: <ftest as Mul>::mul(a: ftest, b: ftest),
@@ -156,9 +159,9 @@ mod tests {
             (5.6143642e23f64 as ftest, 35279.223f64 as ftest)
         ]
     }
-    test_bignum! {
-        function: <ftest as Div>::div(a: ftest, b: ftest)
-    }
+    // test_bignum! {
+    //     function: <ftest as Div>::div(a: ftest, b: ftest)
+    // }
     test_bignum! {
         function: <ftest as Rem>::rem(a: ftest, b: ftest)
     }

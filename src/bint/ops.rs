@@ -78,11 +78,11 @@ impl<const N: usize> Rem for Int<N> {
     }
 }
 
-crate::int::ops::impls!(Int);
+crate::ints::ops::impls!(Int);
 
 #[cfg(test)]
-mod tests {
-    use crate::test::{debug_skip, test_bignum, types::*};
+crate::test::test_all_widths! {
+    use crate::test::{debug_skip, test_bignum};
     use core::ops::Neg;
 
     test_bignum! {

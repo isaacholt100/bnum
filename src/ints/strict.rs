@@ -94,7 +94,7 @@ pub(crate) use impls;
 #[cfg(all(test, feature = "nightly"))] // since strict_overflow_ops are not stable yet
 macro_rules! tests {
     ($int: ty) => {
-        use crate::test::{test_bignum, types::*};
+        use crate::test::test_bignum;
 
         test_bignum! {
             function: <$int>::strict_add(a: $int, b: $int),

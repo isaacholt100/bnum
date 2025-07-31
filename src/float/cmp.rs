@@ -101,25 +101,22 @@ impl<const W: usize, const MB: usize> PartialOrd for Float<W, MB> {
 }
 
 #[cfg(test)]
-mod tests {
+crate::test::test_all_widths! {
     use crate::test::test_bignum;
-    use crate::test::types::{FTEST, ftest};
 
     test_bignum! {
-        function: <ftest>::max(a: ftest, b: ftest),
-        cases: [(0.0, -0.0), (-0.0, 0.0)]
+        function: <ftest>::max(a: ftest, b: ftest)
     }
     test_bignum! {
-        function: <ftest>::min(a: ftest, b: ftest),
-        cases: [(0.0, -0.0), (-0.0, 0.0)]
+        function: <ftest>::min(a: ftest, b: ftest)
     }
+    #[cfg(feature = "nightly")]
     test_bignum! {
-        function: <ftest>::maximum(a: ftest, b: ftest),
-        cases: [(0.0, -0.0), (-0.0, 0.0)]
+        function: <ftest>::maximum(a: ftest, b: ftest)
     }
+    #[cfg(feature = "nightly")]
     test_bignum! {
-        function: <ftest>::minimum(a: ftest, b: ftest),
-        cases: [(0.0, -0.0), (-0.0, 0.0)]
+        function: <ftest>::minimum(a: ftest, b: ftest)
     }
     test_bignum! {
         function: <ftest>::clamp(a: ftest, b: ftest, c: ftest),

@@ -46,7 +46,7 @@ macro_rules! assign_op_impl {
             }
         }
 
-        crate::int::ops::op_ref_impl!($OpTrait<$rhs> for $Struct<N>, $op);
+        crate::ints::ops::op_ref_impl!($OpTrait<$rhs> for $Struct<N>, $op);
     }
 }
 pub(crate) use assign_op_impl;
@@ -150,7 +150,7 @@ pub(crate) use shift_self_impl;
 
 macro_rules! all_shift_impls {
     ($Struct: ident) => {
-        crate::int::ops::try_shift_impl!(
+        crate::ints::ops::try_shift_impl!(
             $Struct;
             Shl,
             shl,
@@ -165,7 +165,7 @@ macro_rules! all_shift_impls {
             i128
         );
 
-        crate::int::ops::try_shift_impl!(
+        crate::ints::ops::try_shift_impl!(
             $Struct;
             Shr,
             shr,
@@ -180,11 +180,11 @@ macro_rules! all_shift_impls {
             i128
         );
 
-        crate::int::ops::shift_impl!($Struct, Shl, shl, ShlAssign, shl_assign, u8, u16);
+        crate::ints::ops::shift_impl!($Struct, Shl, shl, ShlAssign, shl_assign, u8, u16);
 
-        crate::int::ops::shift_impl!($Struct, Shr, shr, ShrAssign, shr_assign, u8, u16);
+        crate::ints::ops::shift_impl!($Struct, Shr, shr, ShrAssign, shr_assign, u8, u16);
 
-        crate::int::ops::try_shift_impl!(
+        crate::ints::ops::try_shift_impl!(
             $Struct;
             Shl,
             shl,
@@ -196,7 +196,7 @@ macro_rules! all_shift_impls {
             u128
         );
 
-        crate::int::ops::try_shift_impl!(
+        crate::ints::ops::try_shift_impl!(
             $Struct;
             Shr,
             shr,
@@ -208,7 +208,7 @@ macro_rules! all_shift_impls {
             u128
         );
 
-        crate::int::ops::shift_self_impl!(
+        crate::ints::ops::shift_self_impl!(
             $Struct;
             Shl<Uint>,
             shl,
@@ -217,7 +217,7 @@ macro_rules! all_shift_impls {
             "attempt to shift left with overflow"
         );
 
-        crate::int::ops::shift_self_impl!(
+        crate::ints::ops::shift_self_impl!(
             $Struct;
             Shr<Uint>,
             shr,
@@ -227,7 +227,7 @@ macro_rules! all_shift_impls {
         );
 
         #[cfg(feature = "signed")]
-        crate::int::ops::shift_self_impl!(
+        crate::ints::ops::shift_self_impl!(
             $Struct;
             Shl<Int>,
             shl,
@@ -237,7 +237,7 @@ macro_rules! all_shift_impls {
         );
 
         #[cfg(feature = "signed")]
-        crate::int::ops::shift_self_impl!(
+        crate::ints::ops::shift_self_impl!(
             $Struct;
             Shr<Int>,
             shr,
@@ -253,7 +253,7 @@ pub(crate) use all_shift_impls;
 macro_rules! shift_assign_ops {
     ($OpTrait: ident, $AssignTrait: ident <$($rhs: ty), *> for $Struct: ident, $assign: ident, $op: ident) => {
         $(
-            crate::int::ops::assign_op_impl!($OpTrait, $AssignTrait<$rhs> for $Struct, $assign, $op);
+            crate::ints::ops::assign_op_impl!($OpTrait, $AssignTrait<$rhs> for $Struct, $assign, $op);
         )*
     };
 }
@@ -335,7 +335,7 @@ macro_rules! impls {
 
             #[inline]
             fn not(self) -> $Struct<N> {
-                (*self).not() // TODO: maybe use separate impl for this as well
+                (*self).not()
             }
         }
 
@@ -357,7 +357,7 @@ macro_rules! impls {
             }
         }
 
-        crate::int::ops::all_shift_impls!($Struct);
+        crate::ints::ops::all_shift_impls!($Struct);
 
         impl<const N: usize> Sub for $Struct<N> {
             type Output = Self;
@@ -368,19 +368,19 @@ macro_rules! impls {
             }
         }
 
-        crate::int::ops::assign_op_impl!(Add, AddAssign<$Struct<N>> for $Struct, add_assign, add);
-        crate::int::ops::assign_op_impl!(BitAnd, BitAndAssign<$Struct<N>> for $Struct, bitand_assign, bitand);
-        crate::int::ops::assign_op_impl!(BitOr, BitOrAssign<$Struct<N>> for $Struct, bitor_assign, bitor);
-        crate::int::ops::assign_op_impl!(BitXor, BitXorAssign<$Struct<N>> for $Struct, bitxor_assign, bitxor);
-        crate::int::ops::assign_op_impl!(Div, DivAssign<$Struct<N>> for $Struct, div_assign, div);
-        crate::int::ops::assign_op_impl!(Mul, MulAssign<$Struct<N>> for $Struct, mul_assign, mul);
-        crate::int::ops::assign_op_impl!(Rem, RemAssign<$Struct<N>> for $Struct, rem_assign, rem);
+        crate::ints::ops::assign_op_impl!(Add, AddAssign<$Struct<N>> for $Struct, add_assign, add);
+        crate::ints::ops::assign_op_impl!(BitAnd, BitAndAssign<$Struct<N>> for $Struct, bitand_assign, bitand);
+        crate::ints::ops::assign_op_impl!(BitOr, BitOrAssign<$Struct<N>> for $Struct, bitor_assign, bitor);
+        crate::ints::ops::assign_op_impl!(BitXor, BitXorAssign<$Struct<N>> for $Struct, bitxor_assign, bitxor);
+        crate::ints::ops::assign_op_impl!(Div, DivAssign<$Struct<N>> for $Struct, div_assign, div);
+        crate::ints::ops::assign_op_impl!(Mul, MulAssign<$Struct<N>> for $Struct, mul_assign, mul);
+        crate::ints::ops::assign_op_impl!(Rem, RemAssign<$Struct<N>> for $Struct, rem_assign, rem);
 
-        crate::int::ops::shift_assign_ops!(Shl, ShlAssign<u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize> for $Struct, shl_assign, shl);
+        crate::ints::ops::shift_assign_ops!(Shl, ShlAssign<u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize> for $Struct, shl_assign, shl);
 
-        crate::int::ops::shift_assign_ops!(Shr, ShrAssign<u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize> for $Struct, shr_assign, shr);
+        crate::ints::ops::shift_assign_ops!(Shr, ShrAssign<u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize> for $Struct, shr_assign, shr);
 
-        crate::int::ops::assign_op_impl!(Sub, SubAssign<$Struct<N>> for $Struct, sub_assign, sub);
+        crate::ints::ops::assign_op_impl!(Sub, SubAssign<$Struct<N>> for $Struct, sub_assign, sub);
     };
 }
 pub(crate) use impls;

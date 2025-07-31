@@ -24,7 +24,7 @@ This crate uses Rust's const generics to allow creation of integers of arbitrary
 
 - **Zero dependencies by default**: `bnum` does not depend on any other crates by default. Support for crates such as [`rand`](https://docs.rs/rand/latest/rand/) and [`serde`](https://docs.rs/serde/latest/serde/) can be enabled with crate [features](#features).
 - **`no-std` compatible**: `bnum` can be used in `no_std` environments, provided that the [`arbitrary`](#fuzzing) and [`quickcheck`](#quickcheck) features are not enabled.
-- **Compile-time integer parsing**: the `from_str_radix` and `parse_str_radix` methods on `bnum` integers are `const`, which allows parsing of integers from string slices at compile time. Note that this is more powerful than compile-time parsing of integer literals. This is because it allows parsing of strings in all radices from `2` to `36` inclusive instead of just `2`, `8`, `10` and `16`. Additionally, the string to be parsed does not have to be a literal: it could, for example, be obtained via [`include_str!`](https://doc.rust-lang.org/core/macro.include_str.html), or [`env!`](https://doc.rust-lang.org/core/macro.env.html).
+- **Compile-time integer parsing**: the `from_str_radix` methods on `bnum` integers are `const`, which allows parsing of integers from string slices at compile time. Note that this is more powerful than compile-time parsing of integer literals. This is because it allows parsing of strings in all radices from `2` to `36` inclusive instead of just `2`, `8`, `10` and `16`. Additionally, the string to be parsed does not have to be a literal: it could, for example, be obtained via [`include_str!`](https://doc.rust-lang.org/core/macro.include_str.html), or [`env!`](https://doc.rust-lang.org/core/macro.env.html).
 - **`const` evaluation**: nearly all methods defined on `bnum` integers are `const`, which allows complex compile-time calculations.
 
 ## Example Usage
@@ -32,18 +32,13 @@ This crate uses Rust's const generics to allow creation of integers of arbitrary
 **NB: the examples in the documentation use specific type aliases (e.g. `U256`, `U512`,  or `I256`, `I512`) to give examples of correct usage for most methods. There is nothing special about these types in particular: all methods that are shown with these are implemented for all unsigned/signed `bnum` integers for any value of `N`.**
 
 ```rust
-// As of version 0.6.0, you can parse integers from string slices at compile time with the const methods `from_str_radix` or `parse_str_radix`:
-use bnum::types::{U256, I256};
+// As of version 0.6.0, you can parse integers from string slices at compile time with the const method `from_str_radix`:
+use bnum::types::U256;
 use bnum::errors::ParseIntError;
 
-// `parse_str_radix` returns an integer, and panics if the string fails to parse
-const UINT_FROM_DECIMAL_STR: U256 = U256::parse_str_radix("12345678901234567890", 10);
-
-// If you are not sure that the string will successfully parse, you can use `from_str_radix` which returns a `Result`
-const RESULT_INT_FROM_HEXA_STR: Result<I256, ParseIntError> = I256::from_str_radix("-1234567890abcdef", 16);
+const UINT_FROM_DECIMAL_STR: U256 = U256::from_str_radix("12345678901234567890", 10).unwrap();
 
 assert_eq!(format!("{}", UINT_FROM_DECIMAL_STR), "12345678901234567890");
-assert_eq!(format!("{:x}", RESULT_INT_FROM_HEXA_STR.unwrap().abs()), "1234567890abcdef");
 ```
 
 ```rust
@@ -107,7 +102,7 @@ This crate is tested with the [`quickcheck`](https://docs.rs/quickcheck/latest/q
 
 ## Minimum Supported Rust Version
 
-The current Minimum Supported Rust Version (MSRV) is `1.65.0`. <!-- TODO: check that this is inline with msrv specified in Cargo.toml-->
+The current Minimum Supported Rust Version (MSRV) is `1.85.1`. <!-- TODO: check that this is inline with msrv specified in Cargo.toml-->
 
 ## Documentation
 

@@ -63,17 +63,17 @@ macro_rules! type_str {
 pub(crate) use type_str;
 
 macro_rules! example_header {
-    ($sign: ident $bits: literal) => {
+    ($Type: expr) => {
         concat!(
 "
 
 # Examples
-        
+
+Basic usage: 
 ```
 use bnum::types::",
-            doc::type_str!($sign $bits),
+            $Type,
 ";
-
 "
         )
     }
@@ -95,19 +95,36 @@ macro_rules! small_sign {
 
 pub(crate) use small_sign;
 
+macro_rules! doc_string {
+    { $Type: ident :: $name: ident, $($($desc: expr)+)? $(, $($code: expr)+)? } => {
+        concat!(
+            $($("\n\n", $desc), +,)?
+            $(
+                doc::example_header!(stringify!($Type)),
+                $($code, "\n"), +,
+                "\n```"
+            )?
+        )
+    }
+}
+
+pub(crate) use doc_string;
+
 macro_rules! doc_comment {
     { $(# $item_type: ident . $method: ident, )? $sign: ident $bits: literal, $($($desc: expr)+)? $(, $($code: expr)+)? } => {
         concat!(
             $($("\n\n", $desc), +,)?
             $("\n\n", "See also: <https://doc.rust-lang.org/std/primitive.", doc::small_sign!($sign), "64.html#", stringify!($item_type), ".", stringify!($method), ">.", )?
             $(
-                doc::example_header!($sign $bits),
+                doc::example_header!(doc::type_str!($sign $bits)),
                 $($code), +,
                 "\n```"
             )?
         )
     }
 }
+
+pub(crate) use doc_comment;
 
 macro_rules! link_doc_comment_method {
     ($($name: ident), *) => {
@@ -148,8 +165,6 @@ macro_rules! link_doc_comment_constant {
 
 #[cfg(feature = "float")]
 pub(crate) use link_doc_comment_constant;
-
-pub(crate) use doc_comment;
 
 macro_rules! count_ones {
     ($sign: ident $bits: literal) => {

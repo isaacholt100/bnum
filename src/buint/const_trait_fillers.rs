@@ -124,9 +124,9 @@ impl<const N: usize> Uint<N> {
         Ordering::Equal
     }
 
-    crate::int::cmp::impls!();
+    crate::ints::cmp::impls!();
 
-    crate::int::ops::trait_fillers!();
+    crate::ints::ops::trait_fillers!();
 
     #[inline]
     pub const fn div(self, rhs: Self) -> Self {

@@ -109,10 +109,8 @@ impl<const W: usize, const MB: usize> TotalOrder for Float<W, MB> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
+crate::test::test_all_widths! {
     use crate::test::test_bignum;
-    use crate::test::types::{FTEST, ftest};
 
     test_bignum! {
         function: <ftest as Zero>::is_zero(a: ref &ftest)

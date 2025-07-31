@@ -9,7 +9,7 @@ macro_rules! int_try_from_to_primitive_int {
 
                 #[inline]
                 fn try_from(from: $int) -> Result<Self, Self::Error> {
-                    crate::int::convert::int_try_from_int(from)
+                    crate::ints::convert::int_try_from_int(from)
                 }
             }
 
@@ -17,7 +17,7 @@ macro_rules! int_try_from_to_primitive_int {
                 type Error = TryFromIntError;
 
                 fn try_from(from: Int<N>) -> Result<Self, Self::Error> {
-                    crate::int::convert::int_try_from_int(from)
+                    crate::ints::convert::int_try_from_int(from)
                 }
             }
         )*
@@ -34,7 +34,7 @@ macro_rules! int_try_from_to_primitive_uint {
 
                 #[inline]
                 fn try_from(uint: $uint) -> Result<Self, Self::Error> {
-                    crate::int::convert::int_try_from_uint(uint)
+                    crate::ints::convert::int_try_from_uint(uint)
                 }
             }
 
@@ -43,7 +43,7 @@ macro_rules! int_try_from_to_primitive_uint {
 
                 #[inline]
                 fn try_from(int: Int<N>) -> Result<$uint, Self::Error> {
-                    crate::int::convert::uint_try_from_int(int)
+                    crate::ints::convert::uint_try_from_int(int)
                 }
             }
         )*
@@ -76,7 +76,7 @@ impl<const N: usize, const M: usize> TryFrom<Int<N>> for Uint<M> {
     type Error = TryFromIntError;
 
     fn try_from(from: Int<N>) -> Result<Self, Self::Error> {
-        crate::int::convert::uint_try_from_int(from)
+        crate::ints::convert::uint_try_from_int(from)
     }
 }
 
@@ -84,7 +84,7 @@ impl<const N: usize, const M: usize> TryFrom<Uint<N>> for Int<M> {
     type Error = TryFromIntError;
 
     fn try_from(from: Uint<N>) -> Result<Self, Self::Error> {
-        crate::int::convert::int_try_from_uint(from)
+        crate::ints::convert::int_try_from_uint(from)
     }
 }
 
@@ -92,16 +92,15 @@ impl<const M: usize, const N: usize> crate::BTryFrom<Int<M>> for Int<N> {
     type Error = TryFromIntError;
 
     fn try_from(from: Int<M>) -> Result<Self, Self::Error> {
-        crate::int::convert::int_try_from_int(from)
+        crate::ints::convert::int_try_from_int(from)
     }
 }
 
 #[cfg(test)]
-mod tests {
+crate::test::test_all_widths! {
     use crate::BTryFrom;
     use crate::test;
     use crate::test::cast_types::*;
-    use crate::test::types::*;
 
     test::test_btryfrom!(itest; TestInt1, TestInt2, TestInt3, TestInt4, TestInt5, TestInt6, TestInt7, TestInt8, TestInt9, TestInt10);
 

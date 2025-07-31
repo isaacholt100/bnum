@@ -2,9 +2,7 @@ use super::{Float, FloatExponent};
 use crate::ExpType;
 use crate::doc;
 use crate::float::UnsignedFloatExponent;
-use crate::{Int, Uint};
-
-type Digit = u8;
+use crate::{Uint, Digit};
 
 impl<const W: usize> Uint<W> {
     #[inline]
@@ -21,7 +19,7 @@ impl<const W: usize> Uint<W> {
             i = 1;
         } else {
             loop {
-                let shift = i << crate::digit::BIT_SHIFT; // TODO: make sure to generalise when using general digits
+                let shift = i << crate::digit::BIT_SHIFT;
                 if i >= W || shift >= ExpType::BITS as usize {
                     break;
                 }
@@ -45,8 +43,7 @@ impl<const W: usize> Uint<W> {
         let mut out = Self::ZERO;
         let mut i = 0;
         while i << crate::digit::BIT_SHIFT < ExpType::BITS as usize {
-            // TODO: make sure to generalise when using general digits
-            let d = (int >> (i << crate::digit::BIT_SHIFT)) as Digit; // TODO: make sure to generalise when using general digits
+            let d = (int >> (i << crate::digit::BIT_SHIFT)) as Digit;
             if d != 0 {
                 if i < W {
                     out.digits[i] = d;
@@ -262,9 +259,8 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 }
 
 #[cfg(test)]
-mod tests {
+crate::test::test_all_widths! {
     use crate::test::test_bignum;
-    use crate::test::types::{FTEST, ftest};
 
     test_bignum! {
         function: <ftest>::floor(f: ftest)

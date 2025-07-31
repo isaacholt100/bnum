@@ -106,8 +106,8 @@ impl<const N: usize> Int<N> {
 }
 
 #[cfg(test)]
-mod tests {
-    use crate::test::{test_bignum, types::*};
+crate::test::test_all_widths! {
+    use crate::test::test_bignum;
 
     test_bignum! {
         function: <itest>::wrapping_add(a: itest, b: itest)

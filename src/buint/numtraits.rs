@@ -59,9 +59,9 @@ use num_traits::{
 use crate::cast::CastFrom;
 use crate::cast::float::ConvertFloatParts;
 use crate::helpers::Bits;
-use crate::int::numtraits::num_trait_impl;
+use crate::ints::numtraits::num_trait_impl;
 
-crate::int::numtraits::impls!(Uint);
+crate::ints::numtraits::impls!(Uint);
 
 macro_rules! from_float {
     ($method: ident, $float: ty, $decoder: ident, $mant_bits: ident) => {
@@ -251,7 +251,7 @@ impl<const N: usize> Integer for Uint<N> {
 }
 
 impl<const N: usize> PrimInt for Uint<N> {
-    crate::int::numtraits::prim_int_methods!();
+    crate::ints::numtraits::prim_int_methods!();
 
     #[inline]
     fn signed_shl(self, n: u32) -> Self {
@@ -429,8 +429,6 @@ impl<const N: usize> ToPrimitive for Uint<N> {
 impl<const N: usize> Unsigned for Uint<N> {}
 
 #[cfg(test)]
-mod tests {
-    use crate::test::types::*;
-
-    crate::int::numtraits::tests!(utest);
+crate::test::test_all_widths! {
+    crate::ints::numtraits::tests!(utest);
 }

@@ -11,14 +11,7 @@ use bnum::{Int, Uint};
 use bnum::Float;
 use bnum::cast::As;
 
-type F256 = Float<32, 236>;
-type F128 = Float<32, 236>;
-type F64 = Float<8, 48>;
-type F32 = Float<4, 23>;
-
-type U256 = bnum::Uint<32>;
-type U1024 = bnum::Uint<128>;
-type I1024 = bnum::Int<128>;
+use bnum::types::{F32, F64, F128, F256, U256, U1024, I1024};
 
 
 fn bench_fibs(c: &mut Criterion) {
@@ -69,8 +62,8 @@ macro_rules! new_to_old {
             impl BFrom<Uint<{$N * 8}>> for bnum_old::BUint<$N> {
                 fn bfrom(b: Uint<{$N * 8}>) -> Self {
                     let digits = *b.digits();
-                    let old_d8 = bnum_old::Uint::from_digits(digits);
-                    let out = <Self as bnum_old::cast::CastFrom<bnum_old::Uint<{$N * 8}>>>::cast_from(old_d8);
+                    let old_d8 = bnum_old::BUintD8::from_digits(digits);
+                    let out = <Self as bnum_old::cast::CastFrom<bnum_old::BUintD8<{$N * 8}>>>::cast_from(old_d8);
                     // assert_eq!(out.to_str_radix(16), b.to_str_radix(16));
                     out
                 }

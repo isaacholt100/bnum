@@ -17,7 +17,7 @@ use core::ops::{Deref, DerefMut};
 
 /// Wrapper type designed to be filled with random big integers.
 ///
-/// This type exists because [`rand::Fill`](https://docs.rs/rand/latest/rand/trait.Fill.html) can't be implemented for `[Uint<N>]` or `[Int<N>]` due to Rust's orphan rules. Instead, it is implemented for `Slice<Uint<N>>` and `Slice<Int<N>>`. The underlying slice can then be accessed by calling [`AsRef::as_ref`](https://doc.rust-lang.org/core/convert/trait.AsRef.html#tymethod.as_ref) or [`AsMut::as_mut`](https://doc.rust-lang.org/core/convert/trait.AsMut.html#tymethod.as_mut) on the wrapper, or deferencing it. An alternative way of filling a slice with random big integers is using the [`try_fill_slice`] method in this crate's [`random`](crate::random) module.
+/// This type exists because [`rand::Fill`](https://docs.rs/rand/latest/rand/trait.Fill.html) can't be implemented for `[Uint<N>]` or `[Int<N>]` due to Rust's orphan rules. Instead, it is implemented for `Slice<Uint<N>>` and `Slice<Int<N>>`. The underlying slice can then be accessed by calling [`AsRef::as_ref`](https://doc.rust-lang.org/core/convert/trait.AsRef.html#tymethod.as_ref) or [`AsMut::as_mut`](https://doc.rust-lang.org/core/convert/trait.AsMut.html#tymethod.as_mut) on the wrapper, or deferencing it. An alternative way of filling a slice with random big integers is using the [`fill_slice`] method in this crate's [`random`](crate::random) module.
 #[repr(transparent)]
 pub struct Slice<T>(pub [T]);
 
@@ -97,6 +97,10 @@ macro_rules! fill_impl {
         }
     };
 }
+const fn widening_mul_u32(a: u32, b: u32) -> (u32, u32) {
+    let m = a as u64 * b as u64;
+    (m as u32, (m >> 32) as u32)
+}
 
 macro_rules! uniform_int_impl {
     ($ty: ty, $u_large: ty $(, $as_unsigned: ident, $as_signed: ident)?) => {
@@ -134,33 +138,60 @@ macro_rules! uniform_int_impl {
                 }
 
                 let range = high.wrapping_sub(low).wrapping_add(<$ty>::ONE)$(.$as_unsigned())?;
-                let ints_to_reject = if !range.is_zero() {
-                    (<$u_large>::MAX - range + <$u_large>::ONE) % range
+                let thresh = if !range.is_zero() {
+                    if <$ty>::BITS <= 32 { // because rand uses u32 to generate <= 32-bit integers
+                        use crate::cast::As;
+
+                        let range = range.as_::<u32>();
+                        let t = range.wrapping_neg() % range;
+                        t.as_::<$ty>()
+                    } else {
+                        $(<$ty>::$as_signed)?(range.wrapping_neg() % range)
+                    }
                 } else {
-                    <$u_large>::ZERO
+                    $(<$ty>::$as_signed)?(<$u_large>::ZERO)
                 };
 
                 Ok(UniformInt {
                     low,
                     range: $(<$ty>::$as_signed)?(range),
-                    z: $(<$ty>::$as_signed)?(ints_to_reject),
+                    thresh: thresh,
                 })
             }
 
             #[inline]
             fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Self::X {
+                if <$ty>::BITS <= 32 { // because rand uses u32 to generate <= 32-bit integers
+                    use crate::cast::As;
+
+                    let range = self.range$(.$as_unsigned())?.as_::<u32>();
+                    if range == 0 {
+                        rng.random()
+                    } else {
+                        let thresh = self.thresh$(.$as_unsigned())?.as_::<u32>();
+
+                        loop {
+                            let v: u32 = rng.random();
+                            let (lo, hi) = widening_mul_u32(v, range);
+                            if lo >= thresh {
+                                return self.low.wrapping_add(hi.as_::<$ty>());
+                            }
+                        }
+                    }
+                }
                 let range = self.range$(.$as_unsigned())?;
-                if !range.is_zero() {
-                    let zone = <$u_large>::MAX - (self.z)$(.$as_unsigned())?;
+                if range.is_zero() {
+                    rng.random()
+                } else {
+                    let thresh = self.thresh$(.$as_unsigned())?;
+
                     loop {
                         let v: $u_large = rng.random();
                         let (lo, hi) = v.widening_mul(range);
-                        if lo <= zone {
+                        if lo >= thresh {
                             return self.low.wrapping_add($(<$ty>::$as_signed)?(hi));
                         }
                     }
-                } else {
-                    rng.random()
                 }
             }
 
@@ -190,24 +221,57 @@ macro_rules! uniform_int_impl {
                     return Err(rand::distr::uniform::Error::EmptyRange);
                 }
                 let range = high.wrapping_sub(low).wrapping_add(<$ty>::ONE)$(.$as_unsigned())?;
+
+                if <$ty>::BITS <= 32 { // because rand uses u32 to generate <= 32-bit integers
+                    use crate::cast::As;
+
+                    let range = range.as_::<u32>();
+                    if range == 0 {
+                        return Ok(rng.random());
+                    }
+                    let (mut lo, mut result) = widening_mul_u32(rng.random::<u32>(), range);
+                    while lo > range.wrapping_neg() {
+                        let (new_lo, new_hi) = widening_mul_u32(rng.random::<u32>(), range);
+                        match lo.checked_add(new_hi) {
+                            Some(x) => {
+                                if x == u32::MAX {
+                                    lo = new_lo;
+                                } else {
+                                    break;
+                                }
+                            },
+                            None => {
+                                result += 1;
+                                break;
+                            }
+                        }
+                    }
+
+                    return Ok(low.wrapping_add(result.as_::<$ty>()));
+                }
                 if range.is_zero() {
                     return Ok(rng.random());
                 }
 
-                let zone = if <$u_large>::MAX.bits() <= 16 {
-                    let ints_to_reject = (<$u_large>::MAX - range + <$u_large>::ONE) % range;
-                    <$u_large>::MAX - ints_to_reject
-                } else {
-                    (range << range.leading_zeros()).wrapping_sub(<$u_large>::ONE)
-                };
-
-                loop {
-                    let v: $u_large = rng.random();
-                    let (lo, hi) = v.widening_mul(range);
-                    if lo <= zone {
-                        return Ok(low.wrapping_add($(<$ty>::$as_signed)?(hi)));
+                let (mut lo, mut result) = rng.random::<$u_large>().widening_mul(range);
+                while lo > range.wrapping_neg() {
+                    let (new_lo, new_hi) = rng.random::<$u_large>().widening_mul(range);
+                    match lo.checked_add(new_hi) {
+                        Some(x) => {
+                            if x == <$u_large>::MAX {
+                                lo = new_lo;
+                            } else {
+                                break;
+                            }
+                        },
+                        None => {
+                            result += <$u_large>::ONE;
+                            break;
+                        }
                     }
                 }
+
+                Ok(low.wrapping_add($(<$ty>::$as_signed)?(result)))
             }
         }
     };
@@ -222,7 +286,6 @@ macro_rules! test_random {
                     #[allow(non_snake_case)]
                     fn [<quickcheck_ $Rng _gen_ $int>](seed: u64) -> bool {
                         use crate::test::convert;
-                        use crate::test::types::*;
                         use rand::Rng;
                         use rand::rngs::$Rng;
 
@@ -282,6 +345,18 @@ macro_rules! test_random {
 
                         result &= convert::test_eq(big, primitive);
 
+                        use rand::distr::Uniform;
+
+                        let big = Uniform::new(min_big, max_big)
+                            .unwrap()
+                            .sample(&mut rng);
+
+                        let primitive = Uniform::new(min, max)
+                            .unwrap()
+                            .sample(&mut rng2);
+
+                        result &= convert::test_eq(big, primitive);
+
 						quickcheck::TestResult::from_bool(result)
 					}
 				}
@@ -298,7 +373,7 @@ macro_rules! test_random {
 pub struct UniformInt<X> {
     low: X,
     range: X,
-    z: X,
+    thresh: X,
 }
 
 #[cfg(feature = "signed")]
@@ -313,7 +388,7 @@ impl<const N: usize> Distribution<Uint<N>> for StandardUniform {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Uint<N> {
         let mut digits = [0; N];
         rng.fill(&mut digits);
-        Uint::from_digits(digits)
+        Uint::from_le_bytes(digits)
     }
 }
 
@@ -335,8 +410,7 @@ uniform_int_impl!(Uint<N>, Uint<N>);
 uniform_int_impl!(Int<N>, Uint<N>, to_bits, from_bits);
 
 #[cfg(test)]
-mod tests {
-    use crate::test::types::*;
+crate::test::test_all_widths! {
     use rand::SeedableRng;
 
     fn seeded_rngs<R: SeedableRng + Clone>(seed: u64) -> (R, R) {

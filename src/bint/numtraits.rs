@@ -167,9 +167,9 @@ use num_traits::{
 };
 
 use crate::cast::CastFrom;
-use crate::int::numtraits::num_trait_impl;
+use crate::ints::numtraits::num_trait_impl;
 
-crate::int::numtraits::impls!(Int);
+crate::ints::numtraits::impls!(Int);
 
 impl<const N: usize> FromPrimitive for Int<N> {
     from_uint!(u8, from_u8);
@@ -243,7 +243,7 @@ impl<const N: usize> Integer for Int<N> {
 }
 
 impl<const N: usize> PrimInt for Int<N> {
-    crate::int::numtraits::prim_int_methods!();
+    crate::ints::numtraits::prim_int_methods!();
 
     #[inline]
     fn signed_shl(self, n: u32) -> Self {
@@ -369,8 +369,6 @@ impl<const N: usize> Signed for Int<N> {
 }
 
 #[cfg(test)]
-mod tests {
-    use crate::test::types::*;
-
-    crate::int::numtraits::tests!(itest);
+crate::test::test_all_widths! {
+    crate::ints::numtraits::tests!(itest);
 }

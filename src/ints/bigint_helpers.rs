@@ -33,7 +33,7 @@ pub(crate) use impls;
 #[cfg(all(test, feature = "nightly"))] // since bigint_helper_methods are not stable yet
 macro_rules! tests {
     ($int: ty) => {
-        use crate::test::{test_bignum, types::*};
+        use crate::test::test_bignum;
 
         test_bignum! {
             function: <$int>::carrying_add(a: $int, b: $int, carry: bool),

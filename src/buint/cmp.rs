@@ -31,6 +31,6 @@ impl<const N: usize> Ord for Uint<N> {
 }
 
 #[cfg(test)]
-mod tests {
-    crate::int::cmp::tests!(utest);
+crate::test::test_all_widths! {
+    crate::ints::cmp::tests!(utest);
 }

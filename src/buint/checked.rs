@@ -6,7 +6,7 @@ use crate::{Digit, digit};
 
 #[doc = doc::checked::impl_desc!()]
 impl<const N: usize> Uint<N> {
-    #[doc = doc::checked::checked_add!(U)]
+    #[doc = doc::checked::checked_add!(U 1024)]
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn checked_add(self, rhs: Self) -> Option<Self> {
@@ -21,14 +21,14 @@ impl<const N: usize> Uint<N> {
         tuple_to_option(self.overflowing_add_signed(rhs))
     }
 
-    #[doc = doc::checked::checked_sub!(U)]
+    #[doc = doc::checked::checked_sub!(U 512)]
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn checked_sub(self, rhs: Self) -> Option<Self> {
         tuple_to_option(self.overflowing_sub(rhs))
     }
 
-    #[doc = doc::checked::checked_mul!(U)]
+    #[doc = doc::checked::checked_mul!(U256)]
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn checked_mul(self, rhs: Self) -> Option<Self> {
@@ -262,8 +262,8 @@ impl<const N: usize> Uint<N> {
 }
 
 #[cfg(test)]
-mod tests {
-    use crate::test::{test_bignum, types::*};
+crate::test::test_all_widths! {
+    use crate::test::test_bignum;
 
     test_bignum! {
         function: <utest>::checked_add(a: utest, b: utest),

@@ -41,9 +41,9 @@ impl<const N: usize> Uint<N> {
 
     /// Create an integer value from a slice of bytes in big endian. The value is wrapped in an `Option` as the integer represented by the slice of bytes may represent an integer too large to be represented by the type.
     ///
-    /// If the length of the slice is shorter than `Self::BYTES`, the slice is padded with zeros at the start so that it's length equals `Self::BYTES`.
+    /// If the length of the slice is shorter than `N`, the slice is padded with zeros at the start so that it's length equals `N`.
     ///
-    /// If the length of the slice is longer than `Self::BYTES`, `None` will be returned, unless leading zeros from the slice can be removed until the length of the slice equals `Self::BYTES`.
+    /// If the length of the slice is longer than `N`, `None` will be returned, unless leading zeros from the slice can be removed until the length of the slice equals `N`.
     ///
     /// # Examples
     ///
@@ -105,9 +105,9 @@ impl<const N: usize> Uint<N> {
 
     /// Creates an integer value from a slice of bytes in little endian. The value is wrapped in an `Option` as the bytes may represent an integer too large to be represented by the type.
     ///
-    /// If the length of the slice is shorter than `Self::BYTES`, the slice is padded with zeros at the end so that it's length equals `Self::BYTES`.
+    /// If the length of the slice is shorter than `N`, the slice is padded with zeros at the end so that it's length equals `N`.
     ///
-    /// If the length of the slice is longer than `Self::BYTES`, `None` will be returned, unless trailing zeros from the slice can be removed until the length of the slice equals `Self::BYTES`.
+    /// If the length of the slice is longer than `N`, `None` will be returned, unless trailing zeros from the slice can be removed until the length of the slice equals `N`.
     ///
     /// # Examples
     ///
@@ -219,8 +219,8 @@ impl<const N: usize> Uint<N> {
 }
 
 #[cfg(test)]
-mod tests {
-    use crate::test::{test_bignum, types::*};
+crate::test::test_all_widths! {
+    use crate::test::test_bignum;
 
-    crate::int::endian::tests!(utest);
+    crate::ints::endian::tests!(utest);
 }

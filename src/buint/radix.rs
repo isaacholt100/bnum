@@ -10,7 +10,7 @@ The original license file and copyright notice for `num_bigint` can be found in 
 use super::Uint;
 use crate::doc;
 use crate::errors::ParseIntError;
-use crate::int::radix::assert_range;
+use crate::ints::radix::assert_range;
 use crate::{Digit, digit};
 #[cfg(feature = "alloc")]
 use alloc::{string::String, vec::Vec};
@@ -19,8 +19,33 @@ use core::iter::Iterator;
 use core::num::IntErrorKind;
 use core::str::FromStr;
 
+#[inline]
+const fn byte_to_digit<const FROM_STR: bool>(byte: u8) -> u8 {
+    if FROM_STR {
+        match byte {
+            b'0'..=b'9' => byte - b'0',
+            b'a'..=b'z' => byte - b'a' + 10,
+            b'A'..=b'Z' => byte - b'A' + 10,
+            _ => u8::MAX,
+        }
+    } else {
+        byte
+    }
+}
+
+#[cfg(feature = "alloc")]
+#[inline]
+const fn digit_to_str_byte(digit: u8) -> u8 {
+    if digit < 10 {
+        digit + b'0'
+    } else {
+        digit + b'a' - 10
+    }
+}
+
 #[doc = doc::radix::impl_desc!(Uint)]
 impl<const N: usize> Uint<N> {
+    #[cfg(feature = "alloc")]
     #[inline]
     const fn radix_base(radix: u32) -> (Digit, usize) {
         let mut power: usize = 1;
@@ -76,8 +101,8 @@ impl<const N: usize> Uint<N> {
     /// ```
     #[inline]
     pub const fn parse_bytes(buf: &[u8], radix: u32) -> Option<Self> {
-        let s = crate::nightly::option_try!(crate::nightly::ok!(core::str::from_utf8(buf)));
-        crate::nightly::ok!(Self::from_str_radix(s, radix))
+        let s = crate::helpers::option_try!(crate::helpers::ok!(core::str::from_utf8(buf)));
+        crate::helpers::ok!(Self::from_str_radix(s, radix))
     }
 
     /// Converts a slice of big-endian digits in the given radix to an integer. Each `u8` of the slice is interpreted as one digit of base `radix` of the number, so this function will return `None` if any digit is greater than or equal to `radix`, otherwise the integer is wrapped in `Some`.
@@ -105,7 +130,7 @@ impl<const N: usize> Uint<N> {
             return Self::from_be_slice(buf);
         }
 
-        crate::nightly::ok!(Self::from_buf_radix_internal::<false, true>(
+        crate::helpers::ok!(Self::from_buf_radix_internal::<false, true>(
             buf, radix, false
         ))
     }
@@ -135,23 +160,9 @@ impl<const N: usize> Uint<N> {
             return Self::from_le_slice(buf);
         }
 
-        crate::nightly::ok!(Self::from_buf_radix_internal::<false, false>(
+        crate::helpers::ok!(Self::from_buf_radix_internal::<false, false>(
             buf, radix, false
         ))
-    }
-
-    #[inline]
-    const fn byte_to_digit<const FROM_STR: bool>(byte: u8) -> u8 {
-        if FROM_STR {
-            match byte {
-                b'0'..=b'9' => byte - b'0',
-                b'a'..=b'z' => byte - b'a' + 10,
-                b'A'..=b'Z' => byte - b'A' + 10,
-                _ => u8::MAX,
-            }
-        } else {
-            byte
-        }
     }
 
     /// Converts a string slice in a given base to an integer.
@@ -167,32 +178,69 @@ impl<const N: usize> Uint<N> {
     /// This function panics if `radix` is not in the range from 2 to 36 inclusive.
     ///
     /// # Examples
+    /// 
+    /// Basic usage:
     ///
     /// ```
     /// use bnum::types::U512;
     ///
-    /// assert_eq!(U512::from_str_radix("A", 16), Ok(U512::from(10u128)));
+    /// assert_eq!(U512::from_str_radix("A", 16), Ok(U512::TEN));
     /// ```
     #[inline]
     pub const fn from_str_radix(src: &str, radix: u32) -> Result<Self, ParseIntError> {
+        Self::from_ascii_radix(src.as_bytes(), radix)
+    }
+
+    /// Parses an integer from an ASCII-byte slice with decimal digits.
+    ///
+    /// The characters are expected to be an optional + sign followed by only digits. Leading and trailing non-digit characters (including whitespace) represent an error. Underscores (which are accepted in Rust literals) also represent an error.
+    ///
+    /// # Examples
+    /// 
+    /// Basic usage:
+    /// 
+    /// ```
+    /// use bnum::types::U512;
+    ///
+    /// assert_eq!(U512::from_ascii(b"+10"), Ok(U512::TEN));
+    /// ```
+    #[inline]
+    pub const fn from_ascii(src: &[u8]) -> Result<Self, ParseIntError> {
+        Self::from_ascii_radix(src, 10)
+    }
+
+    /// Parses an integer from an ASCII-byte slice with digits in a given base.
+    ///
+    /// The characters are expected to be an optional `+` sign followed by only digits. Leading and trailing non-digit characters (including whitespace) represent an error. Underscores (which are accepted in Rust literals) also represent an error.
+    /// Digits are a subset of these characters, depending on radix:
+    /// 
+    /// - `0-9`
+    /// - `a-z`
+    /// - `A-Z`
+    ///
+    /// # Panics
+    ///
+    /// This function panics if radix is not in the range from 2 to 36 inclusive.
+    ///
+    /// # Examples
+    /// 
+    /// Basic usage:
+    ///
+    /// ```
+    /// use bnum::types::U512;
+    ///
+    /// assert_eq!(U512::from_ascii_radix(b"A", 16), Ok(U512::TEN));
+    /// ```
+    #[inline]
+    pub const fn from_ascii_radix(src: &[u8], radix: u32) -> Result<Self, ParseIntError> {
         assert_range!(radix, 36);
         if src.is_empty() {
             return Err(ParseIntError {
                 kind: IntErrorKind::Empty,
             });
         }
-        let buf = src.as_bytes();
-        let leading_plus = buf[0] == b'+';
-        Self::from_buf_radix_internal::<true, true>(buf, radix, leading_plus)
-    }
-
-    #[doc = doc::radix::parse_str_radix!(Uint)]
-    #[inline]
-    pub const fn parse_str_radix(src: &str, radix: u32) -> Self {
-        match Self::from_str_radix(src, radix) {
-            Ok(n) => n,
-            Err(e) => panic!("{}", e.description()),
-        }
+        let leading_plus = src[0] == b'+';
+        Self::from_buf_radix_internal::<true, true>(src, radix, leading_plus)
     }
 
     pub(crate) const fn from_buf_radix_internal<const FROM_STR: bool, const BE: bool>(
@@ -223,7 +271,7 @@ impl<const N: usize> Uint<N> {
                 if full_digits > N || full_digits == N && remaining_digits != 0 {
                     let mut i = if leading_sign { 1 } else { 0 };
                     while i < N * base_digits_per_digit + if leading_sign { 1 } else { 0 } {
-                        if Self::byte_to_digit::<FROM_STR>(buf[i]) >= radix_u8 {
+                        if byte_to_digit::<FROM_STR>(buf[i]) >= radix_u8 {
                             return Err(ParseIntError {
                                 kind: IntErrorKind::InvalidDigit,
                             });
@@ -246,7 +294,7 @@ impl<const N: usize> Uint<N> {
                         } else {
                             i * base_digits_per_digit + j
                         };
-                        let d = Self::byte_to_digit::<FROM_STR>(buf[idx]);
+                        let d = byte_to_digit::<FROM_STR>(buf[idx]);
                         if d >= radix_u8 {
                             return Err(ParseIntError {
                                 kind: IntErrorKind::InvalidDigit,
@@ -264,7 +312,7 @@ impl<const N: usize> Uint<N> {
                     } else {
                         i * base_digits_per_digit + j
                     };
-                    let d = Self::byte_to_digit::<FROM_STR>(buf[idx]);
+                    let d = byte_to_digit::<FROM_STR>(buf[idx]);
                     if d >= radix_u8 {
                         return Err(ParseIntError {
                             kind: IntErrorKind::InvalidDigit,
@@ -290,9 +338,8 @@ impl<const N: usize> Uint<N> {
                 while i > stop_index {
                     i -= 1;
                     let idx = if BE { i } else { buf.len() - 1 - i };
-                    let d = Self::byte_to_digit::<FROM_STR>(buf[idx]);
+                    let d = byte_to_digit::<FROM_STR>(buf[idx]);
                     if d >= radix_u8 {
-                        // panic!("noooooo");
                         return Err(ParseIntError {
                             kind: IntErrorKind::InvalidDigit,
                         });
@@ -312,7 +359,7 @@ impl<const N: usize> Uint<N> {
                             while i > stop_index {
                                 i -= 1;
                                 let idx = if BE { i } else { buf.len() - 1 - i };
-                                let d = Self::byte_to_digit::<FROM_STR>(buf[idx]);
+                                let d = byte_to_digit::<FROM_STR>(buf[idx]);
                                 if d != 0 {
                                     return Err(ParseIntError {
                                         kind: IntErrorKind::PosOverflow,
@@ -337,7 +384,7 @@ impl<const N: usize> Uint<N> {
                 let mut i = if leading_sign { 1 } else { 0 };
                 while i < if leading_sign { split + 1 } else { split } {
                     let idx = if BE { i } else { buf.len() - 1 - i };
-                    let d = Self::byte_to_digit::<FROM_STR>(buf[idx]);
+                    let d = byte_to_digit::<FROM_STR>(buf[idx]);
                     if d >= radix_u8 {
                         return Err(ParseIntError {
                             kind: IntErrorKind::InvalidDigit,
@@ -363,7 +410,7 @@ impl<const N: usize> Uint<N> {
                         while start < buf.len() && start < end {
                             // TODO: this isn't quite correct behaviour
                             let idx = if BE { start } else { buf.len() - 1 - start };
-                            let d = Self::byte_to_digit::<FROM_STR>(buf[idx]);
+                            let d = byte_to_digit::<FROM_STR>(buf[idx]);
                             if d >= radix_u8 {
                                 return Err(ParseIntError {
                                     kind: IntErrorKind::InvalidDigit,
@@ -380,7 +427,7 @@ impl<const N: usize> Uint<N> {
                     j = start;
                     while j < end && j < buf.len() {
                         let idx = if BE { j } else { buf.len() - 1 - j };
-                        let d = Self::byte_to_digit::<FROM_STR>(buf[idx]);
+                        let d = byte_to_digit::<FROM_STR>(buf[idx]);
                         if d >= radix_u8 {
                             return Err(ParseIntError {
                                 kind: IntErrorKind::InvalidDigit,
@@ -417,7 +464,7 @@ impl<const N: usize> Uint<N> {
     /// ```
     /// use bnum::types::U512;
     ///
-    /// let src = "934857djkfghhkdfgbf9345hdfkh";
+    /// let src = "abcdefghijklmnopqrstuvwxyz";
     /// let n = U512::from_str_radix(src, 36).unwrap();
     /// assert_eq!(n.to_str_radix(36), src);
     /// ```
@@ -427,11 +474,7 @@ impl<const N: usize> Uint<N> {
         let mut out = Self::to_radix_be(self, radix);
 
         for byte in out.iter_mut() {
-            if *byte < 10 {
-                *byte += b'0';
-            } else {
-                *byte += b'a' - 10;
-            }
+            *byte = digit_to_str_byte(*byte);
         }
         unsafe { String::from_utf8_unchecked(out) }
     }
@@ -477,11 +520,11 @@ impl<const N: usize> Uint<N> {
         if self.is_zero() {
             vec![0]
         } else if radix.is_power_of_two() {
-            if Digit::BITS == 8 && radix == 256 {
+            if radix == 256 {
                 return (&self.digits[0..=self.last_digit_index()])
-                    .into_iter()
-                    .map(|d| *d as u8)
-                    .collect(); // we can cast to `u8` here as the underlying digit must be a `u8` anyway
+                    .iter()
+                    .copied()
+                    .collect();
             }
 
             let bits = radix.ilog2();
@@ -585,9 +628,9 @@ impl<const N: usize> FromStr for Uint<N> {
 }
 
 #[cfg(test)]
-mod tests {
+crate::test::test_all_widths! {
     use crate::test::test_bignum;
-    use crate::test::types::*;
+    use core::num::IntErrorKind;
     use core::str::FromStr;
 
     test_bignum! {
@@ -601,7 +644,48 @@ mod tests {
         ]
     }
 
-    #[cfg(not(test_int_bits = "16"))]
+    #[cfg(feature = "nightly")]
+    test_bignum! {
+        function: <utest>::from_ascii,
+        cases: [
+            ("11111111".as_bytes()),
+            ("10000000000000000000000000000000000".as_bytes()),
+            ("12💩👍45".as_bytes()),
+            ("b1234567890a".as_bytes()),
+            ("".as_bytes())
+        ]
+    }
+
+    #[cfg(feature = "nightly")]
+    test_bignum! {
+        function: <utest>::from_ascii_radix,
+        cases: [
+            ("+af7345asdofiuweor".as_bytes(), 35u32),
+            ("+945hhdgi73945hjdfj".as_bytes(), 32u32),
+            ("+3436847561345343455".as_bytes(), 9u32),
+            ("+affe758457bc345540ac399".as_bytes(), 16u32),
+            ("+affe758457bc345540ac39929334534ee34579234795".as_bytes(), 17u32),
+            ("+3777777777777777777777777777777777777777777".as_bytes(), 8u32),
+            ("+37777777777777777777777777777777777777777761".as_bytes(), 8u32),
+            ("+1777777777777777777777".as_bytes(), 8u32),
+            ("+17777777777777777777773".as_bytes(), 8u32),
+            ("+2000000000000000000000".as_bytes(), 8u32),
+            ("-234598734".as_bytes(), 10u32),
+            ("g234ab".as_bytes(), 16u32),
+            ("234£$2234".as_bytes(), 15u32),
+            ("123456💯".as_bytes(), 30u32),
+            ("3434💯34593487".as_bytes(), 12u32),
+            ("💯34593487".as_bytes(), 11u32),
+            ("abcdefw".as_bytes(), 32u32),
+            ("1234ab".as_bytes(), 11u32),
+            ("1234".as_bytes(), 4u32),
+            ("010120101".as_bytes(), 2u32),
+            ("10000000000000000".as_bytes(), 16u32),
+            ("p8hrbe0mo0084i6vckj1tk7uvacnn4cm".as_bytes(), 32u32),
+            ("".as_bytes(), 10u32)
+        ]
+    }
+
     test_bignum! {
         function: <utest>::from_str_radix,
         cases: [
@@ -621,7 +705,6 @@ mod tests {
             ("123456💯", 30u32),
             ("3434💯34593487", 12u32),
             ("💯34593487", 11u32),
-            ("12345678", 8u32),
             ("abcdefw", 32u32),
             ("1234ab", 11u32),
             ("1234", 4u32),
@@ -640,21 +723,19 @@ mod tests {
     crate::test::quickcheck_from_to_radix!(utest, str_radix, 36);
 
     #[test]
-    #[should_panic(expected = "attempt to parse integer from empty string")]
-    fn parse_str_radix_empty() {
-        let _ = UTEST::parse_str_radix("", 10);
+    fn from_str_radix_empty() {
+        let _ = UTEST::from_str_radix("", 10).unwrap_err().kind() == &IntErrorKind::Empty;
     }
 
     #[test]
-    #[should_panic(expected = "attempt to parse integer from string containing invalid digit")]
-    fn parse_str_radix_invalid_char() {
-        let _ = UTEST::parse_str_radix("a", 10);
+    fn from_str_radix_invalid_char() {
+        let _ = UTEST::from_str_radix("a", 10).unwrap_err().kind() == &IntErrorKind::InvalidDigit;
     }
 
     #[test]
     #[should_panic(expected = "Radix must be in range [2, 36]")]
-    fn parse_str_radix_invalid_radix() {
-        let _ = UTEST::parse_str_radix("1234", 37);
+    fn from_str_radix_invalid_radix() {
+        let _ = UTEST::from_str_radix("1234", 37).unwrap();
     }
 
     #[test]

@@ -3,7 +3,7 @@ use crate::Uint;
 
 #[doc = doc::strict::impl_desc!()]
 impl<const N: usize> Int<N> {
-    crate::int::strict::impls!(I);
+    crate::ints::strict::impls!(I);
 
     #[doc = doc::strict::strict_abs!(I)]
     #[must_use = doc::must_use_op!()]
@@ -31,8 +31,8 @@ impl<const N: usize> Int<N> {
 }
 
 #[cfg(all(test, feature = "nightly"))] // since strict_overflow_ops are not stable yet
-mod tests {
-    crate::int::strict::tests!(itest);
+crate::test::test_all_widths! {
+    crate::ints::strict::tests!(itest);
 
     test_bignum! {
         function: <itest>::strict_abs(a: itest),

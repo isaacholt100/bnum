@@ -98,7 +98,7 @@ impl super::F32 {
 }
 
 #[cfg(test)]
-mod tests {
+crate::test::test_all_widths! {
 
 
     /*#[test]

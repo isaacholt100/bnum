@@ -49,7 +49,7 @@ impl<const N: usize> Uint<N> {
                     rest: rest.digits,
                 }
             }
-            /*crate::nightly::const_fns! {
+            /*crate::helpers::const_fns! {
                 const fn set_digit(&mut self, index: usize, digit: Digit) -> () {
                     if index == 0 {
                         self.first = digit;

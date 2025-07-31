@@ -2,12 +2,12 @@ use super::Int;
 
 #[doc = doc::unchecked::impl_desc!()]
 impl<const N: usize> Int<N> {
-    crate::int::unchecked::impls!(I);
+    crate::ints::unchecked::impls!(I);
 }
 
 #[cfg(test)]
-mod tests {
-    crate::int::unchecked::tests!(itest);
+crate::test::test_all_widths! {
+    crate::ints::unchecked::tests!(itest);
 }
 
 use crate::doc;

@@ -3,7 +3,7 @@ use crate::Uint;
 
 use crate::doc;
 use crate::errors::ParseIntError;
-use crate::int::radix::assert_range;
+use crate::ints::radix::assert_range;
 #[cfg(feature = "alloc")]
 use alloc::{string::String, vec::Vec};
 use core::num::IntErrorKind;
@@ -17,8 +17,8 @@ impl<const N: usize> Int<N> {
     /// Returns `None` if the conversion of the byte slice to string slice fails or if a digit is larger than or equal to the given radix, otherwise the integer is wrapped in `Some`.
     #[inline]
     pub const fn parse_bytes(buf: &[u8], radix: u32) -> Option<Self> {
-        let s = crate::nightly::option_try!(crate::nightly::ok!(core::str::from_utf8(buf)));
-        crate::nightly::ok!(Self::from_str_radix(s, radix))
+        let s = crate::helpers::option_try!(crate::helpers::ok!(core::str::from_utf8(buf)));
+        crate::helpers::ok!(Self::from_str_radix(s, radix))
     }
 
     /// Converts a slice of big-endian digits in the given radix to an integer. The digits are first converted to an unsigned integer, then this is transmuted to a signed integer. Each `u8` of the slice is interpreted as one digit of base `radix` of the number, so this function will return `None` if any digit is greater than or equal to `radix`, otherwise the integer is wrapped in `Some`.
@@ -49,7 +49,9 @@ impl<const N: usize> Int<N> {
 
     /// Converts a string slice in a given base to an integer.
     ///
-    /// The string is expected to be an optional `+` or `-` sign followed by digits. Leading and trailing whitespace represent an error. Digits are a subset of these characters, depending on `radix`:
+    /// The string is expected to be an optional `+` or `-` sign followed by only digits. Leading and trailing whitespace represent an error. Underscores (which are accepted in Rust literals) also represent an error.
+    /// 
+    /// Digits are a subset of these characters, depending on `radix`:
     ///
     /// - `0-9`
     /// - `a-z`
@@ -59,10 +61,63 @@ impl<const N: usize> Int<N> {
     ///
     /// This function panics if `radix` is not in the range from 2 to 36 inclusive.
     ///
-    /// For examples, see the
-    #[doc = concat!("[`from_str_radix`](crate::", stringify!(Uint), "::from_str_radix) method documentation for [`", stringify!(Uint), "`](crate::", stringify!(Uint), ").")]
+    /// # Examples
+    /// 
+    /// Basic usage:
+    ///
+    /// ```
+    /// use bnum::types::I512;
+    ///
+    /// assert_eq!(I512::from_str_radix("A", 16), Ok(I512::TEN));
+    /// ```
     #[inline]
     pub const fn from_str_radix(src: &str, radix: u32) -> Result<Self, ParseIntError> {
+        Self::from_ascii_radix(src.as_bytes(), radix)
+    }
+
+    /// Parses an integer from an ASCII-byte slice with decimal digits.
+    ///
+    /// The characters are expected to be an optional `+` or `-` sign followed by only digits. Leading and trailing non-digit characters (including whitespace) represent an error. Underscores (which are accepted in Rust literals) also represent an error.
+    ///
+    /// # Examples
+    /// 
+    /// Basic usage:
+    /// 
+    /// ```
+    /// use bnum::types::I512;
+    ///
+    /// assert_eq!(I512::from_ascii(b"+10"), Ok(I512::TEN));
+    /// ```
+    #[inline]
+    pub const fn from_ascii(src: &[u8]) -> Result<Self, ParseIntError> {
+        Self::from_ascii_radix(src, 10)
+    }
+
+    /// Parses an integer from an ASCII-byte slice with digits in a given base.
+    ///
+    /// The characters are expected to be an optional `+` or `-` sign followed by only digits. Leading and trailing non-digit characters (including whitespace) represent an error. Underscores (which are accepted in Rust literals) also represent an error.
+    ///
+    /// Digits are a subset of these characters, depending on `radix`:
+    ///
+    /// - `0-9`
+    /// - `a-z`
+    /// - `A-Z`
+    ///
+    /// # Panics
+    /// 
+    /// This function panics if `radix` is not in the range from 2 to 36 inclusive.
+    ///
+    /// # Examples
+    /// 
+    /// Basic usage:
+    /// 
+    /// ```
+    /// use bnum::types::I512;
+    ///
+    /// assert_eq!(I512::from_ascii_radix(b"A", 16), Ok(I512::TEN));
+    /// ```
+    #[inline]
+    pub const fn from_ascii_radix(src: &[u8], radix: u32) -> Result<Self, ParseIntError> {
         assert_range!(radix, 36);
         if src.is_empty() {
             return Err(ParseIntError {
@@ -71,15 +126,14 @@ impl<const N: usize> Int<N> {
         }
         let mut negative = false;
         let mut leading_sign = false;
-        let buf = src.as_bytes();
-        if buf[0] == b'-' {
+        if src[0] == b'-' {
             negative = true;
             leading_sign = true;
-        } else if buf[0] == b'+' {
+        } else if src[0] == b'+' {
             leading_sign = true;
         }
 
-        match Uint::from_buf_radix_internal::<true, true>(buf, radix, leading_sign) {
+        match Uint::from_buf_radix_internal::<true, true>(src, radix, leading_sign) {
             Ok(uint) => {
                 if negative {
                     if uint.bit(Self::BITS - 1) && uint.trailing_zeros() != Self::BITS - 1 {
@@ -110,15 +164,6 @@ impl<const N: usize> Int<N> {
                 }
                 return Err(err);
             }
-        }
-    }
-
-    #[doc = doc::radix::parse_str_radix!(Uint)]
-    #[inline]
-    pub const fn parse_str_radix(src: &str, radix: u32) -> Self {
-        match Self::from_str_radix(src, radix) {
-            Ok(n) => n,
-            Err(e) => panic!("{}", e.description()),
         }
     }
 
@@ -170,11 +215,11 @@ impl<const N: usize> Int<N> {
 }
 
 #[cfg(test)]
-mod tests {
+crate::test::test_all_widths! {
     #[cfg(feature = "alloc")]
     use crate::Int;
-    use crate::test::types::*;
     use crate::test::{self, test_bignum};
+    use core::str::FromStr;
 
     test_bignum! {
         function: <itest>::from_str_radix,
@@ -195,6 +240,60 @@ mod tests {
             ("+-23459374", 15u32),
             ("8000000000000000", 16u32),
             ("", 10u32)
+        ]
+    }
+
+    test_bignum! {
+        function: <itest>::from_str,
+        cases: [
+            ("+10"),
+            ("-10"),
+            ("1234567890"),
+            ("-1234567890"),
+            ("+1234567890"),
+            ("-12345678901234567890"),
+            ("+12345678901234567890"),
+            ("-9223372036854775808"),
+            ("+9223372036854775807")
+        ]
+    }
+
+    #[cfg(feature = "nightly")]
+    test_bignum! {
+        function: <itest>::from_ascii,
+        cases: [
+            ("+10".as_bytes()),
+            ("-10".as_bytes()),
+            ("1234567890".as_bytes()),
+            ("-1234567890".as_bytes()),
+            ("+1234567890".as_bytes()),
+            ("-12345678901234567890".as_bytes()),
+            ("+12345678901234567890".as_bytes()),
+            ("-9223372036854775808".as_bytes()),
+            ("+9223372036854775807".as_bytes())
+        ]
+    }
+
+    #[cfg(feature = "nightly")]
+    test_bignum! {
+        function: <itest>::from_ascii_radix,
+        cases: [
+            ("-14359abcasdhfkdgdfgsde".as_bytes(), 34u32),
+            ("+23797984569ahgkhhjdskjdfiu".as_bytes(), 32u32),
+            ("-253613132341435345".as_bytes(), 7u32),
+            ("+23467abcad47790809ef37".as_bytes(), 16u32),
+            ("-712930769245766867875986646".as_bytes(), 10u32),
+            ("-😱234292".as_bytes(), 36u32),
+            ("-+345934758".as_bytes(), 13u32),
+            ("12💯12".as_bytes(), 15u32),
+            ("gap gap".as_bytes(), 36u32),
+            ("-9223372036854775809".as_bytes(), 10u32),
+            ("-1000000000000000000001".as_bytes(), 8u32),
+            ("+1000000000000000000001".as_bytes(), 8u32),
+            ("-8000000000000001".as_bytes(), 16u32),
+            ("+-23459374".as_bytes(), 15u32),
+            ("8000000000000000".as_bytes(), 16u32),
+            ("".as_bytes(), 10u32)
         ]
     }
 
@@ -311,8 +410,8 @@ mod tests {
 
     #[test]
     #[should_panic(expected = "Radix must be in range [2, 36]")]
-    fn parse_str_radix_invalid_radix() {
-        let _ = ITEST::parse_str_radix("1234", 37);
+    fn from_str_radix_invalid_radix() {
+        let _ = ITEST::from_str_radix("1234", 37).unwrap();
     }
 
     #[test]

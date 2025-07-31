@@ -25,7 +25,7 @@ macro_rules! bench_against_primitive {
                     let mut rng = rand::rngs::StdRng::seed_from_u64(0); // use same seed so can compare between different benchmarks more accurately
                     #[allow(unused_parens)]
                     let inputs = unzip2((0..SAMPLE_SIZE)
-                        .map(|_| rng.gen::<($($ty), *)>())
+                        .map(|_| rng.random::<($($ty), *)>())
                         .map(|($($param), *)| (
                             ($(TryInto::try_into($param).expect("benchmark argument conversion failed")), *, ()),
                             ($(TryInto::try_into($param).expect("benchmark argument conversion failed")), *, ()), // TODO: report this as bug in Rust compiler, shouldn't need extra ()

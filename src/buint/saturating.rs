@@ -63,9 +63,8 @@ impl<const N: usize> Uint<N> {
 }
 
 #[cfg(test)]
-mod tests {
+crate::test::test_all_widths! {
     use crate::test::test_bignum;
-    use crate::test::types::*;
 
     test_bignum! {
         function: <utest>::saturating_add(a: utest, b: utest)

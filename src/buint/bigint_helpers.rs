@@ -4,7 +4,7 @@ use crate::{Digit, digit};
 
 #[doc = doc::bigint_helpers::impl_desc!()]
 impl<const N: usize> Uint<N> {
-    crate::int::bigint_helpers::impls!(U);
+    crate::ints::bigint_helpers::impls!(U);
 
     #[doc = doc::bigint_helpers::widening_mul!(U)]
     #[must_use = doc::must_use_op!()]
@@ -59,18 +59,16 @@ impl<const N: usize> Uint<N> {
 }
 
 #[cfg(all(test, feature = "nightly"))] // since bigint_helper_methods are not stable yet
-mod tests {
-    crate::int::bigint_helpers::tests!(utest);
+crate::test::test_all_widths! {
+    crate::ints::bigint_helpers::tests!(utest);
 
-    #[cfg(test_int_bits = "64")]
     test_bignum! {
         function: <utest>::widening_mul(a: utest, b: utest),
         cases: [
             (utest::MAX, utest::MAX)
         ]
     }
-
-    #[cfg(test_int_bits = "64")]
+    
     test_bignum! {
         function: <utest>::carrying_mul(a: utest, b: utest, c: utest),
         cases: [

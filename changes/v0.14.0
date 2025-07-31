@@ -10,12 +10,19 @@
 - use 2024 edition
 - use rand 0.9.0, so update try_fill_slice to fill_slice (no option returned)
 - make as_bits_mut, digits_mut, set_bit const
+- remove Uint From [u8; N] and vice versa
+- remove parse_str_radix from Uint and Int
+- added from_ascii and from_ascii_radix to Uint and Int
 - TODO:
+    - lit parser
+    - proptest support
+    - modpow
+    - think about whether you could make to_str_radix and the functions it uses into generic functions which take an argument which "pushes" the next character to the existing string (so either pushing to a vector or calling write!(f, ...))
     - complete use of u128 digit methods where needed
     - fix doctests
     - carrying_mul_add
     - isqrt (including checked for signed ints)
-    - from_ascii
-    - from_ascii_radix
-    - unchecked_disjoint_bitor (can do by iterating unchecked_disjoint bitor on u8s/u128 digits, can only add this once it is stablised for primitives though, not much point adding on nightly only)
+    - unsigned/signed_diff
+    - unchecked_neg for int
+    - unchecked_disjoint_bitor for uint (can do by iterating unchecked_disjoint bitor on u8s/u128 digits, can only add this once it is stablised for primitives though, not much point adding on nightly only)
     - complete documentation (not just links to the Rust primitive equivalent)

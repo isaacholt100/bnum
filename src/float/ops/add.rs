@@ -168,7 +168,9 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                 } else {
                     Self::ZERO
                 }
-            }
+            },
+            (FpCategory::Zero, _) => rhs,
+            (_, FpCategory::Zero) => self,
             (_, _) => {
                 if self_negative != rhs_negative {
                     self.sub_internal(rhs, self_negative)

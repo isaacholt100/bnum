@@ -53,7 +53,7 @@ impl<const N: usize> Int<N> {
         }
     }
 
-    crate::int::cmp::impls!();
+    crate::ints::cmp::impls!();
     #[inline]
     pub const fn neg(self) -> Self {
         #[cfg(debug_assertions)]
@@ -63,7 +63,7 @@ impl<const N: usize> Int<N> {
         self.wrapping_neg()
     }
 
-    crate::int::ops::trait_fillers!();
+    crate::ints::ops::trait_fillers!();
 
     #[inline]
     pub const fn div(self, rhs: Self) -> Self {

@@ -22,7 +22,7 @@ use crate::helpers::tuple_to_option;
 
 #[doc = doc::checked::impl_desc!()]
 impl<const N: usize> Int<N> {
-    #[doc = doc::checked::checked_add!(I)]
+    #[doc = doc::checked::checked_add!(I 1024)]
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn checked_add(self, rhs: Self) -> Option<Self> {
@@ -36,7 +36,7 @@ impl<const N: usize> Int<N> {
         tuple_to_option(self.overflowing_add_unsigned(rhs))
     }
 
-    #[doc = doc::checked::checked_sub!(I)]
+    #[doc = doc::checked::checked_sub!(I 512)]
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn checked_sub(self, rhs: Self) -> Option<Self> {
@@ -50,7 +50,7 @@ impl<const N: usize> Int<N> {
         tuple_to_option(self.overflowing_sub_unsigned(rhs))
     }
 
-    #[doc = doc::checked::checked_mul!(I)]
+    #[doc = doc::checked::checked_mul!(I256)]
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn checked_mul(self, rhs: Self) -> Option<Self> {
@@ -182,9 +182,8 @@ impl<const N: usize> Int<N> {
 }
 
 #[cfg(test)]
-mod tests {
+crate::test::test_all_widths! {
     use crate::test::test_bignum;
-    use crate::test::types::*;
 
     test_bignum! {
         function: <itest>::checked_add(a: itest, b: itest),

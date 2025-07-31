@@ -125,6 +125,15 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             }
             (FpCategory::Infinite, _) => self,
             (_, FpCategory::Infinite) => rhs.neg(),
+            (FpCategory::Zero, FpCategory::Zero) => {
+                if self.is_sign_negative() && rhs.is_sign_positive() {
+                    Self::NEG_ZERO
+                } else {
+                    Self::ZERO
+                }
+            }
+            (FpCategory::Zero, _) => rhs.neg(),
+            (_, FpCategory::Zero) => self,
             (_, _) => {
                 let self_negative = self.is_sign_negative();
                 let rhs_negative = rhs.is_sign_negative();

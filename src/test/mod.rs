@@ -6,8 +6,6 @@ mod macros;
 #[allow(unused_imports)]
 pub use macros::*;
 
-pub mod types;
-
 #[derive(Clone, Copy)]
 pub struct U8ArrayWrapper<const N: usize>(pub [u8; N]);
 

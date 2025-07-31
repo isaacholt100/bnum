@@ -42,7 +42,7 @@ pub(crate) use impls;
 #[cfg(test)]
 macro_rules! tests {
     ($int: ty) => {
-        use crate::test::{test_bignum, types::*};
+        use crate::test::test_bignum;
 
         test_bignum! {
             function: unsafe <$int>::unchecked_add(a: $int, b: $int),

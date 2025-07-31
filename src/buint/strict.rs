@@ -2,7 +2,7 @@ use super::Uint;
 
 #[doc = doc::strict::impl_desc!()]
 impl<const N: usize> Uint<N> {
-    crate::int::strict::impls!(U);
+    crate::ints::strict::impls!(U);
 
     #[cfg(feature = "signed")]
     #[doc = doc::strict::strict_add_signed!(U)]
@@ -15,8 +15,8 @@ impl<const N: usize> Uint<N> {
 }
 
 #[cfg(all(test, feature = "nightly"))] // since strict_overflow_ops are not stable yet
-mod tests {
-    crate::int::strict::tests!(utest);
+crate::test::test_all_widths! {
+    crate::ints::strict::tests!(utest);
 
     #[cfg(feature = "signed")]
     test_bignum! {

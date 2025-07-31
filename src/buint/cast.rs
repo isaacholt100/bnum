@@ -120,6 +120,6 @@ impl<const N: usize> CastFrom<f64> for Uint<N> {
 }
 
 #[cfg(test)]
-mod tests {
-    crate::int::cast::tests!(utest);
+crate::test::test_all_widths! {
+    crate::ints::cast::tests!(utest);
 }

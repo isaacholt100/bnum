@@ -115,8 +115,8 @@ impl<const N: usize> Uint<N> {
 }
 
 #[cfg(test)]
-mod tests {
-    use crate::test::{test_bignum, types::*};
+crate::test::test_all_widths! {
+    use crate::test::test_bignum;
 
     #[test]
     #[should_panic(expected = "attempt to divide by zero")]

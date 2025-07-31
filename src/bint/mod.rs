@@ -37,13 +37,9 @@ use core::default::Default;
 
 use core::iter::{Iterator, Product, Sum};
 
-/// Big signed integer type, of fixed size which must be known at compile time. Stored as a
-#[doc = concat!(" [`", stringify!(Uint), "`].")]
+/// Big signed integer type, of fixed size which must be known at compile time. Stored as a [`Uint`].
 ///
-/// Digits of the underlying
-#[doc = concat!("[`", stringify!(Uint), "`](crate::", stringify!(Uint), ")")]
-/// are stored in little endian (least significant digit first). This integer type aims to exactly replicate the behaviours of Rust's built-in signed integer types: [`i8`], [`i16`], [`i32`], [`i64`], [`i128`] and [`isize`]. The const generic parameter `N` is the number of digits that are stored in the underlying
-#[doc = concat!("[`", stringify!(Uint), "`].")]
+/// `Int` has the same behaviour as that of Rust's built-in signed integer types: [`i8`], [`i16`], [`i32`], [`i64`], [`i128`] and [`isize`]. The const generic parameter `N` is the number of digits that are stored in the underlying [`Uint`].
 ///
 #[doc = doc::arithmetic_doc!(Int)]
 #[derive(Clone, Copy, Hash, PartialEq, Eq)]
@@ -471,11 +467,10 @@ impl<const N: usize> quickcheck::Arbitrary for Int<N> {
 }
 
 #[cfg(test)]
-mod tests {
-    use crate::test::{debug_skip, test_bignum, types::*};
-    // use crate::test::types::big_types::Digit::*;
+crate::test::test_all_widths! {
+    use crate::test::{debug_skip, test_bignum};
 
-    crate::int::tests!(itest);
+    crate::ints::tests!(itest);
 
     test_bignum! {
         function: <itest>::unsigned_abs(a: itest),

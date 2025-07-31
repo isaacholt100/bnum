@@ -5,10 +5,10 @@ macro_rules! test_from_endian_slice {
             quickcheck::quickcheck! {
                 fn [<quickcheck_ $int _from_ $endian _slice>](int: $int, pad_length: u8) -> quickcheck::TestResult {
                     type Big = [<$int:upper>];
-                    type Primitive = crate::test::types::$int;
+                    type Primitive = $int;
 
                     use crate::test::convert;
-                    use crate::int::endian;
+                    use crate::ints::endian;
 
                     // pad_length is greater than the size of the integer in bytes
                     if pad_length >= Primitive::BITS as u8 / 8 {
@@ -143,10 +143,10 @@ macro_rules! tests {
         }
 
         #[cfg(feature = "alloc")]
-        crate::int::endian::test_from_endian_slice!($int, be);
+        crate::ints::endian::test_from_endian_slice!($int, be);
 
         #[cfg(feature = "alloc")]
-        crate::int::endian::test_from_endian_slice!($int, le);
+        crate::ints::endian::test_from_endian_slice!($int, le);
     };
 }
 

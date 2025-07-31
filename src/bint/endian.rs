@@ -197,9 +197,8 @@ impl<const N: usize> Int<N> {
 }
 
 #[cfg(test)]
-mod tests {
+crate::test::test_all_widths! {
     use crate::test::test_bignum;
-    use crate::test::types::*;
 
-    crate::int::endian::tests!(itest);
+    crate::ints::endian::tests!(itest);
 }

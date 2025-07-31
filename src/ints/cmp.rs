@@ -67,7 +67,7 @@ pub(crate) use impls;
 #[cfg(test)]
 macro_rules! tests {
     ($int: ty) => {
-        use crate::test::{test_bignum, types::*};
+        use crate::test::test_bignum;
         use core::cmp::Ord;
 
         test_bignum! {

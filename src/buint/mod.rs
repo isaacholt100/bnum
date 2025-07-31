@@ -21,13 +21,9 @@ use core::default::Default;
 
 use core::iter::{Iterator, Product, Sum};
 
-/// Unsigned integer type composed of
-#[doc = concat!("`", stringify!(Digit), "`")]
-/// digits, of arbitrary fixed size which must be known at compile time.
+/// Unsigned integer type composed of `u8` digits, of arbitrary fixed size which must be known at compile time.
 ///
-/// Digits are stored in little endian (least significant digit first). This integer type aims to exactly replicate the behaviours of Rust's built-in unsigned integer types: `u8`, `u16`, `u32`, `u64`, `u128` and `usize`. The const generic parameter `N` is the number of
-#[doc = concat!("`", stringify!(Digit), "`")]
-/// digits that are stored.
+/// Digits are stored in little endian (least significant digit first). This integer type aims to exactly replicate the behaviours of Rust's built-in unsigned integer types: `u8`, `u16`, `u32`, `u64`, `u128` and `usize`. The const generic parameter `N` is the number of `u8` digits that are stored.
 ///
 #[doc = doc::arithmetic_doc!(Uint)]
 #[derive(Clone, Copy, Hash, PartialEq, Eq)]
@@ -223,9 +219,8 @@ impl<const N: usize> Uint<N> {
 
             if bit_shift != 0 {
                 let carry_shift = 128 - bit_shift;
-                // let mut carry = (out.digits[N - 1] >> (8 - bit_shift)) as u128;
                 let mut carry = out.as_u128_digits().last()
-                    >> (carry_shift - 8 * Self::U128_DIGIT_REMAINDER as u32);
+                    >> (8 * Self::LAST_DIGIT_BYTES as u32 - bit_shift);
 
                 let mut i = 0;
                 while i < Self::U128_DIGITS - 1 {
@@ -237,7 +232,7 @@ impl<const N: usize> Uint<N> {
                 }
                 let current_digit = out.as_u128_digits().last();
                 out.as_u128_digits_mut()
-                    .set(i, (current_digit << bit_shift) | carry);
+                    .set_last((current_digit << bit_shift) | carry);
             }
 
             out
@@ -871,6 +866,11 @@ impl<const N: usize> Uint<N> {
     const U128_DIGITS: usize = N.div_ceil(16);
     pub(crate) const FULL_U128_DIGITS: usize = N / 16;
     pub(crate) const U128_DIGIT_REMAINDER: usize = N % 16;
+    pub(crate) const LAST_DIGIT_BYTES: usize = if Self::U128_DIGIT_REMAINDER == 0 {
+        16
+    } else {
+        Self::U128_DIGIT_REMAINDER
+    };
     pub(crate) const U128_BITS_REMAINDER: ExpType = Self::BITS % 128;
 }
 
@@ -930,10 +930,10 @@ impl<const N: usize> quickcheck::Arbitrary for Uint<N> {
 }
 
 #[cfg(test)]
-mod tests {
-    use crate::test::{debug_skip, test_bignum, types::*};
+crate::test::test_all_widths! {
+    use crate::test::{debug_skip, test_bignum};
 
-    crate::int::tests!(utest);
+    crate::ints::tests!(utest);
 
     test_bignum! {
         function: <utest>::next_power_of_two(a: utest),
@@ -991,9 +991,9 @@ mod tests {
         assert!(UTEST::ONE.is_one());
         assert!(!UTEST::MAX.is_one());
         assert!(!UTEST::ZERO.is_one());
-        let mut digits = *super::Uint::<2>::MAX.digits();
+        let mut digits = *crate::Uint::<2>::MAX.digits();
         digits[0] = 1;
-        let b = super::Uint::<2>::from_digits(digits);
+        let b = crate::Uint::<2>::from_digits(digits);
         assert!(!b.is_one());
     }
 

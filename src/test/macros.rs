@@ -78,11 +78,10 @@ macro_rules! results {
     (<$primitive: ty $(as $Trait: ty)?> :: $function: ident ($($arg: expr), *)) => {
         paste::paste! {
             {
-                use crate::test::types;
                 let big_result = <[<$primitive:upper>] $(as $Trait)?>::$function(
                     $($arg), *
                 );
-                let prim_result = <types::$primitive $(as $Trait)?>::$function(
+                let prim_result = <$primitive $(as $Trait)?>::$function(
                     $($arg), *
                 );
 
@@ -163,7 +162,7 @@ macro_rules! quickcheck_from_to_radix {
     ($primitive: ty, $name: ident, $max: expr) => {
         paste::paste! {
             quickcheck::quickcheck! {
-                fn [<quickcheck_from_to_ $name>](u: crate::test::types::$primitive, radix: crate::test::Radix<$max>) -> quickcheck::TestResult {
+                fn [<quickcheck_from_to_ $name>](u: $primitive, radix: crate::test::Radix<$max>) -> quickcheck::TestResult {
                     use crate::cast::CastFrom;
 
                     let radix = radix.0;
@@ -197,7 +196,7 @@ pub(crate) use debug_skip;
 macro_rules! quickcheck_from_str_radix {
     { $primitive: ident, $sign1: literal | $sign2: literal } => {
         quickcheck::quickcheck! {
-            fn quickcheck_from_str_radix(buf: crate::test::U8ArrayWrapper<{<crate::test::types::$primitive>::BITS as usize / 4}>, radix: crate::test::Radix<36>, leading_sign: bool) -> quickcheck::TestResult {
+            fn quickcheck_from_str_radix(buf: crate::test::U8ArrayWrapper<{<$primitive>::BITS as usize / 4}>, radix: crate::test::Radix<36>, leading_sign: bool) -> quickcheck::TestResult {
                 use alloc::string::String;
 
                 let radix = radix.0;
@@ -251,3 +250,84 @@ macro_rules! quickcheck_from_str {
 
 #[cfg(feature = "alloc")]
 pub(crate) use quickcheck_from_str;
+
+macro_rules! test_types {
+    ($bits: literal) => {
+        paste::paste! {
+            #[allow(non_camel_case_types, unused)]
+            pub type utest = [<u $bits>];
+
+            #[cfg(feature = "signed")]
+            #[allow(non_camel_case_types, unused)]
+            pub type itest = [<i $bits>];
+
+            #[allow(non_camel_case_types, unused)]
+            #[cfg(feature = "float")]
+            pub type ftest = [<f $bits>];
+
+            #[allow(non_camel_case_types, unused)]
+            pub type UTEST = crate::Uint<{ $bits / 8 }>;
+
+            #[cfg(feature = "signed")]
+            #[allow(non_camel_case_types, unused)]
+            pub type ITEST = crate::Int<{ $bits / 8 }>;
+
+            #[cfg(feature = "float")]
+            #[allow(non_camel_case_types, unused)]
+            pub type FTEST = crate::float::Float<{core::mem::size_of::<ftest>()}, {ftest::MANTISSA_DIGITS as usize - 1}>;
+        }
+    };
+}
+
+pub(crate) use test_types;
+
+macro_rules! test_all_widths {
+    { $($s: tt) * } => {
+        mod tests {
+            #[allow(unused_imports)]
+            use super::*;
+
+            mod bits16 {
+                #[allow(unused_imports)]
+                use super::*;
+
+                // #[cfg(not(feature = "nightly"))]
+                #[allow(non_camel_case_types, unused)]
+                type f16 = f32; // this is a bit of a hack, if nightly compiler not being used then we can't use f16s, so we'll declare it to be an f32 instead
+                crate::test::test_types!(16);
+
+                $($s)*
+            }
+
+            mod bits32 {
+                #[allow(unused_imports)]
+                use super::*;
+
+                crate::test::test_types!(32);
+
+                $($s)*
+            }
+            mod bits64 {
+                #[allow(unused_imports)]
+                use super::*;
+
+                crate::test::test_types!(64);
+
+                $($s)*
+            }
+            mod bits128 {
+                #[allow(unused_imports)]
+                use super::*;
+
+                // #[cfg(not(feature = "nightly"))]
+                #[allow(non_camel_case_types, unused)]
+                type f128 = f64; // same hack for f128
+                crate::test::test_types!(128);
+
+                $($s)*
+            }
+        }
+    }
+}
+
+pub(crate) use test_all_widths;

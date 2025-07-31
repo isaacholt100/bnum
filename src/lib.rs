@@ -10,7 +10,9 @@
         wrapping_next_power_of_two,
         unchecked_shifts,
         strict_overflow_ops,
-        unbounded_shifts
+        f16,
+        f128,
+        int_from_ascii
     )
 )]
 #![doc = include_str!("../README.md")]
@@ -30,8 +32,7 @@ mod digit;
 mod doc;
 pub mod errors;
 mod helpers;
-mod int;
-mod nightly;
+mod ints;
 pub mod prelude;
 
 #[cfg(feature = "rand")]
@@ -47,9 +48,6 @@ pub use float::Float;
 
 #[cfg(test)]
 mod test;
-
-#[cfg(test)]
-use test::types::*;
 
 type ExpType = u32;
 

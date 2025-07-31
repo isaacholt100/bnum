@@ -32,6 +32,6 @@ impl<const N: usize> Ord for Int<N> {
 }
 
 #[cfg(test)]
-mod tests {
-    crate::int::cmp::tests!(itest);
+crate::test::test_all_widths! {
+    crate::ints::cmp::tests!(itest);
 }

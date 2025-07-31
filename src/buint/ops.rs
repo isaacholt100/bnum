@@ -6,7 +6,6 @@ use core::ops::{
     Mul, MulAssign, Not, Rem, RemAssign, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign,
 };
 
-// TODO: mark that this has been removed
 // impl<const N: usize> Add<Digit> for Uint<N> {
 //     type Output = Self;
 
@@ -102,11 +101,11 @@ impl<const N: usize> Rem<Digit> for Uint<N> {
 #[cfg(feature = "signed")]
 use crate::Int;
 
-crate::int::ops::impls!(Uint);
+crate::ints::ops::impls!(Uint);
 
 #[cfg(test)]
-mod tests {
-    use crate::test::{test_bignum, types::*};
+crate::test::test_all_widths! {
+    use crate::test::test_bignum;
 
-    crate::int::ops::tests!(utest);
+    crate::ints::ops::tests!(utest);
 }
