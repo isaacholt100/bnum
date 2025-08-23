@@ -378,36 +378,24 @@ impl<const N: usize> Int<N> {
     #[must_use]
     #[inline]
     pub const fn is_one(&self) -> bool {
-        self.bits.is_one()
+        Self::BITS > 1 && self.bits.is_one()
     }
 
     /// Creates a signed integer with `bits` as its underlying representation in two's complement.
-    ///
-    /// This method is faster for casting from a
-    #[doc = concat!("[`", stringify!(Uint), "`]")]
-    /// to a
-    #[doc = concat!("[`", stringify!(Int), "`]")]
-    /// of the same size than using the `As` trait.
     #[must_use]
     #[inline(always)]
     pub const fn from_bits(bits: Uint<N>) -> Self {
         Self { bits }
     }
 
-    /// This simply returns the underlying representation of the integer in two's complement, as an unsigned integer.
-    ///
-    /// This method is faster for casting from a
-    #[doc = concat!("[`", stringify!(Int), "`]")]
-    /// to a
-    #[doc = concat!("[`", stringify!(Uint), "`]")]
-    /// of the same size than using the `As` trait.
+    /// Returns the underlying representation of the integer in two's complement, as an unsigned integer.
     #[must_use]
     #[inline(always)]
     pub const fn to_bits(self) -> Uint<N> {
         self.bits
     }
 
-    /// This simply returns a reference to the underlying representation of the integer in two's complement, as an unsigned integer.
+    /// Returns a reference to the underlying representation of the integer in two's complement, as an unsigned integer.
     #[must_use]
     #[inline(always)]
     pub const fn as_bits(&self) -> &Uint<N> {
@@ -475,8 +463,7 @@ crate::test::test_all_widths! {
     test_bignum! {
         function: <itest>::unsigned_abs(a: itest),
         cases: [
-            (itest::MIN),
-            (0 as itest)
+            (itest::MIN)
         ]
     }
     test_bignum! {

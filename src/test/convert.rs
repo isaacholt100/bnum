@@ -83,6 +83,38 @@ impl<const N: usize> TestConvert for Int<N> {
     }
 }
 
+impl<const N: usize> From<bnum_old::BUintD8<N>> for Uint<N> {
+    fn from(b: bnum_old::BUintD8<N>) -> Self {
+        Self::from_digits(*b.digits())
+    }
+}
+
+#[cfg(feature = "signed")]
+impl<const N: usize> From<bnum_old::BIntD8<N>> for Int<N> {
+    fn from(b: bnum_old::BIntD8<N>) -> Self {
+        Uint::from(b.cast_unsigned()).cast_signed()
+    }
+}
+
+impl<const N: usize> TestConvert for bnum_old::BUintD8<N> {
+    type Output = Uint<N>;
+
+    #[inline]
+    fn into(self) -> Self::Output {
+        Uint::from(self)
+    }
+}
+
+#[cfg(feature = "signed")]
+impl<const N: usize> TestConvert for bnum_old::BIntD8<N> {
+    type Output = Int<N>;
+
+    #[inline]
+    fn into(self) -> Self::Output {
+        Int::from(self)
+    }
+}
+
 impl<T: TestConvert> TestConvert for Option<T> {
     type Output = Option<<T as TestConvert>::Output>;
 
@@ -196,6 +228,15 @@ impl TestConvert for crate::errors::TryFromIntError {
         ()
     }
 }
+
+// impl<T> TestConvert for Vec<T> {
+//     type Output = Self;
+
+//     #[inline]
+//     fn into(self) -> Self::Output {
+//         self
+//     }
+// }
 
 impl TestConvert for core::char::TryFromCharError {
     type Output = ();

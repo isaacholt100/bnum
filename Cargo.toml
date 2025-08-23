@@ -40,6 +40,7 @@ borsh = { version = "^1.5", optional = true, default-features = false, features 
 quickcheck = "1.0"
 paste = "1.0"
 rand = { version = "0.9", features = ["small_rng", "std_rng", "unbiased"], default-features = false } # ideally, this would be an optional feature, but since it is used by quickcheck anyway, it does not matter too much
+bnum-old = { package = "bnum", version = "0.12.1", features = ["rand", "quickcheck", "numtraits"] }
 
 [profile.release]
 lto = true # enable link-time optimisation for faster runtime, but slower compile time

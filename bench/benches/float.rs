@@ -91,18 +91,20 @@ const fn last_digit_index<const N: usize>(b: &bnum_old::BUint<N>) -> usize {
     index
 }
 
-new_to_old!(62);
+const N: usize = 22;
+new_to_old!(N);
 
 fn bench_add(c: &mut Criterion) {
     let mut group = c.benchmark_group("round");
     let mut rng = rand::rngs::StdRng::seed_from_u64(0);
-    const N: usize = 62;
     let big_inputs = (0..SAMPLE_SIZE)
-        .map(|_| rng.gen::<(Int<{N*8}>, i128)>())
+        .map(|_| rng.random::<(Uint<{N*8}>, Uint<{N*8}>)>())
         .map(|(a, b)| (
-            ((a, b), (bnum_old::BInt::bfrom(a), b))
+            ((a, b), (bnum_old::BUint::bfrom(a), bnum_old::BUint::bfrom(b)))
         ));
     let (inputs1, inputs2) = unzip::unzip2(big_inputs);
+
+    let s = Uint::<{N*8}>::MAX.to_str_radix(10);
 
     // group.bench_with_input(BenchmarkId::new("Recursive", "new"), &big_inputs, |b, inputs| b.iter(|| {
     //     for a in inputs.iter().cloned() {
@@ -111,12 +113,12 @@ fn bench_add(c: &mut Criterion) {
     // }));
     group.bench_with_input(BenchmarkId::new("Iterative", "d8"), &inputs1, |b, inputs| b.iter(|| {
         inputs.iter().cloned().map(|(a, b)| {
-            i128::try_from(a)
+            a >> 139
         }).collect::<Vec<_>>()
     }));
     group.bench_with_input(BenchmarkId::new("Iterative", "d64"), &inputs2, |b, inputs| b.iter(|| {
         inputs.iter().cloned().map(|(a, b)| {
-            i128::try_from(a)
+            a >> 139
         }).collect::<Vec<_>>()
     }));
     group.finish();

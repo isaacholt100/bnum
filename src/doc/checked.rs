@@ -60,6 +60,7 @@ macro_rules! checked_mul {
 pub(crate) use checked_mul;
 
 doc::link_doc_comment_method!(
+    checked_signed_diff,
     checked_div,
     checked_div_euclid,
     checked_ilog,
@@ -79,22 +80,6 @@ doc::link_doc_comment_method!(
     checked_abs,
     checked_add_signed,
     checked_add_unsigned,
+    checked_sub_signed,
     checked_sub_unsigned
 );
-
-macro_rules! checked_next_power_of_two {
-    ($sign: ident $bits: literal) => {
-        doc::doc_comment! {
-            #method.checked_next_power_of_two,
-            $sign $bits,
-            "Returns the smallest power of two greater than or equal to `self`. If the next power of two is greater than `Self::MAX`, `None` is returned, otherwise the power of two is wrapped in `Some`.",
-
-            "let n = " doc::type_str!($sign $bits) "::from(2u8);\n"
-            "assert_eq!(n.checked_next_power_of_two(), Some(n));\n"
-            "let m = " doc::type_str!($sign $bits) "::from(3u8);\n"
-            "assert_eq!(" doc::type_str!($sign $bits) "::MAX.checked_next_power_of_two(), None);"
-        }
-    };
-}
-
-pub(crate) use checked_next_power_of_two;

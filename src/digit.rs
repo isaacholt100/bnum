@@ -12,8 +12,6 @@ pub use types::*;
 
 pub const BITS: ExpType = Digit::BITS as ExpType;
 
-pub const BITS_MINUS_1: ExpType = BITS - 1;
-
 pub const BYTES: ExpType = BITS / 8;
 
 // This calculates log2 of BYTES as BYTES is guaranteed to only have one '1' bit, since it must be a power of two.
@@ -111,4 +109,37 @@ pub const fn div_rem_wide(low: Digit, high: Digit, rhs: Digit) -> (Digit, Digit)
         (a / rhs as DoubleDigit) as Digit,
         (a % rhs as DoubleDigit) as Digit,
     )
+}
+
+#[inline]
+pub const fn div_rem_wide_u64(low: u64, high: u64, rhs: u64) -> (u64, u64) {
+    debug_assert!(high < rhs);
+
+    let a = ((high as u128) << 64) | (low as u128);
+    (
+        (a / rhs as u128) as u64,
+        (a % rhs as u128) as u64,
+    )
+}
+
+#[inline]
+pub const fn carrying_add_u64(a: u64, b: u64, carry: bool) -> (u64, bool) {
+    let (s1, o1) = a.overflowing_add(b);
+    if carry {
+        let (s2, o2) = s1.overflowing_add(1);
+        (s2, o1 || o2)
+    } else {
+        (s1, o1)
+    }
+}
+
+#[inline]
+pub const fn borrowing_sub_u64(a: u64, b: u64, borrow: bool) -> (u64, bool) {
+    let (s1, o1) = a.overflowing_sub(b);
+    if borrow {
+        let (s2, o2) = s1.overflowing_sub(1);
+        (s2, o1 || o2)
+    } else {
+        (s1, o1)
+    }
 }

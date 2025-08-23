@@ -2,34 +2,35 @@ use super::Uint;
 use crate::digit;
 
 impl<const N: usize> Uint<N> {
+    // naive O(N^2) "digit by digit" multiplication
     #[inline]
     pub(super) const fn long_mul(self, rhs: Self) -> (Self, bool) {
         let mut overflow = false;
         let mut out = Self::ZERO;
-        let mut carry: u128;
+        let (mut prod, mut carry): (u128, u128);
 
         let mut i = 0;
         while i < Self::U128_DIGITS {
-            let self_digit_i = unsafe { self.as_u128_digits().get_with_correct_count(i) }; // it would require a lot of extra code to run the loop where we don't check the correct count (i.e. separate last digit from the rest), and only a linear number of checks won't affect the performance too much
+            let self_digit_i = unsafe { self.as_u128_digits().get(i) }; // it would require a lot of extra code to run the loop where we don't check the correct count (i.e. separate last digit from the rest), and only a linear number of checks won't affect the performance too much
             carry = 0;
             let mut j = 0;
             unsafe {
                 while j < Self::U128_DIGITS - 1 - i {
                     let index = i + j;
-                    let (prod, c) = digit::carrying_mul_u128(
+                    (prod, carry) = digit::carrying_mul_u128(
                         self_digit_i,
                         rhs.as_u128_digits().get(j),
                         carry,
                         out.as_u128_digits().get(index),
                     );
                     out.as_u128_digits_mut().set(index, prod);
-                    carry = c;
                     j += 1;
                 }
             }
+            // unfortunately, we have to handle the last digit separately, as otherwise we need to initialise prod, which slows performance considerably
             let (prod, c) = digit::carrying_mul_u128(
                 self_digit_i,
-                unsafe { rhs.as_u128_digits().get_with_correct_count(j) },
+                unsafe { rhs.as_u128_digits().get(j) },
                 carry,
                 out.as_u128_digits().last(),
             );
@@ -57,7 +58,6 @@ impl<const N: usize> Uint<N> {
                     }
                 }
             }
-            // assert!(!overflow);
             i += 1;
         }
         (out, overflow)

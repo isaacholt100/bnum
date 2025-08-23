@@ -184,6 +184,7 @@ impl<const N: usize> Int<N> {
 #[cfg(test)]
 crate::test::test_all_widths! {
     use crate::test::test_bignum;
+    use crate::cast::As;
 
     test_bignum! {
         function: <itest>::checked_add(a: itest, b: itest),
@@ -213,9 +214,9 @@ crate::test::test_all_widths! {
         function: <itest>::checked_div(a: itest, b: itest),
         cases: [
             (0i8, 0i8),
-            (23098403i32 as itest, 0i8),
+            (23098403i32.as_::<itest>(), 0i8),
             (itest::MIN, -1i8),
-            (8388600i32 as itest, 68201i32 as itest) // tests the unlikely condition in the division algorithm at step D5
+            (8388600i32.as_::<itest>(), 68201i32.as_::<itest>()) // tests the unlikely condition in the division algorithm at step D5
         ]
     }
     test_bignum! {
@@ -234,7 +235,6 @@ crate::test::test_all_widths! {
     }
     test_bignum! {
         function: <itest>::checked_rem_euclid(a: itest, b: itest),
-        skip: b <= u8::MAX as itest,
         cases: [
             (itest::MIN, -1i8),
             (0i8, 0i8)

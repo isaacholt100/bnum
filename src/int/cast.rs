@@ -1,6 +1,7 @@
 use super::Int;
 use crate::Uint;
 use crate::cast;
+use crate::cast::CastFrom;
 
 macro_rules! bint_as_primitive {
     ($($int: ty), *) => {
@@ -31,7 +32,7 @@ macro_rules! primitive_as_bint {
     }
 }
 
-macro_rules! bint_cast_from_float {
+macro_rules! cast_int_from_float {
     ($f: ty) => {
         #[inline]
         fn cast_from(from: $f) -> Self {
@@ -51,29 +52,31 @@ macro_rules! bint_cast_from_float {
     };
 }
 
-pub(crate) use bint_cast_from_float;
+pub(crate) use cast_int_from_float;
 
-use crate::cast::CastFrom;
+macro_rules! cast_int_to_from_prim_float {
+    ($($f: ty), *) => {
+        $(
+            impl<const N: usize> CastFrom<$f> for Int<N> {
+                crate::int::cast::cast_int_from_float!($f);
+            }
+
+            impl<const N: usize> CastFrom<Int<N>> for $f {
+                #[inline]
+                fn cast_from(from: Int<N>) -> Self {
+                    let f = <$f>::cast_from(from.unsigned_abs());
+                    if from.is_negative() { -f } else { f }
+                }
+            }
+        )*
+    };
+}
+
+cast_int_to_from_prim_float!(f32, f64);
 
 bint_as_primitive!(
     u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize
 );
-
-impl<const N: usize> CastFrom<Int<N>> for f32 {
-    #[inline]
-    fn cast_from(from: Int<N>) -> Self {
-        let f = f32::cast_from(from.unsigned_abs());
-        if from.is_negative() { -f } else { f }
-    }
-}
-
-impl<const N: usize> CastFrom<Int<N>> for f64 {
-    #[inline]
-    fn cast_from(from: Int<N>) -> Self {
-        let f = f64::cast_from(from.unsigned_abs());
-        if from.is_negative() { -f } else { f }
-    }
-}
 
 primitive_as_bint!(
     u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, bool, char
@@ -91,14 +94,6 @@ impl<const N: usize, const M: usize> CastFrom<Int<M>> for Int<N> {
     fn cast_from(from: Int<M>) -> Self {
         Self::from_bits(Uint::cast_from(from))
     }
-}
-
-impl<const N: usize> CastFrom<f32> for Int<N> {
-    crate::bint::cast::bint_cast_from_float!(f32);
-}
-
-impl<const N: usize> CastFrom<f64> for Int<N> {
-    crate::bint::cast::bint_cast_from_float!(f64);
 }
 
 #[cfg(test)]

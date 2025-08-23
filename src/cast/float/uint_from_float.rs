@@ -42,7 +42,7 @@ where
     if is_infinite {
         return U::MAX;
     }
-    if mant == F::Mantissa::ZERO {
+    if mant.is_zero() {
         return U::ZERO;
     }
     if exp < -F::SignedExp::ONE {

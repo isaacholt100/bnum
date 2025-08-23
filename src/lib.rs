@@ -9,7 +9,10 @@
         float_minimum_maximum,
         wrapping_next_power_of_two,
         unchecked_shifts,
+        unchecked_neg,
+        unsigned_signed_diff,
         strict_overflow_ops,
+        mixed_integer_ops_unsigned_sub,
         f16,
         f128,
         int_from_ascii
@@ -24,8 +27,9 @@
 extern crate alloc;
 
 #[cfg(feature = "signed")]
-mod bint;
-mod buint;
+mod int;
+
+mod uint;
 
 pub mod cast;
 mod digit;
@@ -33,7 +37,10 @@ mod doc;
 pub mod errors;
 mod helpers;
 mod ints;
+mod wide_digits;
 pub mod prelude;
+
+use wide_digits::{WideDigits, WideDigitsMut};
 
 #[cfg(feature = "rand")]
 pub mod random;
@@ -52,8 +59,9 @@ mod test;
 type ExpType = u32;
 
 #[cfg(feature = "signed")]
-pub use bint::Int;
-pub use buint::Uint;
+pub use int::Int;
+
+pub use uint::Uint;
 
 type Digit = u8;
 

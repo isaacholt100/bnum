@@ -41,8 +41,28 @@ macro_rules! as_bigint_impl {
 
 pub(crate) use as_bigint_impl;
 
+macro_rules! to_primitive {
+    ($primitive: ty, $method: ident) => {
+        #[inline]
+        fn $method(&self) -> Option<$primitive> {
+            (*self).try_into().ok()
+        }
+    };
+}
+
+pub(crate) use to_primitive;
+
 macro_rules! impls {
     ($Int: ident) => {
+        use num_traits::ops::overflowing::{OverflowingAdd, OverflowingSub, OverflowingMul};
+        use num_traits::{
+            AsPrimitive, Bounded, CheckedAdd, CheckedDiv, CheckedEuclid, CheckedMul, CheckedNeg,
+            CheckedRem, CheckedShl, CheckedShr, CheckedSub, ConstOne, ConstZero, Euclid, FromBytes,
+            FromPrimitive, MulAdd, MulAddAssign, Num, One, Pow, PrimInt, Saturating, SaturatingAdd,
+            SaturatingMul, SaturatingSub, ToBytes, ToPrimitive, WrappingAdd, WrappingMul,
+            WrappingNeg, WrappingShl, WrappingShr, WrappingSub, Zero,
+        };
+
         impl<const N: usize> Bounded for $Int<N> {
             #[inline]
             fn min_value() -> Self {
@@ -54,6 +74,8 @@ macro_rules! impls {
                 Self::MAX
             }
         }
+
+        use crate::ints::numtraits::num_trait_impl;
 
         num_trait_impl!($Int, CheckedAdd, checked_add, Option<Self>);
         num_trait_impl!($Int, CheckedDiv, checked_div, Option<Self>);
@@ -71,6 +93,7 @@ macro_rules! impls {
 
         num_trait_impl!($Int, OverflowingAdd, overflowing_add, (Self, bool));
         num_trait_impl!($Int, OverflowingSub, overflowing_sub, (Self, bool));
+        num_trait_impl!($Int, OverflowingMul, overflowing_mul, (Self, bool));
 
         impl<const N: usize> CheckedNeg for $Int<N> {
             #[inline]
@@ -156,6 +179,33 @@ macro_rules! impls {
             #[inline]
             fn saturating_sub(self, rhs: Self) -> Self {
                 Self::saturating_sub(self, rhs)
+            }
+        }
+
+        use crate::ints::numtraits::to_primitive;
+
+        impl<const N: usize> ToPrimitive for $Int<N> {
+            to_primitive!(u8, to_u8);
+            to_primitive!(u16, to_u16);
+            to_primitive!(u32, to_u32);
+            to_primitive!(u64, to_u64);
+            to_primitive!(u128, to_u128);
+            to_primitive!(usize, to_usize);
+            to_primitive!(i8, to_i8);
+            to_primitive!(i16, to_i16);
+            to_primitive!(i32, to_i32);
+            to_primitive!(i64, to_i64);
+            to_primitive!(i128, to_i128);
+            to_primitive!(isize, to_isize);
+
+            #[inline]
+            fn to_f32(&self) -> Option<f32> {
+                Some(self.as_())
+            }
+
+            #[inline]
+            fn to_f64(&self) -> Option<f64> {
+                Some(self.as_())
             }
         }
 
@@ -439,6 +489,9 @@ macro_rules! tests {
             function: <$int as WrappingMul>::wrapping_mul(a: ref &$int, b: ref &$int)
         }
         test_bignum! {
+            function: <$int as OverflowingMul>::overflowing_mul(a: ref &$int, b: ref &$int)
+        }
+        test_bignum! {
             function: <$int as WrappingNeg>::wrapping_neg(a: ref &$int)
         }
         test_bignum! {
@@ -511,6 +564,14 @@ macro_rules! tests {
         test_from_primitive!($int; u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64);
 
         test_bignum! {
+            function: <$int as Integer>::div_floor(a: ref &$int, b: ref &$int),
+            skip: b.is_zero()
+        }
+        test_bignum! {
+            function: <$int as Integer>::mod_floor(a: ref &$int, b: ref &$int),
+            skip: b.is_zero()
+        }
+        test_bignum! {
             function: <$int as Integer>::lcm(a: ref &$int, b: ref &$int),
             skip: {
                 #[allow(unused_comparisons)]
@@ -528,18 +589,17 @@ macro_rules! tests {
             }
         }
         test_bignum! {
-            function: <$int as Integer>::is_multiple_of(a: ref &$int, b: ref &$int),
-            skip: {
-                #[allow(unused_comparisons)]
-                let cond = b == 0 || (a < 0 && a == <$int>::MIN && b == -1i8 as $int);
-                cond
-            }
+            function: <$int as Integer>::is_multiple_of(a: ref &$int, b: ref &$int)
         }
         test_bignum! {
             function: <$int as Integer>::is_even(a: ref &$int)
         }
         test_bignum! {
             function: <$int as Integer>::is_odd(a: ref &$int)
+        }
+        test_bignum! {
+            function: <$int as Integer>::div_rem(a: ref &$int, b: ref &$int),
+            skip: b.is_zero()
         }
 
         test_bignum! {

@@ -62,12 +62,12 @@ impl<const N: usize> Div for Uint<N> {
     }
 }
 
-impl<const N: usize> Div<Digit> for Uint<N> {
+impl<const N: usize> Div<u64> for Uint<N> {
     type Output = Self;
 
     #[inline]
-    fn div(self, rhs: Digit) -> Self {
-        self.div_rem_digit(rhs).0
+    fn div(self, rhs: u64) -> Self {
+        self.div_rem_u64(rhs).0
     }
 }
 
@@ -89,12 +89,12 @@ impl<const N: usize> Rem for Uint<N> {
     }
 }
 
-impl<const N: usize> Rem<Digit> for Uint<N> {
-    type Output = Digit;
+impl<const N: usize> Rem<u64> for Uint<N> {
+    type Output = u64;
 
     #[inline]
-    fn rem(self, rhs: Digit) -> Digit {
-        self.div_rem_digit(rhs).1
+    fn rem(self, rhs: u64) -> u64 {
+        self.div_rem_u64(rhs).1
     }
 }
 
@@ -105,7 +105,24 @@ crate::ints::ops::impls!(Uint);
 
 #[cfg(test)]
 crate::test::test_all_widths! {
-    use crate::test::test_bignum;
-
     crate::ints::ops::tests!(utest);
+}
+
+#[cfg(test)]
+crate::test::test_all_widths_against_old_types! {
+    use crate::test::test_bignum;
+    use core::ops::{BitAnd, BitOr, BitXor, Not};
+
+    test_bignum! {
+        function: <utest as BitAnd>::bitand(a: utest, b: utest)
+    }
+    test_bignum! {
+        function: <utest as BitOr>::bitor(a: utest, b: utest)
+    }
+    test_bignum! {
+        function: <utest as BitXor>::bitxor(a: utest, b: utest)
+    }
+    test_bignum! {
+        function: <utest as Not>::not(a: utest)
+    }
 }

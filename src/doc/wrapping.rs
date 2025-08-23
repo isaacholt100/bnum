@@ -1,6 +1,6 @@
 macro_rules! impl_desc {
     () => {
-        doc::arithmetic_impl_desc!("Wrapping", "wrapping", "Each method returns of the calculation truncated to the number of bits of `self` (i.e. they each return the first item in the tuple returned by their overflowing equivalent).")
+        doc::arithmetic_impl_desc!("Wrapping", "wrapping", "Each method returns of the calculation truncated to the number of bits of `self`, except for the `wrapping_shl` and `wrapping_shr` methods, which return the value shifted by `rhs % Self::BITS`.")
     };
 }
 
@@ -25,6 +25,7 @@ crate::doc::link_doc_comment_method! {
     wrapping_abs,
     wrapping_add_signed,
     wrapping_add_unsigned,
+    wrapping_sub_signed,
     wrapping_sub_unsigned
 }
 

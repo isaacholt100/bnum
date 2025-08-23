@@ -1,70 +1,17 @@
 use super::Uint;
-use crate::Digit;
-
-macro_rules! to_int {
-    { $($name: ident -> $int: ty), * }  => {
-        $(
-            #[inline]
-            fn $name(&self) -> Option<$int> {
-                let mut out = 0;
-                let mut i = 0;
-                if Digit::BITS > <$int>::BITS {
-                    let small = self.digits[i] as $int;
-                    let trunc = small as Digit;
-                    if self.digits[i] != trunc {
-                        return None;
-                    }
-                    out = small;
-                    i = 1;
-                } else {
-                    loop {
-                        let shift = i << crate::digit::BIT_SHIFT;
-                        if i >= N || shift >= <$int>::BITS as usize {
-                            break;
-                        }
-                        out |= self.digits[i] as $int << shift;
-                        i += 1;
-                    }
-                }
-
-                #[allow(unused_comparisons)]
-                if out < 0 {
-                    return None;
-                }
-
-                while i < N {
-                    if self.digits[i] != 0 {
-                        return None;
-                    }
-                    i += 1;
-                }
-
-                Some(out)
-            }
-        )*
-    };
-}
 
 use crate::ExpType;
 use num_integer::{Integer, Roots};
-use num_traits::ops::overflowing::{OverflowingAdd, OverflowingSub};
-use num_traits::{
-    AsPrimitive, Bounded, CheckedAdd, CheckedDiv, CheckedEuclid, CheckedMul, CheckedNeg,
-    CheckedRem, CheckedShl, CheckedShr, CheckedSub, ConstOne, ConstZero, Euclid, FromBytes,
-    FromPrimitive, MulAdd, MulAddAssign, Num, One, Pow, PrimInt, Saturating, SaturatingAdd,
-    SaturatingMul, SaturatingSub, ToBytes, ToPrimitive, Unsigned, WrappingAdd, WrappingMul,
-    WrappingNeg, WrappingShl, WrappingShr, WrappingSub, Zero,
-};
 
 use crate::cast::CastFrom;
 use crate::cast::float::ConvertFloatParts;
 use crate::helpers::Bits;
-use crate::ints::numtraits::num_trait_impl;
 
 crate::ints::numtraits::impls!(Uint);
 
 macro_rules! from_float {
-    ($method: ident, $float: ty, $decoder: ident, $mant_bits: ident) => {
+    // adapted from crate::cast::float::cast_uint_from_float
+    ($method: ident, $float: ty) => {
         #[inline]
         fn $method(f: $float) -> Option<Self> {
             if !f.is_finite() {
@@ -105,70 +52,38 @@ macro_rules! from_float {
     };
 }
 
+macro_rules! from_primitive {
+    ($primitive: ty, $method: ident) => {
+        #[inline]
+        fn $method(n: $primitive) -> Option<Self> {
+            Self::try_from(n).ok()   
+        }
+    };
+}
+
 impl<const N: usize> FromPrimitive for Uint<N> {
-    #[inline]
-    fn from_u64(int: u64) -> Option<Self> {
-        const UINT_BITS: usize = u64::BITS as usize;
-        let mut out = Uint::ZERO;
-        let mut i = 0;
-        while i << crate::digit::BIT_SHIFT < UINT_BITS {
-            let d = (int >> (i << crate::digit::BIT_SHIFT)) as Digit;
-            if d != 0 {
-                if i < N {
-                    out.digits[i] = d;
-                } else {
-                    return None;
-                }
-            }
-            i += 1;
-        }
-        Some(out)
-    }
-
-    #[inline]
-    fn from_i64(int: i64) -> Option<Self> {
-        match u64::try_from(int) {
-            Ok(int) => Self::from_u64(int),
-            _ => None,
-        }
-    }
-
-    #[inline]
-    fn from_u128(int: u128) -> Option<Self> {
-        const UINT_BITS: usize = u128::BITS as usize;
-        let mut out = Uint::ZERO;
-        let mut i = 0;
-        while i << crate::digit::BIT_SHIFT < UINT_BITS {
-            let d = (int >> (i << crate::digit::BIT_SHIFT)) as Digit;
-            if d != 0 {
-                if i < N {
-                    out.digits[i] = d;
-                } else {
-                    return None;
-                }
-            }
-            i += 1;
-        }
-        Some(out)
-    }
-
-    #[inline]
-    fn from_i128(n: i128) -> Option<Self> {
-        match u128::try_from(n) {
-            Ok(n) => Self::from_u128(n),
-            _ => None,
-        }
-    }
+    from_primitive!(u8, from_u8);
+    from_primitive!(u16, from_u16);
+    from_primitive!(u32, from_u32);
+    from_primitive!(u64, from_u64);
+    from_primitive!(u128, from_u128);
+    from_primitive!(usize, from_usize);
+    from_primitive!(i8, from_i8);
+    from_primitive!(i16, from_i16);
+    from_primitive!(i32, from_i32);
+    from_primitive!(i64, from_i64);
+    from_primitive!(i128, from_i128);
+    from_primitive!(isize, from_isize);
 
     // TODO: replace this with code from the cast/float module
-    from_float!(from_f32, f32, decode_f32, u32_bits);
-    from_float!(from_f64, f64, decode_f64, u64_bits);
+    from_float!(from_f32, f32);
+    from_float!(from_f64, f64);
 }
 
 impl<const N: usize> Integer for Uint<N> {
     #[inline]
     fn div_floor(&self, other: &Self) -> Self {
-        *self / *other
+        Self::div_floor(*self, *other)
     }
 
     #[inline]
@@ -220,7 +135,7 @@ impl<const N: usize> Integer for Uint<N> {
         if self.is_zero() || other.is_zero() {
             Self::ZERO
         } else {
-            self.div_floor(&self.gcd(other)) * *other
+            (self / self.gcd(other)) * other
         }
     }
 
@@ -231,7 +146,10 @@ impl<const N: usize> Integer for Uint<N> {
 
     #[inline]
     fn is_multiple_of(&self, other: &Self) -> bool {
-        self.mod_floor(other).is_zero()
+        if other.is_zero() {
+            return self.is_zero();
+        }
+        (self % other).is_zero()
     }
 
     #[inline]
@@ -356,7 +274,7 @@ impl<const N: usize> Roots for Uint<N> {
         guess.fixpoint(max_bits, |s| {
             let q = self / (s * s);
             let t: Self = (s << 1) + q;
-            t.div_rem_digit(3).0
+            t.div_rem_u64(3).0
         })
     }
 
@@ -398,35 +316,7 @@ impl<const N: usize> Roots for Uint<N> {
     }
 }
 
-impl<const N: usize> ToPrimitive for Uint<N> {
-    to_int! {
-        to_u8 -> u8,
-        to_u16 -> u16,
-        to_u32 -> u32,
-        to_u64 -> u64,
-        to_u128 -> u128,
-        to_usize -> usize,
-
-        to_i8 -> i8,
-        to_i16 -> i16,
-        to_i32 -> i32,
-        to_i64 -> i64,
-        to_i128 -> i128,
-        to_isize -> isize
-    }
-
-    #[inline]
-    fn to_f32(&self) -> Option<f32> {
-        Some(self.as_())
-    }
-
-    #[inline]
-    fn to_f64(&self) -> Option<f64> {
-        Some(self.as_())
-    }
-}
-
-impl<const N: usize> Unsigned for Uint<N> {}
+impl<const N: usize> num_traits::Unsigned for Uint<N> {}
 
 #[cfg(test)]
 crate::test::test_all_widths! {

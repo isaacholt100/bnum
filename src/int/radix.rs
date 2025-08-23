@@ -10,17 +10,6 @@ use core::num::IntErrorKind;
 
 #[doc = doc::radix::impl_desc!(Int)]
 impl<const N: usize> Int<N> {
-    /// Converts a byte slice in a given base to an integer. The input slice must contain ascii/utf8 characters in [0-9a-zA-Z].
-    ///
-    /// This function is equivalent to the [`from_str_radix`](#method.from_str_radix) function for a string slice equivalent to the byte slice and the same radix.
-    ///
-    /// Returns `None` if the conversion of the byte slice to string slice fails or if a digit is larger than or equal to the given radix, otherwise the integer is wrapped in `Some`.
-    #[inline]
-    pub const fn parse_bytes(buf: &[u8], radix: u32) -> Option<Self> {
-        let s = crate::helpers::option_try!(crate::helpers::ok!(core::str::from_utf8(buf)));
-        crate::helpers::ok!(Self::from_str_radix(s, radix))
-    }
-
     /// Converts a slice of big-endian digits in the given radix to an integer. The digits are first converted to an unsigned integer, then this is transmuted to a signed integer. Each `u8` of the slice is interpreted as one digit of base `radix` of the number, so this function will return `None` if any digit is greater than or equal to `radix`, otherwise the integer is wrapped in `Some`.
     ///
     /// For examples, see the
@@ -392,20 +381,6 @@ crate::test::test_all_widths! {
         let src = "72954hslfhbui79845y6audfgiu984h5ihhhdfg";
         let u = Int::<100>::from_str_radix(src, 36).unwrap();
         assert_eq!(u.to_str_radix(36), src);
-    }
-
-    #[cfg(feature = "alloc")]
-    #[test]
-    fn parse_bytes() {
-        let src = "1797972456987acbdead7889";
-        let u = Int::<100>::parse_bytes(src.as_bytes(), 16).unwrap();
-        let v = Int::<100>::from_str_radix(src, 16).unwrap();
-        assert_eq!(u, v);
-        assert_eq!(v.to_str_radix(16), src);
-
-        let bytes = b"279874657dgfhjh";
-        let option = Int::<100>::parse_bytes(bytes, 11);
-        assert!(option.is_none());
     }
 
     #[test]

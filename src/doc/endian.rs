@@ -15,7 +15,7 @@ macro_rules! from_be {
         doc::doc_comment! {
             #method.from_be,
             $sign $bits,
-            "Converts an integer from big endian to the target’s endianness."
+            "Converts an integer from big endian to the target's endianness."
             "On big endian this is a no-op. On little endian the bytes are swapped."
         }
     };
@@ -28,7 +28,7 @@ macro_rules! from_le {
         doc::doc_comment! {
             #method.from_le,
             $sign $bits,
-            "Converts an integer from little endian to the target’s endianness."
+            "Converts an integer from little endian to the target's endianness."
             "On little endian this is a no-op. On big endian the bytes are swapped."
         }
     };
@@ -41,7 +41,7 @@ macro_rules! to_be {
         doc::doc_comment! {
             #method.to_be,
             $sign $bits,
-            "Converts `self` from big endian to the target’s endianness."
+            "Converts `self` from big endian to the target's endianness."
             "On big endian this is a no-op. On little endian the bytes are swapped."
         }
     };
@@ -54,7 +54,7 @@ macro_rules! to_le {
         doc::doc_comment! {
             #method.to_le,
             $sign $bits,
-            "Converts `self` from little endian to the target’s endianness."
+            "Converts `self` from little endian to the target's endianness."
             "On little endian this is a no-op. On big endian the bytes are swapped."
         }
     };

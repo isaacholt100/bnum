@@ -18,7 +18,6 @@ pub trait FloatMantissa:
     + One
     + Zero
 {
-    const TWO: Self;
     const MAX: Self;
 
     fn is_power_of_two(self) -> bool;
@@ -28,7 +27,6 @@ macro_rules! impl_float_mantissa_for_uint {
     ($($uint: ty), *) => {
         $(
             impl FloatMantissa for $uint {
-                const TWO: Self = 2;
                 const MAX: Self = Self::MAX;
 
                 #[inline]

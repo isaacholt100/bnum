@@ -41,7 +41,7 @@ pub trait As {
     /// // Cast `i128` to `I512`:
     /// let c = -2098409234529234584094i128;
     /// let d = c.as_::<I512>();
-    /// //assert_eq!(c.as::<I256>(), d.as_());
+    /// //assert_eq!(c.as_::<I256>(), d.as_());
     ///
     /// // Cast `I512` to `U1024` (result will be sign-extended with leading ones):
     /// let e: U1024 = d.as_();
@@ -104,6 +104,7 @@ pub(crate) mod float;
 pub(crate) const fn bytes_cast<const N: usize, const M: usize, const SIGNED: bool>(
     from: [u8; N],
 ) -> [u8; M] {
+    // We don't need to handle the case N = M, as the compiler optimises it away.
     let pad = if SIGNED && M > N && (from[N - 1] as i8).is_negative() {
         u8::MAX
     } else {

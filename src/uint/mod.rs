@@ -1,5 +1,6 @@
 use crate::errors;
 use crate::{Digit, digit};
+use crate::{WideDigits, WideDigitsMut};
 
 use crate::ExpType;
 use crate::doc;
@@ -44,7 +45,20 @@ pub struct Uint<const N: usize> {
 impl<const N: usize> zeroize::DefaultIsZeroes for Uint<N> {}
 
 impl<const N: usize> Uint<N> {
-    #[doc = doc::count_ones!(U 1024)]
+    /// Returns the number of ones in the binary representation of `self`.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// use bnum::prelude::*;
+    /// use bnum::types::U1024;
+    ///
+    /// assert_eq!(0b101101u8.as_::<U1024>().count_ones(), 4);
+    /// assert_eq!(U1024::MAX.count_ones(), 1024);
+    /// assert_eq!(U1024::ZERO.count_ones(), 0);
+    /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn count_ones(self) -> ExpType {
@@ -57,14 +71,38 @@ impl<const N: usize> Uint<N> {
         ones
     }
 
-    #[doc = doc::count_zeros!(U 1024)]
+    /// Returns the number of ones in the binary representation of `self`.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// use bnum::prelude::*;
+    /// use bnum::types::U512;
+    ///
+    /// assert_eq!(U512::MAX.count_zeros(), 0);
+    /// assert_eq!(U512::ZERO.count_zeros(), 512);
+    /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn count_zeros(self) -> ExpType {
         Self::BITS - self.count_ones()
     }
 
-    #[doc = doc::leading_zeros!(U 1024)]
+    /// Returns the number of leading zeros in the binary representation of `self`.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// use bnum::types::U256;
+    ///
+    /// assert_eq!(U256::MAX.leading_zeros(), 0);
+    /// assert_eq!(U256::ZERO.leading_zeros(), 256);
+    /// assert_eq!(U256::ONE.leading_zeros(), 255);
+    /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn leading_zeros(self) -> ExpType {
@@ -101,7 +139,19 @@ impl<const N: usize> Uint<N> {
         false
     }
 
-    #[doc = doc::trailing_zeros!(U 1024)]
+    /// Returns the number of trailing zeros in the binary representation of `self`.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// use bnum::types::U2048;
+    ///
+    /// assert_eq!(U2048::MAX.trailing_zeros(), 0);
+    /// assert_eq!(U2048::ZERO.trailing_zeros(), 2048);
+    /// assert_eq!(U2048::power_of_two(279).trailing_zeros(), 279);
+    /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn trailing_zeros(self) -> ExpType {
@@ -143,7 +193,19 @@ impl<const N: usize> Uint<N> {
         false
     }
 
-    #[doc = doc::leading_ones!(U 1024, MAX)]
+    /// Returns the number of leading ones in the binary representation of `self`.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// use bnum::types::U1024;
+    ///
+    /// assert_eq!(U1024::MAX.leading_ones(), 1024);
+    /// assert_eq!(U1024::ZERO.leading_ones(), 0);
+    /// assert_eq!((U1024::MAX << 5).leading_ones(), 1019);
+    /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn leading_ones(self) -> ExpType {
@@ -161,14 +223,26 @@ impl<const N: usize> Uint<N> {
         ones
     }
 
-    #[doc = doc::trailing_ones!(U 1024)]
+    /// Returns the number of trailing ones in the binary representation of `self`.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// use bnum::types::U512;
+    ///
+    /// assert_eq!(U512::MAX.trailing_ones(), 512);
+    /// assert_eq!(U512::ZERO.trailing_ones(), 0);
+    /// assert_eq!((U512::MAX >> 9).trailing_ones(), 503);
+    /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn trailing_ones(self) -> ExpType {
         let mut ones = 0;
         let mut i = 0;
         unsafe {
-            while i < Self::U128_DIGITS - 1 {
+            while i < Self::U128_DIGITS {
                 let digit = self.as_u128_digits().get(i);
                 let to = digit.trailing_ones();
                 ones += to;
@@ -178,16 +252,28 @@ impl<const N: usize> Uint<N> {
                 i += 1;
             }
         }
-        let last_to = self.as_u128_digits().last().trailing_ones();
-        ones + last_to
+        ones
     }
 
     #[cfg(feature = "signed")]
-    #[doc = doc::cast_signed!(U)]
+    /// Casts `self` to a signed integer type of the same bit width, leaving the memory representation unchanged.
+    ///
+    /// This is function equivalent to using the [`As`](crate::cast::As) trait to cast `self` to [`Int<N>`](crate::Int).
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// use bnum::types::{U256, I256};
+    ///
+    /// assert_eq!(U256::MAX.cast_signed(), I256::NEG_ONE);
+    /// assert_eq!(U256::ZERO.cast_signed(), I256::ZERO);
+    /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn cast_signed(self) -> crate::Int<N> {
-        crate::Int::<N>::from_bits(self)
+        crate::Int::from_bits(self)
     }
 
     #[inline]
@@ -219,41 +305,62 @@ impl<const N: usize> Uint<N> {
 
             if bit_shift != 0 {
                 let carry_shift = 128 - bit_shift;
-                let mut carry = out.as_u128_digits().last()
-                    >> (8 * Self::LAST_DIGIT_BYTES as u32 - bit_shift);
+                let mut carry =
+                    out.as_u128_digits().last() >> (8 * Self::LAST_DIGIT_BYTES as u32 - bit_shift);
 
                 let mut i = 0;
-                while i < Self::U128_DIGITS - 1 {
+                while i < Self::U128_DIGITS {
                     let current_digit = out.as_u128_digits().get(i);
                     out.as_u128_digits_mut()
                         .set(i, (current_digit << bit_shift) | carry);
                     carry = current_digit >> carry_shift;
                     i += 1;
                 }
-                let current_digit = out.as_u128_digits().last();
-                out.as_u128_digits_mut()
-                    .set_last((current_digit << bit_shift) | carry);
             }
 
             out
         }
     }
 
-    const BITS_MINUS_1: ExpType = (Self::BITS - 1) as ExpType;
-
-    #[doc = doc::rotate_left!(U 256, "u")]
+    /// Rotates the bits of `self` to the left by `n` places.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// use bnum::prelude::*;
+    ///
+    /// type U24 = Uint<3>;
+    ///
+    /// let a: U24 = 0x3D2A17.as_();
+    /// assert_eq!(a.rotate_left(12), 0xA173D2.as_());
+    /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn rotate_left(self, n: ExpType) -> Self {
-        unsafe { self.unchecked_rotate_left(n & Self::BITS_MINUS_1) }
+        unsafe { self.unchecked_rotate_left(n % Self::BITS) }
     }
 
-    #[doc = doc::rotate_right!(U 256, "u")]
+    /// Rotates the bits of `self` to the right by `n` places.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// use bnum::prelude::*;
+    ///
+    /// type U24 = Uint<3>;
+    ///
+    /// let a: U24 = 0x8427AB.as_();
+    /// assert_eq!(a.rotate_right(4), 0xB8427A.as_());
+    /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn rotate_right(self, n: ExpType) -> Self {
-        let n = n & Self::BITS_MINUS_1;
-        unsafe { self.unchecked_rotate_left(Self::BITS as ExpType - n) }
+        let n = n % Self::BITS;
+        unsafe { self.unchecked_rotate_left(Self::BITS - n) }
     }
 
     #[doc = doc::unbounded_shl!(U)]
@@ -278,53 +385,78 @@ impl<const N: usize> Uint<N> {
         }
     }
 
-    #[doc = doc::swap_bytes!(U 256, "u")]
+    /// Reverses the order of the bytes of `self`.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// use bnum::prelude::*;
+    ///
+    /// type U24 = Uint<3>;
+    ///
+    /// let a: U24 = 0x7C283D.as_();
+    /// assert_eq!(a.swap_bytes(), 0x3D287C.as_());
+    /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn swap_bytes(self) -> Self {
         let mut out = Self::ZERO;
         let mut i = 0;
-        while i < Self::FULL_U128_DIGITS {
-            let d = unsafe { self.as_u128_digits().get(i).swap_bytes() };
-            let j = N - (i + 1) * 16;
-            out.set_u128_digit(j, d); // TODO: this is NOT correct
-            i += 1;
-        }
-        if Self::U128_DIGIT_REMAINDER != 0 {
-            let d = self.u128_digit(i).swap_bytes().to_le_bytes();
+        while i < Self::U128_DIGITS {
             unsafe {
-                d.as_ptr()
-                    .add(16 - Self::U128_DIGIT_REMAINDER)
-                    .copy_to_nonoverlapping(out.digits.as_mut_ptr(), Self::U128_DIGIT_REMAINDER);
+                let d = self.as_wide_digits().get(i);
+                out.as_wide_digits_mut().set_be(i, d.swap_bytes());
             }
+
+            i += 1;
         }
         out
     }
 
-    #[doc = doc::reverse_bits!(U 256, "u")]
+    /// Reverses the order of the bits of `self`.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// use bnum::prelude::*;
+    ///
+    /// type U24 = Uint<3>;
+    ///
+    /// let a: U24 = 0b10110011_11001010_00011101.as_();
+    /// assert_eq!(a.reverse_bits(), 0b10111000_01001101_11000011.as_());
+    /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn reverse_bits(self) -> Self {
         let mut out = Self::ZERO;
         let mut i = 0;
-        while i < Self::FULL_U128_DIGITS {
-            let d = self.u128_digit(i).reverse_bits();
-            let j = N - (i + 1) * 16; // TODO: this is NOT correct
-            out.set_u128_digit(j, d);
-            i += 1;
-        }
-        if Self::U128_DIGIT_REMAINDER != 0 {
-            let d = self.u128_digit(i).reverse_bits().to_le_bytes();
+        while i < Self::U128_DIGITS {
             unsafe {
-                d.as_ptr()
-                    .add(16 - Self::U128_DIGIT_REMAINDER)
-                    .copy_to_nonoverlapping(out.digits.as_mut_ptr(), Self::U128_DIGIT_REMAINDER);
+                let d = self.as_wide_digits().get(i);
+                out.as_wide_digits_mut().set_be(i, d.reverse_bits());
             }
+
+            i += 1;
         }
         out
     }
 
-    #[doc = doc::pow!(U 256)]
+    /// Returns `self` raised to the power of `exp`. In debug builds, this method is equivalent to [`strict_pow`](Self::strict_pow). In release builds, this method is equivalent to [`wrapping_pow`](Self::wrapping_pow).
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// use bnum::prelude::*;
+    /// use bnum::types::U256;
+    ///
+    /// assert_eq!(3.as_::<U256>().pow(5), 243.as_());
+    /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn pow(self, exp: ExpType) -> Self {
@@ -334,6 +466,30 @@ impl<const N: usize> Uint<N> {
         #[cfg(not(debug_assertions))]
         self.wrapping_pow(exp)
     }
+
+    // #[must_use = doc::must_use_op!()]
+    // #[inline]
+    // pub const fn modpow(mut self, mut exp: ExpType, modulus: Self) -> Self {
+    //     // exponentiation by squaring
+    //     if modulus.is_zero() {
+    //         panic!(errors::err_msg!(errors::rem_by_zero_message!()));
+    //     }
+    //     if exp == 0 {
+    //         return Self::ONE;
+    //     }
+    //     let mut y = Self::ONE;
+    //     let overflow_rem = Self::MAX.wrapping_rem(modulus).wrapping_add(Self::ONE); // overflow isn't possible here as the remainder must be < Self::MAX.
+    //     while exp > 1 {
+    //         if exp % 2 == 1 {
+    //             let (low, high) = self.widening_mul(y); // self < 2^(Self::BITS), so high must be < modulus, given that y < modulus.
+    //             y
+    //             y = self.wrapping_mul(y);
+    //         }
+    //         self = self.wrapping_mul(self);
+    //         exp /= 2;
+    //     }
+    //     self.wrapping_mul(y)
+    // }
 
     #[doc = doc::div_euclid!(U)]
     #[must_use = doc::must_use_op!()]
@@ -364,7 +520,7 @@ impl<const N: usize> Uint<N> {
         let mut i = 0;
         let mut ones = 0;
         unsafe {
-            while i < Self::U128_DIGITS - 1 {
+            while i < Self::U128_DIGITS {
                 ones += self.as_u128_digits().get(i).count_ones();
                 if ones > 1 {
                     return false;
@@ -372,7 +528,6 @@ impl<const N: usize> Uint<N> {
                 i += 1;
             }
         }
-        ones += self.as_u128_digits().last().count_ones();
         ones == 1
     }
 
@@ -485,12 +640,12 @@ impl<const N: usize> Uint<N> {
             let carry_shift = 128 - bit_shift;
             let mut carry = 0;
 
-            let mut i = digit_shift;
-            while i < N {
-                let current_digit = out.u128_digit_at_offset::<0>(i);
-                out.set_u128_digit_at_offset(i, (current_digit << bit_shift) | carry);
+            let mut i = (rhs / 128) as usize;
+            while i < Self::U128_DIGITS {
+                let current_digit = unsafe { out.as_wide_digits().get(i) };
+                unsafe { out.as_wide_digits_mut().set(i, (current_digit << bit_shift) | carry) };
                 carry = current_digit >> carry_shift;
-                i += 16;
+                i += 1;
             }
         }
 
@@ -507,7 +662,7 @@ impl<const N: usize> Uint<N> {
             let digit_shift = (rhs / 8) as usize;
             let bit_shift = rhs % 8;
 
-            let num_copies = N.unchecked_sub(digit_shift); // TODO: use unchecked_ methods from primitives when these are stablised and constified
+            let num_copies = N.unchecked_sub(digit_shift);
 
             let mut i = digit_shift;
             while i < N {
@@ -569,18 +724,18 @@ impl<const N: usize> Uint<N> {
     #[inline]
     pub const fn bit(&self, index: ExpType) -> bool {
         let digit = self.digits[index as usize >> digit::BIT_SHIFT];
-        digit & (1 << (index & digit::BITS_MINUS_1)) != 0
+        digit & (1 << (index % Digit::BITS)) != 0
     }
 
     #[doc = doc::set_bit!(U 256)]
     #[inline]
     pub const fn set_bit(&mut self, index: ExpType, value: bool) {
         let digit = &mut self.digits[index as usize >> digit::BIT_SHIFT];
-        let shift = index & digit::BITS_MINUS_1;
+        let shift = index % digit::BITS;
         *digit = *digit & !(1 << shift) | ((value as Digit) << shift);
     }
 
-    /// Returns an integer whose value is `2^power`. This is faster than using a shift left on `Self::ONE`.
+    /// Returns an integer whose value is `2.pow(power)`. This is faster than using a shift left on `Self::ONE` or using the [`pow`](Self::pow) function.
     ///
     /// # Panics
     ///
@@ -591,12 +746,16 @@ impl<const N: usize> Uint<N> {
     /// ```
     /// use bnum::types::U256;
     ///
-    /// let power = 11;
-    /// assert_eq!(U256::power_of_two(11), (1u128 << 11).into());
+    /// assert_eq!(U256::power_of_two(11), U256::ONE << 11);
     /// ```
     #[must_use]
     #[inline]
     pub const fn power_of_two(power: ExpType) -> Self {
+        assert!(
+            power < Self::BITS,
+            crate::errors::err_msg!("power of two must be less than `Self::BITS`")
+        );
+
         let mut out = Self::ZERO;
         out.digits[power as usize >> digit::BIT_SHIFT] = 1 << (power & (digit::BITS - 1));
         out
@@ -621,10 +780,22 @@ impl<const N: usize> Uint<N> {
         &mut self.digits
     }
 
+    const ASSERT_IS_VALID: () = {
+        assert!(N != 0, "bnum types cannot be zero-sized");
+        // `Self::BITS` must be at most `u32::MAX` (i.e. 2^32 - 1)
+        // so `N` must be at most (2^32 - 1) / 8 = 2^29 - 1/8 = 2^29 - 1 (rounded down)
+        if usize::BITS > 29 {
+            // otherwise, since `N` is a usize, `N` must be at most `usize::MAX <= 2^29 - 1`
+            assert!(N < (1 << 29), "bnum types must be less than 2^29 bytes");
+        }
+    };
+
     /// Creates a new unsigned integer from the given array of digits. Digits are stored as little endian (least significant digit first).
     #[must_use]
     #[inline(always)]
     pub const fn from_digits(digits: [Digit; N]) -> Self {
+        // this is the only method where `Self` is explicitly constructed, all other methods use this one indirectly. thus, we can make all assertions about whether `N` is a valid size here.
+        const { Self::ASSERT_IS_VALID };
         Self { digits }
     }
 
@@ -643,14 +814,14 @@ impl<const N: usize> Uint<N> {
     pub const fn is_zero(&self) -> bool {
         let mut i = 0;
         unsafe {
-            while i < Self::U128_DIGITS - 1 {
+            while i < Self::U128_DIGITS {
                 if self.as_u128_digits().get(i) != 0 {
                     return false;
                 }
                 i += 1;
             }
         }
-        self.as_u128_digits().last() == 0
+        true
     }
 
     #[doc = doc::is_one!(U 256)]
@@ -665,36 +836,14 @@ impl<const N: usize> Uint<N> {
                 return false;
             }
             let mut i = 1;
-            while i < Self::U128_DIGITS - 1 {
+            while i < Self::U128_DIGITS {
                 if self.as_u128_digits().get(i) != 0 {
                     return false;
                 }
                 i += 1;
             }
         }
-        self.as_u128_digits().last() == 0
-    }
-
-    // TODO: maybe don't need this method once using u128 digits for relevant methods
-    #[inline]
-    pub(crate) const fn last_digit_index(&self) -> usize {
-        // TODO: can use u128
-        let mut index = 0;
-        let mut i = 1;
-        while i < N {
-            if (&self.digits)[i] != 0 {
-                index = i;
-            }
-            i += 1;
-        }
-        index
-    }
-
-    #[allow(unused)]
-    #[inline]
-    fn square(self) -> Self {
-        // TODO: optimise this method, this will make exponentiation by squaring faster
-        self * self
+        true
     }
 
     #[inline]
@@ -706,6 +855,27 @@ impl<const N: usize> Uint<N> {
     pub(crate) const fn as_u128_digits_mut(&mut self) -> U128DigitsMut<N> {
         U128DigitsMut::new(self)
     }
+
+    #[inline]
+    pub(crate) const fn as_wide_digits(&self) -> WideDigits<N, false, false> {
+        WideDigits::new(self)
+    }
+
+    #[inline]
+    pub(crate) const fn as_wide_digits_mut(&mut self) -> WideDigitsMut<N, false, false> {
+        WideDigitsMut::new(self)
+    }
+}
+
+
+#[test]
+fn test_shl() {
+    let a = Uint::<{56 / 8}>::from_str_radix("20550931191544903", 10).unwrap();
+
+    println!("{:056b}", a);
+    let b = a.overflowing_shl(56);
+    println!("{:056b}", b.0);
+    dbg!(b.1);
 }
 
 pub struct U128Digits<'a, const N: usize> {
@@ -725,7 +895,7 @@ impl<'a, const N: usize> U128Digits<'a, N> {
     pub const unsafe fn get_at_offset(&self, offset: usize) -> u128 {
         let mut bytes = [0; 16];
         let c = N - offset;
-        let count = c & (16 ^ (-((16 > c) as isize) as usize)); // this is a bit hack for min(c, 16)
+        let count = if c > 16 { 16 } else { c }; // this is a bit hack for min(c, 16)
         unsafe {
             self.bits
                 .digits
@@ -738,6 +908,9 @@ impl<'a, const N: usize> U128Digits<'a, N> {
 
     #[inline]
     pub const unsafe fn get(&self, index: usize) -> u128 {
+        if index == Uint::<N>::U128_DIGITS - 1 {
+            return self.last();
+        }
         let mut bytes = [0; 16];
         unsafe {
             self.bits
@@ -785,6 +958,9 @@ impl<'a, const N: usize> U128DigitsMut<'a, N> {
 
     #[inline]
     pub const unsafe fn set(&mut self, index: usize, value: u128) {
+        if index == Uint::<N>::U128_DIGITS - 1 {
+            return self.set_last(value);
+        }
         let out_bytes = value.to_le_bytes();
         unsafe {
             out_bytes
@@ -797,7 +973,7 @@ impl<'a, const N: usize> U128DigitsMut<'a, N> {
     pub const unsafe fn set_at_offset(&mut self, offset: usize, value: u128) {
         let out_bytes = value.to_le_bytes();
         let c = N - offset;
-        let count = c & (16 ^ (-((16 > c) as isize) as usize)); // this is a bit hack for min(c, 16)
+        let count = if c > 16 { 16 } else { c };
         unsafe {
             out_bytes
                 .as_ptr()
@@ -819,50 +995,6 @@ impl<'a, const N: usize> U128DigitsMut<'a, N> {
 }
 
 impl<const N: usize> Uint<N> {
-    // TODO: should probably make these unsafe or add checks in
-    // TODO: multiplication is much slower when the min is calculated. need to remove it and use only when needed
-    #[inline]
-    const fn u128_digit_at_offset<const PAD: u8>(&self, offset: usize) -> u128 {
-        let mut bytes = [PAD; 16];
-        let c = N - offset;
-        let count = c & (16 ^ (-((16 > c) as isize) as usize)); // this is a bit hack for min(c, 16)
-        unsafe {
-            self.digits
-                .as_ptr()
-                .add(offset)
-                .copy_to_nonoverlapping(bytes.as_mut_ptr(), count);
-        }
-        u128::from_le_bytes(bytes)
-    }
-
-    #[inline]
-    const fn u128_digit_pad<const PAD: u8>(&self, i: usize) -> u128 {
-        let offset = i * 16;
-        self.u128_digit_at_offset::<PAD>(offset)
-    }
-
-    #[inline]
-    const fn u128_digit(&self, i: usize) -> u128 {
-        self.u128_digit_pad::<0>(i)
-    }
-
-    #[inline]
-    const fn set_u128_digit(&mut self, i: usize, value: u128) {
-        self.set_u128_digit_at_offset(i * 16, value);
-    }
-
-    #[inline]
-    const fn set_u128_digit_at_offset(&mut self, offset: usize, value: u128) {
-        let out_bytes = value.to_le_bytes();
-        let c = N - offset;
-        let count = c & (16 ^ (-((16 > c) as isize) as usize)); // this is a bit hack for min(c, 16)
-        unsafe {
-            out_bytes
-                .as_ptr()
-                .copy_to_nonoverlapping(self.digits.as_mut_ptr().add(offset), count);
-        }
-    }
-
     const U128_DIGITS: usize = N.div_ceil(16);
     pub(crate) const FULL_U128_DIGITS: usize = N / 16;
     pub(crate) const U128_DIGIT_REMAINDER: usize = N % 16;
@@ -916,15 +1048,12 @@ impl<const N: usize> quickcheck::Arbitrary for Uint<N> {
         let mut out = Self::ZERO;
         let mut i = 0;
         unsafe {
-            while i < Self::U128_DIGITS - 1 {
-                // TODO: this and other loops could be done with i < Self::FULL_DIGITS then a check if Self::U128_DIGIT_REMAINDER != 0 at the end
+            while i < Self::U128_DIGITS {
                 let a = <u128 as quickcheck::Arbitrary>::arbitrary(g);
                 out.as_u128_digits_mut().set(i, a);
                 i += 1;
             }
         }
-        let a = <u128 as quickcheck::Arbitrary>::arbitrary(g);
-        out.as_u128_digits_mut().set_last(a);
         out
     }
 }
@@ -1029,6 +1158,33 @@ crate::test::test_all_widths! {
         let v = vec![&UTEST::ONE, &UTEST::TWO, &UTEST::THREE];
         assert_eq!(UTEST::SIX, v.iter().copied().sum());
         assert_eq!(UTEST::SIX, v.into_iter().sum());
+    }
+}
+
+#[cfg(test)]
+crate::test::test_all_widths_against_old_types! {
+    use crate::test::test_bignum;
+
+    test_bignum! {
+        function: <utest>::trailing_zeros(a: utest)
+    }
+    test_bignum! {
+        function: <utest>::trailing_ones(a: utest)
+    }
+    test_bignum! {
+        function: <utest>::rotate_left(a: utest, b: u32)
+    }
+    test_bignum! {
+        function: <utest>::rotate_right(a: utest, b: u32)
+    }
+    test_bignum! {
+        function: <utest>::reverse_bits(a: utest)
+    }
+    test_bignum! {
+        function: <utest>::swap_bytes(a: utest)
+    }
+    test_bignum! {
+        function: <utest>::is_power_of_two(a: utest)
     }
 }
 

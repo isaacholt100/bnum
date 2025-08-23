@@ -43,21 +43,26 @@ impl<const N: usize> crate::helpers::Bits for crate::Uint<N> {
 
 pub trait Zero: Sized + PartialEq {
     const ZERO: Self;
+
+    #[inline]
+    fn is_zero(&self) -> bool {
+        self == &Self::ZERO
+    }
 }
 
 pub trait One: Sized + PartialEq {
     const ONE: Self;
 }
 
-macro_rules! impl_zero_for_uint {
-    ($($uint: ty), *) => {
-        $(impl Zero for $uint {
+macro_rules! impl_zero_for_int {
+    ($($int: ty), *) => {
+        $(impl Zero for $int {
             const ZERO: Self = 0;
         })*
     };
 }
 
-impl_zero_for_uint!(u8, u16, u32, u64, u128, usize);
+impl_zero_for_int!(u8, u16, u32, u64, u128, usize);
 
 macro_rules! impl_one_for_int {
     ($($uint: ty), *) => {
@@ -79,21 +84,10 @@ impl<const N: usize> crate::helpers::One for crate::Uint<N> {
     const ONE: Self = Self::ONE;
 }
 
-#[inline]
+#[inline(always)]
 pub const fn tuple_to_option<T: Copy>((int, overflow): (T, bool)) -> Option<T> {
     if overflow { None } else { Some(int) }
 }
-
-macro_rules! option_try {
-    ($e: expr) => {
-        match $e {
-            Some(v) => v,
-            None => return None,
-        }
-    };
-}
-
-pub(crate) use option_try;
 
 macro_rules! ok {
     { $e: expr } => {

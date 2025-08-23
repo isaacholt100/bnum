@@ -48,6 +48,10 @@ pub type F32 = crate::Float<4, 23>;
 pub type F64 = crate::Float<8, 52>;
 
 #[cfg(feature = "float")]
+/// 80-bit floating point type with 64 bits of precision.
+pub type F80 = crate::Float<10, 64>;
+
+#[cfg(feature = "float")]
 /// 128-bit floating point type with 112 bits of precision, stored as the binary128 (quadruple precision) format defined in IEEE 754-2019.
 pub type F128 = crate::Float<16, 112>;
 

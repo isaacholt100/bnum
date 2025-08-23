@@ -1,6 +1,6 @@
 macro_rules! impl_desc {
     () => {
-        doc::arithmetic_impl_desc!("Strict", "strict", "Each method will always panic if overflow/underflow occurs (i.e. when the checked equivalent would return `None`), regardless of whether overflow checks are enabled.")
+        doc::arithmetic_impl_desc!("Strict", "strict", "Each method will always panic if overflow or division by zero occurs (i.e. when the checked equivalent would return `None`), regardless of whether overflow checks are enabled.")
     };
 }
 

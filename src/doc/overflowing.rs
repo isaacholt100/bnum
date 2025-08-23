@@ -1,6 +1,6 @@
 macro_rules! impl_desc {
     () => {
-        doc::arithmetic_impl_desc!("Overflowing", "overflowing", "Each method returns a tuple of type `(Self, bool)` where the first item of the tuple is the result of the calculation truncated to the number of bits of `self`, and the second item is a boolean which indicates whether overflow occurred (i.e. if the number of bits of the result of the calculation exceeded the number of bits of `self`).")
+        doc::arithmetic_impl_desc!("Overflowing", "overflowing", "Each method returns a tuple of type `(Self, bool)` where the first item of the tuple is the result of wrapping variant of the method (`self.wrapped_...`), and the second item is a boolean which indicates whether overflow occurred.")
     };
 }
 
@@ -25,5 +25,6 @@ crate::doc::link_doc_comment_method! {
     overflowing_abs,
     overflowing_add_signed,
     overflowing_add_unsigned,
+    overflowing_sub_signed,
     overflowing_sub_unsigned
 }

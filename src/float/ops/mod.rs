@@ -146,7 +146,6 @@ crate::test::test_all_widths! {
 
     test_bignum! {
         function: <ftest as Add>::add(a: ftest, b: ftest),
-        skip: a.is_sign_negative() != b.is_sign_negative(),
         cases: [(1.3952888382785755e33, 1.466527384898436e33)]
     }
     test_bignum! {

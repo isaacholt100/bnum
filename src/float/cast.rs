@@ -52,7 +52,7 @@ impl<const W: usize, const MB: usize, const N: usize> CastFrom<Int<N>> for Float
 }
 
 impl<const W: usize, const MB: usize, const N: usize> CastFrom<Float<W, MB>> for Int<N> {
-    crate::bint::cast::bint_cast_from_float!(Float<W, MB>);
+    crate::int::cast::cast_int_from_float!(Float<W, MB>);
 }
 
 macro_rules! float_as_int {
@@ -158,7 +158,7 @@ where
     };
 
     let out_exponent = if T::EXPONENT_BITS <= U::EXPONENT_BITS {
-        // in this case, we will never have overflow or underflow
+        // in this case, we will never have overflow
         U::SignedExp::cast_from(exponent)
     } else {
         if T::SignedExp::cast_from(U::MAX_EXP) <= exponent {

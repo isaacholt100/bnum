@@ -34,3 +34,18 @@ impl<const N: usize> Ord for Uint<N> {
 crate::test::test_all_widths! {
     crate::ints::cmp::tests!(utest);
 }
+
+#[cfg(test)]
+crate::test::test_all_widths_against_old_types! {
+    use crate::test::test_bignum;
+
+    test_bignum! {
+        function: <utest>::eq(a: ref &utest, b: ref &utest)
+    }
+    test_bignum! {
+        function: <utest as PartialEq>::eq(a: ref &utest, b: ref &utest)
+    }
+    test_bignum! {
+        function: <utest as Ord>::cmp(a: ref &utest, b: ref &utest)
+    }
+}

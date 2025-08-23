@@ -82,8 +82,9 @@ crate::ints::ops::impls!(Int);
 
 #[cfg(test)]
 crate::test::test_all_widths! {
-    use crate::test::{debug_skip, test_bignum};
+    use crate::test::debug_skip;
     use core::ops::Neg;
+    use crate::test::test_bignum;
 
     test_bignum! {
         function: <itest>::neg(a: itest),

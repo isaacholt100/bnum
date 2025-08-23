@@ -29,14 +29,23 @@ macro_rules! cast_uint_from_to_prim_int {
     };
 }
 
-macro_rules! buint_as_float {
-    ($f: ty) => {
-        impl<const N: usize> CastFrom<Uint<N>> for $f {
-            #[inline]
-            fn cast_from(value: Uint<N>) -> Self {
-                cast::float::cast_float_from_uint(value)
+macro_rules! cast_uint_from_to_prim_float {
+    ($($f: ty), *) => {
+        $(
+            impl<const N: usize> CastFrom<Uint<N>> for $f {
+                #[inline]
+                fn cast_from(value: Uint<N>) -> Self {
+                    cast::float::cast_float_from_uint(value)
+                }
             }
-        }
+
+            impl<const N: usize> CastFrom<$f> for Uint<N> {
+                #[inline]
+                fn cast_from(value: $f) -> Self {
+                    cast::float::cast_uint_from_float(value)
+                }
+            }
+        )*
     };
 }
 
@@ -47,7 +56,6 @@ use crate::cast::float::{CastFloatFromUintHelper, CastUintFromFloatHelper, Float
 
 #[cfg(feature = "float")]
 impl<const N: usize> FloatMantissa for Uint<N> {
-    const TWO: Self = Self::TWO;
     const MAX: Self = Self::MAX;
 
     #[inline]
@@ -71,8 +79,7 @@ cast_uint_from_to_prim_int!(
     u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize
 );
 
-buint_as_float!(f32);
-buint_as_float!(f64);
+cast_uint_from_to_prim_float!(f32, f64);
 
 impl<const N: usize> CastFrom<bool> for Uint<N> {
     #[inline]
@@ -102,20 +109,6 @@ impl<const N: usize, const M: usize> CastFrom<crate::Int<M>> for Uint<N> {
     fn cast_from(from: crate::Int<M>) -> Self {
         let bytes = cast::bytes_cast::<M, N, true>(from.to_le_bytes());
         Self::from_le_bytes(bytes)
-    }
-}
-
-impl<const N: usize> CastFrom<f32> for Uint<N> {
-    #[inline]
-    fn cast_from(value: f32) -> Self {
-        cast::float::cast_uint_from_float(value)
-    }
-}
-
-impl<const N: usize> CastFrom<f64> for Uint<N> {
-    #[inline]
-    fn cast_from(value: f64) -> Self {
-        cast::float::cast_uint_from_float(value)
     }
 }
 

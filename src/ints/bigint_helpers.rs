@@ -49,6 +49,18 @@ macro_rules! tests {
                 (<$int>::MIN, 1u8, true)
             ]
         }
+        test_bignum! {
+            function: <$int>::widening_mul(a: $int, b: $int),
+            cases: [
+                (<$int>::MAX, 2u8)
+            ]
+        }
+        test_bignum! {
+            function: <$int>::carrying_mul(a: $int, b: $int, c: $int)
+        }
+        test_bignum! {
+            function: <$int>::carrying_mul_add(a: $int, b: $int, c: $int, d: $int)
+        }
     };
 }
 

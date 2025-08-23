@@ -3,7 +3,7 @@ macro_rules! impl_desc {
         concat!(
             "Methods which convert a `",
             stringify!($ty),
-            "` between different types in a given radix (base)."
+            "` from and to strings and lists of digits in a given radix (base)."
         )
     };
 }

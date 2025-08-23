@@ -84,6 +84,7 @@ macro_rules! tests {
 
         paste::paste! {
             fmt::impl_format!([<$ty:upper>]);
+            fmt::impl_format!([<$ty:lower>]);
         }
 
         fmt::test_formats!($ty; binary, lower_hex, upper_hex, octal, display, debug, lower_exp, upper_exp);
@@ -92,6 +93,3 @@ macro_rules! tests {
 
 #[cfg(test)]
 pub(crate) use tests;
-
-#[cfg(test)]
-crate::ints::fmt::impl_format!(u128, i128, u64, i64, u32, i32, u16, i16);

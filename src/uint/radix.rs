@@ -43,8 +43,110 @@ const fn digit_to_str_byte(digit: u8) -> u8 {
     }
 }
 
+/// Returns the maximum power of `radix` that fits in a `u64`, together with the associated exponent
+#[inline]
+const fn max_radix_power(radix: u32) -> (u64, usize) {
+    let mut power: u64 = radix as u64;
+    let mut exponent = 1;
+    loop {
+        match power.checked_mul(radix as u64) {
+            Some(n) => {
+                power = n;
+                exponent += 1;
+            }
+            None => return (power, exponent),
+        }
+    }
+}
+
+// we index using the radix itself
+const MAX_RADIX_POWERS: [(u64, usize); 257] = {
+    let mut arr = [(0, 0); 257];
+    let mut i = 2;
+    while i <= 256 {
+        arr[i] = max_radix_power(i as u32);
+        i += 1;
+    }
+    arr
+};
+
 #[doc = doc::radix::impl_desc!(Uint)]
 impl<const N: usize> Uint<N> {
+    #[inline] 
+    fn to_digits_le(self, radix: u32) -> Vec<u8> {
+        let mut digits = Vec::with_capacity(Self::BITS.div_ceil(radix.ilog2()) as usize); // log_r (2^B) = B log_r (2) = B/log_2 (r)
+        let mut current = self;
+        let radix_u64 = radix as u64;
+        let (max_pow, max_pow_exponent) = MAX_RADIX_POWERS[radix as usize];
+        loop {
+            let (q, mut r) = current.div_rem_u64(max_pow);
+            if q.is_zero() {
+                while r != 0 {
+                    digits.push((r % radix_u64) as u8);
+                    r /= radix_u64;
+                }
+                return digits;
+            }
+            for _ in 0..max_pow_exponent {
+                digits.push((r % radix_u64) as u8); // guaranteed to fit into u8 as radix_u64 <= 256
+                r /= radix_u64;
+            }
+            current = q;
+        }
+    }
+
+    #[inline]
+    fn to_exact_bitwise_digits_le(mut self, bits: u32) -> Vec<u8> {
+        let mask = (u32::MAX >> (32 - bits)) as u8;
+        let mut digits = Vec::with_capacity(Self::BITS.div_ceil(bits) as usize);
+        debug_assert!(mask.trailing_ones() == bits);
+        debug_assert!(mask.count_ones() == bits); // mask is l low-order 1s
+        let num_non_zero_digits = self.bits().div_ceil(8) as usize;
+        let digits_per_big_digit = u8::BITS / bits;
+
+        // let mut i = 0;
+        for mut d in &mut self.digits[0..num_non_zero_digits - 1] {
+            // let mut d = unsafe { self.digits[i] };
+            for _ in 0..digits_per_big_digit {
+                let digit = *d & mask; // can truncate to u32 as this is equivalent to bitand-ing with zeros
+                digits.push(digit);
+                *d >>= bits;
+            }
+
+            // i += 1;
+        }
+        let mut d = unsafe { self.digits[num_non_zero_digits - 1] };
+        while d != 0 {
+            let digit = d & mask; // can truncate to u32 as this is equivalent to bitand-ing with zeros
+            digits.push(digit);
+            d >>= bits;
+        }
+        digits
+    }
+
+    #[inline]
+    fn to_inexact_bitwise_digits_le2(self, bits: u32) -> Vec<u8> {
+        let mut digits = Vec::with_capacity(Self::BITS.div_ceil(bits) as usize);
+        let mask = u32::MAX >> (32 - bits);
+        debug_assert!(mask.trailing_ones() == bits);
+        debug_assert!(mask.count_ones() == bits);
+
+        let num_non_zero_digits = self.bits().div_ceil(128) as usize; // number of non-zero u128 digits
+        let mut i = 0;
+        while i < num_non_zero_digits {
+            let mut d = unsafe { self.as_wide_digits().get(i) };
+            for _ in 0..(u128::BITS / bits) {
+                let digit = d as u32 & mask; // can truncate to u32 as this is equivalent to bitand-ing with zeros
+                digits.push(digit as u8);
+                d >>= bits;
+            }
+
+            i += 1;
+        }
+
+        digits
+    }
+
     #[cfg(feature = "alloc")]
     #[inline]
     const fn radix_base(radix: u32) -> (Digit, usize) {
@@ -62,50 +164,7 @@ impl<const N: usize> Uint<N> {
         }
     }
 
-    #[cfg(feature = "alloc")]
-    #[inline]
-    const fn radix_base_half(radix: u32) -> (Digit, usize) {
-        const HALF_BITS_MAX: Digit = Digit::MAX >> (Digit::BITS / 2);
-
-        let mut power: usize = 1;
-        let radix = radix as Digit;
-        let mut base = radix;
-        loop {
-            match base.checked_mul(radix) {
-                Some(n) if n <= HALF_BITS_MAX => {
-                    base = n;
-                    power += 1;
-                }
-                _ => return (base, power),
-            }
-        }
-    }
-
-    /// Converts a byte slice in a given base to an integer. The input slice must contain ascii/utf8 characters in [0-9a-zA-Z].
-    ///
-    /// This function is equivalent to the [`from_str_radix`](#method.from_str_radix) function for a string slice equivalent to the byte slice and the same radix.
-    ///
-    /// Returns `None` if the conversion of the byte slice to string slice fails or if a digit is larger than or equal to the given radix, otherwise the integer is wrapped in `Some`.
-    ///
-    /// # Panics
-    ///
-    /// This function panics if `radix` is not in the range from 2 to 36 inclusive.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bnum::types::U512;
-    ///
-    /// let src = "394857hdgfjhsnkg947dgfjkeita";
-    /// assert_eq!(U512::from_str_radix(src, 32).ok(), U512::parse_bytes(src.as_bytes(), 32));
-    /// ```
-    #[inline]
-    pub const fn parse_bytes(buf: &[u8], radix: u32) -> Option<Self> {
-        let s = crate::helpers::option_try!(crate::helpers::ok!(core::str::from_utf8(buf)));
-        crate::helpers::ok!(Self::from_str_radix(s, radix))
-    }
-
-    /// Converts a slice of big-endian digits in the given radix to an integer. Each `u8` of the slice is interpreted as one digit of base `radix` of the number, so this function will return `None` if any digit is greater than or equal to `radix`, otherwise the integer is wrapped in `Some`.
+    /// Converts a slice of big-endian digits in the given radix to an integer. Each `u8` of the slice is interpreted as one digit of base `radix` of the number, so this function will return `None` if any digit is greater than or equal to `radix`, or if the integer represented by the digits is too large to be represented by `Self`. Otherwise, the integer is wrapped in `Some`.
     ///
     /// # Panics
     ///
@@ -135,7 +194,7 @@ impl<const N: usize> Uint<N> {
         ))
     }
 
-    /// Converts a slice of little-endian digits in the given radix to an integer. Each `u8` of the slice is interpreted as one digit of base `radix` of the number, so this function will return `None` if any digit is greater than or equal to `radix`, otherwise the integer is wrapped in `Some`.
+    /// Converts a slice of little-endian digits in the given radix to an integer. Each `u8` of the slice is interpreted as one digit of base `radix` of the number, so this function will return `None` if any digit is greater than or equal to `radix`, or if the integer represented by the digits is too large to be represented by `Self`. Otherwise, the integer is wrapped in `Some`.
     ///
     /// # Panics
     ///
@@ -515,53 +574,46 @@ impl<const N: usize> Uint<N> {
     /// assert_eq!(n.to_radix_le(250), digits);
     /// ```
     pub fn to_radix_le(&self, radix: u32) -> Vec<u8> {
-        // TODO: can use u128
         assert_range!(radix, 256);
         if self.is_zero() {
             vec![0]
         } else if radix.is_power_of_two() {
-            if radix == 256 {
-                return (&self.digits[0..=self.last_digit_index()])
-                    .iter()
-                    .copied()
-                    .collect();
-            }
-
             let bits = radix.ilog2();
-            if Digit::BITS % bits == 0 {
+            if u128::BITS % bits == 0 {
                 self.to_bitwise_digits_le(bits)
             } else {
                 self.to_inexact_bitwise_digits_le(bits)
             }
         } else if radix == 10 {
-            self.to_radix_digits_le(10)
+            self.to_digits_le(10)
         } else {
-            self.to_radix_digits_le(radix)
+            self.to_digits_le(radix)
         }
     }
 
     #[cfg(feature = "alloc")]
     fn to_bitwise_digits_le(self, bits: u32) -> Vec<u8> {
-        // TODO: can use u128
-        let last_digit_index = self.last_digit_index();
+        // no need to use wider digits, as that would just increase the number of iterations in the inner for loop (so total number of iters is the same)
+        let self_bits = self.bits();
+        let last_digit_index = self_bits.div_ceil(8) as usize - 1;
         let mask: Digit = (1 << bits) - 1;
         let digits_per_big_digit = Digit::BITS / bits;
-        let digits = self.bits().div_ceil(bits);
-        let mut out = Vec::with_capacity(digits as usize);
+        let digits = self_bits.div_ceil(bits);
 
-        let mut r = self.digits[last_digit_index];
+        let mut digits = Vec::with_capacity(digits as usize);
 
-        for mut d in IntoIterator::into_iter(self.digits).take(last_digit_index) {
+        for mut d in self.digits.into_iter().take(last_digit_index) {
             for _ in 0..digits_per_big_digit {
-                out.push((d & mask) as u8);
+                digits.push((d & mask) as u8);
                 d >>= bits;
             }
         }
+        let mut r = unsafe { *self.digits.get_unchecked(last_digit_index) };
         while r != 0 {
-            out.push((r & mask) as u8);
+            digits.push((r & mask) as u8);
             r >>= bits;
         }
-        out
+        digits
     }
 
     #[cfg(feature = "alloc")]
@@ -591,29 +643,6 @@ impl<const N: usize> Uint<N> {
         }
         while let Some(&0) = out.last() {
             out.pop();
-        }
-        out
-    }
-
-    #[cfg(feature = "alloc")]
-    fn to_radix_digits_le(self, radix: u32) -> Vec<u8> {
-        let radix_digits = self.bits().div_ceil(radix.ilog2());
-        let mut out = Vec::with_capacity(radix_digits as usize);
-        let (base, power) = Self::radix_base_half(radix);
-        let radix = radix as Digit;
-        let mut copy = self;
-        while copy.last_digit_index() > 0 {
-            let (q, mut r) = copy.div_rem_digit(base);
-            for _ in 0..power {
-                out.push((r % radix) as u8);
-                r /= radix;
-            }
-            copy = q;
-        }
-        let mut r = copy.digits[0];
-        while r != 0 {
-            out.push((r % radix) as u8);
-            r /= radix;
         }
         out
     }
@@ -760,20 +789,14 @@ crate::test::test_all_widths! {
     crate::test::quickcheck_from_str_radix!(utest, "+" | "");
     #[cfg(feature = "alloc")]
     crate::test::quickcheck_from_str!(utest);
+}
 
-    #[cfg(feature = "alloc")]
-    #[test]
-    fn parse_bytes() {
-        use crate::Uint;
+#[cfg(test)]
+crate::test::test_all_widths_against_old_types! {
+    use crate::test::test_bignum;
+    use crate::test::Radix;
 
-        let src = "134957dkbhadoinegrhi983475hdgkhgdhiu3894hfd";
-        let u = Uint::<100>::parse_bytes(src.as_bytes(), 35).unwrap();
-        let v = Uint::<100>::from_str_radix(src, 35).unwrap();
-        assert_eq!(u, v);
-        assert_eq!(v.to_str_radix(35), src);
-
-        let bytes = b"345977fsuudf0350845";
-        let option = Uint::<100>::parse_bytes(bytes, 20);
-        assert!(option.is_none());
+    test_bignum! {
+        function: <utest>::to_str_radix(a: ref &utest, b: Radix<36>)
     }
 }

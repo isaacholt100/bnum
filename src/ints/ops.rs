@@ -390,6 +390,7 @@ macro_rules! tests {
     ($int: ty) => {
         #[allow(unused_imports)]
         use super::*;
+        use crate::test::test_bignum;
 
         test_bignum! {
             function: <$int as Add>::add(a: $int, b: $int),

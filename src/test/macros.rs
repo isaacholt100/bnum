@@ -31,7 +31,7 @@ macro_rules! test_bignum {
             fn [<cases_ $primitive _ $function>]() {
                 $(
                     let (big, primitive) = crate::test::results!(<$primitive> :: $function ($($($re2)? TryInto::try_into($arg).expect("test argument conversion failed")), *));
-                    assert_eq!(big, primitive, "cases assertion with inputs {:?}", ($($arg), *));
+                    assert_eq!(big, primitive, "failed cases assertion with inputs {:?}", ($($arg), *));
                 )*
             }
         }
@@ -157,6 +157,12 @@ impl<const MAX: u32> quickcheck::Arbitrary for Radix<MAX> {
     }
 }
 
+impl<const MAX: u32> From<Radix<MAX>> for u32 {
+    fn from(r: Radix<MAX>) -> Self {
+        r.0
+    }
+}
+
 #[cfg(feature = "alloc")]
 macro_rules! quickcheck_from_to_radix {
     ($primitive: ty, $name: ident, $max: expr) => {
@@ -252,7 +258,7 @@ macro_rules! quickcheck_from_str {
 pub(crate) use quickcheck_from_str;
 
 macro_rules! test_types {
-    ($bits: literal) => {
+    ($bits: expr) => {
         paste::paste! {
             #[allow(non_camel_case_types, unused)]
             pub type utest = [<u $bits>];
@@ -280,6 +286,73 @@ macro_rules! test_types {
 }
 
 pub(crate) use test_types;
+
+macro_rules! old_bnum_test_types {
+    ($bits: expr) => {
+        paste::paste! {
+            #[allow(non_camel_case_types, unused)]
+            pub type utest = bnum_old::BUintD8<{ $bits / 8 }>;
+
+            #[cfg(feature = "signed")]
+            #[allow(non_camel_case_types, unused)]
+            pub type itest = bnum_old::BIntD8<{ $bits / 8 }>;
+
+            #[allow(non_camel_case_types, unused)]
+            #[cfg(feature = "float")]
+            pub type ftest = f64;
+
+            #[allow(non_camel_case_types, unused)]
+            pub type UTEST = crate::Uint<{ $bits / 8 }>;
+
+            #[cfg(feature = "signed")]
+            #[allow(non_camel_case_types, unused)]
+            pub type ITEST = crate::Int<{ $bits / 8 }>;
+
+            #[cfg(feature = "float")]
+            #[allow(non_camel_case_types, unused)]
+            pub type FTEST = crate::float::Float<{core::mem::size_of::<ftest>()}, {ftest::MANTISSA_DIGITS as usize - 1}>;
+        }
+    };
+}
+
+pub(crate) use old_bnum_test_types;
+
+macro_rules! test_against_old_types {
+    ($bits: literal; $($s: tt) * ) => {
+        paste::paste! {
+            mod [<bits $bits>] {
+                #[allow(unused_imports)]
+                use super::*;
+                crate::test::old_bnum_test_types!($bits);
+
+                $($s)*
+            }
+        }
+    };
+}
+
+pub(crate) use test_against_old_types;
+
+// since we're using u128 digit iterations for performance, testing on the primitives isn't enough, because there will only be one u128 digit. so test against previous version of bnum, which are almost certainly completely correct due to the testing of that version, and the fact they use different sized digits (u8 not u128)
+// but we only need to do this for methods that use the u128 digits (anywhere where .as_wide_digits() or .as_wide_digits_mut() is used)
+// test for a few different widths, with different widths of the truncated last digit (Self::BITS % 128)
+macro_rules! test_all_widths_against_old_types {
+    { $($s: tt) * } => {
+        mod old_comparison_tests {
+            #[allow(unused_imports)]
+            use super::*;
+
+            crate::test::test_against_old_types!(56; $($s)*); // 0 * 128 + 56
+            crate::test::test_against_old_types!(144; $($s)*); // 1 * 128 + 16
+            crate::test::test_against_old_types!(264; $($s)*); // 2 * 128 + 8
+            crate::test::test_against_old_types!(488; $($s)*); // 3 * 128 + 104
+            crate::test::test_against_old_types!(584; $($s)*); // 4 * 128 + 72
+            crate::test::test_against_old_types!(640; $($s)*); // 5 * 128 + 0
+        }
+    }
+}
+
+pub(crate) use test_all_widths_against_old_types;
 
 macro_rules! test_all_widths {
     { $($s: tt) * } => {
@@ -321,7 +394,7 @@ macro_rules! test_all_widths {
 
                 // #[cfg(not(feature = "nightly"))]
                 #[allow(non_camel_case_types, unused)]
-                type f128 = f64; // same hack for f128
+                type f128 = f64; // same hack for f128 as for f16
                 crate::test::test_types!(128);
 
                 $($s)*

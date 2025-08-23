@@ -1,5 +1,5 @@
 use super::{Float, FloatExponent, UnsignedFloatExponent};
-use crate::buint::Uint;
+use crate::uint::Uint;
 use crate::doc;
 
 #[doc = doc::consts::impl_desc!()]

@@ -118,26 +118,32 @@ macro_rules! tests {
             function: <$int>::to_le(a: $int)
         }
 
+        #[cfg(feature = "nightly")]
         test_bignum! {
             function: <$int>::to_be_bytes(a: $int)
         }
 
+        #[cfg(feature = "nightly")]
         test_bignum! {
             function: <$int>::to_le_bytes(a: $int)
         }
 
+        #[cfg(feature = "nightly")]
         test_bignum! {
             function: <$int>::to_ne_bytes(a: $int)
         }
 
+        #[cfg(feature = "nightly")]
         test_bignum! {
             function: <$int>::from_be_bytes(a: U8ArrayWrapper<{<$int>::BITS as usize / 8}>)
         }
 
+        #[cfg(feature = "nightly")]
         test_bignum! {
             function: <$int>::from_le_bytes(a: U8ArrayWrapper<{<$int>::BITS as usize / 8}>)
         }
 
+        #[cfg(feature = "nightly")]
         test_bignum! {
             function: <$int>::from_ne_bytes(a: U8ArrayWrapper<{<$int>::BITS as usize / 8}>)
         }

@@ -63,7 +63,6 @@
 	- TAU
 - FloatToInt trait
 - From/TryFrom trait for ints, other floats
-- Float type aliases from IEEE standard: f16, f32, f64, f80, f128. (Include f32 and f64 as allows const methods which aren't available on the primitives)
 - Rand:
     - gen_range stuff
 - num_traits::{Bounded, Float, FloatConst, FloatCore, AsPrimitive, FromPrimitive, ToPrimitive, FromBytes, ToBytes, Inv, MulAdd, MulAddAssign, Pow, Signed, Euclid, Num}
@@ -71,16 +70,17 @@
 
 ## Ints
 
-- unsigned_signed_diff methods
-- unchecked_neg for int
-- isqrt methods
 - Faster mulitplication algorithm for larger integers
 - Faster division algorithms for larger integers
+- isqrt methods
 - Update serde to use decimal string instead of struct debug - but CHECK that all serde options serialise primitive ints as decimal strings
-- do we need the from_be_slice and from_le_slice methods? (think we can just call from_radix_{b, l}e with radix 256)
 - create more efficient implementation of ilog10 (see e.g. Hacker's Delight book)
 - modpow
-- isolate_most_least_significant_one (but wait til the name is stabilised)
+- isolate_most_least_significant_one for uints, ints (but wait til the name is stabilised)
+- faster algorithms for parsing and printing larger integers
+- IDEA: unify Int and Uint into a single type, maybe called Integer, which has a const generic parameter S: bool (for signed or unsigned), and const N: usize as usual. could reduce quite a lot of code duplication as well as making type inference with the n! macro possible.
+- think about whether you could make to_str_radix and the functions it uses into generic functions which take an argument which "pushes" the next character to the existing string (so either pushing to a vector or calling write!(f, ...))
+- unchecked_disjoint_bitor for uint (can do by iterating unchecked_disjoint bitor on u8s/u128 digits, can only add this once it is stablised for primitives though, not much point adding on nightly only)
 
 ## Crates to support
 
@@ -90,12 +90,9 @@
 ## Other things
 
 - Replace bitors, bitands, shifts, masks etc. with more efficient implementations (e.g. using set_bit, flip_bit, one-less-than-power-of-two methods, methods for efficiently generating masks/getting certain range of bits of integer)
-- Add 16 bit and 32 bit width types to the test widths, so test u16, u32, f16, f32 as well (just make the digit sizes that are too wide not do anything for those tests)
 - Consider removing Div<Digit> impl
 - Rewrite README
 - consider raising issue in num_traits crate about PrimInt dependency on NumCast
-- consider splitting off allow-based methods into gated "alloc" feature
 - work out and add assertions about sizes of e.g. int widths (should be <= u32::MAX), and float mantissa and exponent widths, etc.
 - include list of difference with primitives in README, e.g. overflow_checks not detected yet, serde implementation different, memory layout different (always little endian - although maybe this could be changed? probably not a good idea though)
-- test using stable, only use nightly when need to test be_bytes methods
 - check you're happy with the layout of the random crate-level module
