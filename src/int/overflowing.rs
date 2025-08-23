@@ -210,7 +210,7 @@ impl<const N: usize> Int<N> {
     #[inline]
     pub const fn overflowing_pow(self, pow: ExpType) -> (Self, bool) {
         let (u, mut overflow) = self.unsigned_abs().overflowing_pow(pow);
-        let out_neg = self.is_negative() && pow & 1 == 1;
+        let out_neg = self.is_negative() && pow % 2 == 1;
         let mut out = Self::from_bits(u);
         if out_neg {
             out = out.wrapping_neg();

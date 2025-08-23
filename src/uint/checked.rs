@@ -362,7 +362,7 @@ impl<const N: usize> Uint<N> {
         }
         let mut y = Self::ONE;
         while exp > 1 {
-            if exp & 1 == 1 {
+            if exp % 2 == 1 {
                 y = match self.checked_mul(y) {
                     Some(m) => m,
                     None => return None,

@@ -204,7 +204,7 @@ macro_rules! impl_convert_float_parts_for_primitive_float {
                     mantissa & (<$mantissa_type>::MAX >> ($float_bit_width - shift));
                 if discarded_shifted_bits.bit(shift - 1) {
                     // in this case, the discarded portion is at least a half
-                    if shifted_mantissa & 1 == 1 || !discarded_shifted_bits.is_power_of_two() {
+                    if shifted_mantissa % 2 == 1 || !discarded_shifted_bits.is_power_of_two() {
                         // in this case, ties to even says we round up. checking if not a power of two tells us that there is at least one bit set to 1 (after the most significant bit set to 1). we check in this order as is_odd is O(1) whereas is_power_of_two is O(N)
                         shifted_mantissa = shifted_mantissa + 1;
                         if shifted_mantissa.bit(shift) {

@@ -137,7 +137,7 @@ impl<const N: usize> Int<N> {
             Some(u) => {
                 let out = Self::from_bits(u);
                 let neg = self.is_negative();
-                if !neg || pow & 1 == 0 {
+                if !neg || pow % 2 == 0 {
                     if out.is_negative() { None } else { Some(out) }
                 } else {
                     let out = out.wrapping_neg();

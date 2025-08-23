@@ -113,7 +113,7 @@ impl<const N: usize> Uint<N> {
         Self::from_le(self)
     }
 
-    /// Converts the slice of big endian bytes to an integer. If the value represented by the bytes is too large to be stored in `Self`, then `None` is returned.
+    /// Converts the slice of big endian bytes to an integer. An empty slice is interpreted as zero. If the value represented by the bytes is too large to be stored in `Self`, then `None` is returned.
     ///
     /// # Examples
     ///
@@ -122,8 +122,8 @@ impl<const N: usize> Uint<N> {
     /// 
     /// type U24 = Uint<3>;
     /// 
-    /// let a: U24 = 0x5C_F1_00.as_();
-    /// let b = U24::from_be_slice(&[0x5C, 0xF1, 00]);
+    /// let a: U24 = 0x00_5C_F1.as_();
+    /// let b = U24::from_be_slice(&[0x5C, 0xF1, 0x00]);
     /// assert_eq!(b, Some(a));
     /// 
     /// let c = U24::from_be_slice(&[0x5C, 0xF1]);
@@ -138,30 +138,24 @@ impl<const N: usize> Uint<N> {
     #[must_use]
     pub const fn from_be_slice(slice: &[u8]) -> Option<Self> {
         let mut out = Self::ZERO;
-        if slice.len() <= N {
+        if slice.len() > N {
             let mut i = 0;
-            while i < slice.len() {
-                out.digits[N - 1 - i] = slice[i];
-                i += 1;
-            }
-            Some(out)
-        } else {
-            let mut i = 0;
-            while i < N {
-                out.digits[N - 1 - i] = slice[i];
-                i += 1;
-            }
-            while i < slice.len() {
+            while i < slice.len() - N {
                 if slice[i] != 0 {
                     return None; // too large
                 }
                 i += 1;
             }
-            Some(out)
         }
+        let mut i = N;
+        while i > N.saturating_sub(slice.len()) {
+            i -= 1;
+            out.digits[N - 1 - i] = slice[i + slice.len() - N];
+        }
+        Some(out)
     }
 
-    /// Converts the slice of little endian bytes to an integer. If the value represented by the bytes is too large to be stored in `Self`, then `None` is returned.
+    /// Converts the slice of little endian bytes to an integer. An empty slice is interpreted as zero. If the value represented by the bytes is too large to be stored in `Self`, then `None` is returned.
     ///
     /// # Examples
     ///
@@ -185,28 +179,23 @@ impl<const N: usize> Uint<N> {
     /// ```
     #[must_use]
     pub const fn from_le_slice(slice: &[u8]) -> Option<Self> {
-        let mut out = Self::ZERO;
-        if slice.len() <= N {
-            let mut i = 0;
-            while i < slice.len() {
-                out.digits[i] = slice[i];
-                i += 1;
-            }
-            Some(out)
-        } else {
-            let mut i = 0;
-            while i < N {
-                out.digits[i] = slice[i];
-                i += 1;
-            }
+        if slice.len() > N {
+            let mut i = N;
             while i < slice.len() {
                 if slice[i] != 0 {
                     return None; // too large
                 }
                 i += 1;
             }
-            Some(out)
         }
+        let mut out = Self::ZERO;
+
+        let mut i = 0;
+        while i < slice.len() && i < N {
+            out.digits[i] = slice[i];
+            i += 1;
+        }
+        Some(out)
     }
 
     /// Returns the representation of `self` as a byte array in big-endian order.
@@ -344,6 +333,12 @@ impl<const N: usize> Uint<N> {
         #[cfg(not(target_endian = "big"))]
         Self::from_le_bytes(bytes)
     }
+}
+
+#[test]
+fn test_endian() {
+    let a = crate::Int::<2>::from_le_slice(&[128, 0, 0]);
+    // println!("{:016b}", a.unwrap());
 }
 
 #[cfg(test)]

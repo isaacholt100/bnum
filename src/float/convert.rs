@@ -7,7 +7,7 @@ type Digit = u8;
 impl<const W: usize> Uint<W> {
     #[inline]
     pub(crate) const fn is_even(&self) -> bool {
-        self.digits[0] & 1 == 0
+        self.digits[0] % 2 == 0
     }
 
     #[inline]

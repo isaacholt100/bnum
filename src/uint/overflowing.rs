@@ -351,7 +351,7 @@ impl<const N: usize> Uint<N> {
         let mut overflow = false;
         let mut y = Self::ONE;
         while exp > 1 {
-            if exp & 1 == 1 {
+            if exp % 2 == 1 {
                 let (prod, o) = y.overflowing_mul(self);
                 overflow |= o;
                 y = prod;

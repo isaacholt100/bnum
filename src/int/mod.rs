@@ -274,7 +274,7 @@ impl<const N: usize> Int<N> {
         // see section 2.5: Average of Two Integers in Hacker's Delight
         let x = self.bitxor(rhs);
         let t = self.bitand(rhs).add(x.shr(1));
-        if t.is_negative() && x.bits.digits[0] & 1 == 1 {
+        if t.is_negative() && x.bits.digits[0] % 2 == 1 {
             // t is negative and
             t.add(Int::ONE)
         } else {

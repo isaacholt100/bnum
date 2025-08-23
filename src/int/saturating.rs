@@ -108,7 +108,7 @@ impl<const N: usize> Int<N> {
         match self.checked_pow(exp) {
             Some(pow) => pow,
             None => {
-                if self.is_negative() && exp & 1 != 0 {
+                if self.is_negative() && exp % 2 != 0 {
                     Self::MIN
                 } else {
                     Self::MAX

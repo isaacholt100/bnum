@@ -154,12 +154,12 @@ impl<const N: usize> Integer for Uint<N> {
 
     #[inline]
     fn is_even(&self) -> bool {
-        self.digits[0] & 1 == 0
+        self.digits[0] % 2 == 0
     }
 
     #[inline]
     fn is_odd(&self) -> bool {
-        self.digits[0] & 1 == 1
+        self.digits[0] % 2 == 1
     }
 
     #[inline]

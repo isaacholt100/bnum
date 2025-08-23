@@ -553,7 +553,7 @@ macro_rules! tests {
                 #[allow(unused_comparisons)]
                 let cond = a < 0;
 
-                n & 1 == 0 && cond || (n == 1 && cond && a == <$int>::MIN) // second condition is due to an error in the num_integer crate, which incorrectly panics when calculating the first root of i128::MIN
+                n % 2 == 0 && cond || (n == 1 && cond && a == <$int>::MIN) // second condition is due to an error in the num_integer crate, which incorrectly panics when calculating the first root of i128::MIN
             }
         }
 

@@ -757,7 +757,7 @@ impl<const N: usize> Uint<N> {
         );
 
         let mut out = Self::ZERO;
-        out.digits[power as usize >> digit::BIT_SHIFT] = 1 << (power & (digit::BITS - 1));
+        out.digits[power as usize / Digit::BITS as usize] = 1 << (power % Digit::BITS);
         out
     }
 
@@ -872,10 +872,10 @@ impl<const N: usize> Uint<N> {
 fn test_shl() {
     let a = Uint::<{56 / 8}>::from_str_radix("20550931191544903", 10).unwrap();
 
-    println!("{:056b}", a);
+    // println!("{:056b}", a);
     let b = a.overflowing_shl(56);
-    println!("{:056b}", b.0);
-    dbg!(b.1);
+    // println!("{:056b}", b.0);
+    // dbg!(b.1);
 }
 
 pub struct U128Digits<'a, const N: usize> {

@@ -261,7 +261,7 @@ impl<const N: usize> Uint<N> {
         }
         let mut y = Self::ONE;
         while exp > 1 {
-            if exp & 1 == 1 {
+            if exp % 2 == 1 {
                 y = self.wrapping_mul(y);
             }
             self = self.wrapping_mul(self);
