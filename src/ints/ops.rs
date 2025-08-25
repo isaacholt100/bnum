@@ -77,11 +77,19 @@ macro_rules! try_shift_impl {
                 fn $method(self, rhs: $rhs) -> Self {
                     use crate::ExpType;
 
-                    #[cfg(debug_assertions)]
-                    let rhs: ExpType = ExpType::try_from(rhs).expect( crate::errors::err_msg!($err));
+                    if <$rhs>::BITS < ExpType::BITS {
+                        return self.$method(rhs as ExpType);
+                    }
 
-                    #[cfg(not(debug_assertions))]
-                    let rhs = rhs as ExpType;
+                    if crate::OVERFLOW_CHECKS {
+                        let rhs: ExpType = ExpType::try_from(rhs).expect( crate::errors::err_msg!($err));
+                        return self.$method(rhs);
+                    }
+
+                    let bits = Self::BITS as $rhs; // need to cast to rhs as Self::BITS may not be power of two, so need to perform modulo in $rhs type
+                    let rhs = rhs % bits;
+
+                    let rhs = rhs as ExpType; // now rhs is less than Self::BITS, so fits in ExpType, so safe to cast
 
                     self.$method(rhs)
                 }
@@ -263,47 +271,47 @@ macro_rules! trait_fillers {
     () => {
         #[inline]
         pub const fn add(self, rhs: Self) -> Self {
-            #[cfg(debug_assertions)]
-            return self.strict_add(rhs);
-
-            #[cfg(not(debug_assertions))]
-            self.wrapping_add(rhs)
+            if crate::OVERFLOW_CHECKS {
+                self.strict_add(rhs)
+            } else {
+                self.wrapping_add(rhs)
+            }
         }
 
         #[inline]
         pub const fn mul(self, rhs: Self) -> Self {
-            #[cfg(debug_assertions)]
-            return self.strict_mul(rhs);
-
-            #[cfg(not(debug_assertions))]
-            self.wrapping_mul(rhs)
+            if crate::OVERFLOW_CHECKS {
+                self.strict_mul(rhs)
+            } else {
+                self.wrapping_mul(rhs)
+            }
         }
 
         #[inline]
         pub const fn shl(self, rhs: ExpType) -> Self {
-            #[cfg(debug_assertions)]
-            return self.strict_shl(rhs);
-
-            #[cfg(not(debug_assertions))]
-            self.wrapping_shl(rhs)
+            if crate::OVERFLOW_CHECKS {
+                self.strict_shl(rhs)
+            } else {
+                self.wrapping_shl(rhs)
+            }
         }
 
         #[inline]
         pub const fn shr(self, rhs: ExpType) -> Self {
-            #[cfg(debug_assertions)]
-            return self.strict_shr(rhs);
-
-            #[cfg(not(debug_assertions))]
-            self.wrapping_shr(rhs)
+            if crate::OVERFLOW_CHECKS {
+                self.strict_shr(rhs)
+            } else {
+                self.wrapping_shr(rhs)
+            }
         }
 
         #[inline]
         pub const fn sub(self, rhs: Self) -> Self {
-            #[cfg(debug_assertions)]
-            return self.strict_sub(rhs);
-
-            #[cfg(not(debug_assertions))]
-            self.wrapping_sub(rhs)
+            if crate::OVERFLOW_CHECKS {
+                self.strict_sub(rhs)
+            } else {
+                self.wrapping_sub(rhs)
+            }
         }
     };
 }

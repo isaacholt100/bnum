@@ -30,11 +30,11 @@ impl<const N: usize> Uint<N> {
         unsafe {
             while i < Self::U128_DIGITS {
                 result = digit::carrying_add_u128(
-                    self.as_u128_digits().get(i),
-                    rhs.as_u128_digits().get(i),
+                    self.as_wide_digits().get(i),
+                    rhs.as_wide_digits().get(i),
                     carry,
                 );
-                out.as_u128_digits_mut().set(i, result.0);
+                out.as_wide_digits_mut().set(i, result.0);
                 carry = result.1;
                 i += 1;
             }
@@ -90,11 +90,11 @@ impl<const N: usize> Uint<N> {
             while i < Self::U128_DIGITS {
                 // the last full u128 digits cause an overflow iff the truncated last digits cause an overflow
                 let result = digit::borrowing_sub_u128(
-                    self.as_u128_digits().get(i),
-                    rhs.as_u128_digits().get(i),
+                    self.as_wide_digits().get(i),
+                    rhs.as_wide_digits().get(i),
                     borrow,
                 );
-                out.as_u128_digits_mut().set(i, result.0);
+                out.as_wide_digits_mut().set(i, result.0);
                 borrow = result.1;
                 i += 1;
             }

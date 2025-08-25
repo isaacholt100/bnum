@@ -186,14 +186,9 @@ macro_rules! quickcheck_from_to_radix {
 pub(crate) use quickcheck_from_to_radix;
 
 macro_rules! debug_skip {
-    ($skip: expr) => {{
-        #[cfg(debug_assertions)]
-        let skip = $skip;
-        #[cfg(not(debug_assertions))]
-        let skip = false;
-
-        skip
-    }};
+    ($skip: expr) => {
+        crate::OVERFLOW_CHECKS && $skip
+    };
 }
 
 pub(crate) use debug_skip;
@@ -267,9 +262,9 @@ macro_rules! test_types {
             #[allow(non_camel_case_types, unused)]
             pub type itest = [<i $bits>];
 
-            #[allow(non_camel_case_types, unused)]
-            #[cfg(feature = "float")]
-            pub type ftest = [<f $bits>];
+            // #[allow(non_camel_case_types, unused)]
+            // #[cfg(feature = "float")]
+            // pub type ftest = [<f $bits>];
 
             #[allow(non_camel_case_types, unused)]
             pub type UTEST = crate::Uint<{ $bits / 8 }>;
@@ -278,9 +273,9 @@ macro_rules! test_types {
             #[allow(non_camel_case_types, unused)]
             pub type ITEST = crate::Int<{ $bits / 8 }>;
 
-            #[cfg(feature = "float")]
-            #[allow(non_camel_case_types, unused)]
-            pub type FTEST = crate::float::Float<{core::mem::size_of::<ftest>()}, {ftest::MANTISSA_DIGITS as usize - 1}>;
+            // #[cfg(feature = "float")]
+            // #[allow(non_camel_case_types, unused)]
+            // pub type FTEST = crate::float::Float<{core::mem::size_of::<ftest>()}, {ftest::MANTISSA_DIGITS as usize - 1}>;
         }
     };
 }
@@ -298,19 +293,11 @@ macro_rules! old_bnum_test_types {
             pub type itest = bnum_old::BIntD8<{ $bits / 8 }>;
 
             #[allow(non_camel_case_types, unused)]
-            #[cfg(feature = "float")]
-            pub type ftest = f64;
-
-            #[allow(non_camel_case_types, unused)]
             pub type UTEST = crate::Uint<{ $bits / 8 }>;
 
             #[cfg(feature = "signed")]
             #[allow(non_camel_case_types, unused)]
             pub type ITEST = crate::Int<{ $bits / 8 }>;
-
-            #[cfg(feature = "float")]
-            #[allow(non_camel_case_types, unused)]
-            pub type FTEST = crate::float::Float<{core::mem::size_of::<ftest>()}, {ftest::MANTISSA_DIGITS as usize - 1}>;
         }
     };
 }
@@ -348,6 +335,7 @@ macro_rules! test_all_widths_against_old_types {
             crate::test::test_against_old_types!(488; $($s)*); // 3 * 128 + 104
             crate::test::test_against_old_types!(584; $($s)*); // 4 * 128 + 72
             crate::test::test_against_old_types!(640; $($s)*); // 5 * 128 + 0
+            crate::test::test_against_old_types!(1024; $($s)*); // 8 * 128 + 0
         }
     }
 }

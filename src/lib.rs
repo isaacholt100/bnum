@@ -1,6 +1,6 @@
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
-#![cfg_attr(feature = "nightly", allow(incomplete_features))]
-#![cfg_attr(feature = "nightly", feature(generic_const_exprs))]
+// #![cfg_attr(feature = "nightly", allow(incomplete_features))]
+// #![cfg_attr(feature = "nightly", feature(generic_const_exprs))]
 #![cfg_attr(
     all(test, feature = "nightly"),
     feature(
@@ -47,11 +47,11 @@ pub mod random;
 
 pub mod types;
 
-#[cfg(feature = "float")]
-mod float;
+// #[cfg(feature = "float")]
+// mod float;
 
-#[cfg(feature = "float")]
-pub use float::Float;
+// #[cfg(feature = "float")]
+// pub use float::Float;
 
 #[cfg(test)]
 mod test;
@@ -73,3 +73,26 @@ pub trait BTryFrom<T>: Sized {
 
     fn try_from(from: T) -> Result<Self, Self::Error>;
 }
+
+const OVERFLOW_CHECKS: bool = {
+    const fn str_eq(a: &str, b: &str) -> bool {
+        let a = a.as_bytes();
+        let b = b.as_bytes();
+        if a.len() != b.len() {
+            return false;
+        }
+        let mut i = 0;
+        while i < a.len() {
+            if a[i] != b[i] {
+                return false;
+            }
+            i += 1;
+        }
+        true
+    }
+    match option_env!("BNUM_OVERFLOW_CHECKS") {
+        Some(v) if str_eq(v, "true") => true,
+        Some(v) if str_eq(v, "false") => false,
+        _ => cfg!(debug_assertions), // if the environment variable is not set, fallback to using whether in release mode or not. this should never happen though as build.rs will always set the variable
+    }
+};

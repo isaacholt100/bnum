@@ -8,40 +8,11 @@ mod unzip;
 const SAMPLE_SIZE: usize = 500;
 
 use bnum::{Int, Uint};
-use bnum::Float;
+// use bnum::Float;
 use bnum::cast::As;
 
-use bnum::types::{F32, F64, F128, F256, U256, U1024, I1024};
+// use bnum::types::{F32, F64, F128, F256, U256, U1024, I1024};
 
-
-fn bench_fibs(c: &mut Criterion) {
-    let mut group = c.benchmark_group("round");
-    let mut rng = rand::rngs::StdRng::seed_from_u64(0);
-    let inputs = (0..SAMPLE_SIZE)
-        .map(|_| rng.gen::<(u64, u64)>())
-        .map(|(a, b)| (
-            (f64::from_bits(a >> 1), f64::from_bits(b >> 1)),
-            (F64::from_bits((a >> 1).as_()), F64::from_bits((b >> 1).as_()))
-        ));
-    let (prim_inputs, big_inputs) = unzip::unzip2(inputs);
-
-//     // group.bench_with_input(BenchmarkId::new("Recursive", "new"), &big_inputs, |b, inputs| b.iter(|| {
-//     //     for a in inputs.iter().cloned() {
-//     //         let _ = black_box(a).floor();
-//     //     }
-//     // }));
-//     group.bench_with_input(BenchmarkId::new("Iterative", "old"), &big_inputs, |b, inputs| b.iter(|| {
-//         inputs.iter().cloned().for_each(|(a, b)| {
-//             let _ = black_box(a) + black_box(b);
-//         })
-//     }));
-//     group.bench_with_input(BenchmarkId::new("Iterative", "prim"), &prim_inputs, |b, inputs| b.iter(|| {
-//         inputs.iter().cloned().for_each(|(a, b)| {
-//             let _ = black_box(a) + black_box(b);
-//         })
-//     }));
-//     group.finish();
-}
 
 // benchmark for time taken to call Uint::u128_digit, using one random fixed input, no benchmark groups, just a standalone benchmark
 // fn bench_u128_digit(c: &mut Criterion) {

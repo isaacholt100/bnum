@@ -23,6 +23,8 @@
 - add OverflowingMul impl from num_traits to Uint and Int
 - replace Div<Digit> by Div<u64> and Rem<Digit> by Rem<u64>
 - Debug impl in no_alloc is padded hex string
+- added compile time assertion about valid bit size
+- detect overflow checks rather than if in debug build or not (so match integer behaviour exactly)
 - TODO:
     - modpow
     - complete use of u128 digit methods where needed

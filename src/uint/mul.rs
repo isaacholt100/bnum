@@ -11,7 +11,7 @@ impl<const N: usize> Uint<N> {
 
         let mut i = 0;
         while i < Self::U128_DIGITS {
-            let self_digit_i = unsafe { self.as_u128_digits().get(i) }; // it would require a lot of extra code to run the loop where we don't check the correct count (i.e. separate last digit from the rest), and only a linear number of checks won't affect the performance too much
+            let self_digit_i = unsafe { self.as_wide_digits().get(i) }; // it would require a lot of extra code to run the loop where we don't check the correct count (i.e. separate last digit from the rest), and only a linear number of checks won't affect the performance too much
             carry = 0;
             let mut j = 0;
             unsafe {
@@ -19,22 +19,22 @@ impl<const N: usize> Uint<N> {
                     let index = i + j;
                     (prod, carry) = digit::carrying_mul_u128(
                         self_digit_i,
-                        rhs.as_u128_digits().get(j),
+                        rhs.as_wide_digits().get(j),
                         carry,
-                        out.as_u128_digits().get(index),
+                        out.as_wide_digits().get(index),
                     );
-                    out.as_u128_digits_mut().set(index, prod);
+                    out.as_wide_digits_mut().set(index, prod);
                     j += 1;
                 }
             }
             // unfortunately, we have to handle the last digit separately, as otherwise we need to initialise prod, which slows performance considerably
             let (prod, c) = digit::carrying_mul_u128(
                 self_digit_i,
-                unsafe { rhs.as_u128_digits().get(j) },
+                unsafe { rhs.as_wide_digits().get(j) },
                 carry,
-                out.as_u128_digits().last(),
+                out.as_wide_digits().last(),
             );
-            out.as_u128_digits_mut().set_last(prod);
+            out.as_wide_digits_mut().set_last(prod);
             if Self::U128_DIGIT_REMAINDER != 0 {
                 if 128 - Self::U128_BITS_REMAINDER > prod.leading_zeros() {
                     overflow = true;
@@ -43,13 +43,13 @@ impl<const N: usize> Uint<N> {
             if c != 0 {
                 overflow = true;
             } else if self_digit_i != 0 {
-                if j < Self::U128_DIGITS - 1 && rhs.as_u128_digits().last() != 0 {
+                if j < Self::U128_DIGITS - 1 && rhs.as_wide_digits().last() != 0 {
                     overflow = true;
                 } else {
                     j += 1;
                     unsafe {
                         while j < Self::U128_DIGITS - 1 {
-                            if rhs.as_u128_digits().get(j) != 0 {
+                            if rhs.as_wide_digits().get(j) != 0 {
                                 overflow = true;
                                 break;
                             }

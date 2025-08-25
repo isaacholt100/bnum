@@ -26,8 +26,8 @@ impl<const N: usize> Uint<N> {
         let mut i = 0;
         unsafe {
             while i < Self::U128_DIGITS {
-                let d = self.as_u128_digits().get(i) | rhs.as_u128_digits().get(i);
-                out.as_u128_digits_mut().set(i, d);
+                let d = self.as_wide_digits().get(i) | rhs.as_wide_digits().get(i);
+                out.as_wide_digits_mut().set(i, d);
 
                 i += 1;
             }
@@ -41,8 +41,8 @@ impl<const N: usize> Uint<N> {
         let mut i = 0;
         unsafe {
             while i < Self::U128_DIGITS {
-                let d = self.as_u128_digits().get(i) ^ rhs.as_u128_digits().get(i);
-                out.as_u128_digits_mut().set(i, d);
+                let d = self.as_wide_digits().get(i) ^ rhs.as_wide_digits().get(i);
+                out.as_wide_digits_mut().set(i, d);
 
                 i += 1;
             }
@@ -56,8 +56,8 @@ impl<const N: usize> Uint<N> {
         let mut i = 0;
         unsafe {
             while i < Self::U128_DIGITS {
-                let d = self.as_u128_digits().get(i);
-                out.as_u128_digits_mut().set(i, !d);
+                let d = self.as_wide_digits().get(i);
+                out.as_wide_digits_mut().set(i, !d);
 
                 i += 1;
             }
@@ -70,7 +70,7 @@ impl<const N: usize> Uint<N> {
         let mut i = 0;
         unsafe {
             while i < Self::U128_DIGITS {
-                if self.as_u128_digits().get(i) != other.as_u128_digits().get(i) {
+                if self.as_wide_digits().get(i) != other.as_wide_digits().get(i) {
                     return false;
                 }
                 i += 1;
@@ -90,8 +90,8 @@ impl<const N: usize> Uint<N> {
         unsafe {
             while i > 0 {
                 i -= 1;
-                let a = self.as_u128_digits().get(i);
-                let b = other.as_u128_digits().get(i);
+                let a = self.as_wide_digits().get(i);
+                let b = other.as_wide_digits().get(i);
 
                 // Clippy: don't use match here as `cmp` is not yet const for primitive integers
                 #[allow(clippy::comparison_chain)]

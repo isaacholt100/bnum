@@ -56,11 +56,11 @@ impl<const N: usize> Int<N> {
     crate::ints::cmp::impls!();
     #[inline]
     pub const fn neg(self) -> Self {
-        #[cfg(debug_assertions)]
-        return self.strict_neg();
-
-        #[cfg(not(debug_assertions))]
-        self.wrapping_neg()
+        if crate::OVERFLOW_CHECKS {
+            self.strict_neg()
+        } else {
+            self.wrapping_neg()
+        }
     }
 
     crate::ints::ops::trait_fillers!();

@@ -1,4 +1,6 @@
 use super::Int;
+#[cfg(test)]
+use crate::test::test_bignum;
 use crate::Uint;
 
 use crate::{ExpType, doc};
@@ -286,5 +288,12 @@ crate::test::test_all_widths! {
     }
     test_bignum! {
         function: <itest>::overflowing_pow(a: itest, b: u16)
+    }
+}
+
+#[cfg(test)]
+crate::test::test_all_widths_against_old_types! {
+    test_bignum! {
+        function: <itest>::overflowing_shr(a: itest, b: u16)
     }
 }

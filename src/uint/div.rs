@@ -39,174 +39,174 @@ impl<const N: usize> Uint<N> {
         }
         // debug_assert!(carry);
     }
-    pub(crate) const fn div_rem_knuth(self, rhs: Self, n: usize) -> (Self, Self) {
-        // The Art of Computer Programming Volume 2 by Donald Knuth, Section 4.3.1, Algorithm D
-        // using the improvement in solution to exercise 37 in section 4.3.1 (eliminates the normalisation step)
-        // n - 1 is the index of the last non-zero wide digit in the divisor
-        debug_assert!(n >= 2); // if n = 1, then we should have used the division by digit method instead
-        let e = unsafe {
-            rhs.as_u128_digits()
-                .get_with_correct_count(n - 1)
-                .leading_zeros()
-        };
-        let s = u128::BITS - e;
-        let m = Self::U128_DIGITS - n;
+    // pub(crate) const fn div_rem_knuth(self, rhs: Self, n: usize) -> (Self, Self) {
+    //     // The Art of Computer Programming Volume 2 by Donald Knuth, Section 4.3.1, Algorithm D
+    //     // using the improvement in solution to exercise 37 in section 4.3.1 (eliminates the normalisation step)
+    //     // n - 1 is the index of the last non-zero wide digit in the divisor
+    //     debug_assert!(n >= 2); // if n = 1, then we should have used the division by digit method instead
+    //     let e = unsafe {
+    //         rhs.as_wide_digits()
+    //             .get_with_correct_count(n - 1)
+    //             .leading_zeros()
+    //     };
+    //     let s = u128::BITS - e;
+    //     let m = Self::U128_DIGITS - n;
 
-        let (v_1dash, v_2dash) = {
-            let a = unsafe { rhs.as_u128_digits().get(n - 1) };
-            let b = unsafe { rhs.as_u128_digits().get(n - 2) };
+    //     let (v_1dash, v_2dash) = {
+    //         let a = unsafe { rhs.as_wide_digits().get(n - 1) };
+    //         let b = unsafe { rhs.as_wide_digits().get(n - 2) };
 
-            let v1 = (a << e) | (b >> s);
-            let mut v2 = b << e;
-            if n > 2 {
-                let c = unsafe { rhs.as_u128_digits().get(n - 3) };
-                v2 |= c >> s;
-            }
-            (v1, v2)
-        };
+    //         let v1 = (a << e) | (b >> s);
+    //         let mut v2 = b << e;
+    //         if n > 2 {
+    //             let c = unsafe { rhs.as_wide_digits().get(n - 3) };
+    //             v2 |= c >> s;
+    //         }
+    //         (v1, v2)
+    //     };
 
-        let mut u = self; // remainder
-        let mut q = Self::ZERO; // quotient
+    //     let mut u = self; // remainder
+    //     let mut q = Self::ZERO; // quotient
 
-        let mut j = m; // D2
-        while j > 0 {
-            j -= 1; // D7
+    //     let mut j = m; // D2
+    //     while j > 0 {
+    //         j -= 1; // D7
 
-            let (u_1dash, u_2dash, u_3dash) = {
-                let a = unsafe { self.as_u128_digits().get(j + n) };
-                let b = unsafe { self.as_u128_digits().get(j + n - 1) };
-                let c = unsafe { self.as_u128_digits().get(j + n - 2) };
+    //         let (u_1dash, u_2dash, u_3dash) = {
+    //             let a = unsafe { self.as_wide_digits().get(j + n) };
+    //             let b = unsafe { self.as_wide_digits().get(j + n - 1) };
+    //             let c = unsafe { self.as_wide_digits().get(j + n - 2) };
 
-                let u1 = (a << e) | (b >> s);
-                let u2 = (b << e) | (c >> s);
-                let mut u3 = c << e;
-                if j + n > 2 {
-                    let d = unsafe { self.as_u128_digits().get(j + n - 3) };
-                    u3 |= d >> s;
-                }
-                (u1, u2, u3)
-            };
+    //             let u1 = (a << e) | (b >> s);
+    //             let u2 = (b << e) | (c >> s);
+    //             let mut u3 = c << e;
+    //             if j + n > 2 {
+    //                 let d = unsafe { self.as_wide_digits().get(j + n - 3) };
+    //                 u3 |= d >> s;
+    //             }
+    //             (u1, u2, u3)
+    //         };
 
-            #[inline]
-            const fn tuple_gt(a: (u128, u128), b: (u128, u128)) -> bool {
-                a.1 > b.1 || a.1 == b.1 && a.0 > b.0
-            }
+    //         #[inline]
+    //         const fn tuple_gt(a: (u128, u128), b: (u128, u128)) -> bool {
+    //             a.1 > b.1 || a.1 == b.1 && a.0 > b.0
+    //         }
 
-            // q_hat will be either `q` or `q + 1`
-            let mut q_hat = if u_1dash < v_1dash {
-                let (mut q_hat, r_hat) = todo!(); //u128::div_rem_wide(u_2dash, u_1dash, v_1dash); // D3
+    //         // q_hat will be either `q` or `q + 1`
+    //         let mut q_hat = if u_1dash < v_1dash {
+    //             let (mut q_hat, r_hat) = todo!(); //u128::div_rem_wide(u_2dash, u_1dash, v_1dash); // D3
 
-                if tuple_gt(
-                    digit::carrying_mul_u128(q_hat, v_2dash, 0, 0),
-                    (u_3dash, r_hat),
-                ) {
-                    q_hat -= 1;
+    //             if tuple_gt(
+    //                 digit::carrying_mul_u128(q_hat, v_2dash, 0, 0),
+    //                 (u_3dash, r_hat),
+    //             ) {
+    //                 q_hat -= 1;
 
-                    if let Some(r_hat) = r_hat.checked_add(v_1dash) {
-                        // this checks if `r_hat <= b`, where `b` is the digit base
-                        if tuple_gt(
-                            digit::carrying_mul_u128(q_hat, v_2dash, 0, 0),
-                            (u_3dash, r_hat),
-                        ) {
-                            q_hat -= 1;
-                        }
-                    }
-                }
-                q_hat
-            } else {
-                // `u[j + n - 1] >= v[n - 1]` so we know that estimate for q_hat would be larger than `Digit::MAX`. This is either equal to `q` or `q + 1` (very unlikely to be `q + 1`).
-                u128::MAX
-            };
+    //                 if let Some(r_hat) = r_hat.checked_add(v_1dash) {
+    //                     // this checks if `r_hat <= b`, where `b` is the digit base
+    //                     if tuple_gt(
+    //                         digit::carrying_mul_u128(q_hat, v_2dash, 0, 0),
+    //                         (u_3dash, r_hat),
+    //                     ) {
+    //                         q_hat -= 1;
+    //                     }
+    //                 }
+    //             }
+    //             q_hat
+    //         } else {
+    //             // `u[j + n - 1] >= v[n - 1]` so we know that estimate for q_hat would be larger than `Digit::MAX`. This is either equal to `q` or `q + 1` (very unlikely to be `q + 1`).
+    //             u128::MAX
+    //         };
 
-            // let m = rhs.wrapping_mul(); // this shouldn't overflow: if `q_hat` is larger than 1, then `q_hat * v` is at most `self`.
+    //         // let m = rhs.wrapping_mul(); // this shouldn't overflow: if `q_hat` is larger than 1, then `q_hat * v` is at most `self`.
 
-            unsafe {
-                q.as_u128_digits_mut().set_at_offset(j * 16, q_hat);
-            }
-        }
-        todo!()
-    }
-    pub(crate) const fn div_rem_knuth2(self, rhs: Self, n: usize) -> (Self, Self) {
-        // The Art of Computer Programming Volume 2 by Donald Knuth, Section 4.3.1, Algorithm D
-        // using the improvement in solution to exercise 37 in section 4.3.1 (eliminates the normalisation step)
-        // n - 1 is the index of the last non-zero wide digit in the divisor
-        debug_assert!(n >= 2); // if n = 1, then we should have used the division by digit method instead
-        let e = rhs.digits[n - 1].leading_zeros();
-        let s = u8::BITS - e;
-        let m = N - n;
+    //         unsafe {
+    //             q.as_wide_digits_mut().set_at_offset(j * 16, q_hat);
+    //         }
+    //     }
+    //     todo!()
+    // }
+    // pub(crate) const fn div_rem_knuth2(self, rhs: Self, n: usize) -> (Self, Self) {
+    //     // The Art of Computer Programming Volume 2 by Donald Knuth, Section 4.3.1, Algorithm D
+    //     // using the improvement in solution to exercise 37 in section 4.3.1 (eliminates the normalisation step)
+    //     // n - 1 is the index of the last non-zero wide digit in the divisor
+    //     debug_assert!(n >= 2); // if n = 1, then we should have used the division by digit method instead
+    //     let e = rhs.digits[n - 1].leading_zeros();
+    //     let s = u8::BITS - e;
+    //     let m = N - n;
 
-        let (v_1dash, v_2dash) = {
-            let a = rhs.digits[n - 1];
-            let b = rhs.digits[n - 2];
+    //     let (v_1dash, v_2dash) = {
+    //         let a = rhs.digits[n - 1];
+    //         let b = rhs.digits[n - 2];
 
-            let v1 = (a << e) | b.unbounded_shr(s);
-            let mut v2 = b << e;
-            if n > 2 {
-                let c = rhs.digits[n - 3];
-                v2 |= c.unbounded_shr(s);
-            }
-            (v1, v2)
-        };
+    //         // let v1 = (a << e) | b.unbounded_shr(s);
+    //         let mut v2 = b << e;
+    //         if n > 2 {
+    //             let c = rhs.digits[n - 3];
+    //             // v2 |= c.unbounded_shr(s);
+    //         }
+    //         (v1, v2)
+    //     };
 
-        let mut u = self; // remainder
-        let mut q = Self::ZERO; // quotient
+    //     let mut u = self; // remainder
+    //     let mut q = Self::ZERO; // quotient
 
-        let mut j = m + 1; // D2
-        while j > 0 {
-            j -= 1; // D7
+    //     let mut j = m + 1; // D2
+    //     while j > 0 {
+    //         j -= 1; // D7
 
-            let (u_1dash, u_2dash, u_3dash) = {
-                let a = if j == m { 0 } else { self.digits[j + n] };
-                let b = self.digits[j + n - 1];
-                let c = self.digits[j + n - 2];
+    //         let (u_1dash, u_2dash, u_3dash) = {
+    //             let a = if j == m { 0 } else { self.digits[j + n] };
+    //             let b = self.digits[j + n - 1];
+    //             let c = self.digits[j + n - 2];
 
-                let u1 = (a << e) | b.unbounded_shr(s);
-                let u2 = (b << e) | c.unbounded_shr(s);
-                let mut u3 = c << e;
-                if j + n > 2 {
-                    let d = self.digits[j + n - 3];
-                    u3 |= d.unbounded_shr(s);
-                }
-                (u1, u2, u3)
-            };
+    //             // let u1 = (a << e) | b.unbounded_shr(s);
+    //             // let u2 = (b << e) | c.unbounded_shr(s);
+    //             let mut u3 = c << e;
+    //             if j + n > 2 {
+    //                 let d = self.digits[j + n - 3];
+    //                 // u3 |= d.unbounded_shr(s);
+    //             }
+    //             (u1, u2, u3)
+    //         };
 
-            #[inline]
-            const fn tuple_gt(a: (Digit, Digit), b: (Digit, Digit)) -> bool {
-                a.1 > b.1 || a.1 == b.1 && a.0 > b.0
-            }
+    //         #[inline]
+    //         const fn tuple_gt(a: (Digit, Digit), b: (Digit, Digit)) -> bool {
+    //             a.1 > b.1 || a.1 == b.1 && a.0 > b.0
+    //         }
 
-            // q_hat will be either `q` or `q + 1`
-            let mut q_hat = if u_1dash < v_1dash {
-                let (mut q_hat, r_hat) = digit::div_rem_wide(u_2dash, u_1dash, v_1dash); // D3
+    //         // q_hat will be either `q` or `q + 1`
+    //         let mut q_hat = if u_1dash < v_1dash {
+    //             let (mut q_hat, r_hat) = digit::div_rem_wide(u_2dash, u_1dash, v_1dash); // D3
 
-                if tuple_gt(digit::widening_mul(q_hat, v_2dash), (u_3dash, r_hat)) {
-                    q_hat -= 1;
+    //             if tuple_gt(digit::widening_mul(q_hat, v_2dash), (u_3dash, r_hat)) {
+    //                 q_hat -= 1;
 
-                    if let Some(r_hat) = r_hat.checked_add(v_1dash) {
-                        // this checks if `r_hat <= b`, where `b` is the digit base
-                        if tuple_gt(digit::widening_mul(q_hat, v_2dash), (u_3dash, r_hat)) {
-                            q_hat -= 1;
-                        }
-                    }
-                }
-                q_hat
-            } else {
-                // `u[j + n - 1] >= v[n - 1]` so we know that estimate for q_hat would be larger than `Digit::MAX`. This is either equal to `q` or `q + 1` (very unlikely to be `q + 1`).
-                Digit::MAX
-            };
+    //                 if let Some(r_hat) = r_hat.checked_add(v_1dash) {
+    //                     // this checks if `r_hat <= b`, where `b` is the digit base
+    //                     if tuple_gt(digit::widening_mul(q_hat, v_2dash), (u_3dash, r_hat)) {
+    //                         q_hat -= 1;
+    //                     }
+    //                 }
+    //             }
+    //             q_hat
+    //         } else {
+    //             // `u[j + n - 1] >= v[n - 1]` so we know that estimate for q_hat would be larger than `Digit::MAX`. This is either equal to `q` or `q + 1` (very unlikely to be `q + 1`).
+    //             Digit::MAX
+    //         };
 
-            let m = rhs.checked_mul(Self::from_digit(q_hat)).unwrap(); // this shouldn't overflow: if `q_hat` is larger than 1, then `q_hat * v` is at most `self`. // TODO: use single digit multiplication algorithm instead
-            let borrow = u.sub_partial_digits(m, j, n);
+    //         let m = rhs.checked_mul(Self::from_digit(q_hat)).unwrap(); // this shouldn't overflow: if `q_hat` is larger than 1, then `q_hat * v` is at most `self`. // TODO: use single digit multiplication algorithm instead
+    //         let borrow = u.sub_partial_digits(m, j, n);
 
-            if borrow {
-                q_hat -= 1;
-                u.add_partial_digits(rhs, j, n);
-            }
+    //         if borrow {
+    //             q_hat -= 1;
+    //             u.add_partial_digits(rhs, j, n);
+    //         }
 
-            q.digits[j] = q_hat;
-        }
-        (q, u)
-    }
+    //         q.digits[j] = q_hat;
+    //     }
+    //     (q, u)
+    // }
 
     pub(crate) const fn basecase_div_rem(self, mut v: Self, n: usize) -> (Self, Self) {
         // TODO: can use u128

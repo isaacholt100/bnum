@@ -1,6 +1,7 @@
 use super::Uint;
 use crate::doc;
 use crate::digit;
+use crate::wide_digits::WideDigits;
 
 #[doc = doc::bigint_helpers::impl_desc!()]
 impl<const N: usize> Uint<N> {
@@ -85,6 +86,11 @@ impl<const N: usize> Uint<N> {
             const U128_DIGITS: usize = (2 * M).div_ceil(16);
 
             #[inline]
+            const fn as_wide_digits(&self) -> WideDigits<M, true, false> {
+                WideDigits::new(&self.0.digits)
+            }
+
+            #[inline]
             const unsafe fn get_u128_digit(&self, index: usize) -> u128 {
                 let mut bytes = [0; 16];
                 unsafe {
@@ -146,16 +152,16 @@ impl<const N: usize> Uint<N> {
         unsafe {
             while i < Self::U128_DIGITS {
                 carry = 0;
-                let self_digit_i = self.as_u128_digits().get_with_correct_count(i);
+                let self_digit_i = self.as_wide_digits().get(i);
                 
                 let mut j = 0;
                 while j < Self::FULL_U128_DIGITS {
                     let index = i + j;
                     let (prod, c) = digit::carrying_mul_u128(
                         self_digit_i,
-                        rhs.as_u128_digits().get(j),
+                        rhs.as_wide_digits().get(j),
                         carry,
-                        out.get_u128_digit(index),
+                        out.as_wide_digits().get(index),
                     );
                     out.set_u128_digit(index, prod);
                     carry = c;
@@ -168,7 +174,7 @@ impl<const N: usize> Uint<N> {
                     let index = i + Self::FULL_U128_DIGITS;
                     let (prod, c) = digit::carrying_mul_u128(
                         self_digit_i,
-                        rhs.as_u128_digits().get_with_correct_count(j),
+                        rhs.as_wide_digits().get(j),
                         carry,
                         out.get_u128_digit_with_correct_count(index),
                     );

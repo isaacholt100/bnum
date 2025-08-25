@@ -180,11 +180,11 @@ impl<const N: usize> Int<N> {
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn pow(self, exp: ExpType) -> Self {
-        #[cfg(debug_assertions)]
-        return self.strict_pow(exp);
-
-        #[cfg(not(debug_assertions))]
-        self.wrapping_pow(exp)
+        if crate::OVERFLOW_CHECKS {
+            self.strict_pow(exp)
+        } else {
+            self.wrapping_pow(exp)
+        }
     }
 
     #[doc = doc::div_euclid!(I)]
@@ -213,16 +213,13 @@ impl<const N: usize> Int<N> {
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn abs(self) -> Self {
-        #[cfg(debug_assertions)]
-        return self.strict_abs();
-
-        #[cfg(not(debug_assertions))]
-        match self.checked_abs() {
-            Some(int) => int,
-            None => Self::MIN,
+        if crate::OVERFLOW_CHECKS {
+            self.strict_abs()
+        } else {
+            self.wrapping_abs()
         }
     }
-
+    
     #[doc = doc::signum!(I)]
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -479,7 +476,6 @@ crate::test::test_all_widths! {
     test_bignum! {
         function: <itest>::is_negative(a: itest)
     }
-    #[cfg(feature = "nightly")] // as integer_sign_cast not yet stabilised
     test_bignum! {
         function: <itest>::cast_unsigned(a: itest)
     }

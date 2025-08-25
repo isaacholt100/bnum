@@ -180,8 +180,7 @@ impl<const N: usize> PrimInt for Uint<N> {
     fn signed_shr(self, n: u32) -> Self {
         let (u, overflow) = self.overflowing_shr_signed(n);
 
-        #[cfg(debug_assertions)]
-        if overflow {
+        if crate::OVERFLOW_CHECKS && overflow {
             panic!(crate::errors::err_msg!(
                 "attempt to shift right with overflow"
             ))
