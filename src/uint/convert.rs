@@ -1,68 +1,216 @@
-use super::Uint;
+use crate::{Uint, Integer, Int, ExpType};
+use crate::cast::CastFrom;
+use crate::errors::{TryFromCharError, TryFromIntError, ParseIntError};
+use crate::BTryFrom;
+use core::str::FromStr;
 
-macro_rules! uint_try_from_into_primitive_uint {
+pub trait IntegerConvertHelper {
+    const BITS: ExpType;
+    const SIGNED: bool;
+
+    fn leading_zeros_at_least_threshold(&self, threshold: ExpType) -> bool;
+    fn is_negative(&self) -> bool;
+    fn leading_ones_at_least_threshold(&self, threshold: ExpType) -> bool;
+}
+
+impl<const S: bool, const N: usize> IntegerConvertHelper for Integer<S, N> {
+    const BITS: ExpType = Self::BITS;
+    const SIGNED: bool = S;
+
+    #[inline]
+    fn leading_zeros_at_least_threshold(&self, threshold: ExpType) -> bool {
+        Self::leading_zeros_at_least_threshold(&self, threshold)
+    }
+
+    #[inline]
+    fn leading_ones_at_least_threshold(&self, threshold: ExpType) -> bool {
+        Self::leading_ones_at_least_threshold(&self, threshold)
+    }
+
+    #[inline]
+    fn is_negative(&self) -> bool {
+        self.is_negative_internal()
+    }
+}
+
+macro_rules! impl_int_convert_helper_for_primitive_int {
+    ($($int: ty), *) => {
+        $(
+            impl IntegerConvertHelper for $int {
+                const BITS: ExpType = Self::BITS as ExpType;
+                #[allow(unused_comparisons)]
+                const SIGNED: bool = <$int>::MIN < 0;
+
+                #[inline]
+                fn leading_zeros_at_least_threshold(&self, threshold: ExpType) -> bool {
+                    self.leading_zeros() >= threshold
+                }
+
+                #[inline]
+                fn leading_ones_at_least_threshold(&self, threshold: ExpType) -> bool {
+                    self.leading_ones() >= threshold
+                }
+
+                #[inline]
+                fn is_negative(&self) -> bool {
+                    #[allow(unused_comparisons)]
+                    { self < &0 }
+                }
+            }
+        )*
+    };
+}
+
+impl_int_convert_helper_for_primitive_int!(
+    u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize
+);
+
+// Conversion functions
+
+#[inline]
+fn uint_try_from_uint<U, V>(uint: U) -> Result<V, TryFromIntError>
+where
+    V: CastFrom<U>,
+    U: IntegerConvertHelper,
+    V: IntegerConvertHelper,
+{
+    if U::BITS <= V::BITS || uint.leading_zeros_at_least_threshold(U::BITS - V::BITS) {
+        Ok(V::cast_from(uint))
+    } else {
+        Err(TryFromIntError(()))
+    }
+}
+
+#[inline]
+fn uint_try_from_int<I, U>(int: I) -> Result<U, TryFromIntError>
+where
+    U: CastFrom<I>,
+    I: IntegerConvertHelper,
+    U: IntegerConvertHelper,
+{
+    if int.is_negative() {
+        return Err(TryFromIntError(()));
+    }
+    if I::BITS - 1 <= U::BITS || int.leading_zeros_at_least_threshold(I::BITS - U::BITS) {
+        Ok(U::cast_from(int))
+    } else {
+        Err(TryFromIntError(()))
+    }
+}
+
+#[inline]
+fn int_try_from_uint<U, I>(uint: U) -> Result<I, TryFromIntError>
+where
+    I: CastFrom<U>,
+    U: IntegerConvertHelper,
+    I: IntegerConvertHelper,
+{
+    if U::BITS <= I::BITS - 1 || uint.leading_zeros_at_least_threshold(U::BITS - I::BITS + 1) {
+        Ok(I::cast_from(uint))
+    } else {
+        Err(TryFromIntError(()))
+    }
+}
+
+#[inline]
+fn int_try_from_int<I, J>(int: I) -> Result<J, TryFromIntError>
+where
+    J: CastFrom<I>,
+    I: IntegerConvertHelper,
+    J: IntegerConvertHelper,
+{
+    if I::BITS <= J::BITS {
+        return Ok(J::cast_from(int));
+    }
+    if int.is_negative() {
+        if int.leading_ones_at_least_threshold(I::BITS - J::BITS + 1) {
+            Ok(J::cast_from(int))
+        } else {
+            Err(TryFromIntError(()))
+        }
+    } else {
+        if int.leading_zeros_at_least_threshold(I::BITS - J::BITS + 1) {
+            Ok(J::cast_from(int))
+        } else {
+            Err(TryFromIntError(()))
+        }
+    }
+}
+
+#[inline]
+fn integer_try_from_integer<I, J>(int: I) -> Result<J, TryFromIntError>
+where
+    J: CastFrom<I>,
+    I: IntegerConvertHelper,
+    J: IntegerConvertHelper,
+{
+    match (J::SIGNED, I::SIGNED) {
+        (false, false) => uint_try_from_uint(int),
+        (false, true) => uint_try_from_int(int),
+        (true, false) => int_try_from_uint(int),
+        (true, true) => int_try_from_int(int),
+    }
+}
+
+macro_rules! integer_try_from_into_primitive_integer {
     ($($uint: ty), *) => {
         $(
-            impl<const N: usize> TryFrom<Uint<N>> for $uint {
+            impl<const S: bool, const N: usize> TryFrom<Integer<S, N>> for $uint {
                 type Error = TryFromIntError;
 
                 #[inline]
-                fn try_from(uint: Uint<N>) -> Result<Self, Self::Error> {
-                    crate::ints::convert::uint_try_from_uint(uint)
+                fn try_from(value: Integer<S, N>) -> Result<Self, Self::Error> {
+                    integer_try_from_integer(value)
                 }
             }
 
-            impl<const N: usize> TryFrom<$uint> for Uint<N> {
+            impl<const S: bool, const N: usize> TryFrom<$uint> for Integer<S, N> {
                 type Error = TryFromIntError;
 
                 #[inline]
-                fn try_from(uint: $uint) -> Result<Self, Self::Error> {
-                    crate::ints::convert::uint_try_from_uint(uint)
-                }
-            }
-        )*
-    }
-}
-
-uint_try_from_into_primitive_uint!(u8, u16, u32, u64, u128, usize);
-
-macro_rules! uint_try_from_into_primitive_int {
-    ($($int: ty),*) => {
-        $(
-            impl<const N: usize> TryFrom<$int> for Uint<N> {
-                type Error = TryFromIntError;
-
-                #[inline]
-                fn try_from(int: $int) -> Result<Self, Self::Error> {
-                    crate::ints::convert::uint_try_from_int(int)
-                }
-            }
-
-            impl<const N: usize> TryFrom<Uint<N>> for $int {
-                type Error = TryFromIntError;
-
-                #[inline]
-                fn try_from(uint: Uint<N>) -> Result<Self, Self::Error> {
-                    crate::ints::convert::int_try_from_uint(uint)
+                fn try_from(value: $uint) -> Result<Self, Self::Error> {
+                    integer_try_from_integer(value)
                 }
             }
         )*
     }
 }
-uint_try_from_into_primitive_int!(i8, i16, i32, i64, i128, isize);
+
+integer_try_from_into_primitive_integer!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
 
 impl<const N: usize, const M: usize> BTryFrom<Uint<M>> for Uint<N> {
     type Error = TryFromIntError;
 
     fn try_from(from: Uint<M>) -> Result<Self, Self::Error> {
-        crate::ints::convert::uint_try_from_uint(from)
+        uint_try_from_uint(from)
     }
 }
 
-use crate::cast::CastFrom;
-use crate::errors::{TryFromCharError, TryFromIntError};
+impl<const N: usize, const M: usize> TryFrom<Int<N>> for Uint<M> {
+    type Error = TryFromIntError;
 
-impl<const N: usize> From<bool> for Uint<N> {
+    fn try_from(from: Int<N>) -> Result<Self, Self::Error> {
+        uint_try_from_int(from)
+    }
+}
+
+impl<const N: usize, const M: usize> TryFrom<Uint<N>> for Int<M> {
+    type Error = TryFromIntError;
+
+    fn try_from(from: Uint<N>) -> Result<Self, Self::Error> {
+        int_try_from_uint(from)
+    }
+}
+
+impl<const M: usize, const N: usize> crate::BTryFrom<Int<M>> for Int<N> {
+    type Error = TryFromIntError;
+
+    fn try_from(from: Int<M>) -> Result<Self, Self::Error> {
+        int_try_from_int(from)
+    }
+}
+
+impl<const S: bool, const N: usize> From<bool> for Integer<S, N> {
     #[inline]
     fn from(small: bool) -> Self {
         Self::cast_from(small)
@@ -77,38 +225,47 @@ impl<const N: usize> TryFrom<char> for Uint<N> {
     }
 }
 
-use crate::BTryFrom;
+impl<const S: bool, const N: usize> FromStr for Integer<S, N> {
+    type Err = ParseIntError;
+
+    fn from_str(src: &str) -> Result<Self, Self::Err> {
+        Self::from_str_radix(src, 10)
+    }
+}
 
 #[cfg(test)]
-crate::test::test_all_widths! {
+mod tests {
     use crate::BTryFrom;
     use crate::test::cast_types::*;
     use crate::test;
 
-    test::test_btryfrom!(utest; TestUint1, TestUint2, TestUint3, TestUint4, TestUint5, TestUint6, TestUint7, TestUint8, TestUint9, TestUint10);
+    crate::test::test_all! {
+        testing unsigned;
 
-    test::test_from! {
-        function: <utest as TryFrom>::try_from,
-        from_types: (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, char) // TODO: when we can use TryFrom for conversions between bnum ints, we can just add the list of test types here, same as in the casting tests
-    }
-    #[cfg(feature = "signed")]
-    test::test_from! {
-        function: <utest as TryFrom>::try_from,
-        from_types: (TestInt1, TestInt2, TestInt3, TestInt4, TestInt5, TestInt6, TestInt7, TestInt8, TestInt9, TestInt10)
-    }
+        test::test_btryfrom!(utest; TestUint1, TestUint2, TestUint3, TestUint4, TestUint5, TestUint6, TestUint7, TestUint8, TestUint9, TestUint10);
 
-    test::test_into! {
-        function: <utest as TryInto>::try_into,
-        into_types: (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize)
-    }
-    #[cfg(feature = "signed")]
-    test::test_into! {
-        function: <utest as TryInto>::try_into,
-        into_types: (TestInt1, TestInt2, TestInt3, TestInt4, TestInt5, TestInt6, TestInt7, TestInt8, TestInt9, TestInt10)
+        test::test_from! {
+            function: <utest as TryFrom>::try_from,
+            from_types: (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, char, TestInt1, TestInt2, TestInt3, TestInt4, TestInt5, TestInt6, TestInt7, TestInt8, TestInt9, TestInt10) // TODO: when we can use TryFrom for conversions between bnum ints, we can just add the list of test types here, same as in the casting tests
+        }
+        test::test_into! {
+            function: <utest as TryInto>::try_into,
+            into_types: (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, TestInt1, TestInt2, TestInt3, TestInt4, TestInt5, TestInt6, TestInt7, TestInt8, TestInt9, TestInt10)
+        }
     }
 
-    test::test_bignum! {
-        function: <utest as TryInto<u8>>::try_into,
-        cases: [(128u8)]
+    crate::test::test_all! {
+        testing signed;
+        
+        test::test_btryfrom!(itest; TestInt1, TestInt2, TestInt3, TestInt4, TestInt5, TestInt6, TestInt7, TestInt8, TestInt9, TestInt10);
+
+        test::test_from! {
+            function: <itest as TryFrom>::try_from,
+            from_types: (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize, bool, TestUint1, TestUint2, TestUint3, TestUint4, TestUint5, TestUint6, TestUint7, TestUint8, TestUint9, TestUint10)
+        }
+        test::test_into! {
+            function: <itest as TryInto>::try_into,
+            into_types: (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, TestUint1, TestUint2, TestUint3, TestUint4, TestUint5, TestUint6, TestUint7, TestUint8, TestUint9, TestUint10)
+        }
     }
 }

@@ -36,9 +36,7 @@ impl<const W: usize, const MB: usize> Add for Float<W, MB> {
     }
 }
 
-crate::ints::ops::op_ref_impl!(Add<Float<N, MB>> for Float<N, MB>, add);
-
-impl_assign_op!(AddAssign, add_assign, add);
+crate::uint::ops::full_op_impl!(<const W: usize, const MB: usize> Add, AddAssign, Float<W, MB>, add, add_assign for Float<W, MB>);
 
 impl<const W: usize, const MB: usize> Sum for Float<W, MB> {
     #[inline]
@@ -63,9 +61,7 @@ impl<const W: usize, const MB: usize> Sub for Float<W, MB> {
     }
 }
 
-crate::ints::ops::op_ref_impl!(Sub<Float<N, MB>> for Float<N, MB>, sub);
-
-impl_assign_op!(SubAssign, sub_assign, sub);
+crate::uint::ops::full_op_impl!(<const W: usize, const MB: usize> Sub, SubAssign, Float<W, MB>, sub, sub_assign for Float<W, MB>);
 
 impl<const W: usize, const MB: usize> Mul for Float<W, MB> {
     type Output = Self;
@@ -76,9 +72,7 @@ impl<const W: usize, const MB: usize> Mul for Float<W, MB> {
     }
 }
 
-crate::ints::ops::op_ref_impl!(Mul<Float<N, MB>> for Float<N, MB>, mul);
-
-impl_assign_op!(MulAssign, mul_assign, mul);
+crate::uints::ops::full_op_impl!(<const W: usize, const MB: usize> Mul, MulAssign, Float<W, MB>, mul, mul_assign for Float<W, MB>);
 
 impl<const W: usize, const MB: usize> Product for Float<W, MB> {
     #[inline]
@@ -107,8 +101,7 @@ where
     }
 }
 
-// crate::ints::ops::op_ref_impl!(Div<Float<N, MB>> for Float<N, MB>, div);
-// impl_assign_op!(DivAssign, div_assign, div);
+// crate::uint::ops::full_op_impl!(<const W: usize, const MB: usize> Div, DivAssign, Float<W, MB>, div, div_assign for Float<W, MB>);
 
 impl<const W: usize, const MB: usize> Rem for Float<W, MB> {
     type Output = Self;
@@ -119,8 +112,7 @@ impl<const W: usize, const MB: usize> Rem for Float<W, MB> {
     }
 }
 
-crate::ints::ops::op_ref_impl!(Rem<Float<N, MB>> for Float<N, MB>, rem);
-impl_assign_op!(RemAssign, rem_assign, rem);
+crate::uint::ops::full_op_impl!(<const W: usize, const MB: usize> Rem, RemAssign, Float<W, MB>, rem, rem_assign for Float<W, MB>);
 
 impl<const W: usize, const MB: usize> Neg for Float<W, MB> {
     type Output = Self;

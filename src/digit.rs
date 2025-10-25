@@ -1,27 +1,9 @@
-pub mod types {
-    pub type Digit = u8;
-
-    pub type SignedDigit = i8;
-
-    pub type DoubleDigit = u16;
-}
-
-use crate::ExpType;
-
-pub use types::*;
-
-pub const BITS: ExpType = Digit::BITS as ExpType;
-
-pub const BYTES: ExpType = BITS / 8;
-
-// This calculates log2 of BYTES as BYTES is guaranteed to only have one '1' bit, since it must be a power of two.
-pub const BYTE_SHIFT: ExpType = BYTES.trailing_zeros() as ExpType;
-
-pub const BIT_SHIFT: ExpType = BITS.trailing_zeros() as ExpType;
+pub type Digit = u8;
+pub type DoubleDigit = u16;
 
 #[inline]
 pub const fn to_double_digit(low: Digit, high: Digit) -> DoubleDigit {
-    ((high as DoubleDigit) << BITS) | low as DoubleDigit
+    ((high as DoubleDigit) << Digit::BITS) | low as DoubleDigit
 }
 
 // TODO: these will no longer be necessary once const_bigint_helper_methods is stabilised: https://github.com/rust-lang/rust/issues/85532
@@ -73,14 +55,14 @@ pub const fn borrowing_sub_u128(a: u128, b: u128, borrow: bool) -> (u128, bool) 
 #[inline]
 pub const fn widening_mul(a: Digit, b: Digit) -> (Digit, Digit) {
     let prod = a as DoubleDigit * b as DoubleDigit;
-    (prod as Digit, (prod >> BITS) as Digit)
+    (prod as Digit, (prod >> Digit::BITS) as Digit)
 }
 
 #[inline]
 pub const fn carrying_mul(a: Digit, b: Digit, carry: Digit, current: Digit) -> (Digit, Digit) {
     let prod =
         carry as DoubleDigit + current as DoubleDigit + (a as DoubleDigit) * (b as DoubleDigit);
-    (prod as Digit, (prod >> BITS) as Digit)
+    (prod as Digit, (prod >> Digit::BITS) as Digit)
 }
 
 #[inline]
@@ -122,24 +104,24 @@ pub const fn div_rem_wide_u64(low: u64, high: u64, rhs: u64) -> (u64, u64) {
     )
 }
 
-#[inline]
-pub const fn carrying_add_u64(a: u64, b: u64, carry: bool) -> (u64, bool) {
-    let (s1, o1) = a.overflowing_add(b);
-    if carry {
-        let (s2, o2) = s1.overflowing_add(1);
-        (s2, o1 || o2)
-    } else {
-        (s1, o1)
-    }
-}
+// #[inline]
+// pub const fn carrying_add_u64(a: u64, b: u64, carry: bool) -> (u64, bool) {
+//     let (s1, o1) = a.overflowing_add(b);
+//     if carry {
+//         let (s2, o2) = s1.overflowing_add(1);
+//         (s2, o1 || o2)
+//     } else {
+//         (s1, o1)
+//     }
+// }
 
-#[inline]
-pub const fn borrowing_sub_u64(a: u64, b: u64, borrow: bool) -> (u64, bool) {
-    let (s1, o1) = a.overflowing_sub(b);
-    if borrow {
-        let (s2, o2) = s1.overflowing_sub(1);
-        (s2, o1 || o2)
-    } else {
-        (s1, o1)
-    }
-}
+// #[inline]
+// pub const fn borrowing_sub_u64(a: u64, b: u64, borrow: bool) -> (u64, bool) {
+//     let (s1, o1) = a.overflowing_sub(b);
+//     if borrow {
+//         let (s2, o2) = s1.overflowing_sub(1);
+//         (s2, o1 || o2)
+//     } else {
+//         (s1, o1)
+//     }
+// }

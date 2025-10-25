@@ -32,7 +32,7 @@ macro_rules! new_to_old {
         $(
             impl BFrom<Uint<{$N * 8}>> for bnum_old::BUint<$N> {
                 fn bfrom(b: Uint<{$N * 8}>) -> Self {
-                    let digits = *b.digits();
+                    let digits = *b.as_bytes();
                     let old_d8 = bnum_old::BUintD8::from_digits(digits);
                     let out = <Self as bnum_old::cast::CastFrom<bnum_old::BUintD8<{$N * 8}>>>::cast_from(old_d8);
                     // assert_eq!(out.to_str_radix(16), b.to_str_radix(16));

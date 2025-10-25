@@ -1,10 +1,10 @@
-use super::Uint;
-use crate::doc;
 use crate::digit;
+use crate::doc;
 use crate::wide_digits::WideDigits;
+use crate::{Integer, Uint};
 
-#[doc = doc::bigint_helpers::impl_desc!()]
-impl<const N: usize> Uint<N> {
+/// Bigint helper methods: common functions used to implement big integer arithmetic.
+impl<const S: bool, const N: usize> Integer<S, N> {
     /// Computes `self + rhs + carry`, and returns a tuple of the low (wrapping) bits and the high (carry) bit of the result, in that order.
     ///
     /// If `carry` is false, then this method is equivalent to [`overflowing_add`](Self::overflowing_add).
@@ -76,7 +76,24 @@ impl<const N: usize> Uint<N> {
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn widening_mul(self, rhs: Self) -> (Self, Self) {
+    pub const fn widening_mul(self, rhs: Self) -> (Uint<N>, Self) {
+        if S {
+            let (u_lo, u_hi) = self
+                .unsigned_abs_internal()
+                .widening_mul(rhs.unsigned_abs_internal());
+            return if self.is_negative_internal() == rhs.is_negative_internal() {
+                (u_lo, u_hi.force_sign())
+            } else {
+                // treat as a "super bigint" - a bigint with two "digits", where the digits are themselves bigints (Uints). then apply the same logic that a wrapping_neg for signed ints is the same as wrapping_neg for unsigned ints. effectively, we are computing a wrapping_neg of the "super bigint"
+                let (u_lo, overflow) = u_lo.overflowing_neg();
+                let hi = if overflow {
+                    u_hi.force_sign().wrapping_neg()
+                } else {
+                    u_hi.force_sign().not() // this is wrapping_neg - 1
+                };
+                (u_lo, hi)
+            };
+        }
         // low, high in that order
         #[repr(C)] // so that the arrays are stored in contiguous memory
         struct DoubleInt<const M: usize>(Uint<M>, Uint<M>);
@@ -87,14 +104,18 @@ impl<const N: usize> Uint<N> {
 
             #[inline]
             const fn as_wide_digits(&self) -> WideDigits<M, true, false> {
-                WideDigits::new(&self.0.digits)
+                WideDigits::new(&self.0.bytes)
             }
 
             #[inline]
             const unsafe fn get_u128_digit(&self, index: usize) -> u128 {
                 let mut bytes = [0; 16];
                 unsafe {
-                    self.0.digits.as_ptr().add(index * 16).copy_to_nonoverlapping(bytes.as_mut_ptr(), 16);
+                    self.0
+                        .bytes
+                        .as_ptr()
+                        .add(index * 16)
+                        .copy_to_nonoverlapping(bytes.as_mut_ptr(), 16);
                 }
                 u128::from_le_bytes(bytes)
             }
@@ -106,7 +127,7 @@ impl<const N: usize> Uint<N> {
                 let count = if c > 16 { 16 } else { c };
                 unsafe {
                     self.0
-                        .digits
+                        .bytes
                         .as_ptr()
                         .add(offset)
                         .copy_to_nonoverlapping(bytes.as_mut_ptr(), count);
@@ -123,7 +144,11 @@ impl<const N: usize> Uint<N> {
             const unsafe fn set_u128_digit(&mut self, index: usize, value: u128) {
                 let bytes = value.to_le_bytes();
                 unsafe {
-                    self.0.digits.as_mut_ptr().add(index * 16).copy_from_nonoverlapping(bytes.as_ptr(), 16);
+                    self.0
+                        .bytes
+                        .as_mut_ptr()
+                        .add(index * 16)
+                        .copy_from_nonoverlapping(bytes.as_ptr(), 16);
                 }
             }
 
@@ -135,13 +160,19 @@ impl<const N: usize> Uint<N> {
                 unsafe {
                     out_bytes
                         .as_ptr()
-                        .copy_to_nonoverlapping(self.0.digits.as_mut_ptr().add(offset), count);
+                        .copy_to_nonoverlapping(self.0.bytes.as_mut_ptr().add(offset), count);
                 }
             }
 
             #[inline]
-            const unsafe fn set_u128_digit_with_correct_count(&mut self, index: usize, value: u128) {
-                unsafe { self.set_u128_digit_at_offset(index * 16, value); }
+            const unsafe fn set_u128_digit_with_correct_count(
+                &mut self,
+                index: usize,
+                value: u128,
+            ) {
+                unsafe {
+                    self.set_u128_digit_at_offset(index * 16, value);
+                }
             }
         }
 
@@ -153,7 +184,7 @@ impl<const N: usize> Uint<N> {
             while i < Self::U128_DIGITS {
                 carry = 0;
                 let self_digit_i = self.as_wide_digits().get(i);
-                
+
                 let mut j = 0;
                 while j < Self::FULL_U128_DIGITS {
                     let index = i + j;
@@ -187,13 +218,12 @@ impl<const N: usize> Uint<N> {
                         debug_assert!(carry == 0);
                     }
                 }
-                
 
                 i += 1;
             }
         }
 
-        (out.0, out.1)
+        (out.0, out.1.force_sign())
     }
 
     /// Computes `self * rhs + carry`, and returns a tuple of the low (wrapping) bits and high (overflow) bits of the result, in that order.
@@ -211,14 +241,43 @@ impl<const N: usize> Uint<N> {
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn carrying_mul(self, rhs: Self, carry: Self) -> (Self, Self) {
-        let (low, high) = self.widening_mul(rhs);
-        let (low, overflow) = low.overflowing_add(carry);
-        if overflow {
-            (low, high.wrapping_add(Self::ONE))
-        } else {
-            (low, high)
+    pub const fn carrying_mul(self, rhs: Self, carry: Self) -> (Uint<N>, Self) {
+        // if S {
+
+        // we pretend that we have a "super bigint" - a big int with two "digits", where the digits are themselves big ints (Uints). then apply the same logic that an wrapping_add for signed ints is the same as wrapping_add for unsigned ints
+        // effectively, we are computing a wrapping_add of the "super bigint"
+        let (lo, hi) = self.widening_mul(rhs);
+        let (lo, overflow) = lo.overflowing_add(carry.force_sign());
+
+        // we interpret the carry as a "super bigint" by extending it to twice its width: since it is negative, it is signed extended with all ones
+        // so we want to perform a wrapping_add of hi + (-1). but this is clearly equivalent to a wrapping_sub of hi - 1
+        // however, we delay this operation as it may cancel with the overflow increment
+        // let hi = if carry.is_negative_internal() {
+        //     hi.wrapping_sub(Self::ONE)
+        // } else {
+        //     hi
+        // };
+        // return if overflow {
+        //     (lo, hi.wrapping_add(Self::ONE))
+        // } else {
+        //     (lo, hi)
+        // };
+
+        match (carry.is_negative_internal(), overflow) {
+            (true, true) => (lo, hi),                          // hi - 1 + 1
+            (true, false) => (lo, hi.wrapping_sub(Self::ONE)), // hi - 1
+            (false, true) => (lo, hi.wrapping_add(Self::ONE)), // hi + 1
+            (false, false) => (lo, hi),                        // hi
         }
+        // }
+
+        // let (low, high) = self.widening_mul(rhs);
+        // let (low, overflow) = low.overflowing_add(carry.force_sign());
+        // if overflow {
+        //     (low, high.wrapping_add(Self::ONE))
+        // } else {
+        //     (low, high)
+        // }
     }
 
     /// Computes `self * rhs + carry + add`, and returns a tuple of the low (wrapping) bits and high (overflow) bits of the result, in that order.
@@ -236,20 +295,76 @@ impl<const N: usize> Uint<N> {
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn carrying_mul_add(self, rhs: Self, carry: Self, add: Self) -> (Self, Self) {
-        let (low, high) = self.carrying_mul(rhs, carry);
-        let (low, overflow) = low.overflowing_add(add);
-        if overflow {
-            (low, high.wrapping_add(Self::ONE))
-        } else {
-            (low, high)
-        }
+    pub const fn carrying_mul_add(self, rhs: Self, carry: Self, add: Self) -> (Uint<N>, Self) {
+        // if S {
+
+            // similarly to carrying_mul
+            let (lo, hi) = self.carrying_mul(rhs, carry);
+            // let extension = if add.is_negative() {
+            //     Self::NEG_ONE // all ones
+            // } else {
+            //     Self::ZERO // all zeros
+            // };
+            let (lo, overflow) = lo.overflowing_add(add.force_sign());
+            // let hi = hi.wrapping_add(extension);
+            // return if overflow {
+            //     (lo, hi.wrapping_add(Self::ONE))
+            // } else {
+            //     (lo, hi)
+            // };
+
+            match (add.is_negative_internal(), overflow) {
+                (true, true) => (lo, hi), // hi - 1 + 1
+                (true, false) => (lo, hi.wrapping_sub(Self::ONE)), // hi - 1
+                (false, true) => (lo, hi.wrapping_add(Self::ONE)), // hi + 1
+                (false, false) => (lo, hi), // hi
+            }
+        // }
+
+        // let (low, high) = self.carrying_mul(rhs, carry);
+        // let (low, overflow) = low.overflowing_add(add);
+        // if overflow {
+        //     (low, high.wrapping_add(Self::ONE))
+        // } else {
+        //     (low, high)
+        // }
     }
 }
 
-#[cfg(all(test, feature = "nightly"))] // since bigint_helper_methods are not stable yet
-crate::test::test_all_widths! {
-    crate::ints::bigint_helpers::tests!(utest);
+#[cfg(all(test, feature = "nightly"))]
+mod tests {
+    use crate::test::test_bignum;
+
+    crate::test::test_all! {
+        testing integers;
+
+        test_bignum! {
+            function: <stest>::carrying_add(a: stest, b: stest, carry: bool),
+            cases: [
+                (<stest>::MAX, 1u8, true),
+                (<stest>::MAX, 1u8, false)
+            ]
+        }
+        test_bignum! {
+            function: <stest>::borrowing_sub(a: stest, b: stest, borrow: bool),
+            cases: [
+                (<stest>::MIN, 1u8, false),
+                (<stest>::MIN, 1u8, true)
+            ]
+        }
+        test_bignum! {
+            function: <stest>::widening_mul(a: stest, b: stest),
+            cases: [
+                (<stest>::MAX, 2u8)
+            ]
+        }
+        test_bignum! {
+            function: <stest>::carrying_mul(a: stest, b: stest, c: stest)
+        }
+        test_bignum! {
+            function: <stest>::carrying_mul_add(a: stest, b: stest, c: stest, d: stest)
+        }
+    }
 }
 
 #[cfg(all(test, feature = "nightly"))]

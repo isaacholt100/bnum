@@ -25,8 +25,17 @@
 - Debug impl in no_alloc is padded hex string
 - added compile time assertion about valid bit size
 - detect overflow checks rather than if in debug build or not (so match integer behaviour exactly)
+- fix behaviour of left shifts in no overflow checks mode
 - TODO:
-    - modpow
-    - complete use of u128 digit methods where needed
+    - use u128/u64 digit division algorithm
     - fix doctests
     - complete documentation (not just links to the Rust primitive equivalent)
+    - add optional WRAP const gen parameter to always have wrapping on operations (default is OVERFLOW_CHECKS)
+
+
+- remove as_bits, as_bits_mut from Int
+- remove 2, 3, ..., 10 from Uint and Int, -1, -2, ..., -3 from Int
+- remove {to, from}_{be, le}, {to, from}_ne_bytes methods (as not portable), makes no sense as digits always stored in little endian
+- remove .bits() from Int
+- remove from_digit()
+- remove Int::{from,to}_radix_{b,l}_e

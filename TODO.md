@@ -78,7 +78,6 @@
 - modpow
 - isolate_most_least_significant_one for uints, ints (but wait til the name is stabilised)
 - faster algorithms for parsing and printing larger integers
-- IDEA: unify Int and Uint into a single type, maybe called Integer, which has a const generic parameter S: bool (for signed or unsigned), and const N: usize as usual. could reduce quite a lot of code duplication as well as making type inference with the n! macro possible.
 - think about whether you could make to_str_radix and the functions it uses into generic functions which take an argument which "pushes" the next character to the existing string (so either pushing to a vector or calling write!(f, ...))
 - unchecked_disjoint_bitor for uint (can do by iterating unchecked_disjoint bitor on u8s/u128 digits, can only add this once it is stablised for primitives though, not much point adding on nightly only)
 

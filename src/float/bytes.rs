@@ -2,6 +2,7 @@ use super::Float;
 use crate::Uint;
 use crate::doc;
 
+/// Methods that convert floats to and from byte arrays.
 impl<const W: usize, const MB: usize> Float<W, MB> {
     #[doc = doc::endian::to_be_bytes!(F)]
     #[must_use = doc::must_use_op!()]

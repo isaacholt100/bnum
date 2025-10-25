@@ -3,9 +3,8 @@ use crate::Int;
 use crate::doc;
 use core::cmp::{Ordering, PartialEq, PartialOrd};
 
-#[doc = doc::cmp::impl_desc!()]
+/// Comparison methods.
 impl<const W: usize, const MB: usize> Float<W, MB> {
-    #[doc = doc::cmp::max!(F)]
     #[must_use = doc::must_use_op!(comparison)]
     #[inline]
     pub const fn max(self, other: Self) -> Self {
@@ -18,7 +17,6 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         }
     }
 
-    #[doc = doc::cmp::min!(F)]
     #[must_use = doc::must_use_op!(comparison)]
     #[inline]
     pub const fn min(self, other: Self) -> Self {
@@ -31,7 +29,6 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         }
     }
 
-    #[doc = doc::cmp::maximum!(F)]
     #[must_use = doc::must_use_op!(comparison)]
     #[inline]
     pub const fn maximum(self, other: Self) -> Self {
@@ -44,7 +41,6 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         }
     }
 
-    #[doc = doc::cmp::minimum!(F)]
     #[must_use = doc::must_use_op!(comparison)]
     #[inline]
     pub const fn minimum(self, other: Self) -> Self {
@@ -57,7 +53,6 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         }
     }
 
-    #[doc = doc::cmp::clamp!(F)]
     #[must_use = doc::must_use_op!(float)]
     #[inline]
     pub const fn clamp(self, min: Self, max: Self) -> Self {
@@ -72,7 +67,6 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         x
     }
 
-    #[doc = doc::cmp::total_cmp!(F)]
     #[must_use]
     #[inline]
     pub const fn total_cmp(&self, other: &Self) -> Ordering {

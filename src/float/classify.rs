@@ -11,22 +11,19 @@ impl<const W: usize, const MB: usize> Masks<W, MB> {
     const FINITE_MASK: Uint<W> = Float::<W, MB>::INFINITY.to_bits();
 }
 
-#[doc = doc::classify::impl_desc!()]
+/// Classification methods: used to determine mathematical properties of the number.
 impl<const W: usize, const MB: usize> Float<W, MB> {
-    #[doc = doc::classify::is_sign_positive!(F)]
     #[inline(always)]
     pub const fn is_sign_positive(self) -> bool {
         !self.is_sign_negative()
     }
 
-    #[doc = doc::classify::is_sign_negative!(F)]
     #[inline(always)]
     pub const fn is_sign_negative(self) -> bool {
         const A: Digit = (1 as Digit).rotate_right(1);
         self.bits.digits[W - 1] >= A
     }
 
-    #[doc = doc::classify::is_finite!(F)]
     #[inline]
     pub const fn is_finite(self) -> bool {
         self.to_bits()
@@ -34,26 +31,22 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             .ne(&Masks::<W, MB>::FINITE_MASK)
     }
 
-    #[doc = doc::classify::is_infinite!(F)]
     #[inline]
     pub const fn is_infinite(self) -> bool {
         self.abs().to_bits().eq(&Masks::<W, MB>::FINITE_MASK)
     }
 
-    #[doc = doc::classify::is_nan!(F)]
     #[inline]
     pub const fn is_nan(self) -> bool {
         !self.is_finite() && self.to_bits().trailing_zeros() < Self::MB
     }
 
-    #[doc = doc::classify::is_subnormal!(F)]
     #[inline]
     pub const fn is_subnormal(self) -> bool {
         let lz = self.abs().to_bits().leading_zeros();
         lz < Self::BITS && lz > Self::EXPONENT_BITS
     }
 
-    #[doc = doc::classify::is_normal!(F)]
     #[inline]
     pub const fn is_normal(self) -> bool {
         matches!(self.classify(), FpCategory::Normal)
@@ -73,7 +66,6 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         last.trailing_zeros() >= Digit::BITS - 1
     }
 
-    #[doc = doc::classify::classify!(F)]
     #[inline]
     pub const fn classify(self) -> FpCategory {
         let u = self.abs().to_bits();

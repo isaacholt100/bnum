@@ -57,9 +57,8 @@ impl<const W: usize> Uint<W> {
     }
 }
 
-#[doc = doc::rounding::impl_desc!()]
+/// Rounding methods.
 impl<const W: usize, const MB: usize> Float<W, MB> {
-    #[doc = doc::rounding::floor!(F)]
     #[must_use = doc::must_use_op!(float)]
     #[inline]
     pub fn floor(self) -> Self {
@@ -96,7 +95,6 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         Self::from_bits(bits)
     }
 
-    #[doc = doc::rounding::ceil!(F)]
     #[must_use = doc::must_use_op!(float)]
     #[inline]
     pub fn ceil(self) -> Self {
@@ -133,7 +131,6 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         Self::from_bits(u)
     }
 
-    #[doc = doc::rounding::round!(F)]
     #[must_use = doc::must_use_op!(float)]
     #[inline]
     pub fn round(self) -> Self {
@@ -243,14 +240,12 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         }
     }
 
-    #[doc = doc::rounding::trunc!(F)]
     #[must_use = doc::must_use_op!(float)]
     #[inline]
     pub const fn trunc(self) -> Self {
         self.fract_trunc().1
     }
 
-    #[doc = doc::rounding::fract!(F)]
     #[must_use = doc::must_use_op!(float)]
     #[inline]
     pub const fn fract(self) -> Self {

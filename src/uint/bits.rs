@@ -1,10 +1,16 @@
-use super::Uint;
+use super::{Uint, Integer};
 use crate::ExpType;
 use crate::doc;
 use crate::digit::Digit;
 
-/// Methods for reading and manipulating the underlying bits of the integer.
-impl<const N: usize> Uint<N> {
+macro_rules! impl_desc {
+    () => {
+        "Methods for reading and manipulating the underlying bits of the integer."
+    }
+}
+
+#[doc = impl_desc!()]
+impl<const S: bool, const N: usize> Integer<S, N> {
     /// Returns the number of ones in the binary representation of `self`.
     ///
     /// # Examples
@@ -25,7 +31,7 @@ impl<const N: usize> Uint<N> {
         let mut ones = 0;
         let mut i = 0;
         while i < N {
-            ones += self.digits[i].count_ones() as ExpType;
+            ones += self.bytes[i].count_ones() as ExpType;
             i += 1;
         }
         ones
@@ -71,7 +77,7 @@ impl<const N: usize> Uint<N> {
         let mut i = N;
         while i > 0 {
             i -= 1;
-            let digit = self.digits[i];
+            let digit = self.bytes[i];
             zeros += digit.leading_zeros();
             if digit != Digit::MIN {
                 break;
@@ -87,7 +93,7 @@ impl<const N: usize> Uint<N> {
         let mut i = N;
         while i > 0 {
             i -= 1;
-            let digit = self.digits[i];
+            let digit = self.bytes[i];
             zeros += digit.leading_zeros();
             if zeros >= threshold {
                 return true;
@@ -141,7 +147,7 @@ impl<const N: usize> Uint<N> {
         let mut i = N;
         while i > 0 {
             i -= 1;
-            let digit = self.digits[i];
+            let digit = self.bytes[i];
             ones += digit.leading_ones();
             if ones >= threshold {
                 return true;
@@ -174,7 +180,7 @@ impl<const N: usize> Uint<N> {
         let mut i = N;
         while i > 0 {
             i -= 1;
-            let digit = self.digits[i];
+            let digit = self.bytes[i];
             ones += digit.leading_ones();
             if digit != Digit::MAX {
                 break;
@@ -221,13 +227,13 @@ impl<const N: usize> Uint<N> {
         let mut out = Self::ZERO;
         let mut i = n;
         while i < N {
-            out.digits[i] = self.digits[i - n];
+            out.bytes[i] = self.bytes[i - n];
             i += 1;
         }
         let init_index = N - n;
         let mut i = init_index;
         while i < N {
-            out.digits[i - init_index] = self.digits[i];
+            out.bytes[i - init_index] = self.bytes[i];
             i += 1;
         }
 
@@ -412,7 +418,7 @@ impl<const N: usize> Uint<N> {
 
     #[inline]
     pub(crate) const unsafe fn unchecked_shl_internal(self, rhs: ExpType) -> Self {
-        let mut out = Uint::ZERO;
+        let mut out = Self::ZERO;
         let digit_shift = (rhs / 8) as usize;
         let bit_shift = rhs % 8;
 
@@ -420,7 +426,7 @@ impl<const N: usize> Uint<N> {
         while i < N {
             // we start i at digit_shift, not 0, since the compiler can elide bounds checks when i < N
             // this is no slower than using pointers with add and copy_from_nonoverlapping
-            out.digits[i] = self.digits[i - digit_shift];
+            out.bytes[i] = self.bytes[i - digit_shift];
             i += 1;
         }
 
@@ -446,7 +452,7 @@ impl<const N: usize> Uint<N> {
         rhs: ExpType,
     ) -> Self {
         unsafe {
-            let mut out = if NEG { Self::MAX } else { Self::ZERO };
+            let mut out = if NEG { Self::ALL_ONES } else { Self::ZERO };
             let digit_shift = (rhs / 8) as usize;
             let bit_shift = rhs % 8;
 
@@ -455,7 +461,7 @@ impl<const N: usize> Uint<N> {
             let mut i = digit_shift;
             while i < N {
                 // we start i at digit_shift, not 0, since the compiler can elide bounds checks when i < N
-                out.digits[i - digit_shift] = self.digits[i];
+                out.bytes[i - digit_shift] = self.bytes[i];
                 i += 1;
             }
 
@@ -473,8 +479,8 @@ impl<const N: usize> Uint<N> {
                 }
 
                 if NEG {
-                    out.digits[N - 1] |= Digit::MAX << (8 - bit_shift);
-                    out.digits[N - 1 - digit_shift] |= Digit::MAX << (8 - bit_shift);
+                    out.bytes[N - 1] |= Digit::MAX << (8 - bit_shift);
+                    out.bytes[N - 1 - digit_shift] |= Digit::MAX << (8 - bit_shift);
                 }
 
 
@@ -512,31 +518,128 @@ impl<const N: usize> Uint<N> {
         }
     }
 
-    pub(crate) const unsafe fn unchecked_shr_internal(u: Uint<N>, rhs: ExpType) -> Uint<N> {
-        unsafe { Self::unchecked_shr_pad_internal::<false>(u, rhs) }
+    /// Returns a boolean representing the bit in the given position (`true` if the bit is 1). The least significant bit is at index `0`, the most significant bit is at index `Self::BITS - 1`.
+    #[must_use]
+    #[inline]
+    pub const fn bit(&self, index: ExpType) -> bool {
+        let digit = self.bytes[index as usize / Digit::BITS as usize];
+        digit & (1 << (index % Digit::BITS)) != 0
     }
 
-    #[doc = doc::bits!(U 256)]
+    /// Sets/unsets the bit in the given position (i.e. to `1` if `value` is `true`). The least significant bit is at index `0`, the most significant bit is at index `Self::BITS - 1`.
+    #[inline]
+    pub const fn set_bit(&mut self, index: ExpType, value: bool) {
+        let digit = &mut self.bytes[index as usize / Digit::BITS as usize];
+        let shift = index % Digit::BITS;
+        *digit = *digit & !(1 << shift) | ((value as Digit) << shift);
+    }
+}
+
+#[doc = concat!("(Unsigned integers only.) ", impl_desc!())]
+impl<const N: usize> Uint<N> {
+    /// Returns the smallest number of bits necessary to represent `self`.
+    /// 
+    /// This is equal to the size of the type in bits minus the leading zeros of `self`.
+    /// 
+    /// # Examples
+    /// 
+    /// Basic usage:
+    /// 
+    /// ```
+    /// use bnum::types::U256;
+    /// 
+    /// assert_eq!(U256::MAX.bits(), 256);
+    /// assert_eq!(U255::ZERO.bits(), 0);
+    /// ```
     #[must_use]
     #[inline]
     pub const fn bits(&self) -> ExpType {
         Self::BITS as ExpType - self.leading_zeros()
     }
+}
 
-    #[doc = doc::bit!(U 256)]
-    #[must_use]
-    #[inline]
-    pub const fn bit(&self, index: ExpType) -> bool {
-        let digit = self.digits[index as usize / Digit::BITS as usize];
-        digit & (1 << (index % Digit::BITS)) != 0
+#[cfg(test)]
+mod tests {
+    use crate::test::test_bignum;
+    use crate::cast::CastFrom;
+
+    crate::test::test_all! {
+        testing integers;
+
+        #[test]
+        fn bit() {
+            let u = STEST::cast_from(0b001010100101010101u64);
+            assert!(u.bit(0));
+            assert!(!u.bit(1));
+            // assert!(!u.bit(17));
+            // assert!(!u.bit(16));
+            assert!(u.bit(15));
+        }
+
+        #[test]
+        fn set_bit() {
+            let mut u = STEST::cast_from(0b001010100101010101u64);
+            u.set_bit(1, true);
+            assert!(u.bit(1));
+            u.set_bit(1, false);
+            assert!(!u.bit(1));
+            u.set_bit(14, false);
+            assert!(!u.bit(14));
+            u.set_bit(14, true);
+            assert!(u.bit(14));
+        }
+
+        test_bignum! {
+            function: <stest>::count_ones(a: stest)
+        }
+        test_bignum! {
+            function: <stest>::count_zeros(a: stest)
+        }
+        test_bignum! {
+            function: <stest>::leading_zeros(a: stest)
+        }
+        test_bignum! {
+            function: <stest>::trailing_zeros(a: stest)
+        }
+        test_bignum! {
+            function: <stest>::leading_ones(a: stest)
+        }
+        test_bignum! {
+            function: <stest>::trailing_ones(a: stest)
+        }
+        test_bignum! {
+            function: <stest>::rotate_left(a: stest, b: u8)
+        }
+        test_bignum! {
+            function: <stest>::rotate_right(a: stest, b: u8)
+        }
+        #[cfg(feature = "nightly")] // as unbounded_shifts not yet stabilised
+        test_bignum! {
+            function: <stest>::unbounded_shl(a: stest, b: u16)
+        }
+        #[cfg(feature = "nightly")] // as unbounded_shifts not yet stabilised
+        test_bignum! {
+            function: <stest>::unbounded_shr(a: stest, b: u16)
+        }
+        test_bignum! {
+            function: <stest>::swap_bytes(a: stest)
+        }
+        test_bignum! {
+            function: <stest>::reverse_bits(a: stest)
+        }
     }
 
-    #[doc = doc::set_bit!(U 256)]
-    #[inline]
-    pub const fn set_bit(&mut self, index: ExpType, value: bool) {
-        let digit = &mut self.digits[index as usize / Digit::BITS as usize];
-        let shift = index % Digit::BITS;
-        *digit = *digit & !(1 << shift) | ((value as Digit) << shift);
+    crate::test::test_all! {
+        testing unsigned;
+
+        #[test]
+        fn bits() {
+            let u = STEST::cast_from(0b1010100101010101u128);
+            assert_eq!(u.bits(), 16);
+
+            let u: STEST = STEST::ONE << 7;
+            assert_eq!(u.bits(), 8);
+        }
     }
 }
 

@@ -255,7 +255,7 @@ pub const fn div_float<const N: usize>(u: Uint<N>, v: Uint<N>) -> (Uint<N>, bool
                 Uint::<N>::div_half(u_jn, u.index(j + N - 1), v_n_1)
             };
             loop {
-                let a = ((r_hat as DoubleDigit) << digit::BITS) | u.index(j + N - 2) as DoubleDigit;
+                let a = ((r_hat as DoubleDigit) << Byte::BITS) | u.index(j + N - 2) as DoubleDigit;
                 let b = q_hat as DoubleDigit * v_n_2 as DoubleDigit;
                 if b <= a {
                     break;

@@ -77,204 +77,223 @@ where
     Fill::fill(slice, rng)
 }
 
-macro_rules! fill_impl {
-    ($ty: ty) => {
-        impl<const N: usize> Fill for crate::random::Slice<$ty> {
-            #[inline(never)]
-            fn fill<R: Rng + ?Sized>(&mut self, rng: &mut R) {
-                if self.0.len() > 0 {
-                    rng.fill_bytes(unsafe {
-                        core::slice::from_raw_parts_mut(
-                            self.0.as_mut_ptr() as *mut u8,
-                            self.0.len() * core::mem::size_of::<$ty>(),
-                        )
-                    });
-                    for x in &mut self.0 {
-                        *x = x.to_le();
-                    }
-                }
-            }
+use crate::Integer;
+
+impl<const S: bool, const N: usize> Fill for crate::random::Slice<Integer<S, N>> {
+    #[inline(never)]
+    fn fill<R: Rng + ?Sized>(&mut self, rng: &mut R) {
+        if self.0.len() > 0 {
+            rng.fill_bytes(unsafe {
+                core::slice::from_raw_parts_mut(
+                    self.0.as_mut_ptr() as *mut u8,
+                    self.0.len() * core::mem::size_of::<Integer<S, N>>(),
+                )
+            });
         }
-    };
+    }
 }
+
+#[inline]
 const fn widening_mul_u32(a: u32, b: u32) -> (u32, u32) {
     let m = a as u64 * b as u64;
     (m as u32, (m >> 32) as u32)
 }
 
-macro_rules! uniform_int_impl {
-    ($ty: ty, $u_large: ty $(, $as_unsigned: ident, $as_signed: ident)?) => {
-        impl<const N: usize> SampleUniform for $ty {
-            type Sampler = UniformInt<$ty>;
+impl<const S: bool, const N: usize> SampleUniform for Integer<S, N> {
+    type Sampler = UniformInt<Self>;
+}
+
+impl<const S: bool, const N: usize> UniformSampler for UniformInt<Integer<S, N>> {
+    type X = Integer<S, N>;
+
+    #[inline]
+    fn new<B1, B2>(low_b: B1, high_b: B2) -> Result<Self, rand::distr::uniform::Error>
+    where
+        B1: SampleBorrow<Self::X> + Sized,
+        B2: SampleBorrow<Self::X> + Sized,
+    {
+        let low = *low_b.borrow();
+        let high = *high_b.borrow();
+        if high <= low {
+            return Err(rand::distr::uniform::Error::EmptyRange);
+        }
+        UniformSampler::new_inclusive(low, high - Integer::ONE)
+    }
+
+    #[inline]
+    fn new_inclusive<B1, B2>(low_b: B1, high_b: B2) -> Result<Self, rand::distr::uniform::Error>
+    where
+        B1: SampleBorrow<Self::X> + Sized,
+        B2: SampleBorrow<Self::X> + Sized,
+    {
+        let low = *low_b.borrow();
+        let high = *high_b.borrow();
+        if high < low {
+            return Err(rand::distr::uniform::Error::EmptyRange);
         }
 
-        impl<const N: usize> UniformSampler for UniformInt<$ty> {
-            type X = $ty;
+        let range = high.wrapping_sub(low).wrapping_add(Integer::ONE).force_sign::<false>();
+        let thresh = if !range.is_zero() {
+            if Integer::<S, N>::BITS <= 32 { // because rand uses u32 to generate <= 32-bit integers
+                use crate::cast::As;
 
-            #[inline]
-            fn new<B1, B2>(low_b: B1, high_b: B2) -> Result<Self, rand::distr::uniform::Error>
-            where
-                B1: SampleBorrow<Self::X> + Sized,
-                B2: SampleBorrow<Self::X> + Sized,
-            {
-                let low = *low_b.borrow();
-                let high = *high_b.borrow();
-                if high <= low {
-                    return Err(rand::distr::uniform::Error::EmptyRange);
-                }
-                UniformSampler::new_inclusive(low, high - <$ty>::ONE)
+                let range = range.as_::<u32>();
+                let t = range.wrapping_neg() % range;
+                t.as_()
+            } else {
+                (range.wrapping_neg() % range).force_sign()
             }
+        } else {
+            Integer::ZERO
+        };
 
-            #[inline]
-            fn new_inclusive<B1, B2>(low_b: B1, high_b: B2) -> Result<Self, rand::distr::uniform::Error>
-            where
-                B1: SampleBorrow<Self::X> + Sized,
-                B2: SampleBorrow<Self::X> + Sized,
-            {
-                let low = *low_b.borrow();
-                let high = *high_b.borrow();
-                if high < low {
-                    return Err(rand::distr::uniform::Error::EmptyRange);
-                }
+        Ok(UniformInt {
+            low,
+            range: range.force_sign(),
+            thresh: thresh,
+        })
+    }
 
-                let range = high.wrapping_sub(low).wrapping_add(<$ty>::ONE)$(.$as_unsigned())?;
-                let thresh = if !range.is_zero() {
-                    if <$ty>::BITS <= 32 { // because rand uses u32 to generate <= 32-bit integers
-                        use crate::cast::As;
+    #[inline]
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Self::X {
+        if Integer::<S, N>::BITS <= 32 { // because rand uses u32 to generate <= 32-bit integers
+            use crate::cast::As;
 
-                        let range = range.as_::<u32>();
-                        let t = range.wrapping_neg() % range;
-                        t.as_::<$ty>()
-                    } else {
-                        $(<$ty>::$as_signed)?(range.wrapping_neg() % range)
-                    }
-                } else {
-                    $(<$ty>::$as_signed)?(<$u_large>::ZERO)
-                };
+            let range = self.range.force_sign::<false>().as_::<u32>();
+            if range == 0 {
+                rng.random()
+            } else {
+                let thresh = self.thresh.force_sign::<false>().as_::<u32>();
 
-                Ok(UniformInt {
-                    low,
-                    range: $(<$ty>::$as_signed)?(range),
-                    thresh: thresh,
-                })
-            }
-
-            #[inline]
-            fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Self::X {
-                if <$ty>::BITS <= 32 { // because rand uses u32 to generate <= 32-bit integers
-                    use crate::cast::As;
-
-                    let range = self.range$(.$as_unsigned())?.as_::<u32>();
-                    if range == 0 {
-                        rng.random()
-                    } else {
-                        let thresh = self.thresh$(.$as_unsigned())?.as_::<u32>();
-
-                        loop {
-                            let v: u32 = rng.random();
-                            let (lo, hi) = widening_mul_u32(v, range);
-                            if lo >= thresh {
-                                return self.low.wrapping_add(hi.as_::<$ty>());
-                            }
-                        }
-                    }
-                }
-                let range = self.range$(.$as_unsigned())?;
-                if range.is_zero() {
-                    rng.random()
-                } else {
-                    let thresh = self.thresh$(.$as_unsigned())?;
-
-                    loop {
-                        let v: $u_large = rng.random();
-                        let (lo, hi) = v.widening_mul(range);
-                        if lo >= thresh {
-                            return self.low.wrapping_add($(<$ty>::$as_signed)?(hi));
-                        }
+                loop {
+                    let v: u32 = rng.random();
+                    let (lo, hi) = widening_mul_u32(v, range);
+                    if lo >= thresh {
+                        return self.low.wrapping_add(hi.as_());
                     }
                 }
             }
+        }
+        let range = self.range.force_sign::<false>();
+        if range.is_zero() {
+            rng.random()
+        } else {
+            let thresh = self.thresh.force_sign::<false>();
 
-            #[inline]
-            fn sample_single<R: Rng + ?Sized, B1, B2>(low_b: B1, high_b: B2, rng: &mut R) -> Result<Self::X, rand::distr::uniform::Error>
-            where
-                B1: SampleBorrow<Self::X> + Sized,
-                B2: SampleBorrow<Self::X> + Sized,
-            {
-                let low = *low_b.borrow();
-                let high = *high_b.borrow();
-                if high <= low {
-                    return Err(rand::distr::uniform::Error::EmptyRange);
+            loop {
+                let v: Uint<N> = rng.random();
+                let (lo, hi) = v.widening_mul(range);
+                if lo >= thresh {
+                    return self.low.wrapping_add(hi.force_sign());
                 }
-                Self::sample_single_inclusive(low, high - <$ty>::ONE, rng)
             }
+        }
+    }
 
-            #[inline]
-            fn sample_single_inclusive<R: Rng + ?Sized, B1, B2>(low_b: B1, high_b: B2, rng: &mut R) -> Result<Self::X, rand::distr::uniform::Error>
-            where
-                B1: SampleBorrow<Self::X> + Sized,
-                B2: SampleBorrow<Self::X> + Sized,
-            {
-                let low = *low_b.borrow();
-                let high = *high_b.borrow();
-                if high < low {
-                    return Err(rand::distr::uniform::Error::EmptyRange);
-                }
-                let range = high.wrapping_sub(low).wrapping_add(<$ty>::ONE)$(.$as_unsigned())?;
+    #[inline]
+    fn sample_single<R: Rng + ?Sized, B1, B2>(low_b: B1, high_b: B2, rng: &mut R) -> Result<Self::X, rand::distr::uniform::Error>
+    where
+        B1: SampleBorrow<Self::X> + Sized,
+        B2: SampleBorrow<Self::X> + Sized,
+    {
+        let low = *low_b.borrow();
+        let high = *high_b.borrow();
+        if high <= low {
+            return Err(rand::distr::uniform::Error::EmptyRange);
+        }
+        Self::sample_single_inclusive(low, high - Integer::ONE, rng)
+    }
 
-                if <$ty>::BITS <= 32 { // because rand uses u32 to generate <= 32-bit integers
-                    use crate::cast::As;
+    #[inline]
+    fn sample_single_inclusive<R: Rng + ?Sized, B1, B2>(low_b: B1, high_b: B2, rng: &mut R) -> Result<Self::X, rand::distr::uniform::Error>
+    where
+        B1: SampleBorrow<Self::X> + Sized,
+        B2: SampleBorrow<Self::X> + Sized,
+    {
+        let low = *low_b.borrow();
+        let high = *high_b.borrow();
+        if high < low {
+            return Err(rand::distr::uniform::Error::EmptyRange);
+        }
+        let range = high.wrapping_sub(low).wrapping_add(Integer::ONE).force_sign::<false>();
 
-                    let range = range.as_::<u32>();
-                    if range == 0 {
-                        return Ok(rng.random());
-                    }
-                    let (mut lo, mut result) = widening_mul_u32(rng.random::<u32>(), range);
-                    while lo > range.wrapping_neg() {
-                        let (new_lo, new_hi) = widening_mul_u32(rng.random::<u32>(), range);
-                        match lo.checked_add(new_hi) {
-                            Some(x) => {
-                                if x == u32::MAX {
-                                    lo = new_lo;
-                                } else {
-                                    break;
-                                }
-                            },
-                            None => {
-                                result += 1;
-                                break;
-                            }
-                        }
-                    }
+        if Integer::<S, N>::BITS <= 32 { // because rand uses u32 to generate <= 32-bit integers
+            use crate::cast::As;
 
-                    return Ok(low.wrapping_add(result.as_::<$ty>()));
-                }
-                if range.is_zero() {
-                    return Ok(rng.random());
-                }
-
-                let (mut lo, mut result) = rng.random::<$u_large>().widening_mul(range);
-                while lo > range.wrapping_neg() {
-                    let (new_lo, new_hi) = rng.random::<$u_large>().widening_mul(range);
-                    match lo.checked_add(new_hi) {
-                        Some(x) => {
-                            if x == <$u_large>::MAX {
-                                lo = new_lo;
-                            } else {
-                                break;
-                            }
-                        },
-                        None => {
-                            result += <$u_large>::ONE;
+            let range = range.as_::<u32>();
+            if range == 0 {
+                return Ok(rng.random());
+            }
+            let (mut lo, mut result) = widening_mul_u32(rng.random::<u32>(), range);
+            while lo > range.wrapping_neg() {
+                let (new_lo, new_hi) = widening_mul_u32(rng.random::<u32>(), range);
+                match lo.checked_add(new_hi) {
+                    Some(x) => {
+                        if x == u32::MAX {
+                            lo = new_lo;
+                        } else {
                             break;
                         }
+                    },
+                    None => {
+                        result += 1;
+                        break;
                     }
                 }
+            }
 
-                Ok(low.wrapping_add($(<$ty>::$as_signed)?(result)))
+            return Ok(low.wrapping_add(result.as_()));
+        }
+        if range.is_zero() {
+            return Ok(rng.random());
+        }
+
+        let (mut lo, mut result) = rng.random::<Uint<N>>().widening_mul(range);
+        while lo > range.wrapping_neg() {
+            let (new_lo, new_hi) = rng.random::<Uint<N>>().widening_mul(range);
+            match lo.checked_add(new_hi) {
+                Some(x) => {
+                    if x == Uint::<N>::MAX {
+                        lo = new_lo;
+                    } else {
+                        break;
+                    }
+                },
+                None => {
+                    result += Uint::<N>::ONE;
+                    break;
+                }
             }
         }
-    };
+
+        Ok(low.wrapping_add(result.force_sign()))
+    }
+}
+
+/// Used for generating random big integers in a given range.
+///
+/// Implements the [`UniformSampler`](https://docs.rs/rand/latest/rand/distributions/uniform/trait.UniformSampler.html) trait from the [`rand`](https://docs.rs/rand/latest/rand/) crate. This struct should not be used directly; instead use the [`Uniform`](https://docs.rs/rand/latest/rand/distributions/struct.Uniform.html) struct from the [`rand`](https://docs.rs/rand/latest/rand/) crate.
+#[derive(Clone, Copy, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub struct UniformInt<X> {
+    low: X,
+    range: X,
+    thresh: X,
+}
+
+use crate::Uint;
+
+use rand::distr::uniform::{SampleBorrow, SampleUniform, UniformSampler};
+use rand::distr::{Distribution, StandardUniform};
+use rand::{Fill, Rng};
+
+impl<const S: bool, const N: usize> Distribution<Integer<S, N>> for StandardUniform {
+    #[inline]
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Integer<S, N> {
+        let mut out = Integer::ZERO;
+        rng.fill_bytes(out.as_bytes_mut());
+        out
+    }
 }
 
 #[cfg(test)]
@@ -364,50 +383,6 @@ macro_rules! test_random {
 		}
 	};
 }
-
-/// Used for generating random big integers in a given range.
-///
-/// Implements the [`UniformSampler`](https://docs.rs/rand/latest/rand/distributions/uniform/trait.UniformSampler.html) trait from the [`rand`](https://docs.rs/rand/latest/rand/) crate. This struct should not be used directly; instead use the [`Uniform`](https://docs.rs/rand/latest/rand/distributions/struct.Uniform.html) struct from the [`rand`](https://docs.rs/rand/latest/rand/) crate.
-#[derive(Clone, Copy, Debug, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub struct UniformInt<X> {
-    low: X,
-    range: X,
-    thresh: X,
-}
-
-#[cfg(feature = "signed")]
-use crate::Int;
-use crate::Uint;
-use rand::distr::uniform::{SampleBorrow, SampleUniform, UniformSampler};
-use rand::distr::{Distribution, StandardUniform};
-use rand::{Fill, Rng};
-
-impl<const N: usize> Distribution<Uint<N>> for StandardUniform {
-    #[inline]
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Uint<N> {
-        let mut digits = [0; N];
-        rng.fill(&mut digits);
-        Uint::from_le_bytes(digits)
-    }
-}
-
-#[cfg(feature = "signed")]
-impl<const N: usize> Distribution<Int<N>> for StandardUniform {
-    #[inline]
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Int<N> {
-        Int::from_bits(rng.random())
-    }
-}
-
-fill_impl!(Uint<N>);
-#[cfg(feature = "signed")]
-fill_impl!(Int<N>);
-
-uniform_int_impl!(Uint<N>, Uint<N>);
-
-#[cfg(feature = "signed")]
-uniform_int_impl!(Int<N>, Uint<N>, to_bits, from_bits);
 
 #[cfg(test)]
 crate::test::test_all_widths! {

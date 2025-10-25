@@ -12,9 +12,8 @@ mul_add, div_euclid, rem_euclid, powi, powf, exp, exp2, ln, log, log2, log10, cb
 TODO: acos, acosh, asin, asinh, atan, atan2, atanh, cbrt, cos, cosh, exp, exp2, exp_m1, gamma, hypot, ln, ln_1p, ln_gamma, log, log10, log2, midpoint, mul_add, powf, recip, round_ties_even, tan, tanh, to_degrees, to_radians,
 */
 
-#[doc = doc::math::impl_desc!()]
+/// Mathematical functions.
 impl<const W: usize, const MB: usize> Float<W, MB> {
-    #[doc = doc::math::abs!(F)]
     #[must_use = doc::must_use_op!(float)]
     #[inline]
     pub const fn abs(self) -> Self {
@@ -25,14 +24,12 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         }
     }
 
-    #[doc = doc::math::sqrt!(F)]
     #[must_use = doc::must_use_op!(float)]
     pub fn sqrt(self) -> Self {
         self.sqrt_internal()
     }
 
     #[cfg(feature = "nightly")]
-    #[doc = doc::math::div_euclid!(F)]
     #[must_use = doc::must_use_op!(float)]
     #[inline]
     pub fn div_euclid(self, rhs: Self) -> Self
@@ -50,7 +47,6 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         div
     }
 
-    #[doc = doc::math::rem_euclid!(F)]
     #[must_use = doc::must_use_op!(float)]
     #[inline]
     pub fn rem_euclid(self, rhs: Self) -> Self {
@@ -63,7 +59,6 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     }
 
     #[cfg(feature = "nightly")]
-    #[doc = doc::math::powi!(F)]
     #[must_use = doc::must_use_op!(float)]
     #[inline]
     pub fn powi(mut self, n: i32) -> Self

@@ -2,6 +2,9 @@
 	"rust-analyzer.rustfmt.extraArgs": [
         "+nightly"
 	],
+    "rust-analyzer.cargo.extraArgs": [
+        "+nightly"
+    ],
     "rust-analyzer.cargo.features": "all",
     "rust-analyzer.linkedProjects": [
         "./Cargo.toml",

@@ -3,7 +3,7 @@
 /// Backend implementation trait for panic-free casting between numeric types.
 pub trait CastFrom<T> {
     #[must_use = crate::doc::must_use_op!()]
-    fn cast_from(from: T) -> Self;
+    fn cast_from(value: T) -> Self;
 }
 
 #[cfg(test)]
@@ -73,8 +73,8 @@ macro_rules! primitive_cast_impl {
         $(
             impl CastFrom<$from> for $ty {
                 #[inline]
-                fn cast_from(from: $from) -> Self {
-                    from as Self
+                fn cast_from(value: $from) -> Self {
+                    value as Self
                 }
             }
         )*
@@ -100,21 +100,3 @@ multiple_impls!(
 );
 
 pub(crate) mod float;
-
-pub(crate) const fn bytes_cast<const N: usize, const M: usize, const SIGNED: bool>(
-    from: [u8; N],
-) -> [u8; M] {
-    // We don't need to handle the case N = M, as the compiler optimises it away.
-    let pad = if SIGNED && M > N && (from[N - 1] as i8).is_negative() {
-        u8::MAX
-    } else {
-        0
-    };
-    let mut bytes = [pad; M];
-    let mut i = 0;
-    while i < if N < M { N } else { M } {
-        bytes[i] = from[i];
-        i += 1;
-    }
-    bytes
-}

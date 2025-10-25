@@ -85,7 +85,7 @@ impl<const N: usize> TestConvert for Int<N> {
 
 impl<const N: usize> From<bnum_old::BUintD8<N>> for Uint<N> {
     fn from(b: bnum_old::BUintD8<N>) -> Self {
-        Self::from_digits(*b.digits())
+        Self::from_bytes(*b.digits())
     }
 }
 

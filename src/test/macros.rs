@@ -1,12 +1,12 @@
 macro_rules! test_bignum {
     {
-        function: $($unsafe: ident)? <$primitive: ty $(as $Trait: ident $(<$($gen: ty), *>)?)?> :: $function: ident ($($param: ident : $(ref $re: tt)? $ty: ty), *)
+        function: $($unsafe: ident)? <$primitive: ty $(as $Trait: ident $(<$($gen: ty), +>)?)?> :: $function: ident ($($param: ident : $(ref $re: tt)? $ty: ty), *)
         $(, skip: $skip: expr)?
     } => {
         paste::paste! {
             quickcheck::quickcheck! {
                 #[allow(non_snake_case)]
-                fn [<quickcheck_ $primitive _ $($Trait _ $($($gen _) *)?)? $function>]($($param : $ty), *) -> quickcheck::TestResult {
+                fn [<quickcheck_ $primitive _ $($Trait _ $($($gen _) +)?)? $function>]($($param : $ty), *) -> quickcheck::TestResult {
                     $(if $skip {
                         return quickcheck::TestResult::discard();
                     })?
@@ -21,7 +21,7 @@ macro_rules! test_bignum {
         }
     };
     {
-        function: <$primitive: ty> :: $function: ident,
+        function: <$primitive: ty> :: $function: ident, // need to handle the case with and without trait separately due to repetition of the cases arguments
         cases: [
             $(($($(ref $re2: tt)? $arg: expr), *)), *
         ]
@@ -37,14 +37,14 @@ macro_rules! test_bignum {
         }
     };
     {
-        function: <$primitive: ty as $Trait: ty> :: $function: ident,
+        function: <$primitive: ty as $Trait: ident> :: $function: ident,
         cases: [
             $(($($(ref $re2: tt)? $arg: expr), *)), *
         ]
     } => {
         paste::paste! {
             #[test]
-            fn [<cases_ $primitive _ $function>]() {
+            fn [<cases_ $primitive _ $Trait _ $function>]() {
                 $(
                     let (big, primitive) = crate::test::results!(<$primitive as $Trait> :: $function ($($($re2)? TryInto::try_into($arg).expect("test argument conversion failed")), *));
                     assert_eq!(big, primitive);
@@ -252,8 +252,23 @@ macro_rules! quickcheck_from_str {
 #[cfg(feature = "alloc")]
 pub(crate) use quickcheck_from_str;
 
+macro_rules! is_prefix_signed {
+    (i) => {
+        true
+    };
+    (u) => {
+        false
+    };
+    (f) => {
+        true
+    }
+}
+
+pub(crate) use is_prefix_signed;
+
 macro_rules! test_types {
-    ($bits: expr) => {
+    ($bits: expr $(, $signed: literal)?) => {
+        // $sign should be true or false
         paste::paste! {
             #[allow(non_camel_case_types, unused)]
             pub type utest = [<u $bits>];
@@ -282,8 +297,51 @@ macro_rules! test_types {
 
 pub(crate) use test_types;
 
+macro_rules! test_width_and_sign {
+    ($bits: expr, $prefix: ident, $($s: tt) * ) => {
+        paste::paste! {
+            mod [<$prefix $bits>] {
+                #[allow(unused_imports)]
+                use super::*;
+
+                #[allow(non_camel_case_types, unused)]
+                pub type utest = [<u $bits>];
+
+                #[cfg(feature = "signed")]
+                #[allow(non_camel_case_types, unused)]
+                pub type itest = [<i $bits>];
+
+                // #[allow(non_camel_case_types, unused)]
+                // #[cfg(feature = "float")]
+                // pub type ftest = [<f $bits>];
+
+                #[allow(non_camel_case_types, unused)]
+                pub type UTEST = crate::Uint<{ $bits / 8 }>;
+
+                #[cfg(feature = "signed")]
+                #[allow(non_camel_case_types, unused)]
+                pub type ITEST = crate::Int<{ $bits / 8 }>;
+
+                // #[cfg(feature = "float")]
+                // #[allow(non_camel_case_types, unused)]
+                // pub type FTEST = crate::float::Float<{core::mem::size_of::<ftest>()}, {ftest::MANTISSA_DIGITS as usize - 1}>;
+
+                #[allow(non_camel_case_types, unused)]
+                pub type stest = [<$prefix $bits>];
+
+                #[allow(non_camel_case_types, unused)]
+                pub type STEST = crate::Integer<{ crate::test::is_prefix_signed!($prefix) }, { $bits / 8 }>;
+
+                $($s)*
+            }
+        }
+    };
+}
+
+pub(crate) use test_width_and_sign;
+
 macro_rules! old_bnum_test_types {
-    ($bits: expr) => {
+    ($bits: expr $(, $extra: ident)?) => {
         paste::paste! {
             #[allow(non_camel_case_types, unused)]
             pub type utest = bnum_old::BUintD8<{ $bits / 8 }>;
@@ -341,6 +399,63 @@ macro_rules! test_all_widths_against_old_types {
 }
 
 pub(crate) use test_all_widths_against_old_types;
+
+macro_rules! test_all_widths_and_signs {
+    ($($int: ident), *) => {
+        $(
+            mod $int {
+                type stest = $int;
+            }
+        )*
+    }
+}
+
+macro_rules! test_all {
+    { testing unsigned; $($s: tt) * } => {
+        // for unsigned specific tests
+        mod unsigned_only {
+            #[allow(unused_imports)]
+            use super::*;
+
+            crate::test::test_width_and_sign!(16, u, $($s)*);
+            crate::test::test_width_and_sign!(32, u, $($s)*);
+            crate::test::test_width_and_sign!(64, u, $($s)*);
+            crate::test::test_width_and_sign!(128, u, $($s)*);
+        }
+    };
+    { testing signed; $($s: tt) * } => {
+        // for signed specific tests
+        mod signed_only {
+            #[allow(unused_imports)]
+            use super::*;
+
+            crate::test::test_width_and_sign!(16, i, $($s)*);
+            crate::test::test_width_and_sign!(32, i, $($s)*);
+            crate::test::test_width_and_sign!(64, i, $($s)*);
+            crate::test::test_width_and_sign!(128, i, $($s)*);
+        }
+    };
+    { testing integers; $($s: tt) * } => {
+        // for unsigned and signed tests
+        crate::test::test_width_and_sign!(16, u, $($s)*);
+        crate::test::test_width_and_sign!(32, u, $($s)*);
+        crate::test::test_width_and_sign!(64, u, $($s)*);
+        crate::test::test_width_and_sign!(128, u, $($s)*);
+
+        crate::test::test_width_and_sign!(16, i, $($s)*);
+        crate::test::test_width_and_sign!(32, i, $($s)*);
+        crate::test::test_width_and_sign!(64, i, $($s)*);
+        crate::test::test_width_and_sign!(128, i, $($s)*);
+    };
+    { testing floats; $($s: tt) * } => {
+        crate::test::test_width_and_sign!(16, f, $($s)*);
+        crate::test::test_width_and_sign!(32, f, $($s)*);
+        crate::test::test_width_and_sign!(64, f, $($s)*);
+        crate::test::test_width_and_sign!(128, f, $($s)*);
+    };
+}
+
+pub(crate) use test_all;
 
 macro_rules! test_all_widths {
     { $($s: tt) * } => {

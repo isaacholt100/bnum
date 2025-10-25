@@ -11,7 +11,7 @@ macro_rules! uint_as_float {
         $(
             impl<const W: usize, const MB: usize $(, const $N: usize)?> CastFrom<$uint $(<$N>)?> for Float<W, MB> {
                 #[inline]
-                fn cast_from(from: $uint $(<$N>)?) -> Self {
+                fn cast_from(value: $uint $(<$N>)?) -> Self {
                     crate::cast::float::cast_float_from_uint(from)
                 }
             }
@@ -25,8 +25,8 @@ macro_rules! int_as_float {
     ($($int: ty), *) => {
         $(
             impl<const W: usize, const MB: usize> CastFrom<$int> for Float<W, MB> {
-                fn cast_from(from: $int) -> Self {
-                    let pos_cast = Self::cast_from(from.unsigned_abs());
+                fn cast_from(value: $int) -> Self {
+                    let pos_cast = Self::cast_from(value.unsigned_abs());
                     if from.is_negative() {
                         -pos_cast
                     } else {
@@ -41,8 +41,8 @@ macro_rules! int_as_float {
 int_as_float!(i8, i16, i32, i64, i128, isize);
 
 impl<const W: usize, const MB: usize, const N: usize> CastFrom<Int<N>> for Float<W, MB> {
-    fn cast_from(from: Int<N>) -> Self {
-        let pos_cast = Self::cast_from(from.unsigned_abs());
+    fn cast_from(value: Int<N>) -> Self {
+        let pos_cast = Self::cast_from(value.unsigned_abs());
         if from.is_negative() {
             -pos_cast
         } else {
@@ -60,7 +60,7 @@ macro_rules! float_as_int {
         $(
             impl<const W: usize, const MB: usize> CastFrom<Float<W, MB>> for $int {
                 #[inline]
-                fn cast_from(from: Float<W, MB>) -> Self {
+                fn cast_from(value: Float<W, MB>) -> Self {
                     if from.is_sign_negative() {
                         let u = <$uint>::cast_from(-from);
                         if u >= Self::MIN as $uint {
@@ -69,7 +69,7 @@ macro_rules! float_as_int {
                             -(u as $int)
                         }
                     } else {
-                        let u = <$uint>::cast_from(from);
+                        let u = <$uint>::cast_from(value);
                         let i = u as $int;
                         if i.is_negative() {
                             Self::MAX
@@ -177,7 +177,7 @@ impl<const W1: usize, const MB1: usize, const W2: usize, const MB2: usize> CastF
     for Float<W1, MB1>
 {
     #[inline]
-    fn cast_from(from: Float<W2, MB2>) -> Self {
+    fn cast_from(value: Float<W2, MB2>) -> Self {
         cast_float_from_float(from)
     }
 }
@@ -187,14 +187,14 @@ macro_rules! primitive_and_big_float_cast {
         $(
             impl<const W: usize, const MB: usize> CastFrom<$primitive_float_type> for Float<W, MB> {
                 #[inline]
-                fn cast_from(from: $primitive_float_type) -> Self {
+                fn cast_from(value: $primitive_float_type) -> Self {
                     cast_float_from_float(from)
                 }
             }
 
             impl<const W: usize, const MB: usize> CastFrom<Float<W, MB>> for $primitive_float_type {
                 #[inline]
-                fn cast_from(from: Float<W, MB>) -> Self {
+                fn cast_from(value: Float<W, MB>) -> Self {
                     cast_float_from_float(from)
                 }
             }

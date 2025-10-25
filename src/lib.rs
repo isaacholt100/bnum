@@ -22,12 +22,12 @@
 #![cfg_attr(not(any(feature = "arbitrary", feature = "quickcheck")), no_std)]
 // TODO: MAKE SURE NO_STD IS ENABLED WHEN PUBLISHING NEW VERSION
 
+// TODO: create issue on gh about v1.0 release. problem is that crates like rand aren't in 1.x yet
+
 #[cfg(feature = "alloc")]
 #[macro_use]
 extern crate alloc;
 
-#[cfg(feature = "signed")]
-mod int;
 
 mod uint;
 
@@ -36,7 +36,6 @@ mod digit;
 mod doc;
 pub mod errors;
 mod helpers;
-mod ints;
 mod wide_digits;
 pub mod prelude;
 
@@ -58,12 +57,9 @@ mod test;
 
 type ExpType = u32;
 
-#[cfg(feature = "signed")]
-pub use int::Int;
+pub use uint::{Integer, Uint, Int};
 
-pub use uint::Uint;
-
-type Digit = u8;
+type Byte = u8;
 
 /// Trait for fallible conversions between `bnum` integer types.
 ///

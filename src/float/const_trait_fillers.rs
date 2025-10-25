@@ -3,7 +3,7 @@ use crate::Uint;
 use crate::doc;
 use core::cmp::Ordering;
 
-#[doc = doc::const_trait_fillers::impl_desc!()]
+/// Provides `const` function alternatives to methods of common traits, such as `PartialEq` and `PartialCmp`. These functions will be removed once `const` traits are stabilized.
 impl<const W: usize, const MB: usize> Float<W, MB> {
     #[inline]
     pub const fn eq(&self, other: &Self) -> bool {
