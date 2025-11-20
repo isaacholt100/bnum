@@ -1,8 +1,8 @@
 use super::{Integer, Uint};
 
-use crate::ExpType;
+use crate::Exponent;
 use crate::Int;
-use num_integer::Roots;
+use num_integer::{Roots, Integer as IntegerTrait};
 
 use crate::cast::CastFrom;
 use crate::cast::float::ConvertFloatParts;
@@ -17,7 +17,7 @@ use num_traits::{
     WrappingNeg, WrappingShl, WrappingShr, WrappingSub, Zero,
 };
 
-impl<const S: bool, const N: usize> Bounded for Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> Bounded for Integer<S, N, OM> {
     #[inline]
     fn min_value() -> Self {
         Self::MIN
@@ -31,7 +31,7 @@ impl<const S: bool, const N: usize> Bounded for Integer<S, N> {
 
 macro_rules! num_trait_impl {
     ($tr: ident, $method: ident, $ret: ty) => {
-        impl<const S: bool, const N: usize> $tr for Integer<S, N> {
+        impl<const S: bool, const N: usize, const OM: u8> $tr for Integer<S, N, OM> {
             #[inline]
             fn $method(&self, rhs: &Self) -> $ret {
                 Self::$method(*self, *rhs)
@@ -58,28 +58,28 @@ num_trait_impl!(OverflowingAdd, overflowing_add, (Self, bool));
 num_trait_impl!(OverflowingSub, overflowing_sub, (Self, bool));
 num_trait_impl!(OverflowingMul, overflowing_mul, (Self, bool));
 
-impl<const S: bool, const N: usize> CheckedNeg for Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> CheckedNeg for Integer<S, N, OM> {
     #[inline]
     fn checked_neg(&self) -> Option<Self> {
         Self::checked_neg(*self)
     }
 }
 
-impl<const S: bool, const N: usize> CheckedShl for Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> CheckedShl for Integer<S, N, OM> {
     #[inline]
-    fn checked_shl(&self, rhs: ExpType) -> Option<Self> {
+    fn checked_shl(&self, rhs: Exponent) -> Option<Self> {
         Self::checked_shl(*self, rhs)
     }
 }
 
-impl<const S: bool, const N: usize> CheckedShr for Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> CheckedShr for Integer<S, N, OM> {
     #[inline]
-    fn checked_shr(&self, rhs: ExpType) -> Option<Self> {
+    fn checked_shr(&self, rhs: Exponent) -> Option<Self> {
         Self::checked_shr(*self, rhs)
     }
 }
 
-impl<const S: bool, const N: usize> CheckedEuclid for Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> CheckedEuclid for Integer<S, N, OM> {
     #[inline]
     fn checked_div_euclid(&self, rhs: &Self) -> Option<Self> {
         Self::checked_div_euclid(*self, *rhs)
@@ -91,7 +91,7 @@ impl<const S: bool, const N: usize> CheckedEuclid for Integer<S, N> {
     }
 }
 
-impl<const S: bool, const N: usize> Euclid for Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> Euclid for Integer<S, N, OM> {
     #[inline]
     fn div_euclid(&self, rhs: &Self) -> Self {
         Self::div_euclid(*self, *rhs)
@@ -103,37 +103,37 @@ impl<const S: bool, const N: usize> Euclid for Integer<S, N> {
     }
 }
 
-impl<const S: bool, const N: usize> WrappingNeg for Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> WrappingNeg for Integer<S, N, OM> {
     #[inline]
     fn wrapping_neg(&self) -> Self {
         Self::wrapping_neg(*self)
     }
 }
 
-impl<const S: bool, const N: usize> WrappingShl for Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> WrappingShl for Integer<S, N, OM> {
     #[inline]
-    fn wrapping_shl(&self, rhs: ExpType) -> Self {
+    fn wrapping_shl(&self, rhs: Exponent) -> Self {
         Self::wrapping_shl(*self, rhs)
     }
 }
 
-impl<const S: bool, const N: usize> WrappingShr for Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> WrappingShr for Integer<S, N, OM> {
     #[inline]
-    fn wrapping_shr(&self, rhs: ExpType) -> Self {
+    fn wrapping_shr(&self, rhs: Exponent) -> Self {
         Self::wrapping_shr(*self, rhs)
     }
 }
 
-impl<const S: bool, const N: usize> Pow<ExpType> for Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> Pow<Exponent> for Integer<S, N, OM> {
     type Output = Self;
 
     #[inline]
-    fn pow(self, exp: ExpType) -> Self {
+    fn pow(self, exp: Exponent) -> Self {
         Self::pow(self, exp)
     }
 }
 
-impl<const S: bool, const N: usize> Saturating for Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> Saturating for Integer<S, N, OM> {
     #[inline]
     fn saturating_add(self, rhs: Self) -> Self {
         Self::saturating_add(self, rhs)
@@ -154,7 +154,7 @@ macro_rules! to_primitive_int {
     };
 }
 
-impl<const S: bool, const N: usize> ToPrimitive for Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> ToPrimitive for Integer<S, N, OM> {
     to_primitive_int!(u8, to_u8);
     to_primitive_int!(u16, to_u16);
     to_primitive_int!(u32, to_u32);
@@ -182,7 +182,7 @@ impl<const S: bool, const N: usize> ToPrimitive for Integer<S, N> {
 macro_rules! impl_as_primitive_for_integer {
     ($($ty: ty), *) => {
         $(
-            impl<const S: bool, const N: usize> AsPrimitive<$ty> for Integer<S, N> {
+            impl<const S: bool, const N: usize, const OM: u8> AsPrimitive<$ty> for Integer<S, N, OM> {
                 #[inline]
                 fn as_(self) -> $ty {
                     <$ty>::cast_from(self)
@@ -199,9 +199,9 @@ impl_as_primitive_for_integer!(
 macro_rules! impl_as_primitive_integer_for_primitive {
     ($($ty: ty), *) => {
         $(
-            impl<const S: bool, const N: usize> AsPrimitive<Integer<S, N>> for $ty {
+            impl<const S: bool, const N: usize, const OM: u8> AsPrimitive<Integer<S, N, OM>> for $ty {
                 #[inline]
-                fn as_(self) -> Integer<S, N> {
+                fn as_(self) -> Integer<S, N, OM> {
                     Integer::cast_from(self)
                 }
             }
@@ -213,16 +213,16 @@ impl_as_primitive_integer_for_primitive!(
     u8, u16, u32, usize, u64, u128, i8, i16, i32, isize, i64, i128, f32, f64, char, bool
 );
 
-impl<const S: bool, const N: usize, const R: bool, const M: usize> AsPrimitive<Integer<R, M>>
-    for Integer<S, N>
+impl<const S: bool, const N: usize, const R: bool, const M: usize, const OM: u8> AsPrimitive<Integer<R, M, OM>>
+    for Integer<S, N, OM>
 {
     #[inline]
-    fn as_(self) -> Integer<R, M> {
+    fn as_(self) -> Integer<R, M, OM> {
         Integer::cast_from(self)
     }
 }
 
-impl<const S: bool, const N: usize> FromBytes for Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> FromBytes for Integer<S, N, OM> {
     type Bytes = [u8; N];
 
     #[inline]
@@ -236,7 +236,7 @@ impl<const S: bool, const N: usize> FromBytes for Integer<S, N> {
     }
 }
 
-impl<const S: bool, const N: usize> ToBytes for Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> ToBytes for Integer<S, N, OM> {
     type Bytes = [u8; N];
 
     #[inline]
@@ -250,7 +250,7 @@ impl<const S: bool, const N: usize> ToBytes for Integer<S, N> {
     }
 }
 
-impl<const S: bool, const N: usize> MulAdd for Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> MulAdd for Integer<S, N, OM> {
     type Output = Self;
 
     #[inline]
@@ -259,14 +259,14 @@ impl<const S: bool, const N: usize> MulAdd for Integer<S, N> {
     }
 }
 
-impl<const S: bool, const N: usize> MulAddAssign for Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> MulAddAssign for Integer<S, N, OM> {
     #[inline]
     fn mul_add_assign(&mut self, a: Self, b: Self) {
         *self = self.mul_add(a, b);
     }
 }
 
-impl<const S: bool, const N: usize> Num for Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> Num for Integer<S, N, OM> {
     type FromStrRadixErr = crate::errors::ParseIntError;
 
     #[inline]
@@ -275,7 +275,7 @@ impl<const S: bool, const N: usize> Num for Integer<S, N> {
     }
 }
 
-impl<const S: bool, const N: usize> num_traits::NumCast for Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> num_traits::NumCast for Integer<S, N, OM> {
     fn from<T: ToPrimitive>(_n: T) -> Option<Self> {
         panic!(concat!(
             crate::errors::err_prefix!(),
@@ -285,7 +285,7 @@ impl<const S: bool, const N: usize> num_traits::NumCast for Integer<S, N> {
     }
 }
 
-impl<const S: bool, const N: usize> One for Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> One for Integer<S, N, OM> {
     #[inline]
     fn one() -> Self {
         Self::ONE
@@ -297,11 +297,11 @@ impl<const S: bool, const N: usize> One for Integer<S, N> {
     }
 }
 
-impl<const S: bool, const N: usize> ConstOne for Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> ConstOne for Integer<S, N, OM> {
     const ONE: Self = Self::ONE;
 }
 
-impl<const S: bool, const N: usize> Zero for Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> Zero for Integer<S, N, OM> {
     #[inline]
     fn zero() -> Self {
         Self::ZERO
@@ -313,7 +313,7 @@ impl<const S: bool, const N: usize> Zero for Integer<S, N> {
     }
 }
 
-impl<const S: bool, const N: usize> ConstZero for Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> ConstZero for Integer<S, N, OM> {
     const ZERO: Self = Self::ZERO;
 }
 
@@ -364,7 +364,7 @@ macro_rules! from_primitive_float {
                 return Some(Self::ONE);
             }
 
-            let exp = exp as ExpType;
+            let exp = exp as Exponent;
             if exp >= Self::BITS {
                 return None;
             }
@@ -388,7 +388,7 @@ macro_rules! from_primitive_int {
     };
 }
 
-impl<const S: bool, const N: usize> FromPrimitive for Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> FromPrimitive for Integer<S, N, OM> {
     from_primitive_int!(u8, from_u8);
     from_primitive_int!(u16, from_u16);
     from_primitive_int!(u32, from_u32);
@@ -407,7 +407,7 @@ impl<const S: bool, const N: usize> FromPrimitive for Integer<S, N> {
     from_primitive_float!(from_f64, f64, S);
 }
 
-impl<const S: bool, const N: usize> num_integer::Integer for Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> IntegerTrait for Integer<S, N, OM> {
     #[inline]
     fn div_floor(&self, other: &Self) -> Self {
         Self::div_floor(*self, *other)
@@ -479,7 +479,12 @@ impl<const S: bool, const N: usize> num_integer::Integer for Integer<S, N> {
         if self.is_zero() || other.is_zero() {
             Self::ZERO
         } else {
-            (self / self.gcd(other)) * other
+            let gcd = (self / self.gcd(other)) * other;
+            if S {
+                gcd.force_sign::<true>().abs().force_sign()
+            } else {
+                gcd
+            }
         }
     }
 
@@ -529,7 +534,7 @@ macro_rules! prim_int_method {
     };
 }
 
-impl<const S: bool, const N: usize> PrimInt for Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> PrimInt for Integer<S, N, OM> {
     #[inline]
     fn from_be(x: Self) -> Self {
         if cfg!(target_endian = "big") {
@@ -610,9 +615,9 @@ Copyright (c) 2014 The Rust Project Developers
 The original license file and copyright notice for `num_bigint` can be found in this project's root at licenses/LICENSE-num-bigint.
 */
 
-impl<const N: usize> Uint<N> {
+impl<const N: usize, const OM: u8> Uint<N, OM> {
     #[inline]
-    fn fixpoint<F>(mut self, max_bits: ExpType, f: F) -> Self
+    fn fixpoint<F>(mut self, max_bits: Exponent, f: F) -> Self
     where
         F: Fn(Self) -> Self,
     {
@@ -633,7 +638,7 @@ impl<const N: usize> Uint<N> {
     }
 }
 
-impl<const S: bool, const N: usize> Roots for Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> Roots for Integer<S, N, OM> {
     #[inline]
     fn sqrt(&self) -> Self {
         if self.is_negative_internal() {
@@ -685,7 +690,7 @@ impl<const S: bool, const N: usize> Roots for Integer<S, N> {
         guess
             .fixpoint(max_bits, |s| {
                 let q = n / (s * s);
-                let t: Uint<N> = (s << 1) + q;
+                let t: Uint<N, OM> = (s << 1) + q;
                 t.div_rem_u64(3).0
             })
             .force_sign()
@@ -736,9 +741,9 @@ impl<const S: bool, const N: usize> Roots for Integer<S, N> {
     }
 }
 
-impl<const N: usize> Unsigned for Uint<N> {}
+impl<const N: usize, const OM: u8> Unsigned for Uint<N, OM> {}
 
-impl<const N: usize> Signed for Int<N> {
+impl<const N: usize, const OM: u8> Signed for Int<N, OM> {
     #[inline]
     fn abs(&self) -> Self {
         Self::abs(*self)
@@ -746,7 +751,7 @@ impl<const N: usize> Signed for Int<N> {
 
     #[inline]
     fn abs_sub(&self, other: &Self) -> Self {
-        if *self <= *other {
+        if self <= other {
             Self::ZERO
         } else {
             *self - *other
@@ -772,11 +777,11 @@ impl<const N: usize> Signed for Int<N> {
 #[cfg(test)]
 mod tests {
     macro_rules! test_to_primitive {
-        ($int: ty; $($prim: ty), *) => {
+        ($($prim: ty), *) => {
             paste::paste! {
                 $(
                     test_bignum! {
-                        function: <$int>::[<to_ $prim>](u: ref &$int)
+                        function: <stest>::[<to_ $prim>](u: ref &stest)
                     }
                 )*
             }
@@ -784,13 +789,13 @@ mod tests {
     }
 
     macro_rules! test_from_primitive {
-        ($int: ty; $($prim: ty), *) => {
+        ($($prim: ty), *) => {
             paste::paste! {
                 $(
                     test_bignum! {
-                        function: <$int>::[<from_ $prim>](u: $prim),
+                        function: <stest>::[<from_ $prim>](u: $prim),
                         cases: [
-                            (<$int>::MIN as $prim)
+                            (stest::MIN as $prim)
                         ]
                     }
                 )*
@@ -799,7 +804,7 @@ mod tests {
     }
 
     use super::*;
-    use crate::test::{TestConvert, test_bignum};
+    use crate::test::{TestConvert, test_bignum, debug_skip};
 
     crate::test::test_all! {
         testing integers;
@@ -903,22 +908,22 @@ mod tests {
 
         #[test]
         fn one() {
-            assert_eq!(stest::one(), TestConvert::into(STEST::one()));
+            assert_eq!(STEST::one(), TestConvert::into(stest::one()));
         }
 
         #[test]
         fn zero() {
-            assert_eq!(stest::zero(), TestConvert::into(STEST::zero()));
+            assert_eq!(STEST::zero(), TestConvert::into(stest::zero()));
         }
 
         #[test]
         fn min_value() {
-            assert_eq!(stest::min_value(), TestConvert::into(STEST::min_value()));
+            assert_eq!(STEST::min_value(), TestConvert::into(stest::min_value()));
         }
 
         #[test]
         fn max_value() {
-            assert_eq!(stest::max_value(), TestConvert::into(STest::max_value()));
+            assert_eq!(STEST::max_value(), TestConvert::into(stest::max_value()));
         }
 
         test_bignum! {
@@ -948,64 +953,64 @@ mod tests {
             }
         }
 
-        test_to_primitive!($int; u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64);
+        test_to_primitive!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64);
 
-        test_from_primitive!($int; u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64);
+        test_from_primitive!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64);
 
         test_bignum! {
-            function: <$int as Integer>::div_floor(a: ref &$int, b: ref &$int),
+            function: <stest as IntegerTrait>::div_floor(a: ref &stest, b: ref &stest),
             skip: b.is_zero()
         }
         test_bignum! {
-            function: <$int as Integer>::mod_floor(a: ref &$int, b: ref &$int),
+            function: <stest as IntegerTrait>::mod_floor(a: ref &stest, b: ref &stest),
             skip: b.is_zero()
         }
         test_bignum! {
-            function: <$int as Integer>::lcm(a: ref &$int, b: ref &$int),
+            function: <stest as IntegerTrait>::lcm(a: ref &stest, b: ref &stest),
             skip: {
                 #[allow(unused_comparisons)]
-                let cond = a.checked_mul(b).is_none() || (a < 0 && a == <$int>::MIN) || (b < 0 && b == <$int>::MIN); // lcm(a, b) <= a * b
+                let cond = a.checked_mul(b).is_none() || (a < 0 && a == <stest>::MIN) || (b < 0 && b == <stest>::MIN); // lcm(a, b) <= a * b
                 cond
             },
-            cases: [(ref &(1 as $int), ref &(-1i8 as $int))]
+            cases: [(ref &(1 as stest), ref &(-1i8 as stest))]
         }
         test_bignum! {
-            function: <$int as Integer>::gcd(a: ref &$int, b: ref &$int),
+            function: <stest as IntegerTrait>::gcd(a: ref &stest, b: ref &stest),
             skip: {
                 #[allow(unused_comparisons)]
-                let cond = <$int>::MIN < 0 && (a == <$int>::MIN && (b == <$int>::MIN || b == 0)) || (b == <$int>::MIN && (a == <$int>::MIN || a == 0));
+                let cond = <stest>::MIN < 0 && (a == <stest>::MIN && (b == <stest>::MIN || b == 0)) || (b == <stest>::MIN && (a == <stest>::MIN || a == 0));
                 cond
             }
         }
         test_bignum! {
-            function: <$int as Integer>::is_multiple_of(a: ref &$int, b: ref &$int)
+            function: <stest as IntegerTrait>::is_multiple_of(a: ref &stest, b: ref &stest)
         }
         test_bignum! {
-            function: <$int as Integer>::is_even(a: ref &$int)
+            function: <stest as IntegerTrait>::is_even(a: ref &stest)
         }
         test_bignum! {
-            function: <$int as Integer>::is_odd(a: ref &$int)
+            function: <stest as IntegerTrait>::is_odd(a: ref &stest)
         }
         test_bignum! {
-            function: <$int as Integer>::div_rem(a: ref &$int, b: ref &$int),
+            function: <stest as IntegerTrait>::div_rem(a: ref &stest, b: ref &stest),
             skip: b.is_zero()
         }
 
         test_bignum! {
-            function: <$int as PrimInt>::unsigned_shl(a: $int, n: u8),
-            skip: n >= <$int>::BITS as u8
+            function: <stest as PrimInt>::unsigned_shl(a: stest, n: u8),
+            skip: n >= <stest>::BITS as u8
         }
         test_bignum! {
-            function: <$int as PrimInt>::unsigned_shr(a: $int, n: u8),
-            skip: n >= <$int>::BITS as u8
+            function: <stest as PrimInt>::unsigned_shr(a: stest, n: u8),
+            skip: n >= <stest>::BITS as u8
         }
         test_bignum! {
-            function: <$int as PrimInt>::signed_shl(a: $int, n: u8),
-            skip: n >= <$int>::BITS as u8
+            function: <stest as PrimInt>::signed_shl(a: stest, n: u8),
+            skip: n >= <stest>::BITS as u8
         }
         test_bignum! {
-            function: <$int as PrimInt>::signed_shr(a: $int, n: u8),
-            skip: n >= <$int>::BITS as u8
+            function: <stest as PrimInt>::signed_shr(a: stest, n: u8),
+            skip: n >= <stest>::BITS as u8
         }
     }
 
@@ -1013,10 +1018,12 @@ mod tests {
         testing signed;
 
         test_bignum! {
-            function: <stest as Signed>::abs(a: ref &stest)
+            function: <stest as Signed>::abs(a: ref &stest),
+            skip: debug_skip!(a == <stest>::MIN)
         }
         test_bignum! {
-            function: <stest as Signed>::abs_sub(a: ref &stest, b: ref &stest)
+            function: <stest as Signed>::abs_sub(a: ref &stest, b: ref &stest),
+            skip: debug_skip!(a > b && a.checked_sub(b).is_none())
         }
         test_bignum! {
             function: <stest as Signed>::signum(a: ref &stest)

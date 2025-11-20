@@ -1,5 +1,5 @@
 use super::Float;
-use crate::ExpType;
+use crate::Exponent;
 use crate::Uint;
 use crate::cast::{As, CastFrom};
 use crate::float::FloatExponent;
@@ -27,12 +27,12 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
         let sticky_bit2 = exp_diff != 0
             && exp_diff < Uint::<W>::BITS.into()
-            && b_mant.bit(exp_diff.as_::<ExpType>() - 1);
-        let all_zeros = exp_diff != 0 && b_mant.trailing_zeros() + 1 == exp_diff.as_::<ExpType>();
+            && b_mant.bit(exp_diff.as_::<Exponent>() - 1);
+        let all_zeros = exp_diff != 0 && b_mant.trailing_zeros() + 1 == exp_diff.as_::<Exponent>();
 
         // Append extra bits to the mantissas to ensure correct rounding
-        a_mant = a_mant << 1 as ExpType;
-        b_mant = b_mant << 1 as ExpType;
+        a_mant = a_mant << 1 as Exponent;
+        b_mant = b_mant << 1 as Exponent;
 
         let sticky_bit = b_mant.trailing_zeros() < exp_diff.as_();
 
@@ -55,11 +55,11 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                 mant += Uint::ONE;
             }
 
-            mant >>= 1 as ExpType;
+            mant >>= 1 as Exponent;
         } else {
             a_exp -= 1;
-            a_mant <<= 1 as ExpType;
-            b_mant <<= 1 as ExpType;
+            a_mant <<= 1 as Exponent;
+            b_mant <<= 1 as Exponent;
 
             let sticky_bit = b_mant.trailing_zeros() < exp_diff.as_();
 
@@ -82,7 +82,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                     mant += Uint::ONE;
                 }
 
-                mant >>= 1 as ExpType;
+                mant >>= 1 as Exponent;
             } else {
                 let _half_way = (); // TODO
                 if sticky_bit2 && !all_zeros

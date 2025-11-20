@@ -10,7 +10,6 @@ mod convert;
 mod div;
 #[cfg(feature = "alloc")]
 mod fmt;
-mod mask;
 mod math;
 mod mul;
 #[cfg(feature = "numtraits")]
@@ -23,10 +22,10 @@ mod strict;
 mod unchecked;
 mod wrapping;
 
-use crate::Byte;
+use crate::{Byte, OverflowMode};
 use crate::{WideDigits, WideDigitsMut};
 
-use crate::ExpType;
+use crate::Exponent;
 use crate::doc;
 
 #[cfg(feature = "serde")]
@@ -40,13 +39,18 @@ use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
 
 use core::default::Default;
 
-/// A fixed-size integer type generic over signedness and byte width.
+/// A fixed-size integer type, generic over signedness, byte-width, and overflow behaviour.
 /// 
-/// `Integer` has two const-generic parameters:
-/// - a boolean, `S`, which determines whether the integer behaves as an unsigned integer (`S = false`), or a signed integer (`S = true`);
-/// - a `usize`, `N`, which specifies how many bytes the integer should contain. The bytes are stored in little endian (least significant byte first).
+/// `Integer` has three const-generic parameters:
+/// - `S`, of type `bool`, which determines whether the integer behaves as an unsigned integer (`S = false`), or a signed integer (`S = true`);
+/// - `N`, of type `usize`, which specifies how many bytes the integer should contain. The bytes are stored in little endian (least significant byte first).
+/// - `OM`, of type `u8`, which specifies the behaviour of the type when arithmetic overflow occurs. There are three possible modes:
+///    - `0` (wrapping): arithmetic operations wrap around on overflow.
+///    - `1` (panicking): arithmetic operations panic on overflow.
+///    - `2` (saturating): arithmetic operations saturate on overflow.
+/// By default, `OM` is set to `0` if the `overflow-checks` flag is disabled, and `1` if the `overflow-checks` flag is enabled. The enum [`OverflowMode`] has variants corresponding to each mode.
 /// 
-/// `Integer` aims to exactly replicate the behaviours of Rust's built-in unsigned integer types: `u8`, `u16`, `u32`, `u64`, `u128` and `usize`.
+/// `Integer` aims to exactly replicate the API and behaviour of Rust's built-in integer types: `u8`, `i8`, `u16`, `i16`, `u32`, `i32`, `u64`, `i64`, `u128`, `i128`, `usize` and `isize`.
 ///
 /// `Integer` implements all the arithmetic traits from the [`core::ops`](https://doc.rust-lang.org/core/ops/) module. The behaviour of the implementation of these traits is the same as for Rust's primitive integers - i.e. in debug mode it panics on overflow, and in release mode it performs two's complement wrapping (see <https://doc.rust-lang.org/book/ch03-02-data-types.html#integer-overflow>). However, an attempt to divide by zero or calculate a remainder with a divisor of zero will always panic, unless the [`checked_`](#method.checked_div) methods are used, which never panic.
 #[derive(Clone, Copy, Hash, PartialEq, Eq)]
@@ -58,20 +62,35 @@ use core::default::Default;
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[cfg_attr(feature = "valuable", derive(valuable::Valuable))]
 #[repr(transparent)]
-pub struct Integer<const S: bool, const N: usize> {
+pub struct Integer<const S: bool, const N: usize, const OM: u8 = {crate::OverflowMode::DEFAULT.to_u8()}> {
     #[cfg_attr(feature = "serde", serde(with = "BigArray"))]
     pub(crate) bytes: [Byte; N],
 }
 
-pub type Uint<const N: usize> = Integer<false, N>;
-pub type Int<const N: usize> = Integer<true, N>;
+pub type Uint<const N: usize, const OM: u8 = {crate::OverflowMode::DEFAULT.to_u8()}> = Integer<false, N, OM>;
+pub type Int<const N: usize, const OM: u8 = {crate::OverflowMode::DEFAULT.to_u8()}> = Integer<true, N, OM>;
 
 #[cfg(feature = "zeroize")]
-impl<const S: bool, const N: usize> zeroize::DefaultIsZeroes for Integer<S, N> {}
+impl<const S: bool, const N: usize, const OM: u8> zeroize::DefaultIsZeroes for Integer<S, N, OM> {}
 
-impl<const S: bool, const N: usize> Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
+    const OVERFLOW_MODE: OverflowMode = if OM == OverflowMode::Wrapping as u8 {
+        OverflowMode::Wrapping
+    } else if OM == OverflowMode::Panicking as u8 {
+        OverflowMode::Panicking
+    } else if OM == OverflowMode::Saturating as u8 {
+        OverflowMode::Saturating
+    } else {
+        unreachable!()
+    };
+
     #[inline(always)]
-    pub(crate) const fn force_sign<const R: bool>(self) -> Integer<R, N> {
+    pub(crate) const fn force_sign<const R: bool>(self) -> Integer<R, N, OM> {
+        Integer::from_bytes(self.bytes)
+    }
+
+    #[inline(always)]
+    pub(crate) const fn force_overflow_mode<const RO: u8>(self) -> Integer<S, N, RO> {
         Integer::from_bytes(self.bytes)
     }
 
@@ -95,7 +114,7 @@ impl<const S: bool, const N: usize> Integer<S, N> {
     }
 }
 
-impl<const S: bool, const N: usize> Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     const U128_DIGITS: usize = N.div_ceil(16);
     pub(crate) const FULL_U128_DIGITS: usize = N / 16;
     pub(crate) const U128_DIGIT_REMAINDER: usize = N % 16;
@@ -104,17 +123,17 @@ impl<const S: bool, const N: usize> Integer<S, N> {
     } else {
         Self::U128_DIGIT_REMAINDER
     };
-    pub(crate) const U128_BITS_REMAINDER: ExpType = Self::BITS % 128;
+    pub(crate) const U128_BITS_REMAINDER: Exponent = Self::BITS % 128;
 }
 
-impl<const N: usize> Int<N> {
+impl<const N: usize, const OM: u8> Int<N, OM> {
     #[inline(always)]
     pub(crate) const fn signed_digit(&self) -> i8 {
         self.bytes[N - 1] as _
     }
 }
 
-impl<const S: bool, const N: usize> Default for Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> Default for Integer<S, N, OM> {
     #[doc = doc::default!()]
     #[inline]
     fn default() -> Self {
@@ -123,7 +142,7 @@ impl<const S: bool, const N: usize> Default for Integer<S, N> {
 }
 
 #[cfg(any(test, feature = "quickcheck"))]
-impl<const S: bool, const N: usize> quickcheck::Arbitrary for Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> quickcheck::Arbitrary for Integer<S, N, OM> {
     fn arbitrary(g: &mut quickcheck::Gen) -> Self {
         let mut out = Self::ZERO;
         let mut i = 0;
@@ -135,6 +154,17 @@ impl<const S: bool, const N: usize> quickcheck::Arbitrary for Integer<S, N> {
             }
         }
         out
+    }
+}
+
+// implementation if we don't have alloc, as otherwise can't call assert_eq! (since this requires Debug)
+#[cfg(all(test, not(feature = "alloc")))]
+impl<const S: bool, const N: usize, const OM: u8> core::fmt::Debug for Integer<S, N, OM> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        for bytes in self.bytes.iter().rev() {
+            write!(f, "{:02x}", byte)?;
+        }
+        Ok(())
     }
 }
 

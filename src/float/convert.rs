@@ -1,6 +1,6 @@
 use super::{Float, FloatExponent, UnsignedFloatExponent};
 use crate::cast::float::ConvertFloatParts;
-use crate::{ExpType, Int, Uint};
+use crate::{Exponent, Int, Uint};
 
 type Digit = u8;
 
@@ -95,7 +95,7 @@ impl<const W: usize, const MB: usize> ConvertFloatParts for Float<W, MB> {
     fn round_exponent_mantissa<const TIES_EVEN: bool>(
         exponent: Self::SignedExp,
         mantissa: Self::Mantissa,
-        shift: ExpType,
+        shift: Exponent,
     ) -> (Self::SignedExp, Self::Mantissa) {
         Self::round_exponent_mantissa::<TIES_EVEN>(exponent, mantissa, shift)
     }
@@ -226,7 +226,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     pub(crate) const fn round_exponent_mantissa<const TIES_EVEN: bool>(
         mut exponent: FloatExponent,
         mantissa: Uint<W>,
-        shift: ExpType,
+        shift: Exponent,
     ) -> (FloatExponent, Uint<W>) {
         // we allow current_width to be specified so that we don't have to recompute mantissa.bits() if already known
         let mut shifted_mantissa = unsafe { mantissa.unchecked_shr_pad_internal::<false>(shift) };
@@ -259,7 +259,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         debug_assert!(mantissa.is_zero() || mantissa.bits() == Self::MB + 1);
 
         if exponent < Self::MIN_EXP - 1 {
-            let shift = (Self::MIN_EXP - 1 - exponent) as ExpType;
+            let shift = (Self::MIN_EXP - 1 - exponent) as Exponent;
             let (out_exponent, out_mantissa) =
                 Self::round_exponent_mantissa::<true>(Self::MIN_EXP - 1, mantissa, shift);
 

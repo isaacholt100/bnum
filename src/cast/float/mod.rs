@@ -1,4 +1,4 @@
-use crate::ExpType;
+use crate::Exponent;
 use crate::helpers::{Bits, One, Zero};
 use core::ops::{Add, BitAnd, Neg, Shl, Shr};
 
@@ -9,8 +9,8 @@ pub use uint_from_float::*;
 
 pub trait FloatMantissa:
     Sized
-    + Shl<ExpType, Output = Self>
-    + Shr<ExpType, Output = Self>
+    + Shl<Exponent, Output = Self>
+    + Shr<Exponent, Output = Self>
     + Add<Self, Output = Self>
     + BitAnd<Self, Output = Self>
     + PartialEq
@@ -63,7 +63,7 @@ pub trait ConvertFloatParts {
     fn round_exponent_mantissa<const TIES_EVEN: bool>(
         exponent: Self::SignedExp,
         mantissa: Self::Mantissa,
-        shift: ExpType,
+        shift: Exponent,
     ) -> (Self::SignedExp, Self::Mantissa);
     #[allow(unused)] // since needed if float feature enabled
     fn from_normalised_signed_parts(
@@ -194,7 +194,7 @@ macro_rules! impl_convert_float_parts_for_primitive_float {
             fn round_exponent_mantissa<const TIES_EVEN: bool>(
                 mut exponent: Self::SignedExp,
                 mantissa: Self::Mantissa,
-                shift: ExpType,
+                shift: Exponent,
             ) -> (Self::SignedExp, Self::Mantissa) {
                 let mut shifted_mantissa = mantissa >> shift;
                 if !TIES_EVEN {
@@ -227,7 +227,7 @@ macro_rules! impl_convert_float_parts_for_primitive_float {
 
                 debug_assert!(mantissa == 0 || mantissa.bits() == Self::MANTISSA_DIGITS);
                 if exponent < Self::MIN_EXP - 1 {
-                    let shift = (Self::MIN_EXP - 1 - exponent) as ExpType;
+                    let shift = (Self::MIN_EXP - 1 - exponent) as Exponent;
                     let (out_exponent, out_mantissa) =
                         Self::round_exponent_mantissa::<true>(Self::MIN_EXP - 1, mantissa, shift);
 
@@ -244,9 +244,9 @@ impl_convert_float_parts_for_primitive_float!(f32, u32, i32, u32, 32);
 impl_convert_float_parts_for_primitive_float!(f64, u32, i32, u64, 64);
 
 pub trait FloatCastHelper: Neg<Output = Self> + ConvertFloatParts + PartialEq {
-    const BITS: ExpType;
-    const MANTISSA_DIGITS: ExpType;
-    const EXPONENT_BITS: ExpType = Self::BITS - Self::MANTISSA_DIGITS;
+    const BITS: Exponent;
+    const MANTISSA_DIGITS: Exponent;
+    const EXPONENT_BITS: Exponent = Self::BITS - Self::MANTISSA_DIGITS;
     const MAX_EXP: <Self as ConvertFloatParts>::SignedExp;
     const MIN_SUBNORMAL_EXP: <Self as ConvertFloatParts>::SignedExp;
     const INFINITY: Self;
@@ -260,8 +260,8 @@ pub trait FloatCastHelper: Neg<Output = Self> + ConvertFloatParts + PartialEq {
 macro_rules! impl_cast_float_from_float_helper_for_primitive_float {
     ($float_type: ty, $mantissa_type: ty, $exponent_type: ty, $float_type_bit_width: literal) => {
         impl FloatCastHelper for $float_type {
-            const BITS: ExpType = $float_type_bit_width;
-            const MANTISSA_DIGITS: ExpType = Self::MANTISSA_DIGITS as ExpType;
+            const BITS: Exponent = $float_type_bit_width;
+            const MANTISSA_DIGITS: Exponent = Self::MANTISSA_DIGITS as Exponent;
             const MAX_EXP: <Self as ConvertFloatParts>::SignedExp = Self::MAX_EXP;
             const MIN_SUBNORMAL_EXP: <Self as ConvertFloatParts>::SignedExp =
                 Self::MIN_EXP + 1 - Self::MANTISSA_DIGITS as <Self as ConvertFloatParts>::SignedExp;

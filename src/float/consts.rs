@@ -1,5 +1,5 @@
 use super::{Float, FloatExponent, UnsignedFloatExponent};
-use crate::uint::Uint;
+use crate::integer::Uint;
 use crate::doc;
 
 /// Associated constants.
@@ -107,7 +107,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 #[cfg(test)]
 crate::test::test_all_widths! {
     use crate::types::{F32, F64};
-    use crate::ExpType;
+    use crate::Exponent;
     use crate::test::TestConvert;
 
     macro_rules! test_constant {
@@ -160,10 +160,10 @@ crate::test::test_all_widths! {
         (TWO, 2)
     ];
 
-    test_constant!(F64::BITS == 64 as ExpType);
-    test_constant!(F32::BITS == 32 as ExpType);
-    test_constant!(F64::EXPONENT_BITS == 11 as ExpType);
-    test_constant!(F32::EXPONENT_BITS == 8 as ExpType);
+    test_constant!(F64::BITS == 64 as Exponent);
+    test_constant!(F32::BITS == 32 as Exponent);
+    test_constant!(F64::EXPONENT_BITS == 11 as Exponent);
+    test_constant!(F32::EXPONENT_BITS == 8 as Exponent);
     test_constant!(F64::EXP_BIAS == 1023i128);
     test_constant!(F32::EXP_BIAS == 127i128);
     test_constant!(F64::MAX_UNBIASED_EXP == 2046u128);

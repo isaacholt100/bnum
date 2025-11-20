@@ -1,5 +1,5 @@
 use super::Uint;
-use crate::ExpType;
+use crate::Exponent;
 use crate::{Integer, Int};
 use crate::doc;
 
@@ -10,7 +10,7 @@ macro_rules! impl_desc {
 }
 
 #[doc = impl_desc!()]
-impl<const S: bool, const N: usize> Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     /// Wrapping integer addition. Computes `self + rhs` and returns the result truncated to the bit width of `Self` (i.e. performs addition modulo $Self::MAX + 1$).
     /// 
     /// # Examples
@@ -21,8 +21,8 @@ impl<const S: bool, const N: usize> Integer<S, N> {
     /// use bnum::prelude::*;
     /// use bnum::types::U1024;
     /// 
-    /// assert_eq!(U1024::ONE.wrapping_add(1.as_()), 2.as_());
-    /// assert_eq!(U1024::MAX.wrapping_add(1.as_()), 0.as_());
+    /// assert_eq!(n!(1 U1024).wrapping_add(n!(1)), n!(2));
+    /// assert_eq!(U1024::MAX.wrapping_add(n!(1)), n!(0));
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -40,8 +40,8 @@ impl<const S: bool, const N: usize> Integer<S, N> {
     /// use bnum::prelude::*;
     /// use bnum::types::U256;
     /// 
-    /// assert_eq!(U256::ONE.wrapping_sub(1.as_()), 0.as_());
-    /// assert_eq!(U256::ZERO.wrapping_sub(1.as_()), U256::MAX);
+    /// assert_eq!(n!(1 U256).wrapping_sub(n!(1)), n!(0));
+    /// assert_eq!(n!(0 U256).wrapping_sub(n!(1)), U256::MAX);
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -59,8 +59,8 @@ impl<const S: bool, const N: usize> Integer<S, N> {
     /// use bnum::prelude::*;
     /// use bnum::types::U512;
     /// 
-    /// assert_eq!(U512::ONE.wrapping_mul(1.as_()), 1.as_());
-    /// assert_eq!(U512::power_of_two(511).wrapping_mul(2.as_()), 0.as_());
+    /// assert_eq!(n!(1 U512).wrapping_mul(n!(1)), n!(1));
+    /// assert_eq!(U512::power_of_two(511).wrapping_mul(n!(2)), n!(0));
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -83,7 +83,7 @@ impl<const S: bool, const N: usize> Integer<S, N> {
     /// use bnum::prelude::*;
     /// use bnum::types::U256;
     /// 
-    /// assert_eq!(5.as_::<U256>().wrapping_div(2.as_()), 2.as_());
+    /// assert_eq!(n!(5 U256).wrapping_div(n!(2)), n!(2));
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -105,7 +105,7 @@ impl<const S: bool, const N: usize> Integer<S, N> {
     /// use bnum::prelude::*;
     /// use bnum::types::U2048;
     /// 
-    /// assert_eq!(13.as_::<U2048>().wrapping_div_euclid(5.as_()), 2.as_());
+    /// assert_eq!(n!(13 U2048).wrapping_div_euclid(n!(5)), n!(2));
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -134,7 +134,7 @@ impl<const S: bool, const N: usize> Integer<S, N> {
     /// use bnum::prelude::*;
     /// use bnum::types::U512;
     /// 
-    /// assert_eq!(13.as_::<U512>().wrapping_rem_euclid(5.as_()), 3.as_());
+    /// assert_eq!(n!(13 U512).wrapping_rem_euclid(n!(5)), n!(3));
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -152,9 +152,9 @@ impl<const S: bool, const N: usize> Integer<S, N> {
     /// use bnum::prelude::*;
     /// use bnum::types::U256;
     /// 
-    /// assert_eq!(U256::ONE.wrapping_neg(), U256::MAX);
-    /// assert_eq!(U256::MAX.wrapping_neg(), 1.as_());
-    /// assert_eq!(U256::ZERO.wrapping_neg(), 0.as_());
+    /// assert_eq!(n!(1 U256).wrapping_neg(), U256::MAX);
+    /// assert_eq!(U256::MAX.wrapping_neg(), n!(1));
+    /// assert_eq!(n!(0 U256).wrapping_neg(), n!(0));
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -172,13 +172,13 @@ impl<const S: bool, const N: usize> Integer<S, N> {
     /// use bnum::prelude::*;
     /// use bnum::types::U2048;
     /// 
-    /// assert_eq!(U2048::ONE.wrapping_shl(1), 2.as_());
-    /// assert_eq!(U2048::ONE.wrapping_shl(2049), 2.as_());
-    /// assert_eq!(U2048::ONE.wrapping_shl(2048), 1.as_());
+    /// assert_eq!(n!(1 U2048).wrapping_shl(1), n!(2));
+    /// assert_eq!(n!(1 U2048).wrapping_shl(2049), n!(2));
+    /// assert_eq!(n!(1 U2048).wrapping_shl(2048), n!(1));
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn wrapping_shl(self, rhs: ExpType) -> Self {
+    pub const fn wrapping_shl(self, rhs: Exponent) -> Self {
         self.overflowing_shl(rhs).0
     }
 
@@ -192,18 +192,18 @@ impl<const S: bool, const N: usize> Integer<S, N> {
     /// use bnum::prelude::*;
     /// use bnum::types::U1024;
     /// 
-    /// assert_eq!(U1024::ONE.wrapping_shr(1), 0.as_());
-    /// assert_eq!(2.as_::<U1024>().wrapping_shr(1025), 1.as_());
+    /// assert_eq!(n!(1 U1024).wrapping_shr(1), n!(0));
+    /// assert_eq!(n!(2 U1024).wrapping_shr(1025), n!(1));
     /// assert_eq!(U1024::MAX.wrapping_shr(1024), U1024::MAX);
-    /// assert_eq!(U1024::MAX.wrapping_shr(1023), 1.as_());
+    /// assert_eq!(U1024::MAX.wrapping_shr(1023), n!(1));
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn wrapping_shr(self, rhs: ExpType) -> Self {
+    pub const fn wrapping_shr(self, rhs: Exponent) -> Self {
         self.overflowing_shr(rhs).0
     }
 
-    /// Wrapping exponentiation. Computes `self.pow(pow)` and returns the result truncated to the bit width of `Self` (i.e. performs exponentiation modulo $Self::MAX + 1$).
+    /// Wrapping exponentiation. Computes `self**exp` and returns the result truncated to the bit width of `Self` (i.e. performs exponentiation modulo $Self::MAX + 1$).
     /// 
     /// # Examples
     /// 
@@ -213,19 +213,19 @@ impl<const S: bool, const N: usize> Integer<S, N> {
     /// use bnum::prelude::*;
     /// use bnum::types::U512;
     /// 
-    /// assert_eq!(2.as_::<U512>().wrapping_pow(10), 1024.as_());
-    /// assert_eq!(2.as_::<U512>().wrapping_pow(512), 0.as_());
+    /// assert_eq!(n!(2 U512).wrapping_pow(10), n!(1024));
+    /// assert_eq!(n!(2 U512).wrapping_pow(512), n!(0));
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn wrapping_pow(self, exp: ExpType) -> Self {
+    pub const fn wrapping_pow(self, exp: Exponent) -> Self {
         // cast to unsigned as overflowing_pow for unsigned is faster (don't need to calculate abs)
         self.force_sign::<false>().overflowing_pow(exp).0.force_sign()
     }
 }
 
 #[doc = concat!("(Unsigned integers only.) ", impl_desc!())]
-impl<const N: usize> Uint<N> {
+impl<const N: usize, const OM: u8> Uint<N, OM> {
     /// Wrapping integer addition with a signed integer of the same bit width. Computes `self + rhs` and returns the result truncated to the bit width of `Self` (i.e. performs addition modulo $Self::MAX + 1$).
     ///
     /// # Examples
@@ -236,13 +236,13 @@ impl<const N: usize> Uint<N> {
     /// use bnum::prelude::*;
     /// use bnum::types::U512;
     /// 
-    /// assert_eq!(U512::ONE.wrapping_add_signed(1.as_()), 2.as_());
-    /// assert_eq!(U512::MAX.wrapping_add_signed(1.as_()), 0.as_());
-    /// assert_eq!(U512::ONE.wrapping_add_signed(-2.as_()), U512::MAX);
+    /// assert_eq!(n!(1 U512).wrapping_add_signed(n!(1)), n!(2));
+    /// assert_eq!(U512::MAX.wrapping_add_signed(n!(1)), n!(0));
+    /// assert_eq!(n!(1 U512).wrapping_add_signed(n!(-2)), U512::MAX);
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn wrapping_add_signed(self, rhs: Int<N>) -> Self {
+    pub const fn wrapping_add_signed(self, rhs: Int<N, OM>) -> Self {
         self.overflowing_add_signed(rhs).0
     }
 
@@ -256,13 +256,13 @@ impl<const N: usize> Uint<N> {
     /// use bnum::prelude::*;
     /// use bnum::types::U2048;
     /// 
-    /// assert_eq!(U2048::ONE.wrapping_sub_signed(-1.as_()), 2.as_());
-    /// assert_eq!(U2048::MAX.wrapping_sub_signed(-1.as_()), 0.as_());
-    /// assert_eq!(U2048::ONE.wrapping_sub_signed(2.as_()), U2048::MAX);
+    /// assert_eq!(n!(1 U2048).wrapping_sub_signed(n!(-1)), n!(2));
+    /// assert_eq!(U2048::MAX.wrapping_sub_signed(n!(-1)), n!(0));
+    /// assert_eq!(n!(1 U2048).wrapping_sub_signed(n!(2)), U2048::MAX);
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn wrapping_sub_signed(self, rhs: Int<N>) -> Self {
+    pub const fn wrapping_sub_signed(self, rhs: Int<N, OM>) -> Self {
         self.overflowing_sub_signed(rhs).0
     }
 
@@ -276,9 +276,9 @@ impl<const N: usize> Uint<N> {
     /// use bnum::prelude::*;
     /// use bnum::types::U256;
     /// 
-    /// assert_eq!(4.as_::<U256>().wrapping_next_power_of_two(), 4.as_());
-    /// assert_eq!(31.as_::<U256>().wrapping_next_power_of_two(), 32.as_());
-    /// assert_eq!(U256::MAX.wrapping_next_power_of_two(), 0.as_());
+    /// assert_eq!(n!(4 U256).wrapping_next_power_of_two(), n!(4));
+    /// assert_eq!(n!(31 U256).wrapping_next_power_of_two(), n!(32));
+    /// assert_eq!(U256::MAX.wrapping_next_power_of_two(), n!(0));
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -291,16 +291,16 @@ impl<const N: usize> Uint<N> {
 }
 
 #[doc = concat!("(Signed integers only.) ", impl_desc!())]
-impl<const N: usize> Int<N> {
+impl<const N: usize, const OM: u8> Int<N, OM> {
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn wrapping_add_unsigned(self, rhs: Uint<N>) -> Self {
+    pub const fn wrapping_add_unsigned(self, rhs: Uint<N, OM>) -> Self {
         self.overflowing_add_unsigned(rhs).0
     }
 
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn wrapping_sub_unsigned(self, rhs: Uint<N>) -> Self {
+    pub const fn wrapping_sub_unsigned(self, rhs: Uint<N, OM>) -> Self {
         self.overflowing_sub_unsigned(rhs).0
     }
 
@@ -321,7 +321,6 @@ mod tests {
         test_bignum! {
             function: <utest>::wrapping_add_signed(a: utest, b: itest)
         }
-        #[cfg(feature = "nightly")] // since mixed_integer_ops_unsigned_sub is not stabilised yet
         test_bignum! {
             function: <utest>::wrapping_sub_signed(a: utest, b: itest)
         }

@@ -1,16 +1,16 @@
 use super::{Float, FloatExponent};
-use crate::ExpType;
+use crate::Exponent;
 use crate::doc;
 use crate::float::UnsignedFloatExponent;
 use crate::{Uint, Digit};
 
 impl<const W: usize> Uint<W> {
     #[inline]
-    pub(crate) const fn to_exp_type(&self) -> Option<ExpType> {
+    pub(crate) const fn to_exp_type(&self) -> Option<Exponent> {
         let mut out = 0;
         let mut i = 0;
-        if Digit::BITS > ExpType::BITS {
-            let small = self.digits[i] as ExpType;
+        if Digit::BITS > Exponent::BITS {
+            let small = self.digits[i] as Exponent;
             let trunc = small as Digit;
             if self.digits[i] != trunc {
                 return None;
@@ -20,10 +20,10 @@ impl<const W: usize> Uint<W> {
         } else {
             loop {
                 let shift = i << crate::digit::BIT_SHIFT;
-                if i >= W || shift >= ExpType::BITS as usize {
+                if i >= W || shift >= Exponent::BITS as usize {
                     break;
                 }
-                out |= (self.digits[i] as ExpType) << shift;
+                out |= (self.digits[i] as Exponent) << shift;
                 i += 1;
             }
         }
@@ -39,10 +39,10 @@ impl<const W: usize> Uint<W> {
     }
 
     #[inline]
-    pub(crate) const fn from_exp_type(int: ExpType) -> Option<Self> {
+    pub(crate) const fn from_exp_type(int: Exponent) -> Option<Self> {
         let mut out = Self::ZERO;
         let mut i = 0;
-        while i << crate::digit::BIT_SHIFT < ExpType::BITS as usize {
+        while i << crate::digit::BIT_SHIFT < Exponent::BITS as usize {
             let d = (int >> (i << crate::digit::BIT_SHIFT)) as Digit;
             if d != 0 {
                 if i < W {
@@ -209,9 +209,9 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         debug_assert!(!self.is_subnormal()); // exponent >= 0 so number should be normal, so mantissa has implicit leading one
 
         let abs_exponent = exponent.unsigned_abs();
-        if UnsignedFloatExponent::BITS - abs_exponent.leading_zeros() <= ExpType::BITS {
-            // if number of bits needed to store abs_exponent is less than bit width of ExpType, then can cast
-            let small_exponent = abs_exponent as ExpType;
+        if UnsignedFloatExponent::BITS - abs_exponent.leading_zeros() <= Exponent::BITS {
+            // if number of bits needed to store abs_exponent is less than bit width of Exponent, then can cast
+            let small_exponent = abs_exponent as Exponent;
             if small_exponent >= Self::MB {
                 // if the exponent exceeds the number of mantissa bits, then the number is an integer so truncation does nothing and fractional part is zero
                 (Self::ZERO, self)

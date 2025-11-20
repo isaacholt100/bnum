@@ -35,7 +35,6 @@ impl<const N: usize> Debug for U8ArrayWrapper<N> {
     }
 }
 
-#[cfg(feature = "signed")]
 mod cast_signed_types {
     use crate::Int;
 
@@ -65,6 +64,5 @@ pub mod cast_types {
     pub type TestUint9 = Uint<15>;
     pub type TestUint10 = Uint<17>;
 
-    #[cfg(feature = "signed")]
     pub use super::cast_signed_types::*;
 }

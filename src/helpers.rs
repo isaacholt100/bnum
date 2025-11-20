@@ -1,24 +1,25 @@
-use crate::ExpType;
+use crate::Exponent;
+use crate::Uint;
 
 pub trait Bits {
-    const BITS: ExpType;
+    const BITS: Exponent;
 
-    fn bits(&self) -> ExpType;
-    fn bit(&self, index: ExpType) -> bool;
+    fn bits(&self) -> Exponent;
+    fn bit(&self, index: Exponent) -> bool;
 }
 
 macro_rules! impl_bits_for_uint {
     ($($uint: ty), *) => {
         $(impl Bits for $uint {
-            const BITS: ExpType = Self::BITS as ExpType;
+            const BITS: Exponent = Self::BITS as Exponent;
 
             #[inline]
-            fn bits(&self) -> ExpType {
-                (Self::BITS - self.leading_zeros()) as ExpType
+            fn bits(&self) -> Exponent {
+                (Self::BITS - self.leading_zeros()) as Exponent
             }
 
             #[inline]
-            fn bit(&self, index: ExpType) -> bool {
+            fn bit(&self, index: Exponent) -> bool {
                 self & (1 << index) != 0
             }
         })*
@@ -27,16 +28,16 @@ macro_rules! impl_bits_for_uint {
 
 impl_bits_for_uint!(u8, u16, u32, u64, u128, usize);
 
-impl<const N: usize> crate::helpers::Bits for crate::Uint<N> {
-    const BITS: ExpType = Self::BITS;
+impl<const N: usize, const OM: u8> Bits for Uint<N, OM> {
+    const BITS: Exponent = Self::BITS;
 
     #[inline]
-    fn bits(&self) -> ExpType {
+    fn bits(&self) -> Exponent {
         Self::bits(&self)
     }
 
     #[inline]
-    fn bit(&self, index: ExpType) -> bool {
+    fn bit(&self, index: Exponent) -> bool {
         Self::bit(&self, index)
     }
 }
@@ -76,11 +77,11 @@ impl_one_for_int!(
     u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize
 );
 
-impl<const N: usize> crate::helpers::Zero for crate::Uint<N> {
+impl<const N: usize, const OM: u8> Zero for Uint<N, OM> {
     const ZERO: Self = Self::ZERO;
 }
 
-impl<const N: usize> crate::helpers::One for crate::Uint<N> {
+impl<const N: usize, const OM: u8> One for Uint<N, OM> {
     const ONE: Self = Self::ONE;
 }
 

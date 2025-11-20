@@ -7,7 +7,7 @@ macro_rules! impl_desc {
 }
 
 #[doc = impl_desc!()]
-impl<const S: bool, const N: usize> Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn strict_add(self, rhs: Self) -> Self {
@@ -86,7 +86,7 @@ impl<const S: bool, const N: usize> Integer<S, N> {
 
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn strict_shl(self, rhs: crate::ExpType) -> Self {
+    pub const fn strict_shl(self, rhs: crate::Exponent) -> Self {
         self.checked_shl(rhs).expect(crate::errors::err_msg!(
             "attempt to shift left with overflow"
         ))
@@ -94,7 +94,7 @@ impl<const S: bool, const N: usize> Integer<S, N> {
 
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn strict_shr(self, rhs: crate::ExpType) -> Self {
+    pub const fn strict_shr(self, rhs: crate::Exponent) -> Self {
         self.checked_shr(rhs).expect(crate::errors::err_msg!(
             "attempt to shift right with overflow"
         ))
@@ -102,7 +102,7 @@ impl<const S: bool, const N: usize> Integer<S, N> {
 
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn strict_pow(self, exp: crate::ExpType) -> Self {
+    pub const fn strict_pow(self, exp: crate::Exponent) -> Self {
         self.checked_pow(exp).expect(crate::errors::err_msg!(
             "attempt to calculate power with overflow"
         ))
@@ -110,24 +110,31 @@ impl<const S: bool, const N: usize> Integer<S, N> {
 }
 
 #[doc = concat!("(Unsigned integers only.) ", impl_desc!())]
-impl<const N: usize> Uint<N> {
+impl<const N: usize, const OM: u8> Uint<N, OM> {
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn strict_add_signed(self, rhs: Int<N>) -> Self {
+    pub const fn strict_add_signed(self, rhs: Int<N, OM>) -> Self {
         self.checked_add_signed(rhs)
             .expect(crate::errors::err_msg!("attempt to add with overflow"))
     }
 
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn strict_sub_signed(self, rhs: Int<N>) -> Self {
+    pub const fn strict_sub_signed(self, rhs: Int<N, OM>) -> Self {
         self.checked_sub_signed(rhs)
             .expect(crate::errors::err_msg!("attempt to subtract with overflow"))
+    }
+
+    #[must_use = doc::must_use_op!()]
+    #[inline]
+    pub const fn strict_next_power_of_two(self) -> Self {
+        self.checked_next_power_of_two()
+            .expect(crate::errors::err_msg!("attempt to calculate next power of two with overflow"))
     }
 }
 
 #[doc = concat!("(Signed integers only.) ", impl_desc!())]
-impl<const N: usize> Int<N> {
+impl<const N: usize, const OM: u8> Int<N, OM> {
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn strict_abs(self) -> Self {
@@ -137,20 +144,20 @@ impl<const N: usize> Int<N> {
 
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn strict_add_unsigned(self, rhs: Uint<N>) -> Self {
+    pub const fn strict_add_unsigned(self, rhs: Uint<N, OM>) -> Self {
         self.checked_add_unsigned(rhs)
             .expect(crate::errors::err_msg!("attempt to add with overflow"))
     }
 
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn strict_sub_unsigned(self, rhs: Uint<N>) -> Self {
+    pub const fn strict_sub_unsigned(self, rhs: Uint<N, OM>) -> Self {
         self.checked_sub_unsigned(rhs)
             .expect(crate::errors::err_msg!("attempt to subtract with overflow"))
     }
 }
 
-#[cfg(all(test, feature = "nightly"))] // since strict_overflow_ops are not stable yet
+#[cfg(test)]
 mod tests {
     use crate::test::test_bignum;
 

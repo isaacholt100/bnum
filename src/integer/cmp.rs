@@ -1,14 +1,14 @@
 use crate::Integer;
 use core::cmp::{Ord, Ordering, PartialOrd};
 
-impl<const S: bool, const N: usize> PartialOrd for Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> PartialOrd for Integer<S, N, OM> {
     #[inline]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl<const S: bool, const N: usize> Ord for Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> Ord for Integer<S, N, OM> {
     #[inline]
     fn cmp(&self, other: &Self) -> Ordering {
         Self::cmp(self, other)

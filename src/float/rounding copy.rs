@@ -1,18 +1,18 @@
 use crate::{Int, Uint};
 use crate::cast::As;
 use crate::doc;
-use crate::ExpType;
+use crate::Exponent;
 use super::Float;
 
 type Digit = u8;
 
 impl<const W: usize> Uint<W> {
     #[inline]
-    const fn to_exp_type(&self) -> Option<ExpType> {
+    const fn to_exp_type(&self) -> Option<Exponent> {
         let mut out = 0;
         let mut i = 0;
-        if Digit::BITS > ExpType::BITS {
-            let small = self.digits[i] as ExpType;
+        if Digit::BITS > Exponent::BITS {
+            let small = self.digits[i] as Exponent;
             let trunc = small as Digit;
             if self.digits[i] != trunc {
                 return None;
@@ -22,10 +22,10 @@ impl<const W: usize> Uint<W> {
         } else {
             loop {
                 let shift = i << crate::digit::BIT_SHIFT; // TODO: make sure to generalise when using general digits
-                if i >= W || shift >= ExpType::BITS as usize {
+                if i >= W || shift >= Exponent::BITS as usize {
                     break;
                 }
-                out |= (self.digits[i] as ExpType) << shift;
+                out |= (self.digits[i] as Exponent) << shift;
                 i += 1;
             }
         }
@@ -41,10 +41,10 @@ impl<const W: usize> Uint<W> {
     }
 
     #[inline]
-    const fn from_exp_type(int: ExpType) -> Option<Self> {
+    const fn from_exp_type(int: Exponent) -> Option<Self> {
         let mut out = Self::ZERO;
         let mut i = 0;
-        while i << crate::digit::BIT_SHIFT < ExpType::BITS as usize { // TODO: make sure to generalise when using general digits
+        while i << crate::digit::BIT_SHIFT < Exponent::BITS as usize { // TODO: make sure to generalise when using general digits
             let d = (int >> (i << crate::digit::BIT_SHIFT)) as Digit; // TODO: make sure to generalise when using general digits
             if d != 0 {
                 if i < W {

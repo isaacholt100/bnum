@@ -1,5 +1,5 @@
 use super::Float;
-use crate::ExpType;
+use crate::Exponent;
 use crate::Int;
 use crate::Uint;
 use crate::float::FloatExponent;
@@ -60,7 +60,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         };
 
         let sticky_bit = (tz as UnsignedFloatExponent + 1) < total_shift;
-        let mut mant = match ExpType::try_from(total_shift - 1) {
+        let mut mant = match Exponent::try_from(total_shift - 1) {
             Ok(sub) => {
                 if sub > Self::BITS * 2 {
                     (Uint::ZERO, Uint::ZERO)
@@ -88,8 +88,8 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         }
         {
             let carry = mant.1.bit(0);
-            //mant.1 >>= 1 as ExpType;
-            mant.0 >>= 1 as ExpType;
+            //mant.1 >>= 1 as Exponent;
+            mant.0 >>= 1 as Exponent;
             if carry {
                 mant.0 |= Int::MIN.to_bits();
             }

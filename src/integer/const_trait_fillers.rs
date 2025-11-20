@@ -1,9 +1,10 @@
-use super::Integer;
-use crate::ExpType;
+use crate::{Integer, Int};
+use crate::OverflowMode;
+use crate::Exponent;
 use core::cmp::Ordering;
 
 /// Provides `const` function alternatives to methods of common traits, such as `Add` and `BitOr`. These functions will be removed once `const` traits are stabilized.
-impl<const S: bool, const N: usize> Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     #[inline]
     pub const fn bitand(self, rhs: Self) -> Self {
         let mut out = Self::ZERO;
@@ -175,77 +176,77 @@ impl<const S: bool, const N: usize> Integer<S, N> {
 
     #[inline]
     pub const fn add(self, rhs: Self) -> Self {
-        if crate::OVERFLOW_CHECKS {
-            self.strict_add(rhs)
-        } else {
-            self.wrapping_add(rhs)
+        match Self::OVERFLOW_MODE {
+            OverflowMode::Wrapping => self.wrapping_add(rhs),
+            OverflowMode::Panicking => self.strict_add(rhs),
+            OverflowMode::Saturating => self.saturating_add(rhs),
         }
     }
 
     #[inline]
     pub const fn mul(self, rhs: Self) -> Self {
-        if crate::OVERFLOW_CHECKS {
-            self.strict_mul(rhs)
-        } else {
-            self.wrapping_mul(rhs)
+        match Self::OVERFLOW_MODE {
+            OverflowMode::Wrapping => self.wrapping_mul(rhs),
+            OverflowMode::Panicking => self.strict_mul(rhs),
+            OverflowMode::Saturating => self.saturating_mul(rhs),
         }
     }
 
-    // NOTE: need to keep this due to the way the macros in ops.rs are defined
+    // NOTE: don't get rid of these, they make defining the shift traits easier
     #[inline]
-    pub const fn shl(self, rhs: ExpType) -> Self {
-        if crate::OVERFLOW_CHECKS {
-            self.strict_shl(rhs)
-        } else {
-            self.wrapping_shl(rhs)
+    pub const fn shl(self, rhs: Exponent) -> Self {
+        match Self::OVERFLOW_MODE {
+            OverflowMode::Wrapping => self.wrapping_shl(rhs),
+            OverflowMode::Panicking => self.strict_shl(rhs),
+            OverflowMode::Saturating => self.unbounded_shl(rhs),
         }
     }
 
-    // NOTE: need to keep this due to the way the macros in ops.rs are defined
+    // NOTE: don't get rid of these, they make defining the shift traits easier
     #[inline]
-    pub const fn shr(self, rhs: ExpType) -> Self {
-        if crate::OVERFLOW_CHECKS {
-            self.strict_shr(rhs)
-        } else {
-            self.wrapping_shr(rhs)
+    pub const fn shr(self, rhs: Exponent) -> Self {
+        match Self::OVERFLOW_MODE {
+            OverflowMode::Wrapping => self.wrapping_shr(rhs),
+            OverflowMode::Panicking => self.strict_shr(rhs),
+            OverflowMode::Saturating => self.unbounded_shr(rhs),
         }
     }
 
     #[inline]
     pub const fn sub(self, rhs: Self) -> Self {
-        if crate::OVERFLOW_CHECKS {
-            self.strict_sub(rhs)
-        } else {
-            self.wrapping_sub(rhs)
+        match Self::OVERFLOW_MODE {
+            OverflowMode::Wrapping => self.wrapping_sub(rhs),
+            OverflowMode::Panicking => self.strict_sub(rhs),
+            OverflowMode::Saturating => self.saturating_sub(rhs),
         }
     }
 
     #[inline]
     pub const fn div(self, rhs: Self) -> Self {
-        if crate::OVERFLOW_CHECKS {
-            self.strict_div(rhs)
-        } else {
-            self.wrapping_div(rhs)
+        match Self::OVERFLOW_MODE {
+            OverflowMode::Wrapping => self.wrapping_div(rhs),
+            OverflowMode::Panicking => self.strict_div(rhs),
+            OverflowMode::Saturating => self.saturating_div(rhs),
         }
     }
 
     #[inline]
     pub const fn rem(self, rhs: Self) -> Self {
-        if crate::OVERFLOW_CHECKS {
-            self.strict_rem(rhs)
-        } else {
-            self.wrapping_rem(rhs)
+        match Self::OVERFLOW_MODE {
+            OverflowMode::Wrapping => self.wrapping_rem(rhs),
+            OverflowMode::Panicking => self.strict_rem(rhs),
+            OverflowMode::Saturating => self.saturating_rem(rhs),
         }
     }
 }
 
-impl<const N: usize> crate::Int<N> {
+impl<const N: usize, const OM: u8> Int<N, OM> {
     #[inline]
     pub const fn neg(self) -> Self {
-        if crate::OVERFLOW_CHECKS {
-            self.strict_neg()
-        } else {
-            self.wrapping_neg()
+        match Self::OVERFLOW_MODE {
+            OverflowMode::Wrapping => self.wrapping_neg(),
+            OverflowMode::Panicking => self.strict_neg(),
+            OverflowMode::Saturating => self.saturating_neg(),
         }
     }
 }

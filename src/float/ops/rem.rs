@@ -1,5 +1,5 @@
 use super::Float;
-use crate::ExpType;
+use crate::Exponent;
 use crate::Int;
 use crate::Uint;
 use crate::float::UnsignedFloatExponent;
@@ -29,8 +29,8 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         let mut ey = y.signed_biased_exponent();
         let mut i;
 
-        if uxi << 1 as ExpType <= uyi << 1 as ExpType {
-            if uxi << 1 as ExpType == uyi << 1 as ExpType {
+        if uxi << 1 as Exponent <= uyi << 1 as Exponent {
+            if uxi << 1 as Exponent == uyi << 1 as Exponent {
                 return if self.is_sign_negative() {
                     Self::NEG_ZERO
                 } else {
@@ -46,7 +46,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             i = uxi << (Self::BITS - Self::MB);
             while !Int::from_bits(i).is_negative() {
                 ex -= 1;
-                i <<= 1 as ExpType;
+                i <<= 1 as Exponent;
             }
 
             uxi <<= -ex + 1;
@@ -59,7 +59,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             i = uyi << (Self::BITS - Self::MB);
             while !Int::from_bits(i).is_negative() {
                 ey -= 1;
-                i <<= 1 as ExpType;
+                i <<= 1 as Exponent;
             }
 
             uyi <<= -ey + 1;
@@ -80,7 +80,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                 }
                 uxi = i;
             }
-            uxi <<= 1 as ExpType;
+            uxi <<= 1 as Exponent;
 
             ex -= 1;
         }
@@ -98,7 +98,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         }
 
         while (uxi >> Self::MB).is_zero() {
-            uxi <<= 1 as ExpType;
+            uxi <<= 1 as Exponent;
             ex -= 1;
         }
 

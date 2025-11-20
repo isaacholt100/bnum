@@ -1,6 +1,6 @@
 use super::FloatCastHelper;
 use super::FloatMantissa;
-use crate::ExpType;
+use crate::Exponent;
 use crate::cast::CastFrom;
 use crate::helpers::{Bits, One, Zero};
 use core::ops::{Neg, Shl};
@@ -27,8 +27,8 @@ pub fn cast_uint_from_float<F, U>(value: F) -> U
 where
     F: FloatCastHelper,
     F::Mantissa: Bits,
-    ExpType: TryFrom<F::SignedExp>,
-    U: CastUintFromFloatHelper + CastFrom<F::Mantissa> + Shl<ExpType, Output = U>,
+    Exponent: TryFrom<F::SignedExp>,
+    U: CastUintFromFloatHelper + CastFrom<F::Mantissa> + Shl<Exponent, Output = U>,
     F::SignedExp: One + Neg<Output = F::SignedExp>,
 {
     if value.is_nan() {
@@ -60,7 +60,7 @@ where
     // now we know that the exponent is non-negative so can shift
     // As per Rust's numeric casting semantics (https://doc.rust-lang.org/reference/expressions/operator-expr.html#numeric-cast), casting a float to an integer truncates rather than using ties to even
 
-    match ExpType::try_from(exp) {
+    match Exponent::try_from(exp) {
         Ok(exp) => {
             if exp >= U::BITS {
                 return U::MAX;

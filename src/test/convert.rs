@@ -1,4 +1,4 @@
-use crate::{Int, Uint};
+use crate::{Int, Uint, Integer};
 
 pub trait TestConvert {
     type Output;
@@ -29,7 +29,6 @@ macro_rules! test_convert_bigints {
                     }
                 }
 
-                #[cfg(feature = "signed")]
                 impl TestConvert for [<i $bits>] {
                     type Output = Int<{$bits / 8}>;
 
@@ -54,7 +53,6 @@ impl TestConvert for usize {
     }
 }
 
-#[cfg(feature = "signed")]
 impl TestConvert for isize {
     type Output = Int<{isize::BITS as usize / 8}>;
 
@@ -64,7 +62,7 @@ impl TestConvert for isize {
     }
 }
 
-impl<const N: usize> TestConvert for Uint<N> {
+impl<const S: bool, const N: usize, const OM: u8> TestConvert for Integer<S, N, OM> {
     type Output = Self;
 
     #[inline]
@@ -73,24 +71,13 @@ impl<const N: usize> TestConvert for Uint<N> {
     }
 }
 
-#[cfg(feature = "signed")]
-impl<const N: usize> TestConvert for Int<N> {
-    type Output = Self;
-
-    #[inline]
-    fn into(self) -> Self::Output {
-        self
-    }
-}
-
-impl<const N: usize> From<bnum_old::BUintD8<N>> for Uint<N> {
+impl<const N: usize, const OM: u8> From<bnum_old::BUintD8<N>> for Uint<N, OM> {
     fn from(b: bnum_old::BUintD8<N>) -> Self {
         Self::from_bytes(*b.digits())
     }
 }
 
-#[cfg(feature = "signed")]
-impl<const N: usize> From<bnum_old::BIntD8<N>> for Int<N> {
+impl<const N: usize, const OM: u8> From<bnum_old::BIntD8<N>> for Int<N, OM> {
     fn from(b: bnum_old::BIntD8<N>) -> Self {
         Uint::from(b.cast_unsigned()).cast_signed()
     }
@@ -105,7 +92,6 @@ impl<const N: usize> TestConvert for bnum_old::BUintD8<N> {
     }
 }
 
-#[cfg(feature = "signed")]
 impl<const N: usize> TestConvert for bnum_old::BIntD8<N> {
     type Output = Int<N>;
 

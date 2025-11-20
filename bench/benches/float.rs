@@ -42,7 +42,7 @@ macro_rules! new_to_old {
 
             impl BFrom<Int<{$N * 8}>> for bnum_old::BInt<$N> {
                 fn bfrom(b: Int<{$N * 8}>) -> Self {
-                    Self::from_bits(bnum_old::BUint::bfrom(b.to_bits()))
+                    Self::from_bits(bnum_old::BUint::bfrom(b.cast_unsigned()))
                 }
             }
         )*
@@ -84,12 +84,12 @@ fn bench_add(c: &mut Criterion) {
     // }));
     group.bench_with_input(BenchmarkId::new("Iterative", "d8"), &inputs1, |b, inputs| b.iter(|| {
         inputs.iter().cloned().map(|(a, b)| {
-            a >> 139
+            a.widening_mul(b)
         }).collect::<Vec<_>>()
     }));
     group.bench_with_input(BenchmarkId::new("Iterative", "d64"), &inputs2, |b, inputs| b.iter(|| {
         inputs.iter().cloned().map(|(a, b)| {
-            a >> 139
+            a.widening_mul(b)
         }).collect::<Vec<_>>()
     }));
     group.finish();

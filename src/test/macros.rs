@@ -43,6 +43,7 @@ macro_rules! test_bignum {
         ]
     } => {
         paste::paste! {
+            #[allow(non_snake_case)]
             #[test]
             fn [<cases_ $primitive _ $Trait _ $function>]() {
                 $(
@@ -187,7 +188,7 @@ pub(crate) use quickcheck_from_to_radix;
 
 macro_rules! debug_skip {
     ($skip: expr) => {
-        crate::OVERFLOW_CHECKS && $skip
+        crate::overflow::GLOBAL_OVERFLOW_CHECKS && $skip
     };
 }
 
@@ -273,7 +274,6 @@ macro_rules! test_types {
             #[allow(non_camel_case_types, unused)]
             pub type utest = [<u $bits>];
 
-            #[cfg(feature = "signed")]
             #[allow(non_camel_case_types, unused)]
             pub type itest = [<i $bits>];
 
@@ -284,7 +284,6 @@ macro_rules! test_types {
             #[allow(non_camel_case_types, unused)]
             pub type UTEST = crate::Uint<{ $bits / 8 }>;
 
-            #[cfg(feature = "signed")]
             #[allow(non_camel_case_types, unused)]
             pub type ITEST = crate::Int<{ $bits / 8 }>;
 
@@ -307,7 +306,6 @@ macro_rules! test_width_and_sign {
                 #[allow(non_camel_case_types, unused)]
                 pub type utest = [<u $bits>];
 
-                #[cfg(feature = "signed")]
                 #[allow(non_camel_case_types, unused)]
                 pub type itest = [<i $bits>];
 
@@ -318,7 +316,6 @@ macro_rules! test_width_and_sign {
                 #[allow(non_camel_case_types, unused)]
                 pub type UTEST = crate::Uint<{ $bits / 8 }>;
 
-                #[cfg(feature = "signed")]
                 #[allow(non_camel_case_types, unused)]
                 pub type ITEST = crate::Int<{ $bits / 8 }>;
 
@@ -346,14 +343,12 @@ macro_rules! old_bnum_test_types {
             #[allow(non_camel_case_types, unused)]
             pub type utest = bnum_old::BUintD8<{ $bits / 8 }>;
 
-            #[cfg(feature = "signed")]
             #[allow(non_camel_case_types, unused)]
             pub type itest = bnum_old::BIntD8<{ $bits / 8 }>;
 
             #[allow(non_camel_case_types, unused)]
             pub type UTEST = crate::Uint<{ $bits / 8 }>;
 
-            #[cfg(feature = "signed")]
             #[allow(non_camel_case_types, unused)]
             pub type ITEST = crate::Int<{ $bits / 8 }>;
         }
@@ -399,16 +394,6 @@ macro_rules! test_all_widths_against_old_types {
 }
 
 pub(crate) use test_all_widths_against_old_types;
-
-macro_rules! test_all_widths_and_signs {
-    ($($int: ident), *) => {
-        $(
-            mod $int {
-                type stest = $int;
-            }
-        )*
-    }
-}
 
 macro_rules! test_all {
     { testing unsigned; $($s: tt) * } => {

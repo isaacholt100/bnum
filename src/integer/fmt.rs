@@ -1,7 +1,7 @@
 use crate::Integer;
 use core::fmt::{Binary, Debug, Display, Formatter, LowerExp, LowerHex, Octal, UpperExp, UpperHex};
 
-impl<const S: bool, const N: usize> Binary for Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> Binary for Integer<S, N, OM> {
     #[inline]
     fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
         if !S {
@@ -12,7 +12,7 @@ impl<const S: bool, const N: usize> Binary for Integer<S, N> {
     }
 }
 
-impl<const S: bool, const N: usize> LowerHex for Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> LowerHex for Integer<S, N, OM> {
     #[inline]
     fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
         if !S {
@@ -23,7 +23,7 @@ impl<const S: bool, const N: usize> LowerHex for Integer<S, N> {
     }
 }
 
-impl<const S: bool, const N: usize> UpperHex for Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> UpperHex for Integer<S, N, OM> {
     #[inline]
     fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
         if !S {
@@ -36,7 +36,7 @@ impl<const S: bool, const N: usize> UpperHex for Integer<S, N> {
     }
 }
 
-impl<const S: bool, const N: usize> Octal for Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> Octal for Integer<S, N, OM> {
     #[inline]
     fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
         if !S {
@@ -47,32 +47,21 @@ impl<const S: bool, const N: usize> Octal for Integer<S, N> {
     }
 }
 
-impl<const S: bool, const N: usize> Debug for Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> Debug for Integer<S, N, OM> {
     #[inline]
     fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
         Display::fmt(&self, f)
     }
 }
 
-// implementation if we don't have alloc, as otherwise can't call assert_eq! (since this requires Debug)
-#[cfg(all(test, not(feature = "alloc")))]
-impl<const N: usize> core::fmt::Debug for Uint<N> {
-    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        for bytes in self.bytes.iter().rev() {
-            write!(f, "{:02x}", byte)?;
-        }
-        Ok(())
-    }
-}
-
-impl<const S: bool, const N: usize> Display for Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> Display for Integer<S, N, OM> {
     #[inline]
     fn fmt(&self, f: &mut Formatter) -> core::fmt::Result {
         f.pad_integral(!self.is_negative_internal(), "", &self.unsigned_abs_internal().to_str_radix(10))
     }
 }
 
-impl<const S: bool, const N: usize> Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     #[inline]
     fn exp_fmt(&self, f: &mut Formatter, e: &str) -> core::fmt::Result {
         let decimal_str = self.unsigned_abs_internal().to_str_radix(10);
@@ -91,14 +80,14 @@ impl<const S: bool, const N: usize> Integer<S, N> {
     }
 }
 
-impl<const S: bool, const N: usize> LowerExp for Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> LowerExp for Integer<S, N, OM> {
     #[inline]
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         self.exp_fmt(f, "e")
     }
 }
 
-impl<const S: bool, const N: usize> UpperExp for Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> UpperExp for Integer<S, N, OM> {
     #[inline]
     fn fmt(&self, f: &mut Formatter<'_>) -> core::fmt::Result {
         self.exp_fmt(f, "E")

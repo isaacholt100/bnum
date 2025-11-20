@@ -36,7 +36,7 @@ impl<const W: usize, const MB: usize> Add for Float<W, MB> {
     }
 }
 
-crate::uint::ops::full_op_impl!(<const W: usize, const MB: usize> Add, AddAssign, Float<W, MB>, add, add_assign for Float<W, MB>);
+crate::integer::ops::full_op_impl!(<const W: usize, const MB: usize> Add, AddAssign, Float<W, MB>, add, add_assign for Float<W, MB>);
 
 impl<const W: usize, const MB: usize> Sum for Float<W, MB> {
     #[inline]
@@ -61,7 +61,7 @@ impl<const W: usize, const MB: usize> Sub for Float<W, MB> {
     }
 }
 
-crate::uint::ops::full_op_impl!(<const W: usize, const MB: usize> Sub, SubAssign, Float<W, MB>, sub, sub_assign for Float<W, MB>);
+crate::integer::ops::full_op_impl!(<const W: usize, const MB: usize> Sub, SubAssign, Float<W, MB>, sub, sub_assign for Float<W, MB>);
 
 impl<const W: usize, const MB: usize> Mul for Float<W, MB> {
     type Output = Self;
@@ -101,7 +101,7 @@ where
     }
 }
 
-// crate::uint::ops::full_op_impl!(<const W: usize, const MB: usize> Div, DivAssign, Float<W, MB>, div, div_assign for Float<W, MB>);
+// crate::integer::ops::full_op_impl!(<const W: usize, const MB: usize> Div, DivAssign, Float<W, MB>, div, div_assign for Float<W, MB>);
 
 impl<const W: usize, const MB: usize> Rem for Float<W, MB> {
     type Output = Self;
@@ -112,7 +112,7 @@ impl<const W: usize, const MB: usize> Rem for Float<W, MB> {
     }
 }
 
-crate::uint::ops::full_op_impl!(<const W: usize, const MB: usize> Rem, RemAssign, Float<W, MB>, rem, rem_assign for Float<W, MB>);
+crate::integer::ops::full_op_impl!(<const W: usize, const MB: usize> Rem, RemAssign, Float<W, MB>, rem, rem_assign for Float<W, MB>);
 
 impl<const W: usize, const MB: usize> Neg for Float<W, MB> {
     type Output = Self;

@@ -1,5 +1,5 @@
 use super::Float;
-use crate::{ExpType, Uint, float::UnsignedFloatExponent};
+use crate::{Exponent, Uint, float::UnsignedFloatExponent};
 use core::num::FpCategory;
 
 impl<const W: usize, const MB: usize> Float<W, MB> {
@@ -16,10 +16,10 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         let exp_diff = (a_exp - b_exp) as UnsignedFloatExponent; // guaranteed to be non-negative since a >= b
 
         // If the shift causes an overflow, the b_mant is too small so is set to 0
-        let (exp, mant) = if UnsignedFloatExponent::BITS - exp_diff.leading_zeros() <= ExpType::BITS
+        let (exp, mant) = if UnsignedFloatExponent::BITS - exp_diff.leading_zeros() <= Exponent::BITS
         {
-            // number of bits needed to store exp_diff is less than bit width of ExpType, so can cast
-            let exp_diff = exp_diff as ExpType;
+            // number of bits needed to store exp_diff is less than bit width of Exponent, so can cast
+            let exp_diff = exp_diff as Exponent;
             match b_mant.checked_shr(exp_diff) {
                 // shift b_mant so it is aligned (in terms of exponents) with a_mant, so we can add them
                 Some(shifted) => {
@@ -53,7 +53,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                 None => (a_exp, a_mant), // no round up since the type holding b_mant has bit-width <= exp_diff, and b_mant has bit-width strictly smaller than the type's bit-width (since we enforce the float exponent to be at least one bit wide)
             }
         } else {
-            // we can't even cast exp_diff to ExpType, so it would be right-shifted to 0, and no round up since b_mant can't ever be the full width of ExpType::MAX (since we enforce all bnum types to have bit width <= ExpType::MAX, and we enforce that the float exponent takes at least one bit)
+            // we can't even cast exp_diff to Exponent, so it would be right-shifted to 0, and no round up since b_mant can't ever be the full width of Exponent::MAX (since we enforce all bnum types to have bit width <= Exponent::MAX, and we enforce that the float exponent takes at least one bit)
             (a_exp, a_mant)
         };
         if exp >= Self::MAX_EXP {
@@ -83,14 +83,14 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         let sticky_bit = b_mant.trailing_zeros() as UnsignedFloatExponent + 1 < exp_diff;
 
         // Append extra bits to the mantissas to ensure correct rounding
-        a_mant <<= 2 as ExpType;
-        b_mant <<= 2 as ExpType;
+        a_mant <<= 2 as Exponent;
+        b_mant <<= 2 as Exponent;
 
         // If the shift causes an overflow, the b_mant is too small so is set to 0
-        b_mant = if UnsignedFloatExponent::BITS - exp_diff.leading_zeros() <= ExpType::BITS {
-            // number of bits needed to store exp_diff is less than bit width of ExpType, so can cast
+        b_mant = if UnsignedFloatExponent::BITS - exp_diff.leading_zeros() <= Exponent::BITS {
+            // number of bits needed to store exp_diff is less than bit width of Exponent, so can cast
             b_mant
-                .checked_shr(exp_diff as ExpType)
+                .checked_shr(exp_diff as Exponent)
                 .unwrap_or(Uint::ZERO)
         } else {
             Uint::ZERO
@@ -106,7 +106,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             if mant.digits[0] & 0b11 == 0b11 || mant.digits[0] & 0b110 == 0b110 {
                 mant += Uint::FOUR; // += 0b100
                 if !(mant >> (MB + 3)).is_zero() {
-                    mant >>= 1 as ExpType;
+                    mant >>= 1 as Exponent;
                     a_exp += 1;
                 }
             }
@@ -123,7 +123,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                 _ => {}
             }
 
-            mant >>= 1 as ExpType;
+            mant >>= 1 as Exponent;
             a_exp += 1;
         }
         if a_exp > Self::MAX_UNBIASED_EXP {
@@ -134,7 +134,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             };
         }
 
-        mant >>= 2 as ExpType;
+        mant >>= 2 as Exponent;
 
         if (mant >> Self::MB).is_zero() {
             a_exp = 0;

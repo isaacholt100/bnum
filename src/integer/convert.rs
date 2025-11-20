@@ -1,29 +1,29 @@
-use crate::{Uint, Integer, Int, ExpType};
+use crate::{Uint, Integer, Int, Exponent};
 use crate::cast::CastFrom;
 use crate::errors::{TryFromCharError, TryFromIntError, ParseIntError};
 use crate::BTryFrom;
 use core::str::FromStr;
 
 pub trait IntegerConvertHelper {
-    const BITS: ExpType;
+    const BITS: Exponent;
     const SIGNED: bool;
 
-    fn leading_zeros_at_least_threshold(&self, threshold: ExpType) -> bool;
+    fn leading_zeros_at_least_threshold(&self, threshold: Exponent) -> bool;
     fn is_negative(&self) -> bool;
-    fn leading_ones_at_least_threshold(&self, threshold: ExpType) -> bool;
+    fn leading_ones_at_least_threshold(&self, threshold: Exponent) -> bool;
 }
 
-impl<const S: bool, const N: usize> IntegerConvertHelper for Integer<S, N> {
-    const BITS: ExpType = Self::BITS;
+impl<const S: bool, const N: usize, const OM: u8> IntegerConvertHelper for Integer<S, N, OM> {
+    const BITS: Exponent = Self::BITS;
     const SIGNED: bool = S;
 
     #[inline]
-    fn leading_zeros_at_least_threshold(&self, threshold: ExpType) -> bool {
+    fn leading_zeros_at_least_threshold(&self, threshold: Exponent) -> bool {
         Self::leading_zeros_at_least_threshold(&self, threshold)
     }
 
     #[inline]
-    fn leading_ones_at_least_threshold(&self, threshold: ExpType) -> bool {
+    fn leading_ones_at_least_threshold(&self, threshold: Exponent) -> bool {
         Self::leading_ones_at_least_threshold(&self, threshold)
     }
 
@@ -37,17 +37,17 @@ macro_rules! impl_int_convert_helper_for_primitive_int {
     ($($int: ty), *) => {
         $(
             impl IntegerConvertHelper for $int {
-                const BITS: ExpType = Self::BITS as ExpType;
+                const BITS: Exponent = Self::BITS as Exponent;
                 #[allow(unused_comparisons)]
                 const SIGNED: bool = <$int>::MIN < 0;
 
                 #[inline]
-                fn leading_zeros_at_least_threshold(&self, threshold: ExpType) -> bool {
+                fn leading_zeros_at_least_threshold(&self, threshold: Exponent) -> bool {
                     self.leading_zeros() >= threshold
                 }
 
                 #[inline]
-                fn leading_ones_at_least_threshold(&self, threshold: ExpType) -> bool {
+                fn leading_ones_at_least_threshold(&self, threshold: Exponent) -> bool {
                     self.leading_ones() >= threshold
                 }
 
@@ -155,16 +155,16 @@ where
 macro_rules! integer_try_from_into_primitive_integer {
     ($($uint: ty), *) => {
         $(
-            impl<const S: bool, const N: usize> TryFrom<Integer<S, N>> for $uint {
+            impl<const S: bool, const N: usize, const OM: u8> TryFrom<Integer<S, N, OM>> for $uint {
                 type Error = TryFromIntError;
 
                 #[inline]
-                fn try_from(value: Integer<S, N>) -> Result<Self, Self::Error> {
+                fn try_from(value: Integer<S, N, OM>) -> Result<Self, Self::Error> {
                     integer_try_from_integer(value)
                 }
             }
 
-            impl<const S: bool, const N: usize> TryFrom<$uint> for Integer<S, N> {
+            impl<const S: bool, const N: usize, const OM: u8> TryFrom<$uint> for Integer<S, N, OM> {
                 type Error = TryFromIntError;
 
                 #[inline]
@@ -178,46 +178,46 @@ macro_rules! integer_try_from_into_primitive_integer {
 
 integer_try_from_into_primitive_integer!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
 
-impl<const N: usize, const M: usize> BTryFrom<Uint<M>> for Uint<N> {
+impl<const N: usize, const M: usize, const OM: u8> BTryFrom<Uint<M, OM>> for Uint<N, OM> {
     type Error = TryFromIntError;
 
-    fn try_from(from: Uint<M>) -> Result<Self, Self::Error> {
+    fn try_from(from: Uint<M, OM>) -> Result<Self, Self::Error> {
         uint_try_from_uint(from)
     }
 }
 
-impl<const N: usize, const M: usize> TryFrom<Int<N>> for Uint<M> {
+impl<const N: usize, const M: usize, const OM: u8> TryFrom<Int<N, OM>> for Uint<M, OM> {
     type Error = TryFromIntError;
 
-    fn try_from(from: Int<N>) -> Result<Self, Self::Error> {
+    fn try_from(from: Int<N, OM>) -> Result<Self, Self::Error> {
         uint_try_from_int(from)
     }
 }
 
-impl<const N: usize, const M: usize> TryFrom<Uint<N>> for Int<M> {
+impl<const N: usize, const M: usize, const OM: u8> TryFrom<Uint<N, OM>> for Int<M, OM> {
     type Error = TryFromIntError;
 
-    fn try_from(from: Uint<N>) -> Result<Self, Self::Error> {
+    fn try_from(from: Uint<N, OM>) -> Result<Self, Self::Error> {
         int_try_from_uint(from)
     }
 }
 
-impl<const M: usize, const N: usize> crate::BTryFrom<Int<M>> for Int<N> {
+impl<const M: usize, const N: usize, const OM: u8> BTryFrom<Integer<true, M, OM>> for Int<N, OM> {
     type Error = TryFromIntError;
 
-    fn try_from(from: Int<M>) -> Result<Self, Self::Error> {
+    fn try_from(from: Integer<true, M, OM>) -> Result<Self, Self::Error> {
         int_try_from_int(from)
     }
 }
 
-impl<const S: bool, const N: usize> From<bool> for Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> From<bool> for Integer<S, N, OM> {
     #[inline]
     fn from(small: bool) -> Self {
         Self::cast_from(small)
     }
 }
 
-impl<const N: usize> TryFrom<char> for Uint<N> {
+impl<const N: usize, const OM: u8> TryFrom<char> for Uint<N, OM> {
     type Error = TryFromCharError;
     #[inline]
     fn try_from(c: char) -> Result<Self, Self::Error> {
@@ -225,7 +225,7 @@ impl<const N: usize> TryFrom<char> for Uint<N> {
     }
 }
 
-impl<const S: bool, const N: usize> FromStr for Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> FromStr for Integer<S, N, OM> {
     type Err = ParseIntError;
 
     fn from_str(src: &str) -> Result<Self, Self::Err> {

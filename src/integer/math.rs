@@ -1,9 +1,8 @@
-use super::{Uint, Integer};
+use crate::{Byte, Int, Integer, Uint};
+use crate::OverflowMode;
 use crate::doc;
-use crate::ExpType;
-use crate::digit::Digit;
+use crate::Exponent;
 use crate::errors;
-use crate::Int;
 
 macro_rules! impl_desc {
     () => {
@@ -12,14 +11,14 @@ macro_rules! impl_desc {
 }
 
 #[doc = impl_desc!()]
-impl<const S: bool, const N: usize> Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     #[inline(always)]
     pub(crate) const fn is_negative_internal(&self) -> bool {
         S && (self.bytes[N - 1] as i8).is_negative()
     }
 
     #[inline(always)]
-    pub(crate) const fn unsigned_abs_internal(self) -> Uint<N> {
+    pub(crate) const fn unsigned_abs_internal(self) -> Uint<N, OM> {
         if self.is_negative_internal() {
             self.wrapping_neg().force_sign::<false>()
         } else {
@@ -35,41 +34,71 @@ impl<const S: bool, const N: usize> Integer<S, N> {
     ///
     /// ```
     /// use bnum::prelude::*;
-    /// use bnum::types::U256;
+    /// use bnum::types::{U256, I256};
     ///
-    /// assert_eq!(3.as_::<U256>().pow(5), 243.as_());
+    /// assert_eq!(n!(3 U256).pow(5), n!(243));
+    /// assert_eq!(n!(-7 I256).pow(3), n!(-343));
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn pow(self, exp: ExpType) -> Self {
-        if crate::OVERFLOW_CHECKS {
-            self.strict_pow(exp)
-        } else {
-            self.wrapping_pow(exp)
+    pub const fn pow(self, exp: Exponent) -> Self {
+        match Self::OVERFLOW_MODE {
+            OverflowMode::Wrapping => self.wrapping_pow(exp),
+            OverflowMode::Panicking => self.strict_pow(exp),
+            OverflowMode::Saturating => self.saturating_pow(exp),
         }
     }
 
+    /// Returns the [Euclidean quotient](https://en.wikipedia.org/wiki/Euclidean_division) of `self` by `rhs`. In debug builds, this method is equivalent to [`strict_div_euclid`](Self::strict_div_euclid). In release builds, this method is equivalent to [`wrapping_div_euclid`](Self::wrapping_div_euclid).
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use bnum::prelude::*;
+    /// 
+    /// assert_eq!(n!(37 U512).div_euclid(n!(8)), n!(4));
+    /// assert_eq!(n!(-37 I512).div_euclid(n!(8)), n!(-5));
+    /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn div_euclid(self, rhs: Self) -> Self {
-        if crate::OVERFLOW_CHECKS {
-            self.strict_div_euclid(rhs)
-        } else {
-            self.wrapping_div_euclid(rhs)
+        match Self::OVERFLOW_MODE {
+            OverflowMode::Wrapping => self.wrapping_div_euclid(rhs),
+            OverflowMode::Panicking => self.strict_div_euclid(rhs),
+            OverflowMode::Saturating => self.saturating_div_euclid(rhs),
         }
     }
 
+    /// Returns the [Euclidean remainder](https://en.wikipedia.org/wiki/Euclidean_division) of `self` by `rhs`. In debug builds, this method is equivalent to [`strict_rem_euclid`](Self::strict_rem_euclid). In release builds, this method is equivalent to [`wrapping_rem_euclid`](Self::wrapping_rem_euclid).
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use bnum::prelude::*;
+    /// 
+    /// assert_eq!(n!(37 U1024).rem_euclid(n!(8)), n!(5));
+    /// assert_eq!(n!(-37 I1024).rem_euclid(n!(-8)), n!(3));
+    /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn rem_euclid(self, rhs: Self) -> Self {
-        if crate::OVERFLOW_CHECKS {
-            self.strict_rem_euclid(rhs)
-        } else {
-            self.wrapping_rem_euclid(rhs)
+        match Self::OVERFLOW_MODE {
+            OverflowMode::Wrapping => self.wrapping_rem_euclid(rhs),
+            OverflowMode::Panicking => self.strict_rem_euclid(rhs),
+            OverflowMode::Saturating => self.saturating_rem_euclid(rhs),
         }
     }
 
     /// Returns `true` if and only if `self == 2^k` for some integer `k`.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use bnum::prelude::*;
+    /// 
+    /// assert!(n!(16 U2048).is_power_of_two());
+    /// assert!(!n!(-8 I2048).is_power_of_two());
+    /// ```
     #[must_use]
     #[inline]
     pub const fn is_power_of_two(self) -> bool {
@@ -90,6 +119,18 @@ impl<const S: bool, const N: usize> Integer<S, N> {
         ones == 1
     }
 
+    /// Computes the arithmetic mean of `self` and `rhs`, rounded towards zero (i.e. `(self + rhs) / 2`), without the possibility of overflow.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use bnum::prelude::*;
+    /// 
+    /// assert_eq!(n!(10 U256).midpoint(n!(22)), n!(16));
+    /// assert_eq!(n!(12 U256).midpoint(n!(21)), n!(16));
+    /// assert_eq!(n!(-10 I256).midpoint(n!(2)), n!(-4));
+    /// assert_eq!(n!(-13 I256).midpoint(n!(0)), n!(-6));
+    /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn midpoint(self, rhs: Self) -> Self {
@@ -104,23 +145,67 @@ impl<const S: bool, const N: usize> Integer<S, N> {
         }
     }
 
+    /// Computes the base-2 logarithm of `self`, rounded down, i.e. the largest integer `n` such that `2^n <= self`.
+    /// 
+    /// # Panics
+    /// 
+    /// This function will panic if `self` is less than or equal to zero.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use bnum::prelude::*;
+    /// 
+    /// assert_eq!(n!(16 U512).ilog2(), 4);
+    /// assert_eq!(n!(20 I512).ilog2(), 4);
+    /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn ilog2(self) -> ExpType {
+    pub const fn ilog2(self) -> Exponent {
         self.checked_ilog2()
             .expect(errors::err_msg!(errors::non_positive_log_message!()))
     }
 
+    /// Computes the base-10 logarithm of `self`, rounded down, i.e. the largest integer `n` such that `10^n <= self`.
+    /// 
+    /// # Panics
+    /// 
+    /// This function will panic if `self` is less than or equal to zero.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use bnum::prelude::*;
+    /// 
+    /// assert_eq!(n!(1000 U512).ilog10(), 3);
+    /// assert_eq!(n!(9999 I512).ilog10(), 3);
+    /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn ilog10(self) -> ExpType {
+    pub const fn ilog10(self) -> Exponent {
         self.checked_ilog10()
             .expect(errors::err_msg!(errors::non_positive_log_message!()))
     }
 
+    /// Computes logarithm of `self` to the given `base`, rounded down, i.e. the largest integer `n` such that `base^n <= self`.
+    /// 
+    /// Note that you should use `ilog2` or `ilog10` for base-2 or base-10 logarithms respectively, as these are more efficient.
+    /// 
+    /// # Panics
+    /// 
+    /// This function will panic if `self` is less than or equal to zero, or if `base` is less than 2.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use bnum::prelude::*;
+    /// 
+    /// assert_eq!(n!(243 U1024).ilog(n!(3)), 5);
+    /// assert_eq!(n!(124 I1024).ilog(n!(5)), 2);
+    /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn ilog(self, base: Self) -> ExpType {
+    pub const fn ilog(self, base: Self) -> Exponent {
         if base.le(&Self::ONE) {
             panic!("{}", errors::err_msg!(errors::invalid_log_base_message!()));
         }
@@ -128,9 +213,19 @@ impl<const S: bool, const N: usize> Integer<S, N> {
             .expect(errors::err_msg!(errors::non_positive_log_message!()))
     }
 
+    /// Computes the absolute difference between `self` and `other`, i.e. `|self - other|`, without the possibility of overflow.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use bnum::prelude::*;
+    /// 
+    /// assert_eq!(n!(12 U2048).abs_diff(n!(30)), n!(18));
+    /// assert_eq!(n!(-12 I2048).abs_diff(n!(5)), n!(17));
+    /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn abs_diff(self, other: Self) -> Uint<N> {
+    pub const fn abs_diff(self, other: Self) -> Uint<N, OM> {
         let diff = if self.lt(&other) {
             other.wrapping_sub(self)
         } else {
@@ -139,6 +234,26 @@ impl<const S: bool, const N: usize> Integer<S, N> {
         Uint::from_bytes(diff.bytes)
     }
 
+    /// If `rhs` is positive, computes the smallest integer multiple of `rhs` that is greater than or equal to `self`. If `rhs` is negative, computes the largest integer multiple of `rhs` that is less than or equal to `self`.
+    /// 
+    /// # Panics
+    /// 
+    /// This function will panic if `rhs` is zero.
+    /// 
+    /// ## Overflow behaviour
+    /// 
+    /// On overflow, this function will panic in debug builds, and will wrap in release builds.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use bnum::prelude::*;
+    /// 
+    /// assert_eq!(n!(20 U256).next_multiple_of(n!(6)), n!(24));
+    /// assert_eq!(n!(0 U256).next_multiple_of(n!(5)), n!(0));
+    /// assert_eq!(n!(18 I256).next_multiple_of(n!(-4)), n!(16));
+    /// assert_eq!(n!(-17 I256).next_multiple_of(n!(-11)), n!(-22));
+    /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn next_multiple_of(self, rhs: Self) -> Self {
@@ -152,6 +267,20 @@ impl<const S: bool, const N: usize> Integer<S, N> {
         }
     }
 
+    /// Computes the quotient of `self` by `rhs`, rounding the result towards negative infinity.
+    /// 
+    /// # Panics
+    /// 
+    /// This function will panic if `rhs` is zero. For signed integers, it will also panic if `self` is [`Self::MIN`] and `rhs` is `-1`, since this would overflow. This behaviour is not affected by the `overflow-checks` flag.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use bnum::prelude::*;
+    /// 
+    /// assert_eq!(n!(37 U512).div_floor(n!(8)), n!(4));
+    /// assert_eq!(n!(-37 I512).div_floor(n!(8)), n!(-5));
+    /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn div_floor(self, rhs: Self) -> Self {
@@ -163,6 +292,9 @@ impl<const S: bool, const N: usize> Integer<S, N> {
         if !S {
             return self.div(rhs);
         }
+        if self.is_division_overflow(&rhs) {
+            panic!(crate::errors::err_msg!("attempt to divide with overflow"));
+        }
         let (div, rem) = self.div_rem_unchecked(rhs);
         if self.is_negative_internal() == rhs.is_negative_internal() || rem.is_zero() {
             div
@@ -171,6 +303,20 @@ impl<const S: bool, const N: usize> Integer<S, N> {
         }
     }
 
+    /// Computes the quotient of `self` by `rhs`, rounding the result towards positive infinity.
+    /// 
+    /// # Panics
+    /// 
+    /// This function will panic if `rhs` is zero. For signed integers, it will also panic if `self` is [`Self::MIN`] and `rhs` is `-1`, since this would overflow. This behaviour is not affected by the `overflow-checks` flag.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use bnum::prelude::*;
+    /// 
+    /// assert_eq!(n!(37 U512).div_ceil(n!(8)), n!(5));
+    /// assert_eq!(n!(-37 I512).div_ceil(n!(8)), n!(-4));
+    /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn div_ceil(self, rhs: Self) -> Self {
@@ -188,6 +334,17 @@ impl<const S: bool, const N: usize> Integer<S, N> {
     }
 
     /// Returns whether or not `self` equals zero.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use bnum::prelude::*;
+    /// 
+    /// assert!(n!(0 U1024).is_zero());
+    /// assert!(n!(0 I1024).is_zero());
+    /// assert!(!n!(1 U1024).is_zero());
+    /// assert!(!n!(-1 I1024).is_zero());
+    /// ```
     #[must_use]
     #[inline]
     pub const fn is_zero(&self) -> bool {
@@ -204,6 +361,17 @@ impl<const S: bool, const N: usize> Integer<S, N> {
     }
 
     /// Returns whether or not `self` equals one.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use bnum::prelude::*;
+    /// 
+    /// assert!(n!(1 U2048).is_one());
+    /// assert!(n!(1 I2048).is_one());
+    /// assert!(!n!(0 U2048).is_one());
+    /// assert!(!n!(-1 I2048).is_one());
+    /// ```
     #[must_use]
     #[inline]
     pub const fn is_one(&self) -> bool {
@@ -230,36 +398,50 @@ impl<const S: bool, const N: usize> Integer<S, N> {
 }
 
 #[doc = concat!("(Unsigned integers only.) ", impl_desc!())]
-impl<const N: usize> Uint<N> {
+impl<const N: usize, const OM: u8> Uint<N, OM> {
     /// Casts `self` to a signed integer type of the same bit width, leaving the memory representation unchanged.
     ///
-    /// This is function equivalent to using the [`As`](crate::cast::As) trait to cast `self` to [`Int<N>`](crate::Int).
+    /// This is function equivalent to using the [`As`](crate::cast::As) trait to cast `self` to [`Int<N, OM>`](crate::Int).
     ///
     /// # Examples
     ///
     /// Basic usage:
     ///
     /// ```
+    /// use bnum::prelude::*;
     /// use bnum::types::{U256, I256};
     ///
-    /// assert_eq!(U256::MAX.cast_signed(), I256::NEG_ONE);
-    /// assert_eq!(U256::ZERO.cast_signed(), I256::ZERO);
+    /// assert_eq!(U256::MAX.cast_signed(), n!(-1 I256));
+    /// assert_eq!(n!(0 U256).cast_signed(), n!(0 I256));
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn cast_signed(self) -> crate::Int<N> {
+    pub const fn cast_signed(self) -> Int<N, OM> {
         self.force_sign::<true>()
     }
 
+    /// Returns the smallest power of two greater than or equal to `self`.
+    /// 
+    /// # Overflow behaviour
+    /// 
+    /// If the result is too large to be represented by `Self`, this function will panic in debug builds, and will wrap to `0` in release builds.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use bnum::prelude::*;
+    /// 
+    /// assert_eq!(n!(20 U256).next_power_of_two(), n!(32));
+    /// assert_eq!(n!(16 U256).next_power_of_two(), n!(16));
+    /// assert_eq!(n!(0 U256).next_power_of_two(), n!(1));
+    /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn next_power_of_two(self) -> Self {
-        if crate::OVERFLOW_CHECKS {
-            self.checked_next_power_of_two().expect(errors::err_msg!(
-                "attempt to calculate next power of two with overflow"
-            ))
-        } else {
-            self.wrapping_next_power_of_two()
+        match Self::OVERFLOW_MODE {
+            OverflowMode::Wrapping => self.wrapping_next_power_of_two(),
+            OverflowMode::Panicking => self.strict_next_power_of_two(),
+            OverflowMode::Saturating => self.saturating_next_power_of_two(),
         }
     }
 
@@ -272,35 +454,61 @@ impl<const N: usize> Uint<N> {
     /// # Examples
     ///
     /// ```
+    /// use bnum::prelude::*;
     /// use bnum::types::U256;
     ///
-    /// assert_eq!(U256::power_of_two(11), U256::ONE << 11);
+    /// assert_eq!(U256::power_of_two(11), n!(1) << 11);
     /// ```
     #[must_use]
     #[inline]
-    pub const fn power_of_two(power: ExpType) -> Self {
+    pub const fn power_of_two(power: Exponent) -> Self {
         assert!(
             power < Self::BITS,
             crate::errors::err_msg!("power of two must be less than `Self::BITS`")
         );
 
         let mut out = Self::ZERO;
-        out.bytes[power as usize / Digit::BITS as usize] = 1 << (power % Digit::BITS);
+        out.bytes[power as usize / Byte::BITS as usize] = 1 << (power % Byte::BITS);
         out
     }
 }
 
 #[doc = concat!("(Signed integers only.) ", impl_desc!())]
-impl<const N: usize> Int<N> {
+impl<const N: usize, const OM: u8> Int<N, OM> {
+    /// Casts `self` to an unsigned integer type of the same bit width, leaving the memory representation unchanged.
+    /// 
+    /// This is function equivalent to using the [`As`](crate::cast::As) trait to cast `self` to [`Uint<N, OM>`](crate::Uint).
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use bnum::prelude::*;
+    /// use bnum::types::U512;
+    /// 
+    /// assert_eq!(n!(-1).cast_unsigned(), U512::MAX);
+    /// assert_eq!(n!(0 I512).cast_unsigned(), n!(0 U512));
+    /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn cast_unsigned(self) -> Uint<N> {
+    pub const fn cast_unsigned(self) -> Uint<N, OM> {
         Uint::from_bytes(self.bytes)
     }
 
+    /// Returns the absolute value of `self` as an unsigned integer.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use bnum::prelude::*;
+    /// use bnum::types::I1024;
+    /// 
+    /// assert_eq!(n!(-20 I1024).unsigned_abs(), n!(20));
+    /// assert_eq!(n!(15 I1024).unsigned_abs(), n!(15));
+    /// assert_eq!(I1024::MIN.unsigned_abs(), I1024::MIN.cast_unsigned());
+    /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn unsigned_abs(self) -> Uint<N> {
+    pub const fn unsigned_abs(self) -> Uint<N, OM> {
         if self.is_negative() {
             self.wrapping_neg().cast_unsigned()
         } else {
@@ -308,16 +516,43 @@ impl<const N: usize> Int<N> {
         }
     }
 
+    /// Returns the absolute value of `self`.
+    /// 
+    /// # Overflow behaviour
+    /// 
+    /// - If `OM` is set to `OverflowMode::Wrapping`, this function will return `Self::MIN` on overflow (i.e. when `self` is `Self::MIN`).
+    /// - If `OM` is set to `OverflowMode::Panicking`, this function will panic on overflow.
+    /// - If `OM` is set to `OverflowMode::Saturating`, this function will return `Self::MAX` on overflow.
+    ///
+    /// # Examples
+    /// 
+    /// ```
+    /// use bnum::prelude::*;
+    /// 
+    /// assert_eq!(n!(-20 I2048).abs(), n!(20));
+    /// assert_eq!(n!(15 I2048).abs(), n!(15));
+    /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn abs(self) -> Self {
-        if crate::OVERFLOW_CHECKS {
-            self.strict_abs()
-        } else {
-            self.wrapping_abs()
+        match Self::OVERFLOW_MODE {
+            OverflowMode::Wrapping => self.wrapping_abs(),
+            OverflowMode::Panicking => self.strict_abs(),
+            OverflowMode::Saturating => self.saturating_abs(),
         }
     }
 
+    /// Returns the sign of `self` as a signed integer, i.e. `1` if `self` is positive, `-1` if `self` is negative, and `0` if `self` is zero.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use bnum::prelude::*;
+    /// 
+    /// assert_eq!(n!(42 I256).signum(), n!(1));
+    /// assert_eq!(n!(-7 I256).signum(), n!(-1));
+    /// assert_eq!(n!(0 I256).signum(), n!(0));
+    /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn signum(self) -> Self {
@@ -330,6 +565,17 @@ impl<const N: usize> Int<N> {
         }
     }
 
+    /// Returns whether or not `self` is (strictly) positive.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use bnum::prelude::*;
+    /// 
+    /// assert!(n!(314 I512).is_positive());
+    /// assert!(!n!(-159 I512).is_positive());
+    /// assert!(!n!(0 I512).is_positive());
+    /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn is_positive(self) -> bool {
@@ -337,6 +583,17 @@ impl<const N: usize> Int<N> {
         signed_digit.is_positive() || (signed_digit == 0 && !self.is_zero())
     }
 
+    /// Returns whether or not `self` is (strictly) negative.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use bnum::prelude::*;
+    /// 
+    /// assert!(n!(-271 I512).is_negative());
+    /// assert!(!n!(828 I512).is_negative());
+    /// assert!(!n!(0 I512).is_negative());
+    /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn is_negative(self) -> bool {
@@ -346,28 +603,28 @@ impl<const N: usize> Int<N> {
 
 use core::iter::{Iterator, Product, Sum};
 
-impl<const S: bool, const N: usize> Product<Self> for Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> Product<Self> for Integer<S, N, OM> {
     #[inline]
     fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.fold(Self::ONE, |a, b| a * b)
     }
 }
 
-impl<'a, const S: bool, const N: usize> Product<&'a Self> for Integer<S, N> {
+impl<'a, const S: bool, const N: usize, const OM: u8> Product<&'a Self> for Integer<S, N, OM> {
     #[inline]
     fn product<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
         iter.fold(Self::ONE, |a, b| a * b)
     }
 }
 
-impl<const S: bool, const N: usize> Sum<Self> for Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> Sum<Self> for Integer<S, N, OM> {
     #[inline]
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.fold(Self::ZERO, |a, b| a + b)
     }
 }
 
-impl<'a, const S: bool, const N: usize> Sum<&'a Self> for Integer<S, N> {
+impl<'a, const S: bool, const N: usize, const OM: u8> Sum<&'a Self> for Integer<S, N, OM> {
     #[inline]
     fn sum<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
         iter.fold(Self::ZERO, |a, b| a + b)
@@ -437,7 +694,6 @@ mod tests {
         test_bignum! {
             function: <stest>::abs_diff(a: stest, b: stest)
         }
-        #[cfg(feature = "nightly")] // as num_midpoint_signed not yet stabilised
         test_bignum! {
             function: <stest>::midpoint(a: stest, b: stest)
         }

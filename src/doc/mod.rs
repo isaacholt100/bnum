@@ -15,7 +15,7 @@ pub(crate) use must_use_op;
 
 macro_rules! default {
     () => {
-        "Returns the default value of `Self::ZERO`."
+        "Returns the default value of `0`."
     };
 }
 

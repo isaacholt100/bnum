@@ -11,16 +11,15 @@ repository = "https://github.com/isaacholt100/bnum"
 readme = "README.md"
 keywords = ["uint", "int", "bignum", "maths", "arbitrary"]
 categories = ["algorithms", "mathematics", "cryptography", "no-std"]
-rust-version = "1.85.0"
+rust-version = "1.86.0"
 
 exclude = ["src/float/*", "src/tests", "TODO.txt", "lit-parser/*"] # TODO: make sure to include these when they are ready
 
 [features]  
-default = ["alloc", "signed", "float"]
+default = ["alloc", "float"]
 nightly = []
-float = ["signed"]
+float = []
 alloc = []
-signed = []
 serde = ["dep:serde", "serde-big-array"]
 numtraits = ["num-integer", "num-traits"]
 

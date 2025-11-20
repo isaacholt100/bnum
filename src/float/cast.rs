@@ -2,7 +2,7 @@ use crate::cast::float::FloatCastHelper;
 use crate::helpers::Zero;
 
 use super::{Float, FloatExponent};
-use crate::ExpType;
+use crate::Exponent;
 use crate::cast::CastFrom;
 use crate::{Int, Uint};
 
@@ -102,8 +102,8 @@ macro_rules! float_as_uint {
 float_as_uint!(Uint<N>, u8, u16, u32, u64, u128, usize);
 
 impl<const W: usize, const MB: usize> FloatCastHelper for Float<W, MB> {
-    const BITS: ExpType = Self::BITS;
-    const MANTISSA_DIGITS: ExpType = Self::MANTISSA_DIGITS as ExpType;
+    const BITS: Exponent = Self::BITS;
+    const MANTISSA_DIGITS: Exponent = Self::MANTISSA_DIGITS as Exponent;
     const MAX_EXP: FloatExponent = Self::MAX_EXP;
     const MIN_SUBNORMAL_EXP: FloatExponent = Self::MIN_SUBNORMAL_EXP;
     const INFINITY: Self = Self::INFINITY;

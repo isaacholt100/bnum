@@ -6,6 +6,6 @@
 - `<= v0.12.1`: `to_str_radix`, `to_radix_be`, `to_radix_le` did not panic on invalid radices but should have done.
 - `<= v0.13.0`: `is_multiple_of` for signed and unsigned ints incorrectly panicked when `other` was zero, instead of returning whether `self` was zero or not.
 - `<= v0.13.0`: `div_floor`, `mod_floor`, for signed ints incorrectly rounded towards zero instead of towards negative infinity.
-- `<= v0.13.0`: `wrapping_shl`, `wrapping_shr`, `overflowing_shl`, `overflowing_shr` are incorrect for all integers when shift is larger than or equal to Self::BITS AND Self::BITS is not a power of two.
+- `<= v0.13.0`: `wrapping_shl`, `wrapping_shr`, `overflowing_shl`, `overflowing_shr`, `rotate_left`, `rotate_right` are incorrect for all integers when shift is larger than or equal to Self::BITS AND Self::BITS is not a power of two.
 
 TODO: create patches for each affected version.

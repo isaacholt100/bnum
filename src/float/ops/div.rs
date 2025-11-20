@@ -1,5 +1,5 @@
 use super::Float;
-use crate::ExpType;
+use crate::Exponent;
 use crate::Uint;
 use crate::cast::As;
 use crate::float::FloatExponent;
@@ -45,8 +45,8 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             rem
         } else {
             e += 1;
-            division = ((large >> 1 as ExpType) / (s2.as_::<Uint<{ W * 2 }>>())).as_::<Uint<W>>();
-            let rem = ((large >> 1 as ExpType) % (s2.as_::<Uint<{ W * 2 }>>())).as_::<Uint<W>>();
+            division = ((large >> 1 as Exponent) / (s2.as_::<Uint<{ W * 2 }>>())).as_::<Uint<W>>();
+            let rem = ((large >> 1 as Exponent) % (s2.as_::<Uint<{ W * 2 }>>())).as_::<Uint<W>>();
             rem
         };
         if rem * Uint::TWO > s2 {
@@ -58,7 +58,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         }
         if division.bits() == Self::MB + 2 {
             e += 1;
-            division >>= 1 as ExpType;
+            division >>= 1 as Exponent;
         }
 
         if e > Self::MAX_EXP + Self::EXP_BIAS - 1 {
@@ -124,7 +124,7 @@ pub const fn div_float<const N: usize>(u: Uint<N>, v: Uint<N>) -> (Uint<N>, bool
         rest: [Digit; M],
     }
     impl<const M: usize> Remainder<M> {
-        const fn new(uint: Uint<M>, shift: ExpType) -> Self {
+        const fn new(uint: Uint<M>, shift: Exponent) -> Self {
             // This shift can be anything from 0 to 64 inclusive.
             // Scenarios:
             // * shift by 0 -> nothing happens, still N trailing zeros.
@@ -166,7 +166,7 @@ pub const fn div_float<const N: usize>(u: Uint<N>, v: Uint<N>) -> (Uint<N>, bool
                 self.rest[index - M - 1] = digit;
             }
         }
-        /*const fn to_uint(self, shift: ExpType) -> Uint<M> {
+        /*const fn to_uint(self, shift: Exponent) -> Uint<M> {
             let mut out = Uint::ZERO;
             let mut i = 0;
             while i < M {

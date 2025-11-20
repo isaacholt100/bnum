@@ -12,7 +12,6 @@ macro_rules! int_types {
             #[doc = int_type_doc!($bits, "unsigned")]
             pub type $u = crate::Uint::<{$bits / 8}>;
 
-            #[cfg(feature = "signed")]
             #[doc = int_type_doc!($bits, "signed")]
             pub type $i = crate::Int::<{$bits / 8}>;
         )*
@@ -68,7 +67,6 @@ mod tests {
         { $($bits: literal $u: ident $i: ident; ) *} => {
             $(
                 assert_eq!($u::BITS, $bits);
-                #[cfg(feature = "signed")]
                 assert_eq!($i::BITS, $bits);
             )*
         }

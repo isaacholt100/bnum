@@ -7,7 +7,7 @@ macro_rules! impl_desc {
 }
 
 #[doc = impl_desc!()]
-impl<const S: bool, const N: usize> Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     /// Unchecked integer addition. Computes `self + rhs` without checking for overflow, resulting in undefined behavior if overflow occurs.
     ///
     /// `a.unchecked_add(b)` is equivalent to `a.checked_add(b).unwrap_unchecked()`.
@@ -56,7 +56,7 @@ impl<const S: bool, const N: usize> Integer<S, N> {
     /// This results in undefined behaviour if `rhs` is greater than or equal to `Self::BITS`, i.e. when [`checked_shl`](Self::checked_shl) would return `None`.
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const unsafe fn unchecked_shl(self, rhs: crate::ExpType) -> Self {
+    pub const unsafe fn unchecked_shl(self, rhs: crate::Exponent) -> Self {
         unsafe { self.checked_shl(rhs).unwrap_unchecked() }
     }
 
@@ -69,13 +69,13 @@ impl<const S: bool, const N: usize> Integer<S, N> {
     /// This results in undefined behaviour if `rhs` is greater than or equal to `Self::BITS`, i.e. when [`checked_shr`](Self::checked_shr) would return `None`.
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const unsafe fn unchecked_shr(self, rhs: crate::ExpType) -> Self {
+    pub const unsafe fn unchecked_shr(self, rhs: crate::Exponent) -> Self {
         unsafe { self.checked_shr(rhs).unwrap_unchecked() }
     }
 }
 
 #[doc = concat!("(Signed integers only.) ", impl_desc!())]
-impl<const N: usize> Int<N> {
+impl<const N: usize, const OM: u8> Int<N, OM> {
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const unsafe fn unchecked_neg(self) -> Self {

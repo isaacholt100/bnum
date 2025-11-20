@@ -80,8 +80,63 @@ const MAX_RADIX_POWERS: [(u64, usize); 257] = {
     arr
 };
 
-/// Methods which convert unsigned integers to and from lists of digits in a given radix (base).
-impl<const N: usize> Uint<N> {
+struct DigitsIter<'a, const SKIP_UNDERSCORES: bool, const ASCII: bool, const BE: bool> {
+    buf: &'a [u8],
+    index: usize,
+}
+
+impl<'a, const SKIP_UNDERSCORES: bool, const ASCII: bool, const BE: bool> DigitsIter<'a, SKIP_UNDERSCORES, ASCII, BE> {
+    #[inline]
+    const fn new(buf: &'a [u8]) -> Self {
+        Self { buf, index: if BE { 0 } else { buf.len() } }
+    }
+}
+
+impl<'a, const SKIP_UNDERSCORES: bool, const ASCII: bool, const BE: bool> DigitsIter<'a, SKIP_UNDERSCORES, ASCII, BE> {
+    #[inline]
+    const fn next_be(&mut self) -> Option<u8> {
+        while self.index < self.buf.len() {
+            let b = self.buf[self.index];
+            self.index += 1;
+            if SKIP_UNDERSCORES && b == b'_' {
+                continue;
+            }
+            return Some(byte_to_digit::<ASCII>(b));
+        }
+        None
+    }
+
+    #[inline]
+    const fn next_le(&mut self) -> Option<u8> {
+        while self.index > 0 {
+            self.index -= 1;
+            let b = self.buf[self.index];
+            if SKIP_UNDERSCORES && b == b'_' {
+                continue;
+            }
+            return Some(byte_to_digit::<ASCII>(b));
+        }
+        None
+    }
+
+    #[inline]
+    const fn next(&mut self) -> Option<u8> {
+        if BE {
+            self.next_be()
+        } else {
+            self.next_le()
+        }
+    }
+}
+
+macro_rules! impl_desc {
+    () => {
+        "Methods which convert integers to and from strings of digits in a given radix (base)."
+    };
+}
+
+#[doc = concat!("(Unsigned integers only.) ", impl_desc!())]
+impl<const N: usize, const OM: u8> Uint<N, OM> {
     #[inline] 
     fn to_digits_le(self, radix: u32) -> Vec<u8> {
         let mut digits = Vec::with_capacity(Self::BITS.div_ceil(radix.ilog2()) as usize); // log_r (2^B) = B log_r (2) = B/log_2 (r)
@@ -185,9 +240,14 @@ impl<const N: usize> Uint<N> {
     /// ```
     /// use bnum::types::U512;
     ///
-    /// let n = U512::from(34598748526857897975u128);
+    /// let n = U512::MAX;
     /// let digits = n.to_radix_be(12);
     /// assert_eq!(Some(n), U512::from_radix_be(&digits, 12));
+    /// 
+    /// let a = U512::from_radix_be(&[4, 3, 2, 1], 11).unwrap();
+    /// let b: U512 = n!(1)*n!(11).pow(0) + n!(2)*n!(11).pow(1) + n!(3)*n!(11).pow(2) + n!(4)*n!(11).pow(3);
+    /// 
+    /// assert_eq!(a, b); // 4*11^3 + 3*11^2 + 2*11^1 + 1*11^0
     /// ```
     #[inline]
     pub const fn from_radix_be(buf: &[u8], radix: u32) -> Option<Self> {
@@ -199,8 +259,8 @@ impl<const N: usize> Uint<N> {
             return Self::from_be_slice(buf);
         }
 
-        crate::helpers::ok!(Self::from_buf_radix_internal::<false, true>(
-            buf, radix, false
+        crate::helpers::ok!(Self::from_buf_radix_internal::<false, true, false>(
+            buf, radix
         ))
     }
 
@@ -215,9 +275,14 @@ impl<const N: usize> Uint<N> {
     /// ```
     /// use bnum::types::U512;
     ///
-    /// let n = U512::from(109837459878951038945798u128);
+    /// let n = U512::MAX;
     /// let digits = n.to_radix_le(15);
     /// assert_eq!(Some(n), U512::from_radix_le(&digits, 15));
+    /// 
+    /// let a = U512::from_radix_le(&[5, 6, 7, 8], 18).unwrap();
+    /// let b: U512 = n!(5)*n!(18).pow(0) + n!(6)*n!(18).pow(1) + n!(7)*n!(18).pow(2) + n!(8)*n!(18).pow(3);
+    /// 
+    /// assert_eq!(a, b); // 8*18^3 + 7*18^2 + 6*18^1 + 5*18^0
     /// ```
     #[inline]
     pub const fn from_radix_le(buf: &[u8], radix: u32) -> Option<Self> {
@@ -229,27 +294,16 @@ impl<const N: usize> Uint<N> {
             return Self::from_le_slice(buf);
         }
 
-        crate::helpers::ok!(Self::from_buf_radix_internal::<false, false>(
-            buf, radix, false
+        crate::helpers::ok!(Self::from_buf_radix_internal::<false, false, false>(
+            buf, radix
         ))
     }
 
-    pub(crate) const fn from_buf_radix_internal<const FROM_STR: bool, const BE: bool>(
+    pub(crate) const fn from_buf_radix_internal<const FROM_STR: bool, const BE: bool, const SKIP_UNDERSCORES: bool>(
         buf: &[u8],
-        radix: u32,
-        leading_sign: bool,
+        radix: u32
     ) -> Result<Self, ParseIntError> {
-        // TODO: can use u128
-        if leading_sign && buf.len() == 1 {
-            return Err(ParseIntError {
-                kind: IntErrorKind::InvalidDigit,
-            });
-        }
-        let input_digits_len = if leading_sign {
-            buf.len() - 1
-        } else {
-            buf.len()
-        };
+        let input_digits_len = buf.len();
 
         match radix {
             2 | 4 | 16 | 256 => {
@@ -260,14 +314,20 @@ impl<const N: usize> Uint<N> {
                 let radix_u8 = radix as u8;
 
                 if full_digits > N || full_digits == N && remaining_digits != 0 {
-                    let mut i = if leading_sign { 1 } else { 0 };
-                    while i < N * base_digits_per_digit + if leading_sign { 1 } else { 0 } {
-                        if byte_to_digit::<FROM_STR>(buf[i]) >= radix_u8 {
+                    let mut index = 0;
+                    let mut digits_visited = 0;
+                    while digits_visited < N * base_digits_per_digit {
+                        if SKIP_UNDERSCORES && buf[index] == b'_' {
+                            index += 1;
+                            continue;
+                        }
+                        if byte_to_digit::<FROM_STR>(buf[index]) >= radix_u8 {
                             return Err(ParseIntError {
                                 kind: IntErrorKind::InvalidDigit,
                             });
                         }
-                        i += 1;
+                        index += 1;
+                        digits_visited += 1;
                     }
                     return Err(ParseIntError {
                         kind: IntErrorKind::PosOverflow,
@@ -325,7 +385,7 @@ impl<const N: usize> Uint<N> {
                 let mut shift = 0;
 
                 let mut i = buf.len();
-                let stop_index = if leading_sign { 1 } else { 0 };
+                let stop_index = 0;
                 while i > stop_index {
                     i -= 1;
                     let idx = if BE { i } else { buf.len() - 1 - i };
@@ -372,8 +432,8 @@ impl<const N: usize> Uint<N> {
                 let radix_u8 = radix as u8;
                 let mut out = Self::ZERO;
                 let mut first: Byte = 0;
-                let mut i = if leading_sign { 1 } else { 0 };
-                while i < if leading_sign { split + 1 } else { split } {
+                let mut i = 0;
+                while i < split {
                     let idx = if BE { i } else { buf.len() - 1 - i };
                     let d = byte_to_digit::<FROM_STR>(buf[idx]);
                     if d >= radix_u8 {
@@ -553,8 +613,8 @@ impl<const N: usize> Uint<N> {
     }
 }
 
-/// Methods which convert integers to and from strings of digits in a given radix (base).
-impl<const S: bool, const N: usize> Integer<S, N> {
+#[doc = impl_desc!()]
+impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     /// Converts a string slice in a given base to an integer.
     ///
     /// The string is expected to be an optional `+` (or `-` if the integer is signed) sign followed by digits. Leading and trailing whitespace represent an error. Underscores (which are accepted in Rust literals) also represent an error.
@@ -574,9 +634,11 @@ impl<const S: bool, const N: usize> Integer<S, N> {
     /// Basic usage:
     ///
     /// ```
-    /// use bnum::types::U512;
+    /// use bnum::prelude::*;
+    /// use bnum::types::{U512, I512};
     ///
-    /// assert_eq!(U512::from_str_radix("A", 16), Ok(U512::TEN));
+    /// assert_eq!(U512::from_str_radix("A", 16), Ok(n!(10)));
+    /// assert_eq!(I512::from_str_radix("-B", 16), Ok(n!(-11)));
     /// ```
     #[inline]
     pub const fn from_str_radix(src: &str, radix: u32) -> Result<Self, ParseIntError> {
@@ -592,9 +654,11 @@ impl<const S: bool, const N: usize> Integer<S, N> {
     /// Basic usage:
     /// 
     /// ```
-    /// use bnum::types::U512;
+    /// use bnum::prelude::*;
+    /// use bnum::types::{U512, I512};
     ///
-    /// assert_eq!(U512::from_ascii(b"+10"), Ok(U512::TEN));
+    /// assert_eq!(U512::from_ascii(b"+10"), Ok(n!(10 U512)));
+    /// assert_eq!(I512::from_ascii(b"-1234"), Ok(n!(-1234 I512)));
     /// ```
     #[inline]
     pub const fn from_ascii(src: &[u8]) -> Result<Self, ParseIntError> {
@@ -620,9 +684,11 @@ impl<const S: bool, const N: usize> Integer<S, N> {
     /// Basic usage:
     ///
     /// ```
-    /// use bnum::types::U512;
+    /// use bnum::prelude::*;
+    /// use bnum::types::{U512, I512};
     ///
-    /// assert_eq!(U512::from_ascii_radix(b"A", 16), Ok(U512::TEN));
+    /// assert_eq!(U512::from_ascii_radix(b"A", 16), Ok(n!(10)));
+    /// assert_eq!(I512::from_ascii_radix(b"-C", 16), Ok(n!(-12)));
     /// ```
     #[inline]
     pub const fn from_ascii_radix(src: &[u8], radix: u32) -> Result<Self, ParseIntError> {
@@ -632,16 +698,20 @@ impl<const S: bool, const N: usize> Integer<S, N> {
                 kind: IntErrorKind::Empty,
             });
         }
-
-        let mut negative = false;
-        let mut leading_sign = false;
-        if S && src[0] == b'-' {
-            negative = true;
-            leading_sign = true;
-        } else if src[0] == b'+' {
-            leading_sign = true;
+        if src.len() == 1 && (src[0] == b'+' || (S && src[0] == b'-')) {
+            return Err(ParseIntError {
+                kind: IntErrorKind::InvalidDigit,
+            });
         }
-        match Uint::from_buf_radix_internal::<true, true>(src, radix, leading_sign) {
+
+        let (src, negative) = if S && src[0] == b'-' {
+            (src.split_at(1).1, true)
+        } else if src[0] == b'+' {
+            (src.split_at(1).1, false)
+        } else {
+            (src, false)
+        };
+        match Uint::from_buf_radix_internal::<true, true, false>(src, radix) {
             Ok(uint) => {
                 let out = uint.force_sign::<S>();
                 if S && negative {
@@ -686,11 +756,14 @@ impl<const S: bool, const N: usize> Integer<S, N> {
     /// # Examples
     ///
     /// ```
-    /// use bnum::types::U512;
+    /// use bnum::types::{U512, I512};
     ///
     /// let src = "abcdefghijklmnopqrstuvwxyz";
     /// let n = U512::from_str_radix(src, 36).unwrap();
     /// assert_eq!(n.to_str_radix(36), src);
+    /// 
+    /// let a: I512 = n!(-0o12345678901234567);
+    /// assert_eq!(a.to_str_radix(8), "-12345678901234567");
     /// ```
     #[inline]
     pub fn to_str_radix(&self, radix: u32) -> String {
@@ -739,7 +812,7 @@ mod tests {
             ]
         }
 
-        #[cfg(feature = "nightly")]
+        #[cfg(feature = "nightly")] // since int_from_ascii not stable yet
         test_bignum! {
             function: <stest>::from_ascii,
             cases: [
@@ -757,11 +830,11 @@ mod tests {
                 ("+12345678901234567890".as_bytes()),
                 ("-9223372036854775808".as_bytes()),
                 ("+9223372036854775807".as_bytes()),
-                (b"0")
+                ("0".as_bytes())
             ]
         }
 
-        #[cfg(feature = "nightly")]
+        #[cfg(feature = "nightly")] // since int_from_ascii not stable yet
         test_bignum! {
             function: <stest>::from_ascii_radix,
             cases: [

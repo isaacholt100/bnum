@@ -1,7 +1,7 @@
 use super::Uint;
 use crate::digit;
 
-impl<const N: usize> Uint<N> {
+impl<const N: usize, const OM: u8> Uint<N, OM> {
     // naive O(N^2) "digit by digit" multiplication
     #[inline]
     pub(super) const fn long_mul(self, rhs: Self) -> (Self, bool) {
@@ -11,7 +11,7 @@ impl<const N: usize> Uint<N> {
 
         let mut i = 0;
         while i < Self::U128_DIGITS {
-            let self_digit_i = unsafe { self.as_wide_digits().get(i) }; // it would require a lot of extra code to run the loop where we don't check the correct count (i.e. separate last digit from the rest), and only a linear number of checks won't affect the performance too much
+            let self_digit_i = unsafe { self.as_wide_digits().get(i) };
             carry = 0;
             let mut j = 0;
             unsafe {
@@ -35,8 +35,9 @@ impl<const N: usize> Uint<N> {
                 out.as_wide_digits().last(),
             );
             out.as_wide_digits_mut().set_last(prod);
+
             if Self::U128_DIGIT_REMAINDER != 0 {
-                if 128 - Self::U128_BITS_REMAINDER > prod.leading_zeros() {
+                if 128 - Self::U128_BITS_REMAINDER > prod.leading_zeros() { // prod needs to be initialised here
                     overflow = true;
                 }
             }

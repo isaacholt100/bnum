@@ -1,55 +1,104 @@
 # bnum
 
 [![GitHub](https://img.shields.io/badge/GitHub-isaacholt100/bnum-default?logo=github)](https://github.com/isaacholt100/bnum)
-[![doc.rs](https://img.shields.io/docsrs/bnum)](https://docs.rs/bnum/latest/bnum)
+[![docs.rs](https://img.shields.io/docsrs/bnum?logo=docsdotrs)](https://docs.rs/bnum/latest/bnum)
 [![Crates.io](https://img.shields.io/crates/d/bnum?logo=rust)
 ](https://crates.io/crates/bnum)
+[![Dependents](https://img.shields.io/crates/dependents/bnum)](https://crates.io/crates/bnum/reverse_dependencies)
+[![MSRV](https://img.shields.io/crates/msrv/bnum)](https://crates.io/crates/bnum)
 [![dependency status](https://deps.rs/repo/github/isaacholt100/bnum/status.svg)](https://deps.rs/repo/github/isaacholt100/bnum)
 [![codecov](https://codecov.io/gh/isaacholt100/bnum/branch/master/graph/badge.svg)](https://codecov.io/gh/isaacholt100/bnum)
 [![license](https://img.shields.io/crates/l/bnum)](https://github.com/isaacholt100/bnum)
 
-Arbitrary precision, fixed-size signed and unsigned integer types for Rust.
+`bnum` provides _fully generic_ fixed-width numeric types.
 
 ## Overview
 
-The aim of this crate is to provide integer types of arbitrary fixed size which behave exactly like Rust's primitive integer types: `u8`, `i8`, `u16`, `i16`, etc. Nearly all methods defined on Rust's signed and unsigned primitive integers are defined `bnum`'s signed and unsigned integers. Additionally, some other useful methods are provided, mostly inspired by the [`BigInt`](https://docs.rs/num-bigint/latest/num_bigint/struct.BigInt.html) and [`BigUint`](https://docs.rs/num-bigint/latest/num_bigint/struct.BigUint.html) types from the [`num_bigint`](https://docs.rs/num-bigint/latest/num_bigint/index.html) crate.
+Rust provides 12 fixed-width integer types out of the box: `u8`, `i8`, `u16`, `i16`, `u32`, `i32`, `u64`, `i64`, `u128`, and `i128`. This interface has several limitations:
+- Only 5 possible bit widths: 8, 16, 32, 64, and 128 bits.
+- The types are distinct rather than being generic over bit width, meaning that generic code cannot be written over arbitrary bit widths.
+- Each type must have the same overflow behaviour, globally controlled by the `overflow-checks` flag: either panic on overflow if `overflow-checks` is enabled, or wrap on overflow if not. If you wanted to specify custom overflow behaviour, you would have to use the `Wrapping<T>` or `Saturating<T>` wrapper types from the standard library, which are cumbersome.
 
-This crate uses Rust's const generics to allow creation of integers of arbitrary size that can be determined at compile time. Unsigned integers are stored as an array of digits (primitive unsigned integers) of length `N`. This means all `bnum` integers can be stored on the stack, as they are fixed size. Signed integers are simply stored as an unsigned integer in two's complement.
+`bnum` addresses each of these limitations by providing a _single generic integer type_ `Integer`, which has const-generic parameters to specify:
+- The width of the integer in bytes
+- Whether the integer is signed or unsigned.
+- The overflow behaviour of the integer: wrapping, saturating, or panicking.
 
-`bnum` defines 4 unsigned integer types: each uses a different primitive integer as its digit type. `BUint` uses `u64` as its digit, `BUintD32` uses `u32`, `BUintD16` uses `u16` and `Uint` uses `u8`. The signed integer types `BInt`, `BIntD32`, `BIntD16` and `Int` are represented by these unsigned integers respectively.
+More specifically, `Integer<S, N, OM>` specifies an integer type which:
+- Is signed if `S` is `true`, and unsigned if `S` is `false`.
+- Has a width of `N * 8` bits.
+- Has overflow behaviour specified by `OM`:
+  - `OM = 0`: arithmetic operations wrap on overflow.
+  - `OM = 1`: arithmetic operations panic on overflow.
+  - `OM = 2`: arithmetic operations saturate on overflow.
 
-`BUint` and `BInt` are the fastest as they store (and so operate on) the least number of digits for a given bit size. However, the drawback is that the bit size must be a multiple of `64` (`bitsize = N * 64`). This is why other integer types are provided as well, as they allow the bit size to be a multiple of `32`, `16` or `8` instead. When choosing which of these types to use, determine which of `64, 32, 16, 8` is the largest divisor of the desired bit size, and use the corresponding type. For example, if you wanted a 96-bit unsigned integer, 32 is the largest divisor of 96 out of these, so use `BUintD32<3>`. A 40-bit signed integer would be `Int<5>`.
+For example, a useful type in cryptography would be `Integer<false, 64, 0>`: an unsigned integer type with a width of `64 * 8 = 512` bits, and which has explicit wrapping arithmetic.
 
-## Why bnum?
+`bnum` also provides a macro `n!` for easily creating `bnum` integers from integer literals.
 
-- **Zero dependencies by default**: `bnum` does not depend on any other crates by default. Support for crates such as [`rand`](https://docs.rs/rand/latest/rand/) and [`serde`](https://docs.rs/serde/latest/serde/) can be enabled with crate [features](#features).
-- **`no-std` compatible**: `bnum` can be used in `no_std` environments, provided that the [`arbitrary`](#fuzzing) and [`quickcheck`](#quickcheck) features are not enabled.
-- **Compile-time integer parsing**: the `from_str_radix` methods on `bnum` integers are `const`, which allows parsing of integers from string slices at compile time. Note that this is more powerful than compile-time parsing of integer literals. This is because it allows parsing of strings in all radices from `2` to `36` inclusive instead of just `2`, `8`, `10` and `16`. Additionally, the string to be parsed does not have to be a literal: it could, for example, be obtained via [`include_str!`](https://doc.rust-lang.org/core/macro.include_str.html), or [`env!`](https://doc.rust-lang.org/core/macro.env.html).
-- **`const` evaluation**: nearly all methods defined on `bnum` integers are `const`, which allows complex compile-time calculations.
-
-## Example Usage
-
-**NB: the examples in the documentation use specific type aliases (e.g. `U256`, `U512`,  or `I256`, `I512`) to give examples of correct usage for most methods. There is nothing special about these types in particular: all methods that are shown with these are implemented for all unsigned/signed `bnum` integers for any value of `N`.**
+To illustrate the power of this generic interface, here is a simple example:
 
 ```rust
-// As of version 0.6.0, you can parse integers from string slices at compile time with the const method `from_str_radix`:
+use bnum::prelude::*; // imports common use items, including the `Integer` type and the `n!` macro
+
+// say we want to implement a polynomial which works over any unsigned or signed integer of any byte width and with any overflow behaviour
+// for example, the polynomial could be p(x) = 2x^3 + 3x^2 + 5x + 7
+
+const fn p<S: bool, N: usize, OM: u8>(x: Integer<S, N, OM>) -> Integer<S, N, OM> {
+    n!(2)*x.pow(3) + n!(3)*x.pow(2) + n!(5)*x + n!(7) // type inference means we don't need to specify the width of the integers in the n! macro
+}
+
+// 2*10^3 + 3*10^2 + 5*10 + 7 = 2357
+assert_eq!(p(n!(10 U256)), n!(2357)); // evaluates p(10) as a 16-bit unsigned integer
+
+type U24w = Integer<false, 3, 0>; // 24-bit unsigned integer with wrapping arithmetic
+type I40s = Integer<true, 5, 2>;  // 40-bit signed integer with saturating arithmetic
+type U48p = Integer<false, 6, 1>; // 48-bit unsigned integer with panicking arithmetic
+
+let a = p(U24::MAX); // result wraps around and doesn't panic
+let b = p(I40::MAX); // result is too large to be contained in I40, so saturates to I40::MAX
+// let c = p(U48::MAX); // this would result in panic due to overflow
+```
+  
+For more information on the `Integer` type and the `n!` macro, see the crate level documentation.
+
+## Key features
+
+- **Maximally space- and time-efficient**: for most libraries providing fixed-width uints, there is a trade-off between flexibility of bit widths, space efficiency, and time efficiency:
+  - If the integer is stored as an array of wide digits (e.g. `u64`), then this either limits the bit width to be a multiple of `64`, or means that there is redundant storage for bit widths which are not multiples of `64`.
+  - If integer is stored as an array of narrow digits (e.g. `u8`), then operations are slower (as there are more digits to process).
+  
+  `bnum` avoid this trade-off and achieves both space and time efficiency by storing integers as arrays of `u8` digits, but "chunking" these digits together into wide `u128` digits.
+- **Strict adherence to Rust integer API**: the API of `Integer` follows the API of the Rust standard library's integer types as closely as possible. Effectively every method available on the integer types from `std` is also available on `Integer`, and has the same behaviour.
+- **Zero dependencies by default**: `bnum` does not depend on any other crates by default. Support for crates such as [`rand`](https://docs.rs/rand/latest/rand/) and [`serde`](https://docs.rs/serde/latest/serde/) can be enabled with crate [features](#crate-features).
+- **`no-std` and `no-alloc` compatible**: `bnum` can be used in `no_std` environments, provided that the [`arbitrary`](#fuzzing) and [`quickcheck`](#quickcheck) features are not enabled. It can also be used in `no-alloc` environments, with the only methods unavailable here being formatting and conversion to strings/vectors of digits in a given radix.
+- **`const` evaluation**: nearly all methods defined on `bnum` integers are `const`, which allows for complex compile-time calculations. This includes parsing integers from strings via `from_str_radix`.
+
+## Further examples
+
+```rust
+// Parsing a string in a given radix into an integer at compile time
+
 use bnum::types::U256;
 use bnum::errors::ParseIntError;
 
-const UINT_FROM_DECIMAL_STR: U256 = U256::from_str_radix("12345678901234567890", 10).unwrap();
+const UINT_FROM_DECIMAL_STR: U256 = match U256::from_str_radix("12345678901234567890", 10) {
+    Ok(val) => val,
+    Err(e) => panic!("Failed to parse integer"),
+};
 
 assert_eq!(format!("{}", UINT_FROM_DECIMAL_STR), "12345678901234567890");
 ```
 
 ```rust
 // Calculate the `n`th Fibonacci number, using the type alias `U512`.
-
+use bnum::prelude::*;
 use bnum::types::U512; // `U512` is a type alias for a `Uint` which contains 64 `u8` digits
 
 // Calculate the nth Fibonacci number
 fn fibonacci(n: usize) -> U512 {
-    let mut f_n: U512 = U512::ZERO;
-    let mut f_n_next: U512 = U512::ONE;
+    let mut f_n: U512 = n!(0);
+    let mut f_n_next = n!(1);
 
     for _ in 0..n {
         let temp = f_n_next;
@@ -66,25 +115,20 @@ let f_n = fibonacci(n);
 println!("The {}th Fibonacci number is {}", n, f_n);
 // Prints "The 100th Fibonacci number is 354224848179261915075"
 
-assert_eq!(f_n, U512::from_str_radix("354224848179261915075", 10).unwrap());
+assert_eq!(f_n, n!(354224848179261915075));
 ```
 
 ```rust
-// Construct an 80-bit signed integer
-// Out of [64, 32, 16, 8], 16 is the largest divisor of 80, so use `BIntD16`
-use bnum::BIntD16;
+use bnum::prelude::*;
 
-type I80 = BIntD16<5>; // 80 / 16 = 5
-
-let neg_one = I80::NEG_ONE; // -1
-assert_eq!(neg_one.count_ones(), 80); // signed integers are stored in two's complement so `-1` is represented as `111111...`
+let neg_one = n!(-1 I80);
+assert_eq!(neg_one.count_ones(), 80); // signed integers are stored in two's complement so `-1` is represented as `111111...11`
 ```
 
-## Features
+## Crate features
 
 | Feature name | Default? | Enables... |
 |--------------|----------|------------|
-| `signed`     | Yes      | The `Int` type. |
 | `alloc`      | Yes      | Methods which require a global allocator (i.e. formatting and radix conversion). |
 | `arbitrary`  | No       | The [`Arbitrary`](https://docs.rs/arbitrary/latest/arbitrary/trait.Arbitrary.html) trait from the [`arbitrary`](https://docs.rs/arbitrary/latest/arbitrary/) crate. **Note: currently, this feature cannot be used with `no_std` (see <https://github.com/rust-fuzz/arbitrary/issues/38>).** |
 | `rand`       | No       | Creation of random `bnum` types via the [`rand`](https://docs.rs/rand/latest/rand/) crate. |
@@ -94,7 +138,7 @@ assert_eq!(neg_one.count_ones(), 80); // signed integers are stored in two's com
 | `quickcheck` | No       | The [`Arbitrary`](https://docs.rs/quickcheck/latest/quickcheck/trait.Arbitrary.html) trait from the [`quickcheck`](https://docs.rs/quickcheck/latest/quickcheck/) crate. **Note: currently, this feature cannot be used with `no_std`.** |
 | `zeroize`    | No       | The [`Zeroize`](https://docs.rs/zeroize/latest/zeroize/trait.Zeroize.html) trait from the [`zeroize`](https://docs.rs/zeroize/latest/zeroize/) crate. |
 | `valuable`   | No       | The [`Valuable`](https://docs.rs/valuable/latest/valuable/trait.Valuable.html) trait from the [`valuable`](https://docs.rs/valuable/latest/valuable/) crate. |
-| `nightly`    | No       | Testing methods whose counterparts on the primitive integers are only available on nightly, such as the `div_floor` and all `strict_...` methods. |
+| `nightly`    | No       | Testing methods whose counterparts on the primitive integers are only available on nightly. |
 
 ## Testing
 
@@ -102,33 +146,14 @@ This crate is tested with the [`quickcheck`](https://docs.rs/quickcheck/latest/q
 
 ## Minimum Supported Rust Version
 
-The current Minimum Supported Rust Version (MSRV) is `1.85.1`. <!-- TODO: check that this is inline with msrv specified in Cargo.toml-->
+The current Minimum Supported Rust Version (MSRV) is `1.86.0`. <!-- TODO: check that this is inline with msrv specified in Cargo.toml-->
 
-## Documentation
+## Roadmap
 
-If a method is not documented explicitly, it will have a link to the equivalent method defined on primitive Rust integers (since the methods have the same functionality).
+- Faster algorithms for certain operations on large integers, such as multiplication and division.
+- Implement a generic floating point type `Float<N, MB>`, where `N` is the byte width and `MB` is the number of mantissa bits. This will have the same API and behaviour as `f32` and `f64`.
 
-**NB: `bnum` is currently pre-`1.0.0`. As per the [Semantic Versioning guidelines](https://semver.org/#spec-item-4), the public API may contain breaking changes while it is in this stage. However, as the API is designed to be as similar as possible to the API of Rust's primitive integers, it is unlikely that there will be a large number of breaking changes.**
-
-## Known Issues
-
-At the moment, the [`From`](https://doc.rust-lang.org/core/convert/trait.From.html) trait is implemented for `bnum` integers, from all the Rust primitive integers. However, this behaviour is not quite correct. For example, if a 24-bit wide unsigned integer (`Uint<3>`) were created, this should not implement `From<u32>`, etc. and should implement `TryFrom<u32>` instead. To ensure correct behaviour, the [`FromPrimitive`](https://docs.rs/num-traits/latest/num_traits/cast/trait.FromPrimitive.html) trait from the [`num_traits`](https://docs.rs/num-traits/latest/num_traits/index.html) crate can be used instead, as this will always return an [`Option`](https://doc.rust-lang.org/core/option/enum.Option.html) rather than the integer itself.
-
-The [`num_traits::NumCast`](https://docs.rs/num-traits/latest/num_traits/cast/trait.NumCast.html) trait is implemented for `bnum` integers but will intentionally panic if its method [`from`](https://docs.rs/num-traits/latest/num_traits/cast/trait.NumCast.html#tymethod.from) is called, as it is not possible to guarantee a correct conversion, due to trait bounds enforced by [`NumCast`](https://docs.rs/num-traits/latest/num_traits/cast/trait.NumCast.html). This trait should therefore never be used on `bnum` integers. The implementation exists only to allow implementation of the [`num_traits::PrimInt`](https://docs.rs/num-traits/latest/num_traits/int/trait.PrimInt.html) trait.
-
-## Prior bugs
-
-The short list of bugs in previous versions can be found at [`changes/prior-bugs.md`](https://github.com/isaacholt100/bnum/blob/master/changes/prior-bugs.md).
-
-## Future Work
-
-This library aims to provide arbitrary, fixed precision equivalents of Rust's 3 built-in number types: signed integers, unsigned integers and floats. Signed and unsigned integers have been implemented and fully tested, and will aim to keep up to date with Rust's integer interface. (e.g. when a new method is implemented on a Rust primitive integer, this library will attempt to keep in step to include that method as well. This includes nightly-only methods.)
-
-Currently, arbitrary precision fixed size floats are being worked on but are incomplete. Most of the basic methods, such as arithmetic and classification, have been implemented, but at the moment there is no implementation of the transcendental floating point methods such as `sin`, `exp`, `log`, etc.
-
-Additionally, a proc macro for parsing numeric values will be developed at some point.
-
-## Licensing
+## License
 
 `bnum` is licensed under either the MIT license or the Apache License 2.0.
 

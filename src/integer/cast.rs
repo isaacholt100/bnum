@@ -1,6 +1,7 @@
 use super::{Integer, Uint};
 use crate::cast;
 
+#[inline]
 const fn bytes_cast<const N: usize, const M: usize, const SIGNED: bool>(
     from: [u8; N],
 ) -> [u8; M] {
@@ -22,9 +23,9 @@ const fn bytes_cast<const N: usize, const M: usize, const SIGNED: bool>(
 macro_rules! cast_uint_from_to_prim_int {
     ($($int: ty), *) => {
         $(
-            impl<const S: bool, const N: usize> CastFrom<Integer<S, N>> for $int {
+            impl<const S: bool, const N: usize, const OM: u8> CastFrom<Integer<S, N, OM>> for $int {
                 #[inline]
-                fn cast_from(value: Integer<S, N>) -> Self {
+                fn cast_from(value: Integer<S, N, OM>) -> Self {
                     const BYTES: usize = (<$int>::BITS as usize) / 8;
 
                     let bytes = bytes_cast::<N, BYTES, S>(value.to_le_bytes());
@@ -32,7 +33,7 @@ macro_rules! cast_uint_from_to_prim_int {
                 }
             }
 
-            impl<const S: bool, const N: usize> CastFrom<$int> for Integer<S, N> {
+            impl<const S: bool, const N: usize, const OM: u8> CastFrom<$int> for Integer<S, N, OM> {
                 #[inline]
                 fn cast_from(value: $int) -> Self {
                     #[allow(unused_comparisons)]
@@ -73,9 +74,9 @@ pub(crate) use cast_int_from_float;
 macro_rules! cast_uint_from_to_prim_float {
     ($($f: ty), *) => {
         $(
-            impl<const S: bool, const N: usize> CastFrom<Integer<S, N>> for $f {
+            impl<const S: bool, const N: usize, const OM: u8> CastFrom<Integer<S, N, OM>> for $f {
                 #[inline]
-                fn cast_from(value: Integer<S, N>) -> Self {
+                fn cast_from(value: Integer<S, N, OM>) -> Self {
                     if !S {
                         cast::float::cast_float_from_uint(value.force_sign::<false>())
                     } else {
@@ -85,13 +86,13 @@ macro_rules! cast_uint_from_to_prim_float {
                 }
             }
 
-            impl<const S: bool, const N: usize> CastFrom<$f> for Integer<S, N> {
+            impl<const S: bool, const N: usize, const OM: u8> CastFrom<$f> for Integer<S, N, OM> {
                 #[inline]
                 fn cast_from(value: $f) -> Self {
                     if !S {
-                        cast::float::cast_uint_from_float::<$f, Uint<N>>(value).force_sign::<S>()
+                        cast::float::cast_uint_from_float::<$f, Uint<N, OM>>(value).force_sign::<S>()
                     } else {
-                        crate::uint::cast::cast_int_from_float!(value)
+                        crate::integer::cast::cast_int_from_float!(value)
                     }
                 }
             }
@@ -99,7 +100,7 @@ macro_rules! cast_uint_from_to_prim_float {
     };
 }
 
-use crate::ExpType;
+use crate::Exponent;
 use crate::cast::CastFrom;
 #[allow(unused_imports)]
 use crate::cast::float::{CastFloatFromUintHelper, CastUintFromFloatHelper, FloatMantissa};
@@ -114,13 +115,13 @@ impl<const N: usize> FloatMantissa for Uint<N> {
     }
 }
 
-impl<const N: usize> CastUintFromFloatHelper for Uint<N> {
+impl<const N: usize, const OM: u8> CastUintFromFloatHelper for Uint<N, OM> {
     const MAX: Self = Self::MAX;
     const MIN: Self = Self::MIN;
 }
 
-impl<const N: usize> CastFloatFromUintHelper for Uint<N> {
-    fn trailing_zeros(self) -> ExpType {
+impl<const N: usize, const OM: u8> CastFloatFromUintHelper for Uint<N, OM> {
+    fn trailing_zeros(self) -> Exponent {
         Self::trailing_zeros(self)
     }
 }
@@ -131,25 +132,25 @@ cast_uint_from_to_prim_int!(
 
 cast_uint_from_to_prim_float!(f32, f64);
 
-impl<const S: bool, const N: usize> CastFrom<bool> for Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> CastFrom<bool> for Integer<S, N, OM> {
     #[inline]
     fn cast_from(value: bool) -> Self {
         if value { Self::ONE } else { Self::ZERO }
     }
 }
 
-impl<const S: bool, const N: usize> CastFrom<char> for Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> CastFrom<char> for Integer<S, N, OM> {
     #[inline]
     fn cast_from(value: char) -> Self {
         Self::cast_from(value as u32)
     }
 }
 
-impl<const S: bool, const N: usize, const R: bool, const M: usize> CastFrom<Integer<R, M>>
-    for Integer<S, N>
+impl<const S: bool, const N: usize, const R: bool, const M: usize, const OM: u8> CastFrom<Integer<R, M, OM>>
+    for Integer<S, N, OM>
 {
     #[inline]
-    fn cast_from(value: Integer<R, M>) -> Self {
+    fn cast_from(value: Integer<R, M, OM>) -> Self {
         let bytes = bytes_cast::<M, N, R>(value.to_le_bytes());
         Self::from_le_bytes(bytes)
     }

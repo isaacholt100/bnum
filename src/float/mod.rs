@@ -1,7 +1,7 @@
 #[cfg(test)]
 use crate::cast::As;
 use crate::doc;
-use crate::{ExpType, Int, Uint};
+use crate::{Exponent, Int, Uint};
 use crate::Digit;
 
 #[cfg(test)]
@@ -64,10 +64,10 @@ pub(crate) type UnsignedFloatExponent = u128;
 // TODO: implement rand traits
 
 impl<const W: usize, const MB: usize> Float<W, MB> {
-    const MB: ExpType = MB as _;
-    const BITS: ExpType = Uint::<W>::BITS;
+    const MB: Exponent = MB as _;
+    const BITS: Exponent = Uint::<W>::BITS;
 
-    const EXPONENT_BITS: ExpType = Self::BITS - Self::MB - 1;
+    const EXPONENT_BITS: Exponent = Self::BITS - Self::MB - 1;
 
     const MANTISSA_MASK: Uint<W> = Uint::MAX.wrapping_shr(Self::EXPONENT_BITS + 1);
 
@@ -195,6 +195,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 }
 
 impl<const W: usize, const MB: usize> Default for Float<W, MB> {
+    #[doc = doc::default!()]
     #[inline]
     fn default() -> Self {
         Self::ZERO

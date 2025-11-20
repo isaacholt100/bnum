@@ -1,11 +1,11 @@
 use super::FloatCastHelper;
-use crate::ExpType;
+use crate::Exponent;
 use crate::cast::CastFrom;
 use crate::helpers::{Bits, One};
 use core::ops::{Add, Shr};
 
-pub trait CastFloatFromUintHelper: Bits + Shr<ExpType, Output = Self> {
-    fn trailing_zeros(self) -> ExpType;
+pub trait CastFloatFromUintHelper: Bits + Shr<Exponent, Output = Self> {
+    fn trailing_zeros(self) -> Exponent;
 }
 
 macro_rules! impl_cast_float_from_uint_helper_for_primitive_uint {
@@ -13,8 +13,8 @@ macro_rules! impl_cast_float_from_uint_helper_for_primitive_uint {
         $(
             impl CastFloatFromUintHelper for $uint {
                 #[inline]
-                fn trailing_zeros(self) -> ExpType {
-                    Self::trailing_zeros(self) as ExpType
+                fn trailing_zeros(self) -> Exponent {
+                    Self::trailing_zeros(self) as Exponent
                 }
             }
         )*
@@ -26,7 +26,7 @@ impl_cast_float_from_uint_helper_for_primitive_uint!(u8, u16, u32, u64, u128, us
 pub fn cast_float_from_uint<U, F>(value: U) -> F
 where
     F: FloatCastHelper,
-    F::SignedExp: TryFrom<ExpType> + One + Add<F::SignedExp, Output = F::SignedExp>,
+    F::SignedExp: TryFrom<Exponent> + One + Add<F::SignedExp, Output = F::SignedExp>,
     F::Mantissa: CastFrom<U> + One,
     U: CastFloatFromUintHelper + Copy,
 {

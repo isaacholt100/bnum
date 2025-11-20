@@ -33,6 +33,7 @@ pub fn n(input: TokenStream) -> TokenStream {
                 return quote!{0}.into()
             }
             let type_name = suffix.to_ascii_uppercase();
+            
             if digits.starts_with('-') && !signed {
                 let message = format!("cannot apply unary operator `-` to type `{}`", type_name);
                 Diagnostic::spanned(literal.span(), Level::Error, message)

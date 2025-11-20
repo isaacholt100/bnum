@@ -17,7 +17,7 @@ use core::ops::{Deref, DerefMut};
 
 /// Wrapper type designed to be filled with random big integers.
 ///
-/// This type exists because [`rand::Fill`](https://docs.rs/rand/latest/rand/trait.Fill.html) can't be implemented for `[Uint<N>]` or `[Int<N>]` due to Rust's orphan rules. Instead, it is implemented for `Slice<Uint<N>>` and `Slice<Int<N>>`. The underlying slice can then be accessed by calling [`AsRef::as_ref`](https://doc.rust-lang.org/core/convert/trait.AsRef.html#tymethod.as_ref) or [`AsMut::as_mut`](https://doc.rust-lang.org/core/convert/trait.AsMut.html#tymethod.as_mut) on the wrapper, or deferencing it. An alternative way of filling a slice with random big integers is using the [`fill_slice`] method in this crate's [`random`](crate::random) module.
+/// This type exists because [`rand::Fill`](https://docs.rs/rand/latest/rand/trait.Fill.html) can't be implemented for `[Integer<S, N, OM>]` due to Rust's orphan rules. Instead, it is implemented for `Slice<Integer<S, N, OM>>`. The underlying slice can then be accessed by calling [`AsRef::as_ref`](https://doc.rust-lang.org/core/convert/trait.AsRef.html#tymethod.as_ref) or [`AsMut::as_mut`](https://doc.rust-lang.org/core/convert/trait.AsMut.html#tymethod.as_mut) on the wrapper, or deferencing it. An alternative way of filling a slice with random big integers is using the [`fill_slice`] method in this crate's [`random`](crate::random) module.
 #[repr(transparent)]
 pub struct Slice<T>(pub [T]);
 
@@ -64,7 +64,7 @@ impl<T> DerefMut for Slice<T> {
 /// let mut v = vec![I256::ZERO; 10];
 /// let mut rng = StdRng::seed_from_u64(0);
 ///
-/// random::fill_slice(&mut v, &mut rng).unwrap();
+/// random::fill_slice(&mut v, &mut rng);
 /// // each initial `I256::ZERO` is replaced with a random `I256`
 ///
 /// println!("{:?}", v);
@@ -79,14 +79,14 @@ where
 
 use crate::Integer;
 
-impl<const S: bool, const N: usize> Fill for crate::random::Slice<Integer<S, N>> {
+impl<const S: bool, const N: usize, const OM: u8> Fill for crate::random::Slice<Integer<S, N, OM>> {
     #[inline(never)]
     fn fill<R: Rng + ?Sized>(&mut self, rng: &mut R) {
         if self.0.len() > 0 {
             rng.fill_bytes(unsafe {
                 core::slice::from_raw_parts_mut(
                     self.0.as_mut_ptr() as *mut u8,
-                    self.0.len() * core::mem::size_of::<Integer<S, N>>(),
+                    self.0.len() * core::mem::size_of::<Integer<S, N, OM>>(),
                 )
             });
         }
@@ -99,12 +99,12 @@ const fn widening_mul_u32(a: u32, b: u32) -> (u32, u32) {
     (m as u32, (m >> 32) as u32)
 }
 
-impl<const S: bool, const N: usize> SampleUniform for Integer<S, N> {
+impl<const S: bool, const N: usize, const OM: u8> SampleUniform for Integer<S, N, OM> {
     type Sampler = UniformInt<Self>;
 }
 
-impl<const S: bool, const N: usize> UniformSampler for UniformInt<Integer<S, N>> {
-    type X = Integer<S, N>;
+impl<const S: bool, const N: usize, const OM: u8> UniformSampler for UniformInt<Integer<S, N, OM>> {
+    type X = Integer<S, N, OM>;
 
     #[inline]
     fn new<B1, B2>(low_b: B1, high_b: B2) -> Result<Self, rand::distr::uniform::Error>
@@ -134,7 +134,7 @@ impl<const S: bool, const N: usize> UniformSampler for UniformInt<Integer<S, N>>
 
         let range = high.wrapping_sub(low).wrapping_add(Integer::ONE).force_sign::<false>();
         let thresh = if !range.is_zero() {
-            if Integer::<S, N>::BITS <= 32 { // because rand uses u32 to generate <= 32-bit integers
+            if Integer::<S, N, OM>::BITS <= 32 { // because rand uses u32 to generate <= 32-bit integers
                 use crate::cast::As;
 
                 let range = range.as_::<u32>();
@@ -156,7 +156,7 @@ impl<const S: bool, const N: usize> UniformSampler for UniformInt<Integer<S, N>>
 
     #[inline]
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Self::X {
-        if Integer::<S, N>::BITS <= 32 { // because rand uses u32 to generate <= 32-bit integers
+        if Integer::<S, N, OM>::BITS <= 32 { // because rand uses u32 to generate <= 32-bit integers
             use crate::cast::As;
 
             let range = self.range.force_sign::<false>().as_::<u32>();
@@ -181,7 +181,7 @@ impl<const S: bool, const N: usize> UniformSampler for UniformInt<Integer<S, N>>
             let thresh = self.thresh.force_sign::<false>();
 
             loop {
-                let v: Uint<N> = rng.random();
+                let v: Uint<N, OM> = rng.random();
                 let (lo, hi) = v.widening_mul(range);
                 if lo >= thresh {
                     return self.low.wrapping_add(hi.force_sign());
@@ -217,7 +217,7 @@ impl<const S: bool, const N: usize> UniformSampler for UniformInt<Integer<S, N>>
         }
         let range = high.wrapping_sub(low).wrapping_add(Integer::ONE).force_sign::<false>();
 
-        if Integer::<S, N>::BITS <= 32 { // because rand uses u32 to generate <= 32-bit integers
+        if Integer::<S, N, OM>::BITS <= 32 { // because rand uses u32 to generate <= 32-bit integers
             use crate::cast::As;
 
             let range = range.as_::<u32>();
@@ -248,19 +248,19 @@ impl<const S: bool, const N: usize> UniformSampler for UniformInt<Integer<S, N>>
             return Ok(rng.random());
         }
 
-        let (mut lo, mut result) = rng.random::<Uint<N>>().widening_mul(range);
+        let (mut lo, mut result) = rng.random::<Uint<N, OM>>().widening_mul(range);
         while lo > range.wrapping_neg() {
-            let (new_lo, new_hi) = rng.random::<Uint<N>>().widening_mul(range);
+            let (new_lo, new_hi) = rng.random::<Uint<N, OM>>().widening_mul(range);
             match lo.checked_add(new_hi) {
                 Some(x) => {
-                    if x == Uint::<N>::MAX {
+                    if x == Uint::<N, OM>::MAX {
                         lo = new_lo;
                     } else {
                         break;
                     }
                 },
                 None => {
-                    result += Uint::<N>::ONE;
+                    result += Uint::<N, OM>::ONE;
                     break;
                 }
             }
@@ -287,9 +287,9 @@ use rand::distr::uniform::{SampleBorrow, SampleUniform, UniformSampler};
 use rand::distr::{Distribution, StandardUniform};
 use rand::{Fill, Rng};
 
-impl<const S: bool, const N: usize> Distribution<Integer<S, N>> for StandardUniform {
+impl<const S: bool, const N: usize, const OM: u8> Distribution<Integer<S, N, OM>> for StandardUniform {
     #[inline]
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Integer<S, N> {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Integer<S, N, OM> {
         let mut out = Integer::ZERO;
         rng.fill_bytes(out.as_bytes_mut());
         out
@@ -395,6 +395,5 @@ crate::test::test_all_widths! {
     }
 
     test_random!(utest; StdRng, SmallRng);
-    #[cfg(feature = "signed")]
     test_random!(itest; StdRng, SmallRng);
 }
