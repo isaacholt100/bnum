@@ -149,7 +149,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
         (m.force_sign(), o)
     }
 
-    /// Returns a tuple of the division along with a boolean indicating whether an arithmetic overflow would occur. Note that the second item of the tuple is always `false` since the division only involves non-negative integers.
+    /// Returns a tuple of the division along with a boolean indicating whether overflow occurred. Note that this can only happen for signed integers, when `self` is [`Self::MIN`] and `rhs` is `-1`.
     /// 
     /// # Panics
     /// 
@@ -181,9 +181,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
         (self.div_rem_unchecked(rhs).0, false)
     }
 
-    /// Returns a tuple of the Euclidean division along with a boolean indicating whether an arithmetic overflow would occur. Note that the second item of the tuple is always `false` since the division only involves non-negative integers.
-    /// 
-    /// Note that this is equivalent to `self.overflowing_div(rhs)`, since the division only involves non-negative integers.
+    /// Returns a tuple of the Euclidean division along with a boolean indicating whether overflow occurred. Note that this can only happen for signed integers, when `self` is [`Self::MIN`] and `rhs` is `-1`.
     /// 
     /// # Panics
     /// 
@@ -215,7 +213,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
         (self.div_rem_euclid_unchecked(rhs).0, false)
     }
 
-    /// Returns a tuple of the remainder along with a boolean indicating whether an arithmetic overflow would occur. Note that the second item of the tuple is always `false` since the calculation only involves non-negative integers.
+    /// Returns a tuple of the remainder along with a boolean indicating whether overflow occurred during division. Note that this can only happen for signed integers, when `self` is [`Self::MIN`] and `rhs` is `-1`.
     /// 
     /// # Panics
     /// 
@@ -248,9 +246,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
         }
     }
 
-    /// Returns a tuple of the Euclidean remainder along with a boolean indicating whether an arithmetic overflow would occur. Note that the second item of the tuple is always `false` since the calculation only involves non-negative integers.
-    /// 
-    /// Note that this is equivalent to `self.overflowing_rem(rhs)`, since the calculation only involves non-negative integers.
+    /// Returns a tuple of the Euclidean remainder along with a boolean indicating whether overflow occurred during division. Note that this can only happen for signed integers, when `self` is [`Self::MIN`] and `rhs` is `-1`.
     /// 
     /// # Panics
     /// 

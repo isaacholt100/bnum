@@ -1,11 +1,10 @@
+mod consts;
 mod bigint_helpers;
 mod bits;
 mod bytes;
 pub mod cast;
 mod checked;
 mod cmp;
-mod const_trait_fillers;
-mod consts;
 mod convert;
 mod div;
 #[cfg(feature = "alloc")]
@@ -21,6 +20,7 @@ mod saturating;
 mod strict;
 mod unchecked;
 mod wrapping;
+mod const_trait_fillers;
 
 use crate::{Byte, OverflowMode};
 use crate::{WideDigits, WideDigitsMut};
@@ -74,16 +74,6 @@ pub type Int<const N: usize, const OM: u8 = {crate::OverflowMode::DEFAULT.to_u8(
 impl<const S: bool, const N: usize, const OM: u8> zeroize::DefaultIsZeroes for Integer<S, N, OM> {}
 
 impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
-    const OVERFLOW_MODE: OverflowMode = if OM == OverflowMode::Wrapping as u8 {
-        OverflowMode::Wrapping
-    } else if OM == OverflowMode::Panicking as u8 {
-        OverflowMode::Panicking
-    } else if OM == OverflowMode::Saturating as u8 {
-        OverflowMode::Saturating
-    } else {
-        unreachable!()
-    };
-
     #[inline(always)]
     pub(crate) const fn force_sign<const R: bool>(self) -> Integer<R, N, OM> {
         Integer::from_bytes(self.bytes)

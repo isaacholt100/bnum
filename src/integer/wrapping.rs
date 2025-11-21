@@ -11,7 +11,7 @@ macro_rules! impl_desc {
 
 #[doc = impl_desc!()]
 impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
-    /// Wrapping integer addition. Computes `self + rhs` and returns the result truncated to the bit width of `Self` (i.e. performs addition modulo $Self::MAX + 1$).
+    /// Wrapping integer addition. Computes `self + rhs` modulo `Self::MAX + 1`.
     /// 
     /// # Examples
     /// 
@@ -19,10 +19,13 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     /// 
     /// ```
     /// use bnum::prelude::*;
-    /// use bnum::types::U1024;
+    /// use bnum::types::{U1024, I1024};
     /// 
     /// assert_eq!(n!(1 U1024).wrapping_add(n!(1)), n!(2));
     /// assert_eq!(U1024::MAX.wrapping_add(n!(1)), n!(0));
+    /// 
+    /// assert_eq!(I1024::MIN.wrapping_add(n!(-1)), I1024::MAX);
+    /// assert_eq!(I1024::MAX.wrapping_add(n!(1)), I1024::MIN);
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -30,7 +33,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
         self.overflowing_add(rhs).0
     }
     
-    /// Wrapping integer subtraction. Computes `self - rhs` and returns the result truncated to the bit width of `Self` (i.e. performs subtraction modulo $Self::MAX + 1$).
+    /// Wrapping integer subtraction. Computes `self - rhs` modulo `Self::MAX + 1`.
     /// 
     /// # Examples
     /// 
@@ -38,10 +41,13 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     /// 
     /// ```
     /// use bnum::prelude::*;
-    /// use bnum::types::U256;
+    /// use bnum::types::{U256, I256};
     /// 
     /// assert_eq!(n!(1 U256).wrapping_sub(n!(1)), n!(0));
     /// assert_eq!(n!(0 U256).wrapping_sub(n!(1)), U256::MAX);
+    /// 
+    /// assert_eq!(I256::MIN.wrapping_sub(n!(1)), I256::MAX);
+    /// assert_eq!(I256::MAX.wrapping_sub(n!(-1)), I256::MIN);
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -49,7 +55,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
         self.overflowing_sub(rhs).0
     }
 
-    /// Wrapping integer multiplication. Computes `self * rhs` and returns the result truncated to the bit width of `Self` (i.e. performs multiplication modulo $Self::MAX + 1$).
+    /// Wrapping integer multiplication. Computes `self * rhs` modulo `Self::MAX + 1`.
     /// 
     /// # Examples
     /// 
@@ -57,10 +63,13 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     ///
     /// ```
     /// use bnum::prelude::*;
-    /// use bnum::types::U512;
+    /// use bnum::types::{U512, I512};
     /// 
     /// assert_eq!(n!(1 U512).wrapping_mul(n!(1)), n!(1));
     /// assert_eq!(U512::power_of_two(511).wrapping_mul(n!(2)), n!(0));
+    /// 
+    /// assert_eq!(I512::MIN.wrapping_mul(n!(-1)), I512::MIN);
+    /// assert_eq!(I512::MIN.wrapping_mul(I512::MIN), n!(0));
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -69,7 +78,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
         self.force_sign::<false>().overflowing_mul(rhs.force_sign()).0.force_sign()
     }
 
-    /// Wrapping integer division. Since the calculation only involves unsigned integers, this is equivalent to normal division: `self / rhs`.
+    /// Wrapping integer division. Note that wrap around can only occur for signed integers, when `self` is [`Self::MIN`] and `rhs` is `-1`.
     /// 
     /// # Panics
     /// 
@@ -81,9 +90,12 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     /// 
     /// ```
     /// use bnum::prelude::*;
-    /// use bnum::types::U256;
+    /// use bnum::types::{U1024, I1024};
     /// 
-    /// assert_eq!(n!(5 U256).wrapping_div(n!(2)), n!(2));
+    /// assert_eq!(n!(5 U1024).wrapping_div(n!(2)), n!(2));
+    /// 
+    /// assert_eq!(n!(-47 I1024).wrapping_div(n!(-5)), n!(9));
+    /// assert_eq!(I1024::MIN.wrapping_div(n!(-1)), I1024::MIN);
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -91,7 +103,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
         self.overflowing_div(rhs).0
     }
 
-    /// Wrapping Euclidean division. Since the calculation only involves unsigned integers, this is equivalent to normal division: `self / rhs`.
+    /// Wrapping Euclidean division. Note that wrap around can only occur for signed integers, when `self` is [`Self::MIN`] and `rhs` is `-1`. In this case, the function returns [`Self::MIN`].
     /// 
     /// # Panics
     /// 
@@ -103,9 +115,12 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     /// 
     /// ```
     /// use bnum::prelude::*;
-    /// use bnum::types::U2048;
+    /// use bnum::types::{U2048, I2048};
     /// 
     /// assert_eq!(n!(13 U2048).wrapping_div_euclid(n!(5)), n!(2));
+    /// 
+    /// assert_eq!(n!(-13 I2048).wrapping_div_euclid(n!(5)), n!(-3));
+    /// assert_eq!(I2048::MIN.wrapping_div_euclid(n!(-1)), I2048::MIN);
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -113,14 +128,29 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
         self.overflowing_div_euclid(rhs).0
     }
 
-    /// Wrapping integer remainder. Since the calculation only involves unsigned integers, this is equivalent to normal remainder operation `self % rhs`.
+    /// Wrapping integer remainder. This is equivalent to `self.strict_rem(rhs)`.
+    /// 
+    /// # Panics
+    /// 
+    /// This function will panic if `rhs` is zero.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use bnum::prelude::*;
+    /// 
+    /// use bnum::types::I256;
+    /// 
+    /// assert_eq!(n!(13 U256).wrapping_rem(n!(5)), n!(3));
+    /// assert_eq!(I256::MIN.wrapping_rem(n!(-1)), n!(0));
+    /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn wrapping_rem(self, rhs: Self) -> Self {
         self.overflowing_rem(rhs).0
     }
 
-    /// Wrapping Euclidean remainder. Since the calculation only involves unsigned integers, this is equivalent to normal remainder operation `self % rhs`.
+    /// Wrapping Euclidean remainder. This is equivalent to `self.strict_rem_euclid(rhs)`.
     /// 
     /// # Panics
     /// 
@@ -132,9 +162,10 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     /// 
     /// ```
     /// use bnum::prelude::*;
-    /// use bnum::types::U512;
+    /// use bnum::types::I512;
     /// 
     /// assert_eq!(n!(13 U512).wrapping_rem_euclid(n!(5)), n!(3));
+    /// assert_eq!(I512::MIN.wrapping_rem_euclid(n!(-1)), n!(0));
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -142,7 +173,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
         self.overflowing_rem_euclid(rhs).0
     }
 
-    /// Wrapping negation (negation modulo $Self::MAX + 1$).
+    /// Wrapping (modular) negation. Computes `-self` modulo `Self::MAX + 1`.
     /// 
     /// # Examples
     /// 
@@ -150,11 +181,14 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     /// 
     /// ```
     /// use bnum::prelude::*;
-    /// use bnum::types::U256;
+    /// use bnum::types::{U1024, I1024};
     /// 
-    /// assert_eq!(n!(1 U256).wrapping_neg(), U256::MAX);
-    /// assert_eq!(U256::MAX.wrapping_neg(), n!(1));
-    /// assert_eq!(n!(0 U256).wrapping_neg(), n!(0));
+    /// assert_eq!(n!(1 U1024).wrapping_neg(), U1024::MAX);
+    /// assert_eq!(U1024::MAX.wrapping_neg(), n!(1));
+    /// assert_eq!(n!(0 U1024).wrapping_neg(), n!(0));
+    /// 
+    /// assert_eq!(n!(1 I1024).wrapping_neg(), n!(-1));
+    /// assert_eq!(I1024::MIN.wrapping_neg(), I1024::MIN);
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -162,7 +196,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
         self.overflowing_neg().0
     }
 
-    /// Panic-free left shift. Returns `self << mask(rhs)`, where `mask(rhs)` is `rhs` modulo `Self::BITS`.
+    /// Panic-free left shift. Returns `self << (rhs % Self::BITS)`.
     /// 
     /// # Examples
     /// 
@@ -170,11 +204,15 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     /// 
     /// ```
     /// use bnum::prelude::*;
-    /// use bnum::types::U2048;
+    /// use bnum::types::{U2048, I2048};
     /// 
     /// assert_eq!(n!(1 U2048).wrapping_shl(1), n!(2));
     /// assert_eq!(n!(1 U2048).wrapping_shl(2049), n!(2));
     /// assert_eq!(n!(1 U2048).wrapping_shl(2048), n!(1));
+    /// 
+    /// assert_eq!(n!(-2 I2048).wrapping_shl(1), n!(-4));
+    /// assert_eq!(n!(-2 I2048).wrapping_shl(2049), n!(-4));
+    /// assert_eq!(n!(-2 I2048).wrapping_shl(2048), n!(-2));
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -182,7 +220,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
         self.overflowing_shl(rhs).0
     }
 
-    /// Panic-free right shift. Returns `self >> mask(rhs)`, where `mask(rhs)` is `rhs` modulo `Self::BITS`.
+    /// Panic-free right shift. Returns `self >> (rhs % Self::BITS)`.
     /// 
     /// # Examples
     ///
@@ -190,12 +228,16 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     /// 
     /// ```
     /// use bnum::prelude::*;
-    /// use bnum::types::U1024;
+    /// use bnum::types::{U1024, I1024};
     /// 
     /// assert_eq!(n!(1 U1024).wrapping_shr(1), n!(0));
     /// assert_eq!(n!(2 U1024).wrapping_shr(1025), n!(1));
     /// assert_eq!(U1024::MAX.wrapping_shr(1024), U1024::MAX);
     /// assert_eq!(U1024::MAX.wrapping_shr(1023), n!(1));
+    /// 
+    /// assert_eq!(n!(-4 I1024).wrapping_shr(1), n!(-2));
+    /// assert_eq!(I1024::MIN.wrapping_shr(2048), I1024::MIN);
+    /// assert_eq!(I1024::MIN.wrapping_shr(2047), n!(-1));
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -203,7 +245,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
         self.overflowing_shr(rhs).0
     }
 
-    /// Wrapping exponentiation. Computes `self**exp` and returns the result truncated to the bit width of `Self` (i.e. performs exponentiation modulo $Self::MAX + 1$).
+    /// Wrapping exponentiation. Computes `self**exp` modulo `Self::MAX + 1`.
     /// 
     /// # Examples
     /// 
@@ -211,10 +253,13 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     ///
     /// ```
     /// use bnum::prelude::*;
-    /// use bnum::types::U512;
+    /// use bnum::types::I512;
     /// 
     /// assert_eq!(n!(2 U512).wrapping_pow(10), n!(1024));
     /// assert_eq!(n!(2 U512).wrapping_pow(512), n!(0));
+    /// 
+    /// assert_eq!(n!(-2 I512).wrapping_pow(512), n!(0));
+    /// assert_eq!(n!(2 I512).wrapping_pow(511), I512::MIN);
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -226,7 +271,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
 
 #[doc = concat!("(Unsigned integers only.) ", impl_desc!())]
 impl<const N: usize, const OM: u8> Uint<N, OM> {
-    /// Wrapping integer addition with a signed integer of the same bit width. Computes `self + rhs` and returns the result truncated to the bit width of `Self` (i.e. performs addition modulo $Self::MAX + 1$).
+    /// Wrapping integer addition with a signed integer of the same bit width. Computes `self + rhs` modulo `Self::MAX + 1`.
     ///
     /// # Examples
     /// 
@@ -246,7 +291,7 @@ impl<const N: usize, const OM: u8> Uint<N, OM> {
         self.overflowing_add_signed(rhs).0
     }
 
-    /// Wrapping integer subtraction with a signed integer of the same bit width. Computes `self - rhs` and returns the result truncated to the bit width of `Self` (i.e. performs subtraction modulo $Self::MAX + 1$).
+    /// Wrapping integer subtraction with a signed integer of the same bit width. Computes `self - rhs` modulo `Self::MAX + 1`.
     ///
     /// # Examples
     ///
@@ -292,18 +337,51 @@ impl<const N: usize, const OM: u8> Uint<N, OM> {
 
 #[doc = concat!("(Signed integers only.) ", impl_desc!())]
 impl<const N: usize, const OM: u8> Int<N, OM> {
+    /// Wrapping integer addition with an unsigned integer of the same bit width. Computes `self + rhs` modulo `Self::MAX + 1`.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use bnum::prelude::*;
+    /// use bnum::types::{U512, I512};
+    /// 
+    /// assert_eq!(I512::MIN.wrapping_add_unsigned(U512::MAX), I512::MAX);
+    /// assert_eq!(n!(0 I512).wrapping_add_unsigned(U512::MAX), n!(-1));
+    /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn wrapping_add_unsigned(self, rhs: Uint<N, OM>) -> Self {
         self.overflowing_add_unsigned(rhs).0
     }
 
+    /// Wrapping integer subtraction with an unsigned integer of the same bit width. Computes `self - rhs` modulo `Self::MAX + 1`.
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use bnum::prelude::*;
+    /// use bnum::types::{U1024, I1024};
+    /// 
+    /// assert_eq!(I1024::MAX.wrapping_sub_unsigned(U1024::MAX), I1024::MIN);
+    /// assert_eq!(n!(0 I1024).wrapping_sub_unsigned(U1024::MAX), n!(1));
+    /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn wrapping_sub_unsigned(self, rhs: Uint<N, OM>) -> Self {
         self.overflowing_sub_unsigned(rhs).0
     }
 
+    /// Wrapping absolute value. Computes `self.abs()` modulo `Self::MAX + 1`. Note that overflow can only occur when `self` is [`Self::MIN`], in which case the function returns [`Self::MIN`].
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use bnum::prelude::*;
+    /// use bnum::types::I2048;
+    /// 
+    /// assert_eq!(n!(-123 I2048).wrapping_abs(), n!(123));
+    /// assert_eq!(I2048::MIN.wrapping_abs(), I2048::MIN);
+    /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn wrapping_abs(self) -> Self {

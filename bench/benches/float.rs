@@ -5,7 +5,7 @@ use bnum::cast::CastFrom;
 
 mod unzip;
 
-const SAMPLE_SIZE: usize = 500;
+const SAMPLE_SIZE: usize = 1000;
 
 use bnum::{Int, Uint};
 // use bnum::Float;
@@ -84,12 +84,12 @@ fn bench_add(c: &mut Criterion) {
     // }));
     group.bench_with_input(BenchmarkId::new("Iterative", "d8"), &inputs1, |b, inputs| b.iter(|| {
         inputs.iter().cloned().map(|(a, b)| {
-            a.widening_mul(b)
+            a.leading_zeros()
         }).collect::<Vec<_>>()
     }));
     group.bench_with_input(BenchmarkId::new("Iterative", "d64"), &inputs2, |b, inputs| b.iter(|| {
         inputs.iter().cloned().map(|(a, b)| {
-            a.widening_mul(b)
+            a.leading_ones()
         }).collect::<Vec<_>>()
     }));
     group.finish();

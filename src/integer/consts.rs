@@ -1,10 +1,25 @@
 use crate::{Integer, Uint, Int};
+use crate::OverflowMode;
 use crate::Byte;
 
 use crate::Exponent;
 
 /// Associated constants.
 impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
+    /// The overflow mode used for this type, determined by the const-generic parameter `OM`:
+    /// - If `OM` is `0`, the overflow mode is [`OverflowMode::Wrapping`].
+    /// - If `OM` is `1`, the overflow mode is [`OverflowMode::Panicking`].
+    /// - If `OM` is `2`, the overflow mode is [`OverflowMode::Saturating`].
+    pub const OVERFLOW_MODE: OverflowMode = if OM == OverflowMode::Wrapping.to_u8() {
+        OverflowMode::Wrapping
+    } else if OM == OverflowMode::Panicking.to_u8() {
+        OverflowMode::Panicking
+    } else if OM == OverflowMode::Saturating.to_u8() {
+        OverflowMode::Saturating
+    } else {
+        unreachable!()
+    };
+
     /// The total number of bits that this type contains.
     /// 
     /// # Examples
@@ -82,8 +97,8 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     /// ```
     /// use bnum::types::{U256, I256};
     /// 
-    /// assert_eq!(U256::MAX.not(), U256::MIN); // memory representation is 111...1
-    /// assert_eq!(I256::MAX.not(), I256::MIN); // memory representation is 011...1
+    /// assert_eq!(U256::MAX.not(), U256::MIN); // memory representation of `Self::MAX` is 111...1
+    /// assert_eq!(I256::MAX.not(), I256::MIN); // memory representation of `Self::MAX` is 011...1
     /// ```
     pub const MAX: Self = Self::MIN.not();
 }

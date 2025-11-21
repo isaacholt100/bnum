@@ -89,11 +89,9 @@
 ## Other things
 
 - Replace bitors, bitands, shifts, masks etc. with more efficient implementations (e.g. using set_bit, flip_bit, one-less-than-power-of-two methods, methods for efficiently generating masks/getting certain range of bits of integer)
-- Consider removing Div<Digit> impl
-- Rewrite README
 - consider raising issue in num_traits crate about PrimInt dependency on NumCast
-- work out and add assertions about sizes of e.g. int widths (should be <= u32::MAX), and float mantissa and exponent widths, etc.
-- include list of difference with primitives in README, e.g. overflow_checks not detected yet, serde implementation different, memory layout different (always little endian - although maybe this could be changed? probably not a good idea though)
+- work out and add assertions about sizes of float mantissa and exponent widths, etc.
+- maybe mention that serde impl is different from primitives
 - check you're happy with the layout of the random crate-level module
 - maybe add additional optimal type parameter (default u128) WideDigit, which specifies the wide digit to be iterated over (e.g. if memory usage really is a concern, or could somehow find a way of making this internal based on the size of the integer). this would also make testing of non standard bit widhts easier (just compare against use u8 wide digits)
 - maybe rewrite code using while let Some(x) = iter.next() (using const iterator like methods), this will mean easier to migrate to iterators when they are const

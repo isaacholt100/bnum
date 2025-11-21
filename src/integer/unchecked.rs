@@ -76,6 +76,13 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
 
 #[doc = concat!("(Signed integers only.) ", impl_desc!())]
 impl<const N: usize, const OM: u8> Int<N, OM> {
+    /// Unchecked integer negation. Computes `-self` without checking for overflow, resulting in undefined behavior if overflow occurs.
+    /// 
+    /// `a.unchecked_neg()` is equivalent to `a.checked_neg().unwrap_unchecked()`.
+    /// 
+    /// # Safety
+    /// 
+    /// This results in undefined behaviour if overflow occurs, i.e. when [`checked_neg`](Self::checked_neg) would return `None`. This can only occur if `self` is [`Self::MIN`].
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const unsafe fn unchecked_neg(self) -> Self {

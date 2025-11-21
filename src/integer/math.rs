@@ -26,7 +26,13 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
         }
     }
 
-    /// Returns `self` raised to the power of `exp`. In debug builds, this method is equivalent to [`strict_pow`](Self::strict_pow). In release builds, this method is equivalent to [`wrapping_pow`](Self::wrapping_pow).
+    /// Returns `self` raised to the power of `exp`.
+    /// 
+    /// # Overflow behaviour
+    /// 
+    /// - If [`Self::OVERFLOW_MODE`] is [`Wrapping`](OverflowMode::Wrapping), this method is equivalent to [`wrapping_pow`](Self::wrapping_pow).
+    /// - If [`Self::OVERFLOW_MODE`] is [`Panicking`](OverflowMode::Panicking), this method is equivalent to [`strict_pow`](Self::strict_pow).
+    /// - If [`Self::OVERFLOW_MODE`] is [`Saturating`](OverflowMode::Saturating), this method is equivalent to [`saturating_pow`](Self::saturating_pow).
     ///
     /// # Examples
     ///
@@ -49,7 +55,13 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
         }
     }
 
-    /// Returns the [Euclidean quotient](https://en.wikipedia.org/wiki/Euclidean_division) of `self` by `rhs`. In debug builds, this method is equivalent to [`strict_div_euclid`](Self::strict_div_euclid). In release builds, this method is equivalent to [`wrapping_div_euclid`](Self::wrapping_div_euclid).
+    /// Returns the [Euclidean quotient](https://en.wikipedia.org/wiki/Euclidean_division) of `self` by `rhs`.
+    /// 
+    /// # Overflow behaviour
+    /// 
+    /// - If [`Self::OVERFLOW_MODE`] is [`Wrapping`](OverflowMode::Wrapping), this method is equivalent to [`wrapping_div_euclid`](Self::wrapping_div_euclid).
+    /// - If [`Self::OVERFLOW_MODE`] is [`Panicking`](OverflowMode::Panicking), this method is equivalent to [`strict_div_euclid`](Self::strict_div_euclid).
+    /// - If [`Self::OVERFLOW_MODE`] is [`Saturating`](OverflowMode::Saturating), this method is equivalent to [`saturating_div_euclid`](Self::saturating_div_euclid).
     /// 
     /// # Examples
     /// 
@@ -69,7 +81,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
         }
     }
 
-    /// Returns the [Euclidean remainder](https://en.wikipedia.org/wiki/Euclidean_division) of `self` by `rhs`. In debug builds, this method is equivalent to [`strict_rem_euclid`](Self::strict_rem_euclid). In release builds, this method is equivalent to [`wrapping_rem_euclid`](Self::wrapping_rem_euclid).
+    /// Returns the [Euclidean remainder](https://en.wikipedia.org/wiki/Euclidean_division) of `self` by `rhs`. This is always equivalent to `self.strict_rem_euclid(rhs)`, regardless of `Self::OVERFLOW_MODE`.
     /// 
     /// # Examples
     /// 
@@ -240,9 +252,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     /// 
     /// This function will panic if `rhs` is zero.
     /// 
-    /// ## Overflow behaviour
-    /// 
-    /// On overflow, this function will panic in debug builds, and will wrap in release builds.
+    /// This function will also panic if overflow occurs and [`Self::OVERFLOW_MODE`] is [`Panicking`](OverflowMode::Panicking).
     /// 
     /// # Examples
     /// 
@@ -251,6 +261,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     /// 
     /// assert_eq!(n!(20 U256).next_multiple_of(n!(6)), n!(24));
     /// assert_eq!(n!(0 U256).next_multiple_of(n!(5)), n!(0));
+    /// 
     /// assert_eq!(n!(18 I256).next_multiple_of(n!(-4)), n!(16));
     /// assert_eq!(n!(-17 I256).next_multiple_of(n!(-11)), n!(-22));
     /// ```
@@ -271,7 +282,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     /// 
     /// # Panics
     /// 
-    /// This function will panic if `rhs` is zero. For signed integers, it will also panic if `self` is [`Self::MIN`] and `rhs` is `-1`, since this would overflow. This behaviour is not affected by the `overflow-checks` flag.
+    /// This function will panic if `rhs` is zero. For signed integers, it will also panic if `self` is [`Self::MIN`] and `rhs` is `-1`, since this would overflow. This behaviour is not affected by [`Self::OVERFLOW_MODE`].
     /// 
     /// # Examples
     /// 
@@ -307,7 +318,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     /// 
     /// # Panics
     /// 
-    /// This function will panic if `rhs` is zero. For signed integers, it will also panic if `self` is [`Self::MIN`] and `rhs` is `-1`, since this would overflow. This behaviour is not affected by the `overflow-checks` flag.
+    /// This function will panic if `rhs` is zero. For signed integers, it will also panic if `self` is [`Self::MIN`] and `rhs` is `-1`, since this would overflow. This behaviour is not affected by [`Self::OVERFLOW_MODE`].
     /// 
     /// # Examples
     /// 
@@ -342,6 +353,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     /// 
     /// assert!(n!(0 U1024).is_zero());
     /// assert!(n!(0 I1024).is_zero());
+    /// 
     /// assert!(!n!(1 U1024).is_zero());
     /// assert!(!n!(-1 I1024).is_zero());
     /// ```
@@ -369,6 +381,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     /// 
     /// assert!(n!(1 U2048).is_one());
     /// assert!(n!(1 I2048).is_one());
+    /// 
     /// assert!(!n!(0 U2048).is_one());
     /// assert!(!n!(-1 I2048).is_one());
     /// ```
@@ -422,9 +435,9 @@ impl<const N: usize, const OM: u8> Uint<N, OM> {
 
     /// Returns the smallest power of two greater than or equal to `self`.
     /// 
-    /// # Overflow behaviour
+    /// # Panics
     /// 
-    /// If the result is too large to be represented by `Self`, this function will panic in debug builds, and will wrap to `0` in release builds.
+    /// This function will panic if [`Self::OVERFLOW_MODE`] is [`Panicking`](OverflowMode::Panicking) and the result would be too large to be represented by `Self`.
     /// 
     /// # Examples
     /// 
@@ -520,9 +533,9 @@ impl<const N: usize, const OM: u8> Int<N, OM> {
     /// 
     /// # Overflow behaviour
     /// 
-    /// - If `OM` is set to `OverflowMode::Wrapping`, this function will return `Self::MIN` on overflow (i.e. when `self` is `Self::MIN`).
-    /// - If `OM` is set to `OverflowMode::Panicking`, this function will panic on overflow.
-    /// - If `OM` is set to `OverflowMode::Saturating`, this function will return `Self::MAX` on overflow.
+    /// - If [`Self::OVERFLOW_MODE`] is [`Wrapping`](OverflowMode::Wrapping), this function will return `Self::MIN` on overflow (i.e. when `self` is `Self::MIN`).
+    /// - If [`Self::OVERFLOW_MODE`] is [`Panicking`](OverflowMode::Panicking), this function will panic on overflow.
+    /// - If [`Self::OVERFLOW_MODE`] is [`Saturating`](OverflowMode::Saturating), this function will return `Self::MAX` on overflow.
     ///
     /// # Examples
     /// 

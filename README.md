@@ -14,7 +14,7 @@
 
 ## Overview
 
-Rust provides 12 fixed-width integer types out of the box: `u8`, `i8`, `u16`, `i16`, `u32`, `i32`, `u64`, `i64`, `u128`, and `i128`. This interface has several limitations:
+Rust provides 10 fixed-width integer types out of the box: `u8`, `i8`, `u16`, `i16`, `u32`, `i32`, `u64`, `i64`, `u128`, and `i128`. This interface has several limitations:
 - Only 5 possible bit widths: 8, 16, 32, 64, and 128 bits.
 - The types are distinct rather than being generic over bit width, meaning that generic code cannot be written over arbitrary bit widths.
 - Each type must have the same overflow behaviour, globally controlled by the `overflow-checks` flag: either panic on overflow if `overflow-checks` is enabled, or wrap on overflow if not. If you wanted to specify custom overflow behaviour, you would have to use the `Wrapping<T>` or `Saturating<T>` wrapper types from the standard library, which are cumbersome.
@@ -41,23 +41,29 @@ To illustrate the power of this generic interface, here is a simple example:
 ```rust
 use bnum::prelude::*; // imports common use items, including the `Integer` type and the `n!` macro
 
-// say we want to implement a polynomial which works over any unsigned or signed integer of any byte width and with any overflow behaviour
+// say we want to implement a polynomial which works over any unsigned or signed integer
+// of any byte width and with any overflow behaviour
 // for example, the polynomial could be p(x) = 2x^3 + 3x^2 + 5x + 7
 
-const fn p<S: bool, N: usize, OM: u8>(x: Integer<S, N, OM>) -> Integer<S, N, OM> {
-    n!(2)*x.pow(3) + n!(3)*x.pow(2) + n!(5)*x + n!(7) // type inference means we don't need to specify the width of the integers in the n! macro
+fn p<const S: bool, const N: usize, const OM: u8>(x: Integer<S, N, OM>) -> Integer<S, N, OM> {
+    n!(2)*x.pow(3) + n!(3)*x.pow(2) + n!(5)*x + n!(7)
+    // type inference means we don't need to specify the width of the integers in the n! macro
 }
 
 // 2*10^3 + 3*10^2 + 5*10 + 7 = 2357
-assert_eq!(p(n!(10 U256)), n!(2357)); // evaluates p(10) as a 16-bit unsigned integer
+assert_eq!(p(n!(10 U256)), n!(2357));
+// evaluates p(10) as a 16-bit unsigned integer
 
-type U24w = Integer<false, 3, 0>; // 24-bit unsigned integer with wrapping arithmetic
-type I40s = Integer<true, 5, 2>;  // 40-bit signed integer with saturating arithmetic
-type U48p = Integer<false, 6, 1>; // 48-bit unsigned integer with panicking arithmetic
+type U24w = Integer<false, 3, 0>;
+// 24-bit unsigned integer with wrapping arithmetic
+type I40s = Integer<true, 5, 2>;
+// 40-bit signed integer with saturating arithmetic
+type U48p = Integer<false, 6, 1>;
+// 48-bit unsigned integer with panicking arithmetic
 
-let a = p(U24::MAX); // result wraps around and doesn't panic
-let b = p(I40::MAX); // result is too large to be contained in I40, so saturates to I40::MAX
-// let c = p(U48::MAX); // this would result in panic due to overflow
+let a = p(U24w::MAX); // result wraps around and doesn't panic
+let b = p(I40s::MAX); // result is too large to be contained in I40, so saturates to I40::MAX
+// let c = p(U48p::MAX); // this would result in panic due to overflow
 ```
   
 For more information on the `Integer` type and the `n!` macro, see the crate level documentation.

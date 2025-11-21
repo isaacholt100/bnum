@@ -238,6 +238,7 @@ impl<const N: usize, const OM: u8> Uint<N, OM> {
     /// # Examples
     ///
     /// ```
+    /// use bnum::prelude::*;
     /// use bnum::types::U512;
     ///
     /// let n = U512::MAX;
@@ -273,6 +274,7 @@ impl<const N: usize, const OM: u8> Uint<N, OM> {
     /// # Examples
     ///
     /// ```
+    /// use bnum::prelude::*;
     /// use bnum::types::U512;
     ///
     /// let n = U512::MAX;
@@ -756,14 +758,15 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     /// # Examples
     ///
     /// ```
+    /// use bnum::prelude::*;
     /// use bnum::types::{U512, I512};
     ///
     /// let src = "abcdefghijklmnopqrstuvwxyz";
     /// let n = U512::from_str_radix(src, 36).unwrap();
     /// assert_eq!(n.to_str_radix(36), src);
     /// 
-    /// let a: I512 = n!(-0o12345678901234567);
-    /// assert_eq!(a.to_str_radix(8), "-12345678901234567");
+    /// let a: I512 = n!(-0o123456701234567);
+    /// assert_eq!(a.to_str_radix(8), "-123456701234567");
     /// ```
     #[inline]
     pub fn to_str_radix(&self, radix: u32) -> String {

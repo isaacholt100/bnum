@@ -142,7 +142,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     /// use bnum::prelude::*;
     /// use bnum::types::I512;
     /// 
-    /// assert_eq!(n!(19 U512).saturating_div_euclid(n!(5)), n!(4));
+    /// assert_eq!(n!(19 U512).saturating_div_euclid(n!(5)), n!(3));
     /// assert_eq!(I512::MIN.saturating_div_euclid(n!(-1)), I512::MAX);
     /// ```
     #[must_use = doc::must_use_op!()]
@@ -307,10 +307,10 @@ impl<const N: usize, const OM: u8> Int<N, OM> {
     /// 
     /// ```
     /// use bnum::prelude::*;
-    /// use bnum::types::I512;
+    /// use bnum::types::I1024;
     /// 
-    /// assert_eq!(n!(1 U512).saturating_sub_unsigned(n!(1)), n!(0));
-    /// assert_eq!(I512::MIN.saturating_sub_unsigned(n!(1)), I512::MIN);
+    /// assert_eq!(n!(1 I1024).saturating_sub_unsigned(n!(1)), n!(0));
+    /// assert_eq!(I1024::MIN.saturating_sub_unsigned(n!(1)), I1024::MIN);
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -327,10 +327,11 @@ impl<const N: usize, const OM: u8> Int<N, OM> {
     /// 
     /// ```
     /// use bnum::prelude::*;
+    /// use bnum::types::I2048;
     /// 
-    /// assert_eq!(n!(-7 I256).saturating_abs(), n!(7));
-    /// assert_eq!(n!(22 I256).saturating_abs(), n!(22));
-    /// assert_eq!(I256::MIN.saturating_abs(), I256::MAX);
+    /// assert_eq!(n!(-7 I2048).saturating_abs(), n!(7));
+    /// assert_eq!(n!(22 I2048).saturating_abs(), n!(22));
+    /// assert_eq!(I2048::MIN.saturating_abs(), I2048::MAX);
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -347,6 +348,7 @@ impl<const N: usize, const OM: u8> Int<N, OM> {
     /// 
     /// ```
     /// use bnum::prelude::*;
+    /// use bnum::types::I256;
     /// 
     /// assert_eq!(n!(7 I256).saturating_neg(), n!(-7));
     /// assert_eq!(n!(-22 I256).saturating_neg(), n!(22));

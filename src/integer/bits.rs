@@ -35,8 +35,9 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     pub const fn count_ones(self) -> Exponent {
         let mut ones = 0;
         let mut i = 0;
-        while i < N {
-            ones += self.bytes[i].count_ones() as Exponent;
+        while i < Self::U128_DIGITS {
+            let digit = unsafe { self.as_wide_digits().get(i) };
+            ones += digit.count_ones();
             i += 1;
         }
         ones
@@ -86,37 +87,12 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn leading_zeros(self) -> Exponent {
-        // don't need to use larger digits, the compiler optimises this code well
-        let mut zeros = 0;
-        let mut i = N;
-        while i > 0 {
-            i -= 1;
-            let digit = self.bytes[i];
-            zeros += digit.leading_zeros();
-            if digit != Digit::MIN {
-                break;
-            }
-        }
-        zeros
+        self.not().leading_ones()
     }
 
     // this method breaks early if the threshold is exceeded, which provides a speed up when converting between different width integer types
     pub(crate) const fn leading_zeros_at_least_threshold(&self, threshold: Exponent) -> bool {
-        // don't need to use larger digits, the compiler optimises this code well
-        let mut zeros = 0;
-        let mut i = N;
-        while i > 0 {
-            i -= 1;
-            let digit = self.bytes[i];
-            zeros += digit.leading_zeros();
-            if zeros >= threshold {
-                return true;
-            }
-            if digit != Digit::MIN {
-                break;
-            }
-        }
-        false
+        self.not().leading_ones_at_least_threshold(threshold)
     }
 
     /// Returns the number of trailing zeros in the binary representation of `self`.
@@ -528,7 +504,13 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
             if bit_shift != 0 {
                 let carry_shift = 128 - bit_shift;
                 let mut carry = if NEG {
-                    u128::MAX << carry_shift // if negative, then we initialise the carry to have the correct number of sign bits (we can get this expression by looking for the expression for carry shift in the while loop. the previous digit will have been all ones (unless this was the last digit, but then we can view it as having infinite leading ones, as this still represents the same value))
+                    let shift_back = if Self::U128_BITS_REMAINDER == 0 {
+                        128 - bit_shift
+                    } else {
+                        // last digit (the incomplete one) has Self::U128_BITS_REMAINDER bits, so shift back by this minus bit_shift
+                        Self::U128_BITS_REMAINDER - bit_shift
+                    };
+                    u128::MAX << shift_back // if negative, then we initialise the carry to have the correct number of sign bits (we can get this expression by looking for the expression for carry shift in the while loop. the previous digit will have been all ones (unless this was the last digit, but then we can view it as having infinite leading ones, as this still represents the same value))
                 } else {
                     0
                 };
