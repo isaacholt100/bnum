@@ -6,7 +6,7 @@ use core::ops::{
     Mul, MulAssign, Neg, Not, Rem, RemAssign, Shl, ShlAssign, Shr, ShrAssign, Sub, SubAssign,
 };
 
-impl<const S: bool, const N: usize, const OM: u8> BitAnd for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> BitAnd for Integer<S, N, B, OM> {
     type Output = Self;
 
     #[inline]
@@ -15,7 +15,7 @@ impl<const S: bool, const N: usize, const OM: u8> BitAnd for Integer<S, N, OM> {
     }
 }
 
-impl<const S: bool, const N: usize, const OM: u8> BitOr for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> BitOr for Integer<S, N, B, OM> {
     type Output = Self;
 
     #[inline]
@@ -24,7 +24,7 @@ impl<const S: bool, const N: usize, const OM: u8> BitOr for Integer<S, N, OM> {
     }
 }
 
-impl<const S: bool, const N: usize, const OM: u8> BitXor for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> BitXor for Integer<S, N, B, OM> {
     type Output = Self;
 
     #[inline]
@@ -33,7 +33,7 @@ impl<const S: bool, const N: usize, const OM: u8> BitXor for Integer<S, N, OM> {
     }
 }
 
-impl<const S: bool, const N: usize, const OM: u8> Not for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> Not for Integer<S, N, B, OM> {
     type Output = Self;
 
     #[inline]
@@ -42,16 +42,16 @@ impl<const S: bool, const N: usize, const OM: u8> Not for Integer<S, N, OM> {
     }
 }
 
-impl<const S: bool, const N: usize, const OM: u8> Not for &Integer<S, N, OM> {
-    type Output = Integer<S, N, OM>;
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> Not for &Integer<S, N, B, OM> {
+    type Output = Integer<S, N, B, OM>;
 
     #[inline]
-    fn not(self) -> Integer<S, N, OM> {
+    fn not(self) -> Integer<S, N, B, OM> {
         (*self).not()
     }
 }
 
-impl<const N: usize, const OM: u8> Neg for Int<N, OM> {
+impl<const N: usize, const B: usize, const OM: u8> Neg for Int<N, B, OM> {
     type Output = Self;
 
     #[inline]
@@ -60,16 +60,16 @@ impl<const N: usize, const OM: u8> Neg for Int<N, OM> {
     }
 }
 
-impl<const N: usize, const OM: u8> Neg for &Int<N, OM> {
-    type Output = Int<N, OM>;
+impl<const N: usize, const B: usize, const OM: u8> Neg for &Int<N, B, OM> {
+    type Output = Int<N, B, OM>;
 
     #[inline]
-    fn neg(self) -> Int<N, OM> {
+    fn neg(self) -> Int<N, B, OM> {
         Int::neg(*self)
     }
 }
 
-impl<const S: bool, const N: usize, const OM: u8> Add for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> Add for Integer<S, N, B, OM> {
     type Output = Self;
 
     #[inline]
@@ -78,7 +78,7 @@ impl<const S: bool, const N: usize, const OM: u8> Add for Integer<S, N, OM> {
     }
 }
 
-impl<const S: bool, const N: usize, const OM: u8> Sub for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> Sub for Integer<S, N, B, OM> {
     type Output = Self;
 
     #[inline]
@@ -87,7 +87,7 @@ impl<const S: bool, const N: usize, const OM: u8> Sub for Integer<S, N, OM> {
     }
 }
 
-impl<const S: bool, const N: usize, const OM: u8> Mul for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> Mul for Integer<S, N, B, OM> {
     type Output = Self;
 
     #[inline]
@@ -96,7 +96,7 @@ impl<const S: bool, const N: usize, const OM: u8> Mul for Integer<S, N, OM> {
     }
 }
 
-impl<const S: bool, const N: usize, const OM: u8> Div for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> Div for Integer<S, N, B, OM> {
     type Output = Self;
 
     #[inline]
@@ -114,7 +114,7 @@ impl<const S: bool, const N: usize, const OM: u8> Div for Integer<S, N, OM> {
 //     }
 // }
 
-impl<const S: bool, const N: usize, const OM: u8> Rem for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> Rem for Integer<S, N, B, OM> {
     type Output = Self;
 
     #[inline]
@@ -179,14 +179,14 @@ macro_rules! full_op_impl {
 
 pub(crate) use full_op_impl;
 
-full_op_impl!(<const S: bool, const N: usize, const OM: u8> BitAnd, BitAndAssign, Integer<S, N, OM>, bitand, bitand_assign for Integer<S, N, OM>);
-full_op_impl!(<const S: bool, const N: usize, const OM: u8> BitOr, BitOrAssign, Integer<S, N, OM>, bitor, bitor_assign for Integer<S, N, OM>);
-full_op_impl!(<const S: bool, const N: usize, const OM: u8> BitXor, BitXorAssign, Integer<S, N, OM>, bitxor, bitxor_assign for Integer<S, N, OM>);
-full_op_impl!(<const S: bool, const N: usize, const OM: u8> Add, AddAssign, Integer<S, N, OM>, add, add_assign for Integer<S, N, OM>);
-full_op_impl!(<const S: bool, const N: usize, const OM: u8> Sub, SubAssign, Integer<S, N, OM>, sub, sub_assign for Integer<S, N, OM>);
-full_op_impl!(<const S: bool, const N: usize, const OM: u8> Mul, MulAssign, Integer<S, N, OM>, mul, mul_assign for Integer<S, N, OM>);
-full_op_impl!(<const S: bool, const N: usize, const OM: u8> Div, DivAssign, Integer<S, N, OM>, div, div_assign for Integer<S, N, OM>);
-full_op_impl!(<const S: bool, const N: usize, const OM: u8> Rem, RemAssign, Integer<S, N, OM>, rem, rem_assign for Integer<S, N, OM>);
+full_op_impl!(<const S: bool, const N: usize, const B: usize, const OM: u8> BitAnd, BitAndAssign, Integer<S, N, B, OM>, bitand, bitand_assign for Integer<S, N, B, OM>);
+full_op_impl!(<const S: bool, const N: usize, const B: usize, const OM: u8> BitOr, BitOrAssign, Integer<S, N, B, OM>, bitor, bitor_assign for Integer<S, N, B, OM>);
+full_op_impl!(<const S: bool, const N: usize, const B: usize, const OM: u8> BitXor, BitXorAssign, Integer<S, N, B, OM>, bitxor, bitxor_assign for Integer<S, N, B, OM>);
+full_op_impl!(<const S: bool, const N: usize, const B: usize, const OM: u8> Add, AddAssign, Integer<S, N, B, OM>, add, add_assign for Integer<S, N, B, OM>);
+full_op_impl!(<const S: bool, const N: usize, const B: usize, const OM: u8> Sub, SubAssign, Integer<S, N, B, OM>, sub, sub_assign for Integer<S, N, B, OM>);
+full_op_impl!(<const S: bool, const N: usize, const B: usize, const OM: u8> Mul, MulAssign, Integer<S, N, B, OM>, mul, mul_assign for Integer<S, N, B, OM>);
+full_op_impl!(<const S: bool, const N: usize, const B: usize, const OM: u8> Div, DivAssign, Integer<S, N, B, OM>, div, div_assign for Integer<S, N, B, OM>);
+full_op_impl!(<const S: bool, const N: usize, const B: usize, const OM: u8> Rem, RemAssign, Integer<S, N, B, OM>, rem, rem_assign for Integer<S, N, B, OM>);
 
 trait ConstOverflowMode {
     const OVERFLOW_MODE: OverflowMode;
@@ -232,24 +232,23 @@ macro_rules! all_shift_impls {
                 const OVERFLOW_MODE: OverflowMode = crate::OverflowMode::DEFAULT;
             } // we have to have this so then we can use Self::OVERFLOW_MODE in the same macro for primitive ints and Integer
 
-            shift_impl!(<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM>, Shl, ShlAssign, shl, shl_assign, "attempt to shift left with overflow", shift_by: $int);
+            shift_impl!(<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, B, OM>, Shl, ShlAssign, shl, shl_assign, "attempt to shift left with overflow", shift_by: $int);
 
-            shift_impl!(<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM>, Shr, ShrAssign, shr, shr_assign, "attempt to shift right with overflow", shift_by: $int);
+            shift_impl!(<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, B, OM>, Shr, ShrAssign, shr, shr_assign, "attempt to shift right with overflow", shift_by: $int);
 
-            shift_impl!(<const S: bool, const N: usize, const OM: u8> $int, Shl, ShlAssign, shl, shl_assign, "attempt to shift left with overflow", shift_by: Integer<S, N, OM>);
-
-            shift_impl!(<const S: bool, const N: usize, const OM: u8> $int, Shr, ShrAssign, shr, shr_assign, "attempt to shift right with overflow", shift_by: Integer<S, N, OM>);
+            shift_impl!(<const S: bool, const N: usize, const B: usize, const OM: u8> $int, Shl, ShlAssign, shl, shl_assign, "attempt to shift left with overflow", shift_by: Integer<S, N, B, OM>);
+            shift_impl!(<const S: bool, const N: usize, const B: usize, const OM: u8> $int, Shr, ShrAssign, shr, shr_assign, "attempt to shift right with overflow", shift_by: Integer<S, N, B, OM>);
         )*
     }
 }
 
 all_shift_impls!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
 
-shift_impl!(<const S: bool, const N: usize, const R: bool, const M: usize, const OM: u8> Integer<S, N, OM>, Shl, ShlAssign, shl, shl_assign, "attempt to shift left with overflow", shift_by: Integer<R, M, OM>);
-shift_impl!(<const S: bool, const N: usize, const R: bool, const M: usize, const OM: u8> Integer<S, N, OM>, Shr, ShrAssign, shr, shr_assign, "attempt to shift right with overflow", shift_by: Integer<R, M, OM>);
+shift_impl!(<const S: bool, const N: usize, const B: usize, const R: bool, const M: usize, const A: usize, const OM: u8> Integer<S, N, B, OM>, Shl, ShlAssign, shl, shl_assign, "attempt to shift left with overflow", shift_by: Integer<R, M, A, OM>);
+shift_impl!(<const S: bool, const N: usize, const B: usize, const R: bool, const M: usize, const A: usize, const OM: u8> Integer<S, N, B, OM>, Shr, ShrAssign, shr, shr_assign, "attempt to shift right with overflow", shift_by: Integer<R, M, A, OM>);
 
 #[cfg(test)]
-crate::test::test_all_widths_against_old_types! {
+crate::test::test_all_custom_bit_widths! {
     use crate::test::test_bignum;
     use core::ops::{BitAnd, BitOr, BitXor, Not};
 

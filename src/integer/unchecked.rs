@@ -7,7 +7,7 @@ macro_rules! impl_desc {
 }
 
 #[doc = impl_desc!()]
-impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, B, OM> {
     /// Unchecked integer addition. Computes `self + rhs` without checking for overflow, resulting in undefined behavior if overflow occurs.
     ///
     /// `a.unchecked_add(b)` is equivalent to `a.checked_add(b).unwrap_unchecked()`.
@@ -75,7 +75,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
 }
 
 #[doc = concat!("(Signed integers only.) ", impl_desc!())]
-impl<const N: usize, const OM: u8> Int<N, OM> {
+impl<const N: usize, const B: usize, const OM: u8> Int<N, B, OM> {
     /// Unchecked integer negation. Computes `-self` without checking for overflow, resulting in undefined behavior if overflow occurs.
     /// 
     /// `a.unchecked_neg()` is equivalent to `a.checked_neg().unwrap_unchecked()`.

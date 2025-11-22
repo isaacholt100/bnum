@@ -5,7 +5,7 @@ use crate::Byte;
 use crate::Exponent;
 
 /// Associated constants.
-impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, B, OM> {
     /// The overflow mode used for this type, determined by the const-generic parameter `OM`:
     /// - If `OM` is `0`, the overflow mode is [`OverflowMode::Wrapping`].
     /// - If `OM` is `1`, the overflow mode is [`OverflowMode::Panicking`].
@@ -30,7 +30,17 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     /// assert_eq!(U512::BITS, 512);
     /// assert_eq!(I1024::BITS, 1024);
     /// ```
-    pub const BITS: Exponent = N as Exponent * Byte::BITS;
+    pub const BITS: Exponent = if B == 0 {
+        (N as Exponent) * Byte::BITS
+    } else {
+        B as _
+    };
+
+    pub(crate) const LAST_BYTE_BITS: u32 = if Self::BITS % Byte::BITS == 0 {
+        Byte::BITS as _
+    } else {
+        Self::BITS % Byte::BITS
+    };
 
     /// The total number of bytes that this type contains.
     /// 
@@ -84,7 +94,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     /// ```
     pub const MIN: Self = if S {
         let mut bytes = [0; N];
-        bytes[N - 1] = 1 << (Byte::BITS - 1);
+        bytes[N - 1] = Byte::MAX << (Self::LAST_BYTE_BITS - 1); // pad with ones at the end
         Self::from_bytes(bytes)
     } else {
         Self::ZERO
@@ -100,11 +110,16 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     /// assert_eq!(U256::MAX.not(), U256::MIN); // memory representation of `Self::MAX` is 111...1
     /// assert_eq!(I256::MAX.not(), I256::MIN); // memory representation of `Self::MAX` is 011...1
     /// ```
-    pub const MAX: Self = Self::MIN.not();
+    pub const MAX: Self = if S {
+        Self::MIN.not()
+    } else {
+        let mut bytes = [0xFF; N];
+        bytes[N - 1] &= Byte::MAX >> (Byte::BITS - Self::LAST_BYTE_BITS); // pad with zeros at the end
+        Self::from_bytes(bytes)
+    };
 }
 
-/// (Signed integers only.) Associated constants.
-impl<const N: usize, const OM: u8> Int<N, OM> {
+impl<const N: usize, const B: usize, const OM: u8> Int<N, B, OM> {
     // / The value `-1`.
     // / 
     // / # Examples
@@ -114,5 +129,5 @@ impl<const N: usize, const OM: u8> Int<N, OM> {
     // / 
     // / assert_eq!(I256::NEG_ONE.count_ones(), 256); // memory representation is 111...1
     // / ```
-    pub(crate) const NEG_ONE: Self = Uint::MAX.cast_signed();
+    pub(crate) const NEG_ONE: Self = Self::ALL_ONES;
 }

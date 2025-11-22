@@ -1,16 +1,16 @@
-use super::{Uint, Integer};
-use crate::Exponent;
-use crate::doc;
+use super::{Integer, Uint};
+use crate::{Byte, Exponent};
 use crate::digit::Digit;
+use crate::doc;
 
 macro_rules! impl_desc {
     () => {
         "Methods for reading and manipulating the underlying bits of the integer."
-    }
+    };
 }
 
 #[doc = impl_desc!()]
-impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, B, OM> {
     /// Returns the number of ones in the binary representation of `self`.
     ///
     /// # Examples
@@ -24,7 +24,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     /// assert_eq!(n!(0b101101 U1024).count_ones(), 4);
     /// assert_eq!(U1024::MAX.count_ones(), 1024);
     /// assert_eq!(U1024::MIN.count_ones(), 0);
-    /// 
+    ///
     /// assert_eq!(n!(0b1110111 I1024).count_ones(), 6);
     /// assert_eq!(I1024::MAX.count_ones(), 1023);
     /// assert_eq!(I1024::MIN.count_ones(), 1);
@@ -32,7 +32,8 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn count_ones(self) -> Exponent {
+    pub const fn count_ones(mut self) -> Exponent {
+        self.set_pad_bits(false); // don't want to count sign-extending bits
         let mut ones = 0;
         let mut i = 0;
         while i < Self::U128_DIGITS {
@@ -55,7 +56,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     ///
     /// assert_eq!(U512::MAX.count_zeros(), 0);
     /// assert_eq!(U512::MIN.count_zeros(), 512);
-    /// 
+    ///
     /// assert_eq!(I512::MAX.count_zeros(), 1);
     /// assert_eq!(I512::MIN.count_zeros(), 511);
     /// assert_eq!(n!(-1 I512).count_zeros(), 0);
@@ -79,7 +80,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     /// assert_eq!(U256::MAX.leading_zeros(), 0);
     /// assert_eq!(U256::MIN.leading_zeros(), 256);
     /// assert_eq!(n!(1 U256).leading_zeros(), 255);
-    /// 
+    ///
     /// assert_eq!(I256::MAX.leading_zeros(), 1);
     /// assert_eq!(I256::MIN.leading_zeros(), 0);
     /// assert_eq!(n!(0 I256).leading_zeros(), 256);
@@ -108,7 +109,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     /// assert_eq!(U2048::MAX.trailing_zeros(), 0);
     /// assert_eq!(n!(0 U2048).trailing_zeros(), 2048);
     /// assert_eq!(U2048::power_of_two(279).trailing_zeros(), 279);
-    /// 
+    ///
     /// assert_eq!(I2048::MAX.trailing_zeros(), 0);
     /// assert_eq!(I2048::MIN.trailing_zeros(), 2047);
     /// assert_eq!(n!(-16 I2048).trailing_zeros(), 4);
@@ -119,7 +120,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
         let mut zeros = 0;
         let mut i = 0;
         unsafe {
-            while i < Self::U128_DIGITS - 1 {
+            while i < Self::U128_DIGITS {
                 let digit = self.as_wide_digits().get(i);
                 let tz = digit.trailing_zeros();
                 zeros += tz;
@@ -129,28 +130,32 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
                 i += 1;
             }
         }
-        // zeros
-        let last_tz = self.as_wide_digits().last_padded::<true>().trailing_zeros();
-        zeros + last_tz
+        // may have counted padding bits in the last digit: if we did count them, then all the lower order bits were zero as well, so the count would exceed Self::BITS. so can take min with Self::BITS
+        if zeros >= Self::BITS {
+            Self::BITS
+        } else {
+            zeros
+        }
     }
 
     // this method breaks early if the threshold is exceeded, which provides a speed up when converting between different width integer types
     pub(crate) const fn leading_ones_at_least_threshold(&self, threshold: Exponent) -> bool {
+        self.leading_ones() >= threshold
         // don't need to use larger digits, the compiler optimises this code well
-        let mut ones = 0;
-        let mut i = N;
-        while i > 0 {
-            i -= 1;
-            let digit = self.bytes[i];
-            ones += digit.leading_ones();
-            if ones >= threshold {
-                return true;
-            }
-            if digit != Digit::MAX {
-                break;
-            }
-        }
-        false
+        // let mut ones = 0;
+        // let mut i = N;
+        // while i > 0 {
+        //     i -= 1;
+        //     let digit = self.bytes[i];
+        //     ones += digit.leading_ones();
+        //     if ones >= threshold {
+        //         return true;
+        //     }
+        //     if digit != Digit::MAX {
+        //         break;
+        //     }
+        // }
+        // false
     }
 
     /// Returns the number of leading ones in the binary representation of `self`.
@@ -166,14 +171,15 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     /// assert_eq!(U1024::MAX.leading_ones(), 1024);
     /// assert_eq!(n!(0 U1024).leading_ones(), 0);
     /// assert_eq!((U1024::MAX << 5u32).leading_ones(), 1019);
-    /// 
+    ///
     /// assert_eq!(I1024::MIN.leading_ones(), 1);
     /// assert_eq!(I1024::MAX.leading_ones(), 0);
     /// assert_eq!((I1024::MIN >> 10u32).leading_ones(), 11);
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn leading_ones(self) -> Exponent {
+    pub const fn leading_ones(mut self) -> Exponent {
+        self.set_pad_bits(true); // need to pad with 1s otherwise the loop will break immediately
         // don't need to use larger digits, the compiler optimises this code well
         let mut ones = 0;
         let mut i = N;
@@ -185,7 +191,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
                 break;
             }
         }
-        ones
+        ones - (Byte::BITS - Self::LAST_BYTE_BITS) // remove number of padding bits from count
     }
 
     /// Returns the number of trailing ones in the binary representation of `self`.
@@ -201,7 +207,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     /// assert_eq!(U512::MAX.trailing_ones(), 512);
     /// assert_eq!(n!(0 U512).trailing_ones(), 0);
     /// assert_eq!((U512::MAX >> 9u32).trailing_ones(), 503);
-    /// 
+    ///
     /// assert_eq!(I512::MIN.trailing_ones(), 0);
     /// assert_eq!(I512::MAX.trailing_ones(), 511);
     /// assert_eq!((I512::MAX >> 6u32).trailing_ones(), 505);
@@ -209,24 +215,11 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn trailing_ones(self) -> Exponent {
-        let mut ones = 0;
-        let mut i = 0;
-        unsafe {
-            while i < Self::U128_DIGITS {
-                let digit = self.as_wide_digits().get(i);
-                let to = digit.trailing_ones();
-                ones += to;
-                if to != u128::BITS {
-                    return ones;
-                }
-                i += 1;
-            }
-        }
-        ones
+        self.not().trailing_zeros()
     }
 
     #[inline]
-    const unsafe fn rotate_digits_left(self, n: usize) -> Self {
+    const unsafe fn rotate_bytes_left(self, n: usize) -> Self {
         // this is no slower than using pointers with add and copy_from_nonoverlapping
         let mut out = Self::ZERO;
         let mut i = n;
@@ -250,7 +243,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
             let digit_shift = (rhs / 8) as usize;
             let bit_shift = rhs % 8;
 
-            let mut out = self.rotate_digits_left(digit_shift);
+            let mut out = self.rotate_bytes_left(digit_shift);
 
             if bit_shift != 0 {
                 let carry_shift = 128 - bit_shift;
@@ -267,7 +260,11 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
                 }
             }
 
-            out
+            if Self::LAST_BYTE_BITS != Byte::BITS {
+                out.shr(Byte::BITS - Self::LAST_BYTE_BITS) // this will sign-extend t
+            } else {
+                out
+            }
         }
     }
 
@@ -285,14 +282,25 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     ///
     /// let a: U24 = n!(0x3D2A17);
     /// assert_eq!(a.rotate_left(12), n!(0xA173D2));
-    /// 
+    ///
     /// let b: I24 = n!(0x7C34AE);
     /// assert_eq!(b.rotate_left(8), n!(0x34AE7C));
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn rotate_left(self, n: Exponent) -> Self {
-        unsafe { self.unchecked_rotate_left(n % Self::BITS) }
+    pub const fn rotate_left(mut self, n: Exponent) -> Self {
+        if Self::LAST_BYTE_BITS != Byte::BITS {
+            if S {
+                self.set_pad_bits(false); // don't want the sign-extending bits to be shifted as well
+            }
+            let a = self.wrapping_shl(n);
+            let b = self.force_sign::<false>().wrapping_shr(Self::BITS - (n % Self::BITS)).force_sign(); // don't want sign-extending here so cast to unsigned first for unsigned shr
+            let mut out = a.bitor(b);
+            out.set_sign_bits();
+            out
+        } else {
+            unsafe { self.unchecked_rotate_left(n % Self::BITS) }
+        }
     }
 
     /// Rotates the bits of `self` to the right by `n` places.
@@ -309,31 +317,30 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     ///
     /// let a: U24 = n!(0x8427AB);
     /// assert_eq!(a.rotate_right(4), 0xB8427A.as_());
-    /// 
+    ///
     /// let b: I24 = n!(0x4ACD8A);
     /// assert_eq!(b.rotate_right(16), 0xCD8A4A.as_());
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn rotate_right(self, n: Exponent) -> Self {
-        let n = n % Self::BITS;
-        unsafe { self.unchecked_rotate_left(Self::BITS - n) }
+        self.rotate_left(Self::BITS - (n % Self::BITS))
     }
 
     /// Left-shifts `self` by `rhs` bits. If `rhs` is larger than or equal to `Self::BITS`, the entire value is shifted out and zero is returned.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// Basic usage:
-    /// 
+    ///
     /// ```
     /// use bnum::prelude::*;
     /// use bnum::types::{U2048, I2048};
-    /// 
+    ///
     /// assert_eq!(n!(1 U2048).unbounded_shl(1), n!(2));
     /// assert_eq!(U2048::MAX.unbounded_shl(2048), n!(0));
     /// assert_eq!(U2048::MAX.unbounded_shl(2049), n!(0));
-    /// 
+    ///
     /// assert_eq!(n!(1).unbounded_shl(2047), I2048::MIN);
     /// assert_eq!(I2048::MAX.unbounded_shl(2048), n!(0));
     /// assert_eq!(I2048::MIN.unbounded_shl(2049), n!(0));
@@ -351,19 +358,19 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     /// Right-shifts `self` by `rhs` bits. If `rhs` is larger than or equal to `Self::BITS`, then the entire value is shifted out, and:
     /// - for unsigned integers, `0` is returned.
     /// - for signed integers, `-1` is returned if `self` is negative, and `0` is returned if `self` is non-negative.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// Basic usage:
-    /// 
+    ///
     /// ```
     /// use bnum::prelude::*;
     /// use bnum::types::{U1024, I1024};
-    /// 
+    ///
     /// assert_eq!(n!(2 U1024).unbounded_shr(1), n!(1));
     /// assert_eq!(U1024::MAX.unbounded_shr(1024), n!(0));
     /// assert_eq!(U1024::MAX.unbounded_shr(1030), n!(0));
-    /// 
+    ///
     /// assert_eq!(I1024::MIN.unbounded_shr(1023), n!(-1));
     /// assert_eq!(n!(-1 I1024).unbounded_shr(1024), n!(-1));
     /// assert_eq!(I1024::MAX.unbounded_shr(1025), n!(0));
@@ -398,7 +405,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     ///
     /// let a: U24 = n!(0x7C283D);
     /// assert_eq!(a.swap_bytes(), n!(0x3D287C));
-    /// 
+    ///
     /// let b: I24 = n!(0x1DC87B);
     /// assert_eq!(b.swap_bytes(), n!(0x7BC81D));
     /// ```
@@ -432,7 +439,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     ///
     /// let a: U24 = 0b10110011_11001010_00011101.as_();
     /// assert_eq!(a.reverse_bits(), 0b10111000_01010011_11001101.as_());
-    /// 
+    ///
     /// let b: I24 = 0b01101001_00111100_11100011.as_();
     /// assert_eq!(b.reverse_bits(), 0b11000111_00111100_10010110.as_());
     /// ```
@@ -448,6 +455,9 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
             }
 
             i += 1;
+        }
+        if Self::LAST_BYTE_BITS != Byte::BITS {
+            out = out.shr(Byte::BITS - Self::LAST_BYTE_BITS); // this will sign-extend, so don't need to call set_sign_bits
         }
         out
     }
@@ -473,7 +483,10 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
             let mut i = (rhs / 128) as usize;
             while i < Self::U128_DIGITS {
                 let current_digit = unsafe { out.as_wide_digits().get(i) };
-                unsafe { out.as_wide_digits_mut().set(i, (current_digit << bit_shift) | carry) };
+                unsafe {
+                    out.as_wide_digits_mut()
+                        .set(i, (current_digit << bit_shift) | carry)
+                };
                 carry = current_digit >> carry_shift;
                 i += 1;
             }
@@ -490,7 +503,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
         let mut out = if NEG { Self::ALL_ONES } else { Self::ZERO };
         let digit_shift = (rhs / 8) as usize;
         let bit_shift = rhs % 8;
-        
+
         unsafe {
             let num_copies = N.unchecked_sub(digit_shift);
 
@@ -520,7 +533,8 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
                     i -= 1;
 
                     let current_digit = out.as_wide_digits().get(i);
-                    out.as_wide_digits_mut().set(i, (current_digit >> bit_shift) | carry);
+                    out.as_wide_digits_mut()
+                        .set(i, (current_digit >> bit_shift) | carry);
                     carry = current_digit << carry_shift;
                 }
 
@@ -558,19 +572,19 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     }
 
     /// Returns a boolean representing the bit in the given position (`true` if the bit is 1). The least significant bit is at index `0`, the most significant bit is at index `Self::BITS - 1`.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// Basic usage:
-    /// 
+    ///
     /// ```
     /// use bnum::prelude::*;
-    /// 
+    ///
     /// let a = n!(0b1101001101 U24);
     /// for i in [0, 2, 3, 6, 8, 9] {
     ///     assert!(a.bit(i));
     /// }
-    /// 
+    ///
     /// let b = n!(0b0010110010 I24);
     /// for i in [1, 4, 5, 7] {
     ///     assert!(b.bit(i));
@@ -584,20 +598,20 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     }
 
     /// Sets/unsets the bit in the given position (i.e. to `1` if `value` is `true`). The least significant bit is at index `0`, the most significant bit is at index `Self::BITS - 1`.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// Basic usage:
-    /// 
+    ///
     /// ```
     /// use bnum::prelude::*;
-    /// 
+    ///
     /// let mut a = n!(0b1001011001001 U24);
     /// a.set_bit(2, true);
     /// assert_eq!(a, n!(0b1001011001101));
     /// a.set_bit(1, false); // no change
     /// assert_eq!(a, n!(0b1001011001101));
-    /// 
+    ///
     /// let mut b = n!(0b010010110110100 I24);
     /// b.set_bit(4, false);
     /// assert_eq!(b, n!(0b010010110100100));
@@ -613,19 +627,19 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
 }
 
 #[doc = concat!("(Unsigned integers only.) ", impl_desc!())]
-impl<const N: usize, const OM: u8> Uint<N, OM> {
+impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
     /// Returns the smallest number of bits necessary to represent `self`.
-    /// 
+    ///
     /// This is equal to the size of the type in bits minus the leading zeros of `self`.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// Basic usage:
-    /// 
+    ///
     /// ```
     /// use bnum::prelude::*;
     /// use bnum::types::U256;
-    /// 
+    ///
     /// assert_eq!(U256::MAX.bits(), 256);
     /// assert_eq!(n!(0 U256).bits(), 0);
     /// ```
@@ -636,10 +650,19 @@ impl<const N: usize, const OM: u8> Uint<N, OM> {
     }
 }
 
+// #[test]
+// fn test_rev_bits() {
+//     use crate::n;
+//     let a = n!(0b11001110 U8).cast_signed();
+//     let b = n!(0b10111000 U8).cast_signed();
+
+//     dbg!(a == b);
+// }
+
 #[cfg(test)]
 mod tests {
-    use crate::test::test_bignum;
     use crate::cast::CastFrom;
+    use crate::test::test_bignum;
 
     crate::test::test_all! {
         testing integers;
@@ -722,27 +745,74 @@ mod tests {
     }
 }
 
-
 #[cfg(test)]
-crate::test::test_all_widths_against_old_types! {
+crate::test::test_all_custom_bit_widths! {
     use crate::test::test_bignum;
 
+    // quickcheck::quickcheck! {
+    //     fn swap_bytes(a: UTEST) -> bool {
+    //         let b = a.swap_bytes();
+    //         let mut bytes = a.to_bytes();
+    //         bytes.reverse();
+
+    //         b.to_bytes() == bytes
+    //     }
+    // }
     test_bignum! {
         function: <utest>::trailing_zeros(a: utest)
+    }
+    test_bignum! {
+        function: <itest>::trailing_zeros(a: itest)
     }
     test_bignum! {
         function: <utest>::trailing_ones(a: utest)
     }
     test_bignum! {
+        function: <itest>::trailing_ones(a: itest)
+    }
+    test_bignum! {
+        function: <utest>::leading_zeros(a: utest)
+    }
+    test_bignum! {
+        function: <itest>::leading_zeros(a: itest)
+    }
+    test_bignum! {
+        function: <utest>::leading_ones(a: utest)
+    }
+    test_bignum! {
+        function: <itest>::leading_ones(a: itest)
+    }
+    test_bignum! {
+        function: <utest>::count_ones(a: utest)
+    }
+    test_bignum! {
+        function: <itest>::count_ones(a: itest)
+    }
+    test_bignum! {
+        function: <utest>::count_zeros(a: utest)
+    }
+    test_bignum! {
+        function: <itest>::count_zeros(a: itest)
+    }
+    test_bignum! {
         function: <utest>::rotate_left(a: utest, b: u32)
+    }
+    test_bignum! {
+        function: <itest>::rotate_left(a: itest, b: u32)
     }
     test_bignum! {
         function: <utest>::rotate_right(a: utest, b: u32)
     }
     test_bignum! {
+        function: <itest>::rotate_right(a: itest, b: u32)
+    }
+    test_bignum! {
         function: <utest>::reverse_bits(a: utest)
     }
     test_bignum! {
-        function: <utest>::swap_bytes(a: utest)
+        function: <itest>::reverse_bits(a: itest)
     }
+    // test_bignum! {
+    //     function: <utest>::swap_bytes(a: utest)
+    // }
 }

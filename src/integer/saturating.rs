@@ -10,7 +10,7 @@ macro_rules! impl_desc {
 }
 
 #[doc = impl_desc!()]
-impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, B, OM> {
     /// Saturating integer addition. Computes `self + rhs`, returning `Self::MAX` if the result is too large to be represented by `Self`, or `Self::MIN` if the result is too small to be represented by `Self`.
     /// 
     /// # Examples
@@ -198,7 +198,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
 }
 
 #[doc = concat!("(Unsigned integers only.) ", impl_desc!())]
-impl<const N: usize, const OM: u8> Uint<N, OM> {
+impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
     #[inline]
     const fn saturate_up(o: Option<Self>) -> Self {
         match o {
@@ -231,7 +231,7 @@ impl<const N: usize, const OM: u8> Uint<N, OM> {
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn saturating_add_signed(self, rhs: Int<N, OM>) -> Self {
+    pub const fn saturating_add_signed(self, rhs: Int<N, B, OM>) -> Self {
         if rhs.is_negative() {
             Self::saturate_down(self.checked_add_signed(rhs))
         } else {
@@ -255,7 +255,7 @@ impl<const N: usize, const OM: u8> Uint<N, OM> {
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn saturating_sub_signed(self, rhs: Int<N, OM>) -> Self
+    pub const fn saturating_sub_signed(self, rhs: Int<N, B, OM>) -> Self
     {
         if rhs.is_negative() {
             Self::saturate_up(self.checked_sub_signed(rhs))
@@ -276,7 +276,7 @@ impl<const N: usize, const OM: u8> Uint<N, OM> {
 }
 
 #[doc = concat!("(Signed integers only.) ", impl_desc!())]
-impl<const N: usize, const OM: u8> Int<N, OM> {
+impl<const N: usize, const B: usize, const OM: u8> Int<N, B, OM> {
     /// Saturating addition with an unsigned integer of the same bit width. Computes `self + rhs`, returning `Self::MAX` if the result is too large to be represented by `Self`.
     /// 
     /// # Examples
@@ -292,7 +292,7 @@ impl<const N: usize, const OM: u8> Int<N, OM> {
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn saturating_add_unsigned(self, rhs: Uint<N, OM>) -> Self {
+    pub const fn saturating_add_unsigned(self, rhs: Uint<N, B, OM>) -> Self {
         match self.checked_add_unsigned(rhs) {
             Some(i) => i,
             None => Self::MAX,
@@ -314,7 +314,7 @@ impl<const N: usize, const OM: u8> Int<N, OM> {
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn saturating_sub_unsigned(self, rhs: Uint<N, OM>) -> Self {
+    pub const fn saturating_sub_unsigned(self, rhs: Uint<N, B, OM>) -> Self {
         match self.checked_sub_unsigned(rhs) {
             Some(i) => i,
             None => Self::MIN,

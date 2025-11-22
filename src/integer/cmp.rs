@@ -1,14 +1,14 @@
 use crate::Integer;
 use core::cmp::{Ord, Ordering, PartialOrd};
 
-impl<const S: bool, const N: usize, const OM: u8> PartialOrd for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> PartialOrd for Integer<S, N, B, OM> {
     #[inline]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl<const S: bool, const N: usize, const OM: u8> Ord for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> Ord for Integer<S, N, B, OM> {
     #[inline]
     fn cmp(&self, other: &Self) -> Ordering {
         Self::cmp(self, other)
@@ -91,16 +91,16 @@ mod tests {
 }
 
 #[cfg(test)]
-crate::test::test_all_widths_against_old_types! {
+crate::test::test_all_custom_bit_widths! {
     use crate::test::test_bignum;
 
     test_bignum! {
         function: <utest>::eq(a: ref &utest, b: ref &utest)
     }
     test_bignum! {
-        function: <utest as PartialEq>::eq(a: ref &utest, b: ref &utest)
+        function: <itest>::eq(a: ref &itest, b: ref &itest)
     }
     test_bignum! {
-        function: <utest as Ord>::cmp(a: ref &utest, b: ref &utest)
+        function: <utest>::cmp(a: ref &utest, b: ref &utest)
     }
 }

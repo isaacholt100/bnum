@@ -13,7 +13,7 @@ pub trait IntegerConvertHelper {
     fn leading_ones_at_least_threshold(&self, threshold: Exponent) -> bool;
 }
 
-impl<const S: bool, const N: usize, const OM: u8> IntegerConvertHelper for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> IntegerConvertHelper for Integer<S, N, B, OM> {
     const BITS: Exponent = Self::BITS;
     const SIGNED: bool = S;
 
@@ -155,16 +155,16 @@ where
 macro_rules! integer_try_from_into_primitive_integer {
     ($($uint: ty), *) => {
         $(
-            impl<const S: bool, const N: usize, const OM: u8> TryFrom<Integer<S, N, OM>> for $uint {
+            impl<const S: bool, const N: usize, const B: usize, const OM: u8> TryFrom<Integer<S, N, B, OM>> for $uint {
                 type Error = TryFromIntError;
 
                 #[inline]
-                fn try_from(value: Integer<S, N, OM>) -> Result<Self, Self::Error> {
+                fn try_from(value: Integer<S, N, B, OM>) -> Result<Self, Self::Error> {
                     integer_try_from_integer(value)
                 }
             }
 
-            impl<const S: bool, const N: usize, const OM: u8> TryFrom<$uint> for Integer<S, N, OM> {
+            impl<const S: bool, const N: usize, const B: usize, const OM: u8> TryFrom<$uint> for Integer<S, N, B, OM> {
                 type Error = TryFromIntError;
 
                 #[inline]
@@ -178,46 +178,46 @@ macro_rules! integer_try_from_into_primitive_integer {
 
 integer_try_from_into_primitive_integer!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
 
-impl<const N: usize, const M: usize, const OM: u8> BTryFrom<Uint<M, OM>> for Uint<N, OM> {
+impl<const N: usize, const B: usize, const M: usize, const A: usize, const OM: u8> BTryFrom<Uint<M, A, OM>> for Uint<N, B, OM> {
     type Error = TryFromIntError;
 
-    fn try_from(from: Uint<M, OM>) -> Result<Self, Self::Error> {
+    fn try_from(from: Uint<M, A, OM>) -> Result<Self, Self::Error> {
         uint_try_from_uint(from)
     }
 }
 
-impl<const N: usize, const M: usize, const OM: u8> TryFrom<Int<N, OM>> for Uint<M, OM> {
+impl<const N: usize, const B: usize, const M: usize, const A: usize, const OM: u8> TryFrom<Int<N, B, OM>> for Uint<M, A, OM> {
     type Error = TryFromIntError;
 
-    fn try_from(from: Int<N, OM>) -> Result<Self, Self::Error> {
+    fn try_from(from: Int<N, B, OM>) -> Result<Self, Self::Error> {
         uint_try_from_int(from)
     }
 }
 
-impl<const N: usize, const M: usize, const OM: u8> TryFrom<Uint<N, OM>> for Int<M, OM> {
+impl<const N: usize, const B: usize, const M: usize, const A: usize, const OM: u8> TryFrom<Uint<N, B, OM>> for Int<M, A, OM> {
     type Error = TryFromIntError;
 
-    fn try_from(from: Uint<N, OM>) -> Result<Self, Self::Error> {
+    fn try_from(from: Uint<N, B, OM>) -> Result<Self, Self::Error> {
         int_try_from_uint(from)
     }
 }
 
-impl<const M: usize, const N: usize, const OM: u8> BTryFrom<Integer<true, M, OM>> for Int<N, OM> {
+impl<const M: usize, const A: usize, const N: usize, const B: usize, const OM: u8> BTryFrom<Int<M, A, OM>> for Int<N, B, OM> {
     type Error = TryFromIntError;
 
-    fn try_from(from: Integer<true, M, OM>) -> Result<Self, Self::Error> {
+    fn try_from(from: Int<M, A, OM>) -> Result<Self, Self::Error> {
         int_try_from_int(from)
     }
 }
 
-impl<const S: bool, const N: usize, const OM: u8> From<bool> for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> From<bool> for Integer<S, N, B, OM> {
     #[inline]
     fn from(small: bool) -> Self {
         Self::cast_from(small)
     }
 }
 
-impl<const N: usize, const OM: u8> TryFrom<char> for Uint<N, OM> {
+impl<const N: usize, const B: usize, const OM: u8> TryFrom<char> for Uint<N, B, OM> {
     type Error = TryFromCharError;
     #[inline]
     fn try_from(c: char) -> Result<Self, Self::Error> {
@@ -225,7 +225,7 @@ impl<const N: usize, const OM: u8> TryFrom<char> for Uint<N, OM> {
     }
 }
 
-impl<const S: bool, const N: usize, const OM: u8> FromStr for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> FromStr for Integer<S, N, B, OM> {
     type Err = ParseIntError;
 
     fn from_str(src: &str) -> Result<Self, Self::Err> {

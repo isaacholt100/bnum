@@ -62,25 +62,47 @@ use core::default::Default;
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[cfg_attr(feature = "valuable", derive(valuable::Valuable))]
 #[repr(transparent)]
-pub struct Integer<const S: bool, const N: usize, const OM: u8 = {crate::OverflowMode::DEFAULT.to_u8()}> {
+pub struct Integer<const S: bool, const N: usize, const B: usize = 0, const OM: u8 = {crate::OverflowMode::DEFAULT.to_u8()}> {
     #[cfg_attr(feature = "serde", serde(with = "BigArray"))]
     pub(crate) bytes: [Byte; N],
 }
 
-pub type Uint<const N: usize, const OM: u8 = {crate::OverflowMode::DEFAULT.to_u8()}> = Integer<false, N, OM>;
-pub type Int<const N: usize, const OM: u8 = {crate::OverflowMode::DEFAULT.to_u8()}> = Integer<true, N, OM>;
+pub type Uint<const N: usize, const B: usize = 0, const OM: u8 = {crate::OverflowMode::DEFAULT.to_u8()}> = Integer<false, N, B, OM>;
+
+pub type Int<const N: usize, const B: usize = 0, const OM: u8 = {crate::OverflowMode::DEFAULT.to_u8()}> = Integer<true, N, B, OM>;
 
 #[cfg(feature = "zeroize")]
-impl<const S: bool, const N: usize, const OM: u8> zeroize::DefaultIsZeroes for Integer<S, N, OM> {}
-
-impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> zeroize::DefaultIsZeroes for Integer<S, N, B, OM> {}
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, B, OM> {
     #[inline(always)]
-    pub(crate) const fn force_sign<const R: bool>(self) -> Integer<R, N, OM> {
-        Integer::from_bytes(self.bytes)
+    const fn set_sign_bits(&mut self) {
+        self.set_pad_bits(self.is_negative_internal());
     }
 
     #[inline(always)]
-    pub(crate) const fn force_overflow_mode<const RO: u8>(self) -> Integer<S, N, RO> {
+    const fn set_pad_bits(&mut self, value: bool) {
+        if Self::LAST_BYTE_BITS != Byte::BITS {
+            if value {
+                // set pad bits
+                self.bytes[N - 1] |= Byte::MAX << Self::LAST_BYTE_BITS; // 11..100..0
+            } else {
+                // clear pad bits
+                self.bytes[N - 1] &= !(Byte::MAX << Self::LAST_BYTE_BITS); // 00..011..1
+            }
+        }
+    }
+
+    #[inline(always)]
+    pub(crate) const fn force_sign<const R: bool>(self) -> Integer<R, N, B, OM> {
+        let mut out = Integer::from_bytes(self.bytes);
+        if R != S {
+            out.set_sign_bits();
+        }
+        out
+    }
+
+    #[inline(always)]
+    pub(crate) const fn force_overflow_mode<const RO: u8>(self) -> Integer<S, N, B, RO> {
         Integer::from_bytes(self.bytes)
     }
 
@@ -104,7 +126,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     }
 }
 
-impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, B, OM> {
     const U128_DIGITS: usize = N.div_ceil(16);
     pub(crate) const FULL_U128_DIGITS: usize = N / 16;
     pub(crate) const U128_DIGIT_REMAINDER: usize = N % 16;
@@ -116,14 +138,14 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     pub(crate) const U128_BITS_REMAINDER: Exponent = Self::BITS % 128;
 }
 
-impl<const N: usize, const OM: u8> Int<N, OM> {
+impl<const N: usize, const B: usize, const OM: u8> Int<N, B, OM> {
     #[inline(always)]
     pub(crate) const fn signed_digit(&self) -> i8 {
         self.bytes[N - 1] as _
     }
 }
 
-impl<const S: bool, const N: usize, const OM: u8> Default for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> Default for Integer<S, N, B, OM> {
     #[doc = doc::default!()]
     #[inline]
     fn default() -> Self {
@@ -132,7 +154,7 @@ impl<const S: bool, const N: usize, const OM: u8> Default for Integer<S, N, OM> 
 }
 
 #[cfg(any(test, feature = "quickcheck"))]
-impl<const S: bool, const N: usize, const OM: u8> quickcheck::Arbitrary for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> quickcheck::Arbitrary for Integer<S, N, B, OM> {
     fn arbitrary(g: &mut quickcheck::Gen) -> Self {
         let mut out = Self::ZERO;
         let mut i = 0;
@@ -149,7 +171,7 @@ impl<const S: bool, const N: usize, const OM: u8> quickcheck::Arbitrary for Inte
 
 // implementation if we don't have alloc, as otherwise can't call assert_eq! (since this requires Debug)
 #[cfg(all(test, not(feature = "alloc")))]
-impl<const S: bool, const N: usize, const OM: u8> core::fmt::Debug for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> core::fmt::Debug for Integer<S, N, B, OM> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         for bytes in self.bytes.iter().rev() {
             write!(f, "{:02x}", byte)?;

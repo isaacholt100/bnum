@@ -2,7 +2,7 @@ use crate::Exponent;
 use crate::{Byte, digit};
 use crate::{Int, Integer, Uint};
 
-impl<const N: usize, const OM: u8> Uint<N, OM> {
+impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
     #[inline]
     const fn sub_partial_digits(&mut self, rhs: Self, start: usize, range: usize) -> bool {
         let mut borrow = false;
@@ -220,11 +220,11 @@ impl<const N: usize, const OM: u8> Uint<N, OM> {
         v = unsafe { Self::unchecked_shl_internal(v, shift) }; // D1
 
         #[repr(C)]
-        struct Remainder<const M: usize> {
+        struct Remainder<const M: usize, const A: usize> {
             first: Byte,
             rest: [Byte; M],
         }
-        impl<const M: usize> Remainder<M> {
+        impl<const M: usize, const A: usize> Remainder<M, A> {
             #[inline]
             const fn digit(&self, index: usize) -> Byte {
                 let ptr = self as *const Self as *const u8;
@@ -242,7 +242,7 @@ impl<const N: usize, const OM: u8> Uint<N, OM> {
                 unsafe { ptr.add(index).write(digit) }
             }
 
-            const fn shr(self, shift: Exponent) -> Uint<M> {
+            const fn shr(self, shift: Exponent) -> Uint<M, A> {
                 let mut out = Uint::ZERO;
                 let mut i = 0;
                 while i < M {
@@ -258,7 +258,7 @@ impl<const N: usize, const OM: u8> Uint<N, OM> {
                 }
                 out
             }
-            const fn new(uint: Uint<M>, shift: Exponent) -> Self {
+            const fn new(uint: Uint<M, A>, shift: Exponent) -> Self {
                 let first = uint.bytes[0] << shift;
                 let rest = uint.wrapping_shr(Byte::BITS - shift);
                 Self {
@@ -266,7 +266,7 @@ impl<const N: usize, const OM: u8> Uint<N, OM> {
                     rest: rest.bytes,
                 }
             }
-            const fn sub(&mut self, rhs: Mul<M>, start: usize, range: usize) -> bool {
+            const fn sub(&mut self, rhs: Mul<M, A>, start: usize, range: usize) -> bool {
                 let mut borrow = false;
                 let mut i = 0;
                 while i <= range {
@@ -283,7 +283,7 @@ impl<const N: usize, const OM: u8> Uint<N, OM> {
                 }
                 borrow
             }
-            const fn add(&mut self, rhs: Uint<M>, start: usize, range: usize) {
+            const fn add(&mut self, rhs: Uint<M, A>, start: usize, range: usize) {
                 let mut carry = false;
                 let mut i = 0;
                 while i < range {
@@ -311,12 +311,12 @@ impl<const N: usize, const OM: u8> Uint<N, OM> {
 
         #[repr(C)] // so we can use pointers to speed up indexing
         #[derive(Clone, Copy)]
-        struct Mul<const M: usize> {
+        struct Mul<const M: usize, const A: usize> {
             rest: [Byte; M],
             last: Byte,
         }
-        impl<const M: usize> Mul<M> {
-            const fn new(uint: Uint<M>, rhs: Byte) -> Self {
+        impl<const M: usize, const A: usize> Mul<M, A> {
+            const fn new(uint: Uint<M, A>, rhs: Byte) -> Self {
                 let mut rest = [0; M];
                 let mut carry: Byte = 0;
                 let mut i = 0;
@@ -619,7 +619,7 @@ impl<const N: usize, const OM: u8> Uint<N, OM> {
     }
 }
 
-impl<const N: usize, const OM: u8> Int<N, OM> {
+impl<const N: usize, const B: usize, const OM: u8> Int<N, B, OM> {
     #[inline]
     pub(crate) const fn div_rem_unchecked_signed(self, rhs: Self) -> (Self, Self) {
         let (div, rem) = self.unsigned_abs().div_rem_unchecked(rhs.unsigned_abs());
@@ -662,7 +662,7 @@ impl<const N: usize, const OM: u8> Int<N, OM> {
     }
 }
 
-impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, B, OM> {
     // don't check that rhs is zero or (if signed) that self is Self::MIN and RHS is -1
     #[inline]
     pub(crate) const fn div_rem_unchecked(self, rhs: Self) -> (Self, Self) {

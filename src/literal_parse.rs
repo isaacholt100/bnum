@@ -1,30 +1,70 @@
+/// Create constant `Integer`s from native integer literals.
+/// 
+/// The `n!` macro parses integer literals to [`Integer`] values at compile time. It supports a similar integer literal syntax as Rust's built-in integer types:
+/// - The prefix `0b` indicates a binary literal (base 2).
+/// - The prefix `0o` indicates an octal literal (base 8).
+/// - The prefix `0x` indicates a hexadecimal literal (base 16).
+/// - Literals are parsed in as decimal literals (base 10) if no prefix is specified.
+/// 
+/// `n!` can be invoked in two ways:
+/// 1. With just an integer literal, e.g. `n!(0xABCDEF)`. In this case, the const-generic parameters of the created [`Integer`] are left unspecified, so this must be used in a context where type inference can determine the parameters. For example: `let a: Integer<false, 16> = n!(0xABCDEF);` would be valid, but `let b = n!(0xABCDEF);` would trigger a compile error (unless `b` was subsequently used in a context which allowed for type inference).
+/// 2. With an integer literal followed by a type descriptor, e.g. `n!(0xABCDEF U128w)`. The type descriptor may be any valid argument to the [`nt!`](crate::nt) macro. The type descriptor specifies the const-generic parameters of the created [`Integer`]. For more information about valid type descriptors, see the documentation for the [`nt!`](crate::nt) macro.
+/// 
+/// Invoking `n!` with invalid arguments will also trigger a compile error. This can happen if:
+/// - The literal is out of range for the type (works for inferred types and types specified using a type descriptor). Note that this does not depend on the overflow mode of the type.
+/// - The literal contains an invalid digits, e.g. `n!(0b102)` or `n!(1A U512)`.
+/// - A `-` sign appears at the start of the literal when the type is unsigned, e.g. `n!(-123 U256)`.
+/// - The type descriptor is invalid.
+/// 
+/// 
+/// # Examples
+/// 
+/// ```
+/// use bnum::prelude::*; // n! is re-exported in the prelude
+/// 
+/// let a: Integer<false, 16> = n!(0xABCDEF); // type inferred from context
+/// ```
+/// 
+/// ```
+/// use bnum::prelude::*;
+/// 
+/// let b = n!(123456 I512s); // type specified using type descriptor
+/// // type descriptor specifies signed 512-bit integer with saturating overflow behaviour
+/// // note that we don't need to define a type alias I512s here
+/// ```
+/// 
+/// The following example will fail to compile, since the compiler is unable to infer the type of the integer:
+/// ```compile_fail
+/// use bnum::prelude::*;
+/// 
+/// let a = n!(0o7654321);
+/// ```
+/// 
+/// The following example will fail to compile, since the literal is out of range for the specified type:
+/// ```compile_fail
+/// use bnum::prelude::*;
+/// 
+/// let c = n!(0x1000000 U24);
+/// ```
+/// 
+/// The following example will fail to compile, since the literal contains an invalid digit for the specified base:
+/// ```compile_fail
+/// use bnum::prelude::*;
+/// use bnum::types::I256;
+/// 
+/// let d: I256 = n!(1234A);
+/// ```
+/// 
+/// The following example will fail to compile, since the given type descriptor is invalid:
+/// ```compile_fail
+/// use bnum::prelude::*;
+/// 
+/// let e = n!(12345 U1024x);
+/// ```
 #[macro_export]
 macro_rules! n {
     ($lit: literal $suffix:ident) => {
         const { $crate::from_literal_str!(stringify!($lit), <$crate::nt!($suffix)>) }
-        // const {
-        //     const PARAMS_RESULT: Result<(bool, usize, u8), ($crate::literal_parse::BitWidthError, &'static str)> = $crate::literal_parse::get_integer_params(stringify!($suffix));
-        //     const PARAMS: (bool, usize, u8) = match PARAMS_RESULT {
-        //         Ok(params) => params,
-        //         _ => (false, 0, 0), // dummy values as the errors will be handled below. we handle it like this because then the error messages the compiler gives are cleaner: just one error message rather than highlighting an error in each constant
-        //     };
-        //     const S: bool = PARAMS.0;
-        //     const N: usize = PARAMS.1 / 8;
-        //     const OM: u8 = PARAMS.2;
-
-        //     const ERR_SRC: &'static str = match PARAMS_RESULT {
-        //         Err((_, source)) => source,
-        //         _ => "",
-        //     };
-
-        //     $crate::Integer::<{
-        //         // perform the panicking here, as then the compiler gives cleaner error messages (doesn't show the source code of the macro). doesn't matter which const-generic parameter we put the error handling in, as the compiler doesn't say which parameter caused the error
-        //         if let Err((error_type, _)) = PARAMS_RESULT {
-        //             $crate::panic_bit_width_error!(error_type, ERR_SRC);
-        //         }
-        //         S
-        //     }, N, OM>::from_literal_str(stringify!($lit))
-        // }
     };
     ($lit: literal) => {
         const { $crate::from_literal_str!(stringify!($lit), $crate::Integer) }
@@ -34,6 +74,53 @@ macro_rules! n {
     };
 }
 
+/// Creates an `Integer` type with the specified const-generic parameters from a type descriptor.
+/// 
+/// The `nt!` macro takes a type descriptor and simply outputs [`Integer<S, N, B, OM>`], where the const-generic parameters `S`, `N` and `OM` are determined from the type descriptor.
+/// 
+/// A type descriptor has the following format: `<sign><bit_width><overflow_mode>?`:
+/// - `<sign>` is either `I` (specifying a signed integer) or `U` (specifying an unsigned integer).
+/// - `<bit_width>` is a decimal integer specifying the bit width of the integer type. The bit width must be a multiple of 8.
+/// - `<overflow_mode>` is optional, and if specified must be one of:
+///     - `w` for wrapping overflow mode.
+///     - `p` for panicking overflow mode.
+///     - `s` for saturating overflow mode.
+///     
+///     If `<overflow_mode>` is omitted, the default overflow mode is used.
+/// 
+/// If the given type descriptor is not in this format, a compile error will be triggered.
+/// 
+/// If you want to create `Integer` values rather than types, use the [`n!`](crate::n) macro.
+/// 
+/// # Examples
+/// 
+/// ```
+/// use bnum::prelude::*;
+/// 
+/// type MyInt = nt!(I256p); // signed 256-bit integer with panicking overflow mode
+/// type MyUint = nt!(U512); // unsigned 512-bit integer with default overflow mode
+/// type MyInt2 = nt!(I512s); // signed 512-bit integer with saturating overflow mode
+/// type MyUint2 = nt!(U24w); // unsigned 24-bit integer with wrapping overflow mode
+/// ```
+/// 
+/// The following examples will fail to compile, since the type descriptor is invalid:
+/// ```compile_fail
+/// use bnum::prelude::*;
+/// 
+/// type InvalidType = nt!(X256); // invalid sign descriptor
+/// ```
+/// 
+/// ```compile_fail
+/// use bnum::prelude::*;
+/// 
+/// type InvalidType2 = nt!(I257); // bit width not a multiple of 8
+/// ```
+/// 
+/// ```compile_fail
+/// use bnum::prelude::*;
+/// 
+/// type InvalidType3 = nt!(U1024x); // invalid overflow mode descriptor
+/// ```
 #[macro_export]
 macro_rules! nt {
     ($ty: ident) => {
@@ -41,21 +128,45 @@ macro_rules! nt {
             $crate::literal_parse::get_signedness(stringify!($ty))
         }, {
             // we do the error handling here, as the processing of the bit width is the most computationally intensive (need to parse a string to an int, more cases to handle). it's very easy and fast to come up with a sign and overflow mode descriptors that are valid when the type descriptor is valid (the sign and overflow mode descriptors may be incorrect for an invalid type descriptor, but this does not matter as the error handling here will cause a panic anyway)
-            const PARAMS_RESULT: Result<(bool, usize, u8), ($crate::literal_parse::BitWidthError, &'static str)> = $crate::literal_parse::get_integer_params(stringify!($ty));
+            const PARAMS_RESULT: Result<(bool, usize, u8), ($crate::literal_parse::TypeDescriptorError, &'static str)> = $crate::literal_parse::get_integer_params(stringify!($ty));
             // compiler doesn't say which const-generic parameter caused the error, so we can put all the error handling in one place, this means we won't forget to cover any of the possible errors
             const ERR_SRC: &'static str = match PARAMS_RESULT {
                 Err((_, source)) => source,
                 _ => "",
             };
             if let Err((error_type, _)) = PARAMS_RESULT {
-                $crate::panic_bit_width_error!(error_type, ERR_SRC);
+                match error_type {
+                    $crate::literal_parse::TypeDescriptorError::InvalidSuffix => {
+                        $crate::concat_panic!("invalid integer type descriptor `", ERR_SRC, "`")
+                    },
+                    $crate::literal_parse::TypeDescriptorError::InvalidSignDescriptor => {
+                        $crate::concat_panic!("invalid sign descriptor `", ERR_SRC, "` in type descriptor\nthe sign descriptor must be either `I` (for signed) or `U` (for unsigned)")
+                    },
+                    $crate::literal_parse::TypeDescriptorError::NoSignDescriptor => {
+                        panic!("no sign descriptor specified in integer type descriptor")
+                    },
+                    $crate::literal_parse::TypeDescriptorError::BitWidthNotMultipleOf8 => {
+                        $crate::concat_panic!("invalid width `", ERR_SRC, "` for integer type\nthe width must be a multiple of 8")
+                    },
+                    $crate::literal_parse::TypeDescriptorError::BitWidthTooLarge => {
+                        $crate::concat_panic!("invalid width `", ERR_SRC, "` for integer type\nthe width must be less than 2^32")
+                    },
+                    $crate::literal_parse::TypeDescriptorError::BitWidthTooSmall => {
+                        $crate::concat_panic!("invalid width `", ERR_SRC, "` for integer type\nthe width must be at least 2")
+                    },
+                    $crate::literal_parse::TypeDescriptorError::NoBitWidthSpecified => {
+                        panic!("no bit width specified for integer type descriptor")
+                    },
+                    $crate::literal_parse::TypeDescriptorError::InvalidOverflowModeDescriptor => {
+                        $crate::concat_panic!("invalid overflow mode descriptor `", ERR_SRC, "` for integer type descriptor\nthe overflow mode descriptor must be either one of `w`, `p` or `s`, or omitted")
+                    },
+                }
             }
-            // TODO: separate into three functions, so we don't have to call it three times
             match $crate::literal_parse::get_integer_params(stringify!($ty)) {
                 Ok((_, bw, _)) => bw / 8,
                 _ => 0,
             }
-        }, {
+        }, 0, {
             $crate::literal_parse::get_overflow_mode(stringify!($ty))
         }>
     };
@@ -87,39 +198,6 @@ pub const fn concat_strs<'a, const LEN: usize>(msgs: &[&'a str]) -> [u8; LEN] {
 
 #[doc(hidden)]
 #[macro_export]
-macro_rules! panic_bit_width_error {
-    ($error_type: ident, $source: ident) => {
-        match $error_type {
-            $crate::literal_parse::BitWidthError::InvalidSuffix => {
-                $crate::concat_panic!("invalid integer type descriptor `", $source, "`")
-            },
-            $crate::literal_parse::BitWidthError::InvalidSignDescriptor => {
-                $crate::concat_panic!("invalid sign descriptor `", $source, "` in type descriptor\nthe sign descriptor must be either `I` (for signed) or `U` (for unsigned)")
-            },
-            $crate::literal_parse::BitWidthError::NoSignDescriptor => {
-                panic!("no sign descriptor specified in integer type descriptor")
-            },
-            $crate::literal_parse::BitWidthError::BitWidthNotMultipleOf8 => {
-                $crate::concat_panic!("invalid width `", $source, "` for integer type\nthe width must be a multiple of 8")
-            },
-            $crate::literal_parse::BitWidthError::BitWidthTooLarge => {
-                $crate::concat_panic!("invalid width `", $source, "` for integer type\nthe width must be less than 2^32")
-            },
-            $crate::literal_parse::BitWidthError::BitWidthTooSmall => {
-                $crate::concat_panic!("invalid width `", $source, "` for integer type\nthe width must be at least 2")
-            },
-            $crate::literal_parse::BitWidthError::NoBitWidthSpecified => {
-                panic!("no bit width specified for integer type descriptor")
-            },
-            $crate::literal_parse::BitWidthError::InvalidOverflowModeDescriptor => {
-                $crate::concat_panic!("invalid overflow mode descriptor `", $source, "` for integer type descriptor\nthe overflow mode descriptor must be either one of `w`, `p` or `s`, or omitted")
-            },
-        }
-    };
-}
-
-#[doc(hidden)]
-#[macro_export]
 macro_rules! concat_panic {
     ($($msg: expr),+ $(,)?) => {
         {
@@ -131,19 +209,8 @@ macro_rules! concat_panic {
     };
 }
 
-#[test]
-fn test_t_macro() {
-    use crate::types::U256;
-    type U = nt!(U12440s);
-    let a: U256 = n!(123456);
-    assert_eq!(U::BITS, 12440);
-    assert!(U::MAX + U::MAX == U::MAX);
-}
-
-// pub(crate) use n;
-
 #[doc(hidden)]
-pub enum BitWidthError {
+pub enum TypeDescriptorError {
     InvalidSuffix,
     BitWidthNotMultipleOf8,
     BitWidthTooLarge,
@@ -170,13 +237,13 @@ pub const fn get_overflow_mode(suffix: &str) -> u8 {
 }
 
 #[doc(hidden)]
-pub const fn get_integer_params(suffix: &str) -> Result<(bool, usize, u8), (BitWidthError, &str)> {
+pub const fn get_integer_params(type_descriptor: &str) -> Result<(bool, usize, u8), (TypeDescriptorError, &str)> {
     use crate::OverflowMode;
 
-    if suffix.len() < 1 {
-        return Err((BitWidthError::InvalidSuffix, suffix));
+    if type_descriptor.len() < 1 {
+        return Err((TypeDescriptorError::InvalidSuffix, type_descriptor));
     }
-    let bytes = suffix.as_bytes();
+    let bytes = type_descriptor.as_bytes();
     let mut first_numeric_index = None;
     let mut last_numeric_index = 0;
 
@@ -201,26 +268,26 @@ pub const fn get_integer_params(suffix: &str) -> Result<(bool, usize, u8), (BitW
         i += 1;
     }
     let (sign_str, rest) = match first_numeric_index {
-        Some(1) => suffix.split_at(1),
-        Some(0) => return Err((BitWidthError::NoSignDescriptor, "")), // no sign descriptor
-        Some(idx) => return Err((BitWidthError::InvalidSignDescriptor, suffix.split_at(idx).0)), // more than one character for the sign descriptor, so must be invalid
-        None => return Err((BitWidthError::NoBitWidthSpecified, "")),
+        Some(1) => type_descriptor.split_at(1),
+        Some(0) => return Err((TypeDescriptorError::NoSignDescriptor, "")), // no sign descriptor
+        Some(idx) => return Err((TypeDescriptorError::InvalidSignDescriptor, type_descriptor.split_at(idx).0)), // more than one character for the sign descriptor, so must be invalid
+        None => return Err((TypeDescriptorError::NoBitWidthSpecified, "")),
     };
     assert!(last_numeric_index >= 1); // as now we know there must be at least one numeric character, and the first numeric character is at index 1
     let sign_char = bytes[0] as char;
     if sign_char != 'I' && sign_char != 'U' {
-        return Err((BitWidthError::InvalidSignDescriptor, sign_str));
+        return Err((TypeDescriptorError::InvalidSignDescriptor, sign_str));
     }
     let is_signed = sign_char == 'I';
     let (bw_str, om_str) = rest.split_at(last_numeric_index); // not plus one as the index is according to suffix, not rest
     let bw = match usize::from_str_radix(bw_str, 10) {
         Ok(bw) => {
             if bw % 8 != 0 {
-                return Err((BitWidthError::BitWidthNotMultipleOf8, bw_str));
+                return Err((TypeDescriptorError::BitWidthNotMultipleOf8, bw_str));
             } else if bw < 2 {
-                return Err((BitWidthError::BitWidthTooSmall, bw_str));
+                return Err((TypeDescriptorError::BitWidthTooSmall, bw_str));
             } else if usize::BITS > 32 && bw >= (1 << 32) {
-                return Err((BitWidthError::BitWidthTooLarge, bw_str));
+                return Err((TypeDescriptorError::BitWidthTooLarge, bw_str));
             } else {
                 bw
             }
@@ -228,9 +295,9 @@ pub const fn get_integer_params(suffix: &str) -> Result<(bool, usize, u8), (BitW
         Err(err) => {
             return match err.kind() {
                 core::num::IntErrorKind::PosOverflow => {
-                    Err((BitWidthError::BitWidthTooLarge, bw_str))
+                    Err((TypeDescriptorError::BitWidthTooLarge, bw_str))
                 }
-                _ => Err((BitWidthError::InvalidSuffix, suffix)),
+                _ => Err((TypeDescriptorError::InvalidSuffix, type_descriptor)),
             };
         }
     };
@@ -241,7 +308,7 @@ pub const fn get_integer_params(suffix: &str) -> Result<(bool, usize, u8), (BitW
             b"w" => OverflowMode::Wrapping.to_u8(),
             b"p" => OverflowMode::Panicking.to_u8(),
             b"s" => OverflowMode::Saturating.to_u8(),
-            _ => return Err((BitWidthError::InvalidOverflowModeDescriptor, om_str)),
+            _ => return Err((TypeDescriptorError::InvalidOverflowModeDescriptor, om_str)),
         }
     };
     Ok((is_signed, bw, overflow_mode))
@@ -272,6 +339,7 @@ macro_rules! from_literal_str {
     };
 }
 
+#[doc(hidden)]
 #[derive(Debug)]
 pub enum ParseIntLiteralError {
     OutOfRange,
@@ -282,30 +350,7 @@ pub enum ParseIntLiteralError {
 
 use crate::{Integer, Uint};
 
-impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
-    #[doc(hidden)]
-    #[inline]
-    pub const fn from_literal_str(literal_str: &str) -> Self {
-        match Self::from_literal_str_checked(literal_str) {
-            Ok(n) => n,
-            Err(err) => match err {
-                ParseIntLiteralError::OutOfRange => {
-                    panic!("literal out of range for target type")
-                }
-                ParseIntLiteralError::NoDigits => {
-                    panic!("no valid digits found for number")
-                }
-                ParseIntLiteralError::InvalidDigit => {
-                    panic!("integer literal contains invalid digit")
-                }
-                ParseIntLiteralError::UnsignedNegation => {
-                    panic!("cannot apply unary operator `-` to unsigned integer type")
-                }
-            },
-        }
-    }
-
-    // or maybe just from_literal? not from_str_literal as that could be confused with a string literal
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, B, OM> {
     #[doc(hidden)]
     #[inline]
     pub const fn from_literal_str_checked(literal_str: &str) -> Result<Self, ParseIntLiteralError> {

@@ -11,14 +11,14 @@ macro_rules! impl_desc {
 }
 
 #[doc = impl_desc!()]
-impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, B, OM> {
     #[inline(always)]
     pub(crate) const fn is_negative_internal(&self) -> bool {
-        S && (self.bytes[N - 1] as i8).is_negative()
+        S && self.bit(Self::BITS - 1)
     }
 
     #[inline(always)]
-    pub(crate) const fn unsigned_abs_internal(self) -> Uint<N, OM> {
+    pub(crate) const fn unsigned_abs_internal(self) -> Uint<N, B, OM> {
         if self.is_negative_internal() {
             self.wrapping_neg().force_sign::<false>()
         } else {
@@ -131,6 +131,11 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
         ones == 1
     }
 
+    #[inline]
+    const fn is_even(&self) -> bool {
+        (self.bytes[0] & 1) == 0
+    }
+
     /// Computes the arithmetic mean of `self` and `rhs`, rounded towards zero (i.e. `(self + rhs) / 2`), without the possibility of overflow.
     /// 
     /// # Examples
@@ -149,7 +154,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
         // see section 2.5: Average of Two Integers in Hacker's Delight
         let x = self.bitxor(rhs);
         let t = self.bitand(rhs).add(x.shr(1));
-        if t.is_negative_internal() && x.bytes[0] % 2 == 1 {
+        if t.is_negative_internal() && !x.is_even() {
             // t is negative and x is odd
             t.add(Self::ONE)
         } else {
@@ -237,13 +242,13 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn abs_diff(self, other: Self) -> Uint<N, OM> {
+    pub const fn abs_diff(self, other: Self) -> Uint<N, B, OM> {
         let diff = if self.lt(&other) {
             other.wrapping_sub(self)
         } else {
             self.wrapping_sub(other)
         };
-        Uint::from_bytes(diff.bytes)
+        diff.force_sign()
     }
 
     /// If `rhs` is positive, computes the smallest integer multiple of `rhs` that is greater than or equal to `self`. If `rhs` is negative, computes the largest integer multiple of `rhs` that is less than or equal to `self`.
@@ -411,10 +416,10 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
 }
 
 #[doc = concat!("(Unsigned integers only.) ", impl_desc!())]
-impl<const N: usize, const OM: u8> Uint<N, OM> {
+impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
     /// Casts `self` to a signed integer type of the same bit width, leaving the memory representation unchanged.
     ///
-    /// This is function equivalent to using the [`As`](crate::cast::As) trait to cast `self` to [`Int<N, OM>`](crate::Int).
+    /// This is function equivalent to using the [`As`](crate::cast::As) trait to cast `self` to [`Int<N, B, OM>`](crate::Int).
     ///
     /// # Examples
     ///
@@ -429,8 +434,8 @@ impl<const N: usize, const OM: u8> Uint<N, OM> {
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn cast_signed(self) -> Int<N, OM> {
-        self.force_sign::<true>()
+    pub const fn cast_signed(self) -> Int<N, B, OM> {
+        self.force_sign()
     }
 
     /// Returns the smallest power of two greater than or equal to `self`.
@@ -462,7 +467,7 @@ impl<const N: usize, const OM: u8> Uint<N, OM> {
     ///
     /// # Panics
     ///
-    /// This function will panic if `power` is greater than or equal to `Self::BITS`.
+    /// This function will panic if `power` is greater than or equal to [`Self::BITS`].
     ///
     /// # Examples
     ///
@@ -487,10 +492,10 @@ impl<const N: usize, const OM: u8> Uint<N, OM> {
 }
 
 #[doc = concat!("(Signed integers only.) ", impl_desc!())]
-impl<const N: usize, const OM: u8> Int<N, OM> {
+impl<const N: usize, const B: usize, const OM: u8> Int<N, B, OM> {
     /// Casts `self` to an unsigned integer type of the same bit width, leaving the memory representation unchanged.
     /// 
-    /// This is function equivalent to using the [`As`](crate::cast::As) trait to cast `self` to [`Uint<N, OM>`](crate::Uint).
+    /// This is function equivalent to using the [`As`](crate::cast::As) trait to cast `self` to [`Uint<N, B, OM>`](crate::Uint).
     /// 
     /// # Examples
     /// 
@@ -503,8 +508,8 @@ impl<const N: usize, const OM: u8> Int<N, OM> {
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn cast_unsigned(self) -> Uint<N, OM> {
-        Uint::from_bytes(self.bytes)
+    pub const fn cast_unsigned(self) -> Uint<N, B, OM> {
+        self.force_sign()
     }
 
     /// Returns the absolute value of `self` as an unsigned integer.
@@ -521,7 +526,7 @@ impl<const N: usize, const OM: u8> Int<N, OM> {
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn unsigned_abs(self) -> Uint<N, OM> {
+    pub const fn unsigned_abs(self) -> Uint<N, B, OM> {
         if self.is_negative() {
             self.wrapping_neg().cast_unsigned()
         } else {
@@ -616,28 +621,28 @@ impl<const N: usize, const OM: u8> Int<N, OM> {
 
 use core::iter::{Iterator, Product, Sum};
 
-impl<const S: bool, const N: usize, const OM: u8> Product<Self> for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> Product<Self> for Integer<S, N, B, OM> {
     #[inline]
     fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.fold(Self::ONE, |a, b| a * b)
     }
 }
 
-impl<'a, const S: bool, const N: usize, const OM: u8> Product<&'a Self> for Integer<S, N, OM> {
+impl<'a, const S: bool, const N: usize, const B: usize, const OM: u8> Product<&'a Self> for Integer<S, N, B, OM> {
     #[inline]
     fn product<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
         iter.fold(Self::ONE, |a, b| a * b)
     }
 }
 
-impl<const S: bool, const N: usize, const OM: u8> Sum<Self> for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> Sum<Self> for Integer<S, N, B, OM> {
     #[inline]
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.fold(Self::ZERO, |a, b| a + b)
     }
 }
 
-impl<'a, const S: bool, const N: usize, const OM: u8> Sum<&'a Self> for Integer<S, N, OM> {
+impl<'a, const S: bool, const N: usize, const B: usize, const OM: u8> Sum<&'a Self> for Integer<S, N, B, OM> {
     #[inline]
     fn sum<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
         iter.fold(Self::ZERO, |a, b| a + b)
@@ -664,9 +669,9 @@ mod tests {
             assert!(UTEST::ONE.is_one());
             assert!(!UTEST::MAX.is_one());
             assert!(!UTEST::ZERO.is_one());
-            let mut digits = *crate::Uint::<2>::MAX.as_bytes();
+            let mut digits = *crate::Uint::<2, 0>::MAX.as_bytes();
             digits[0] = 1;
-            let b = crate::Uint::<2>::from_bytes(digits);
+            let b = crate::Uint::<2, 0>::from_bytes(digits);
             assert!(!b.is_one());
         }
 
@@ -788,7 +793,7 @@ mod tests {
 }
 
 #[cfg(test)]
-crate::test::test_all_widths_against_old_types! {
+crate::test::test_all_custom_bit_widths! {
     use crate::test::test_bignum;
 
     test_bignum! {

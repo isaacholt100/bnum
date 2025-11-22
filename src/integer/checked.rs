@@ -11,7 +11,7 @@ macro_rules! impl_desc {
 }
 
 #[doc = impl_desc!()]
-impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, B, OM> {
     #[inline(always)]
     const fn tuple_to_option(t: (Self, bool)) -> Option<Self> {
         if t.1 {
@@ -484,7 +484,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
 }
 
 #[doc = concat!("(Unsigned integers only.) ", impl_desc!())]
-impl<const N: usize, const OM: u8> Uint<N, OM> {
+impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
     #[inline]
     const fn iilog(m: Exponent, b: Self, k: Self) -> (Exponent, Self) {
         // https://people.csail.mit.edu/jaffer/III/iilog.pdf
@@ -516,7 +516,7 @@ impl<const N: usize, const OM: u8> Uint<N, OM> {
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn checked_add_signed(self, rhs: Int<N, OM>) -> Option<Self> {
+    pub const fn checked_add_signed(self, rhs: Int<N, B, OM>) -> Option<Self> {
         tuple_to_option(self.overflowing_add_signed(rhs))
     }
 
@@ -536,11 +536,11 @@ impl<const N: usize, const OM: u8> Uint<N, OM> {
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn checked_sub_signed(self, rhs: Int<N, OM>) -> Option<Self> {
+    pub const fn checked_sub_signed(self, rhs: Int<N, B, OM>) -> Option<Self> {
         tuple_to_option(self.overflowing_sub_signed(rhs))
     }
 
-    /// Checked integer subtraction. Computes `self - rhs`, returning `None` if the result cannot be represented by an `Int<N, OM>`.
+    /// Checked integer subtraction. Computes `self - rhs`, returning `None` if the result cannot be represented by an `Int<N, B, OM>`.
     /// 
     /// # Examples
     /// 
@@ -556,7 +556,7 @@ impl<const N: usize, const OM: u8> Uint<N, OM> {
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn checked_signed_diff(self, rhs: Self) -> Option<Int<N, OM>> {
+    pub const fn checked_signed_diff(self, rhs: Self) -> Option<Int<N, B, OM>> {
         let (out, overflow) = self.overflowing_sub(rhs);
         let out = out.cast_signed();
         if overflow == out.is_negative() {
@@ -595,7 +595,7 @@ impl<const N: usize, const OM: u8> Uint<N, OM> {
 }
 
 #[doc = concat!("(Signed integers only.) ", impl_desc!())]
-impl<const N: usize, const OM: u8> Int<N, OM> {
+impl<const N: usize, const B: usize, const OM: u8> Int<N, B, OM> {
     /// Checked addition with an unsigned integer of the same bit width. Computes `self + rhs`, returning `None` if overflow occurred.
     /// 
     /// # Examples
@@ -612,7 +612,7 @@ impl<const N: usize, const OM: u8> Int<N, OM> {
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn checked_add_unsigned(self, rhs: Uint<N, OM>) -> Option<Self> {
+    pub const fn checked_add_unsigned(self, rhs: Uint<N, B, OM>) -> Option<Self> {
         tuple_to_option(self.overflowing_add_unsigned(rhs))
     }
 
@@ -632,7 +632,7 @@ impl<const N: usize, const OM: u8> Int<N, OM> {
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn checked_sub_unsigned(self, rhs: Uint<N, OM>) -> Option<Self> {
+    pub const fn checked_sub_unsigned(self, rhs: Uint<N, B, OM>) -> Option<Self> {
         tuple_to_option(self.overflowing_sub_unsigned(rhs))
     }
 
@@ -765,7 +765,7 @@ mod tests {
 }
 
 #[cfg(test)]
-crate::test::test_all_widths_against_old_types! {
+crate::test::test_all_custom_bit_widths! {
     use crate::test::test_bignum;
 
     test_bignum! {

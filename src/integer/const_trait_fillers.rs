@@ -4,7 +4,7 @@ use crate::Exponent;
 use core::cmp::Ordering;
 
 /// Provides `const` function alternatives to methods of common traits, such as `Add` and `BitOr`. These functions will be removed once `const` traits are stabilized.
-impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, B, OM> {
     #[inline]
     pub const fn bitand(self, rhs: Self) -> Self {
         let mut out = Self::ZERO;
@@ -62,6 +62,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
                 i += 1;
             }
         }
+        out.set_sign_bits(); // as if Self::LAST_BYTE_BITS is not 8, the padding bits will have been flipped, so need to reset
         out
     }
 
@@ -240,7 +241,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     }
 }
 
-impl<const N: usize, const OM: u8> Int<N, OM> {
+impl<const N: usize, const B: usize, const OM: u8> Int<N, B, OM> {
     #[inline]
     pub const fn neg(self) -> Self {
         match Self::OVERFLOW_MODE {

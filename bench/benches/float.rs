@@ -84,12 +84,12 @@ fn bench_add(c: &mut Criterion) {
     // }));
     group.bench_with_input(BenchmarkId::new("Iterative", "d8"), &inputs1, |b, inputs| b.iter(|| {
         inputs.iter().cloned().map(|(a, b)| {
-            a.leading_zeros()
+            a.trailing_zeros()
         }).collect::<Vec<_>>()
     }));
     group.bench_with_input(BenchmarkId::new("Iterative", "d64"), &inputs2, |b, inputs| b.iter(|| {
         inputs.iter().cloned().map(|(a, b)| {
-            a.leading_ones()
+            a.trailing_zeros()
         }).collect::<Vec<_>>()
     }));
     group.finish();

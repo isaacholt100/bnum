@@ -28,7 +28,7 @@ macro_rules! impl_bits_for_uint {
 
 impl_bits_for_uint!(u8, u16, u32, u64, u128, usize);
 
-impl<const N: usize, const OM: u8> Bits for Uint<N, OM> {
+impl<const N: usize, const B: usize, const OM: u8> Bits for Uint<N, B, OM> {
     const BITS: Exponent = Self::BITS;
 
     #[inline]
@@ -77,11 +77,11 @@ impl_one_for_int!(
     u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize
 );
 
-impl<const N: usize, const OM: u8> Zero for Uint<N, OM> {
+impl<const N: usize, const B: usize, const OM: u8> Zero for Uint<N, B, OM> {
     const ZERO: Self = Self::ZERO;
 }
 
-impl<const N: usize, const OM: u8> One for Uint<N, OM> {
+impl<const N: usize, const B: usize, const OM: u8> One for Uint<N, B, OM> {
     const ONE: Self = Self::ONE;
 }
 

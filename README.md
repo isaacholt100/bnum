@@ -24,7 +24,7 @@ Rust provides 10 fixed-width integer types out of the box: `u8`, `i8`, `u16`, `i
 - Whether the integer is signed or unsigned.
 - The overflow behaviour of the integer: wrapping, saturating, or panicking.
 
-More specifically, `Integer<S, N, OM>` specifies an integer type which:
+<!-- More specifically, `Integer<S, N, OM>` specifies an integer type which:
 - Is signed if `S` is `true`, and unsigned if `S` is `false`.
 - Has a width of `N * 8` bits.
 - Has overflow behaviour specified by `OM`:
@@ -32,9 +32,9 @@ More specifically, `Integer<S, N, OM>` specifies an integer type which:
   - `OM = 1`: arithmetic operations panic on overflow.
   - `OM = 2`: arithmetic operations saturate on overflow.
 
-For example, a useful type in cryptography would be `Integer<false, 64, 0>`: an unsigned integer type with a width of `64 * 8 = 512` bits, and which has explicit wrapping arithmetic.
+For example, a useful type in cryptography would be `Integer<false, 64, 0>`: an unsigned integer type with a width of `64 * 8 = 512` bits, and which has explicit wrapping arithmetic.  TODO: move to Integer docs-->
 
-`bnum` also provides a macro `n!` for easily creating `bnum` integers from integer literals.
+`bnum` also provides a macro `n!` for easily creating `bnum` integers from integer literals, and a macro `nt!` for specifying `Integer` types with specific parameters from type descriptors.
 
 To illustrate the power of this generic interface, here is a simple example:
 
@@ -45,7 +45,7 @@ use bnum::prelude::*; // imports common use items, including the `Integer` type 
 // of any byte width and with any overflow behaviour
 // for example, the polynomial could be p(x) = 2x^3 + 3x^2 + 5x + 7
 
-fn p<const S: bool, const N: usize, const OM: u8>(x: Integer<S, N, OM>) -> Integer<S, N, OM> {
+fn p<const S: bool, const N: usize, const B: usize, const OM: u8>(x: Integer<S, N, B, OM>) -> Integer<S, N, B, OM> {
     n!(2)*x.pow(3) + n!(3)*x.pow(2) + n!(5)*x + n!(7)
     // type inference means we don't need to specify the width of the integers in the n! macro
 }
@@ -54,11 +54,11 @@ fn p<const S: bool, const N: usize, const OM: u8>(x: Integer<S, N, OM>) -> Integ
 assert_eq!(p(n!(10 U256)), n!(2357));
 // evaluates p(10) as a 16-bit unsigned integer
 
-type U24w = Integer<false, 3, 0>;
+type U24w = nt!(U24w);
 // 24-bit unsigned integer with wrapping arithmetic
-type I40s = Integer<true, 5, 2>;
+type I40s = nt!(I40s);
 // 40-bit signed integer with saturating arithmetic
-type U48p = Integer<false, 6, 1>;
+type U48p = nt!(U48p);
 // 48-bit unsigned integer with panicking arithmetic
 
 let a = p(U24w::MAX); // result wraps around and doesn't panic
@@ -66,7 +66,7 @@ let b = p(I40s::MAX); // result is too large to be contained in I40, so saturate
 // let c = p(U48p::MAX); // this would result in panic due to overflow
 ```
   
-For more information on the `Integer` type and the `n!` macro, see the crate level documentation.
+For more information on the `Integer` type and the `n!` and `nt!` macros, see the crate level documentation.
 
 ## Key features
 
@@ -122,13 +122,6 @@ println!("The {}th Fibonacci number is {}", n, f_n);
 // Prints "The 100th Fibonacci number is 354224848179261915075"
 
 assert_eq!(f_n, n!(354224848179261915075));
-```
-
-```rust
-use bnum::prelude::*;
-
-let neg_one = n!(-1 I80);
-assert_eq!(neg_one.count_ones(), 80); // signed integers are stored in two's complement so `-1` is represented as `111111...11`
 ```
 
 ## Crate features

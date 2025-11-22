@@ -282,10 +282,10 @@ macro_rules! test_types {
             // pub type ftest = [<f $bits>];
 
             #[allow(non_camel_case_types, unused)]
-            pub type UTEST = crate::Uint<{ $bits / 8 }>;
+            pub type UTEST = crate::Uint<{ usize::div_ceil($bits, 8) }, $bits>;
 
             #[allow(non_camel_case_types, unused)]
-            pub type ITEST = crate::Int<{ $bits / 8 }>;
+            pub type ITEST = crate::Int<{ usize::div_ceil($bits, 8) }, $bits>;
 
             // #[cfg(feature = "float")]
             // #[allow(non_camel_case_types, unused)]
@@ -314,10 +314,10 @@ macro_rules! test_width_and_sign {
                 // pub type ftest = [<f $bits>];
 
                 #[allow(non_camel_case_types, unused)]
-                pub type UTEST = crate::Uint<{ $bits / 8 }>;
+                pub type UTEST = crate::Uint<{ usize::div_ceil($bits, 8) }, $bits>;
 
                 #[allow(non_camel_case_types, unused)]
-                pub type ITEST = crate::Int<{ $bits / 8 }>;
+                pub type ITEST = crate::Int<{ usize::div_ceil($bits, 8) }, $bits>;
 
                 // #[cfg(feature = "float")]
                 // #[allow(non_camel_case_types, unused)]
@@ -327,7 +327,7 @@ macro_rules! test_width_and_sign {
                 pub type stest = [<$prefix $bits>];
 
                 #[allow(non_camel_case_types, unused)]
-                pub type STEST = crate::Integer<{ crate::test::is_prefix_signed!($prefix) }, { $bits / 8 }>;
+                pub type STEST = crate::Integer<{ crate::test::is_prefix_signed!($prefix) }, { usize::div_ceil($bits, 8) }, $bits>;
 
                 $($s)*
             }
@@ -337,33 +337,24 @@ macro_rules! test_width_and_sign {
 
 pub(crate) use test_width_and_sign;
 
-macro_rules! old_bnum_test_types {
-    ($bits: expr $(, $extra: ident)?) => {
-        paste::paste! {
-            #[allow(non_camel_case_types, unused)]
-            pub type utest = bnum_old::BUintD8<{ $bits / 8 }>;
-
-            #[allow(non_camel_case_types, unused)]
-            pub type itest = bnum_old::BIntD8<{ $bits / 8 }>;
-
-            #[allow(non_camel_case_types, unused)]
-            pub type UTEST = crate::Uint<{ $bits / 8 }>;
-
-            #[allow(non_camel_case_types, unused)]
-            pub type ITEST = crate::Int<{ $bits / 8 }>;
-        }
-    };
-}
-
-pub(crate) use old_bnum_test_types;
-
-macro_rules! test_against_old_types {
+macro_rules! test_custom_bit_width {
     ($bits: literal; $($s: tt) * ) => {
         paste::paste! {
             mod [<bits $bits>] {
                 #[allow(unused_imports)]
                 use super::*;
-                crate::test::old_bnum_test_types!($bits);
+                
+                #[allow(non_camel_case_types, unused)]
+                pub type utest = crate::test::BitInt<false, $bits>;
+
+                #[allow(non_camel_case_types, unused)]
+                pub type itest = crate::test::BitInt<true, $bits>;
+
+                #[allow(non_camel_case_types, unused)]
+                pub type UTEST = crate::Uint<{ usize::div_ceil($bits, 8) }, $bits>;
+
+                #[allow(non_camel_case_types, unused)]
+                pub type ITEST = crate::Int<{ usize::div_ceil($bits, 8) }, $bits>;
 
                 $($s)*
             }
@@ -371,29 +362,36 @@ macro_rules! test_against_old_types {
     };
 }
 
-pub(crate) use test_against_old_types;
+pub(crate) use test_custom_bit_width;
 
 // since we're using u128 digit iterations for performance, testing on the primitives isn't enough, because there will only be one u128 digit. so test against previous version of bnum, which are almost certainly completely correct due to the testing of that version, and the fact they use different sized digits (u8 not u128)
 // but we only need to do this for methods that use the u128 digits (anywhere where .as_wide_digits() or .as_wide_digits_mut() is used)
 // test for a few different widths, with different widths of the truncated last digit (Self::BITS % 128)
-macro_rules! test_all_widths_against_old_types {
+macro_rules! test_all_custom_bit_widths {
     { $($s: tt) * } => {
-        mod old_comparison_tests {
+        mod custom_bit_width_tests {
             #[allow(unused_imports)]
             use super::*;
 
-            crate::test::test_against_old_types!(56; $($s)*); // 0 * 128 + 56
-            crate::test::test_against_old_types!(144; $($s)*); // 1 * 128 + 16
-            crate::test::test_against_old_types!(264; $($s)*); // 2 * 128 + 8
-            crate::test::test_against_old_types!(488; $($s)*); // 3 * 128 + 104
-            crate::test::test_against_old_types!(584; $($s)*); // 4 * 128 + 72
-            crate::test::test_against_old_types!(640; $($s)*); // 5 * 128 + 0
-            crate::test::test_against_old_types!(1024; $($s)*); // 8 * 128 + 0
+            crate::test::test_custom_bit_width!(8; $($s)*); // 0 * 128 + 8
+            crate::test::test_custom_bit_width!(16; $($s)*); // 0 * 128 + 16
+            crate::test::test_custom_bit_width!(32; $($s)*); // 0 * 128 + 32
+            crate::test::test_custom_bit_width!(64; $($s)*); // 0 * 128 + 64
+            crate::test::test_custom_bit_width!(128; $($s)*); // 1 * 128 + 0
+
+            crate::test::test_custom_bit_width!(56; $($s)*); // 0 * 128 + 56
+            crate::test::test_custom_bit_width!(144; $($s)*); // 1 * 128 + 16
+            crate::test::test_custom_bit_width!(264; $($s)*); // 2 * 128 + 8
+            crate::test::test_custom_bit_width!(277; $($s)*); // 2 * 128 + 21
+            crate::test::test_custom_bit_width!(488; $($s)*); // 3 * 128 + 104
+            crate::test::test_custom_bit_width!(584; $($s)*); // 4 * 128 + 72
+            crate::test::test_custom_bit_width!(640; $($s)*); // 5 * 128 + 0
+            crate::test::test_custom_bit_width!(512; $($s)*); // 4 * 128 + 0
         }
     }
 }
 
-pub(crate) use test_all_widths_against_old_types;
+pub(crate) use test_all_custom_bit_widths;
 
 macro_rules! test_all {
     { testing unsigned; $($s: tt) * } => {

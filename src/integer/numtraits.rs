@@ -17,7 +17,7 @@ use num_traits::{
     WrappingNeg, WrappingShl, WrappingShr, WrappingSub, Zero,
 };
 
-impl<const S: bool, const N: usize, const OM: u8> Bounded for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> Bounded for Integer<S, N, B, OM> {
     #[inline]
     fn min_value() -> Self {
         Self::MIN
@@ -31,7 +31,7 @@ impl<const S: bool, const N: usize, const OM: u8> Bounded for Integer<S, N, OM> 
 
 macro_rules! num_trait_impl {
     ($tr: ident, $method: ident, $ret: ty) => {
-        impl<const S: bool, const N: usize, const OM: u8> $tr for Integer<S, N, OM> {
+        impl<const S: bool, const N: usize, const B: usize, const OM: u8> $tr for Integer<S, N, B, OM> {
             #[inline]
             fn $method(&self, rhs: &Self) -> $ret {
                 Self::$method(*self, *rhs)
@@ -58,28 +58,28 @@ num_trait_impl!(OverflowingAdd, overflowing_add, (Self, bool));
 num_trait_impl!(OverflowingSub, overflowing_sub, (Self, bool));
 num_trait_impl!(OverflowingMul, overflowing_mul, (Self, bool));
 
-impl<const S: bool, const N: usize, const OM: u8> CheckedNeg for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> CheckedNeg for Integer<S, N, B, OM> {
     #[inline]
     fn checked_neg(&self) -> Option<Self> {
         Self::checked_neg(*self)
     }
 }
 
-impl<const S: bool, const N: usize, const OM: u8> CheckedShl for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> CheckedShl for Integer<S, N, B, OM> {
     #[inline]
     fn checked_shl(&self, rhs: Exponent) -> Option<Self> {
         Self::checked_shl(*self, rhs)
     }
 }
 
-impl<const S: bool, const N: usize, const OM: u8> CheckedShr for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> CheckedShr for Integer<S, N, B, OM> {
     #[inline]
     fn checked_shr(&self, rhs: Exponent) -> Option<Self> {
         Self::checked_shr(*self, rhs)
     }
 }
 
-impl<const S: bool, const N: usize, const OM: u8> CheckedEuclid for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> CheckedEuclid for Integer<S, N, B, OM> {
     #[inline]
     fn checked_div_euclid(&self, rhs: &Self) -> Option<Self> {
         Self::checked_div_euclid(*self, *rhs)
@@ -91,7 +91,7 @@ impl<const S: bool, const N: usize, const OM: u8> CheckedEuclid for Integer<S, N
     }
 }
 
-impl<const S: bool, const N: usize, const OM: u8> Euclid for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> Euclid for Integer<S, N, B, OM> {
     #[inline]
     fn div_euclid(&self, rhs: &Self) -> Self {
         Self::div_euclid(*self, *rhs)
@@ -103,28 +103,28 @@ impl<const S: bool, const N: usize, const OM: u8> Euclid for Integer<S, N, OM> {
     }
 }
 
-impl<const S: bool, const N: usize, const OM: u8> WrappingNeg for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> WrappingNeg for Integer<S, N, B, OM> {
     #[inline]
     fn wrapping_neg(&self) -> Self {
         Self::wrapping_neg(*self)
     }
 }
 
-impl<const S: bool, const N: usize, const OM: u8> WrappingShl for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> WrappingShl for Integer<S, N, B, OM> {
     #[inline]
     fn wrapping_shl(&self, rhs: Exponent) -> Self {
         Self::wrapping_shl(*self, rhs)
     }
 }
 
-impl<const S: bool, const N: usize, const OM: u8> WrappingShr for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> WrappingShr for Integer<S, N, B, OM> {
     #[inline]
     fn wrapping_shr(&self, rhs: Exponent) -> Self {
         Self::wrapping_shr(*self, rhs)
     }
 }
 
-impl<const S: bool, const N: usize, const OM: u8> Pow<Exponent> for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> Pow<Exponent> for Integer<S, N, B, OM> {
     type Output = Self;
 
     #[inline]
@@ -133,7 +133,7 @@ impl<const S: bool, const N: usize, const OM: u8> Pow<Exponent> for Integer<S, N
     }
 }
 
-impl<const S: bool, const N: usize, const OM: u8> Saturating for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> Saturating for Integer<S, N, B, OM> {
     #[inline]
     fn saturating_add(self, rhs: Self) -> Self {
         Self::saturating_add(self, rhs)
@@ -154,7 +154,7 @@ macro_rules! to_primitive_int {
     };
 }
 
-impl<const S: bool, const N: usize, const OM: u8> ToPrimitive for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> ToPrimitive for Integer<S, N, B, OM> {
     to_primitive_int!(u8, to_u8);
     to_primitive_int!(u16, to_u16);
     to_primitive_int!(u32, to_u32);
@@ -182,7 +182,7 @@ impl<const S: bool, const N: usize, const OM: u8> ToPrimitive for Integer<S, N, 
 macro_rules! impl_as_primitive_for_integer {
     ($($ty: ty), *) => {
         $(
-            impl<const S: bool, const N: usize, const OM: u8> AsPrimitive<$ty> for Integer<S, N, OM> {
+            impl<const S: bool, const N: usize, const B: usize, const OM: u8> AsPrimitive<$ty> for Integer<S, N, B, OM> {
                 #[inline]
                 fn as_(self) -> $ty {
                     <$ty>::cast_from(self)
@@ -199,9 +199,9 @@ impl_as_primitive_for_integer!(
 macro_rules! impl_as_primitive_integer_for_primitive {
     ($($ty: ty), *) => {
         $(
-            impl<const S: bool, const N: usize, const OM: u8> AsPrimitive<Integer<S, N, OM>> for $ty {
+            impl<const S: bool, const N: usize, const B: usize, const OM: u8> AsPrimitive<Integer<S, N, B, OM>> for $ty {
                 #[inline]
-                fn as_(self) -> Integer<S, N, OM> {
+                fn as_(self) -> Integer<S, N, B, OM> {
                     Integer::cast_from(self)
                 }
             }
@@ -213,16 +213,16 @@ impl_as_primitive_integer_for_primitive!(
     u8, u16, u32, usize, u64, u128, i8, i16, i32, isize, i64, i128, f32, f64, char, bool
 );
 
-impl<const S: bool, const N: usize, const R: bool, const M: usize, const OM: u8> AsPrimitive<Integer<R, M, OM>>
-    for Integer<S, N, OM>
+impl<const S: bool, const N: usize, const B: usize, const R: bool, const M: usize, const A: usize, const OM: u8> AsPrimitive<Integer<R, M, A, OM>>
+    for Integer<S, N, B, OM>
 {
     #[inline]
-    fn as_(self) -> Integer<R, M, OM> {
+    fn as_(self) -> Integer<R, M, A, OM> {
         Integer::cast_from(self)
     }
 }
 
-impl<const S: bool, const N: usize, const OM: u8> FromBytes for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const OM: u8> FromBytes for Integer<S, N, 0, OM> {
     type Bytes = [u8; N];
 
     #[inline]
@@ -236,7 +236,7 @@ impl<const S: bool, const N: usize, const OM: u8> FromBytes for Integer<S, N, OM
     }
 }
 
-impl<const S: bool, const N: usize, const OM: u8> ToBytes for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const OM: u8> ToBytes for Integer<S, N, 0, OM> {
     type Bytes = [u8; N];
 
     #[inline]
@@ -250,7 +250,7 @@ impl<const S: bool, const N: usize, const OM: u8> ToBytes for Integer<S, N, OM> 
     }
 }
 
-impl<const S: bool, const N: usize, const OM: u8> MulAdd for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> MulAdd for Integer<S, N, B, OM> {
     type Output = Self;
 
     #[inline]
@@ -259,14 +259,14 @@ impl<const S: bool, const N: usize, const OM: u8> MulAdd for Integer<S, N, OM> {
     }
 }
 
-impl<const S: bool, const N: usize, const OM: u8> MulAddAssign for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> MulAddAssign for Integer<S, N, B, OM> {
     #[inline]
     fn mul_add_assign(&mut self, a: Self, b: Self) {
         *self = self.mul_add(a, b);
     }
 }
 
-impl<const S: bool, const N: usize, const OM: u8> Num for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> Num for Integer<S, N, B, OM> {
     type FromStrRadixErr = crate::errors::ParseIntError;
 
     #[inline]
@@ -275,7 +275,7 @@ impl<const S: bool, const N: usize, const OM: u8> Num for Integer<S, N, OM> {
     }
 }
 
-impl<const S: bool, const N: usize, const OM: u8> num_traits::NumCast for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> num_traits::NumCast for Integer<S, N, B, OM> {
     fn from<T: ToPrimitive>(_n: T) -> Option<Self> {
         panic!(concat!(
             crate::errors::err_prefix!(),
@@ -285,7 +285,7 @@ impl<const S: bool, const N: usize, const OM: u8> num_traits::NumCast for Intege
     }
 }
 
-impl<const S: bool, const N: usize, const OM: u8> One for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> One for Integer<S, N, B, OM> {
     #[inline]
     fn one() -> Self {
         Self::ONE
@@ -297,11 +297,11 @@ impl<const S: bool, const N: usize, const OM: u8> One for Integer<S, N, OM> {
     }
 }
 
-impl<const S: bool, const N: usize, const OM: u8> ConstOne for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> ConstOne for Integer<S, N, B, OM> {
     const ONE: Self = Self::ONE;
 }
 
-impl<const S: bool, const N: usize, const OM: u8> Zero for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> Zero for Integer<S, N, B, OM> {
     #[inline]
     fn zero() -> Self {
         Self::ZERO
@@ -313,7 +313,7 @@ impl<const S: bool, const N: usize, const OM: u8> Zero for Integer<S, N, OM> {
     }
 }
 
-impl<const S: bool, const N: usize, const OM: u8> ConstZero for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> ConstZero for Integer<S, N, B, OM> {
     const ZERO: Self = Self::ZERO;
 }
 
@@ -388,7 +388,7 @@ macro_rules! from_primitive_int {
     };
 }
 
-impl<const S: bool, const N: usize, const OM: u8> FromPrimitive for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> FromPrimitive for Integer<S, N, B, OM> {
     from_primitive_int!(u8, from_u8);
     from_primitive_int!(u16, from_u16);
     from_primitive_int!(u32, from_u32);
@@ -407,7 +407,7 @@ impl<const S: bool, const N: usize, const OM: u8> FromPrimitive for Integer<S, N
     from_primitive_float!(from_f64, f64, S);
 }
 
-impl<const S: bool, const N: usize, const OM: u8> IntegerTrait for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> IntegerTrait for Integer<S, N, B, OM> {
     #[inline]
     fn div_floor(&self, other: &Self) -> Self {
         Self::div_floor(*self, *other)
@@ -534,7 +534,7 @@ macro_rules! prim_int_method {
     };
 }
 
-impl<const S: bool, const N: usize, const OM: u8> PrimInt for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> PrimInt for Integer<S, N, B, OM> {
     #[inline]
     fn from_be(x: Self) -> Self {
         if cfg!(target_endian = "big") {
@@ -615,7 +615,7 @@ Copyright (c) 2014 The Rust Project Developers
 The original license file and copyright notice for `num_bigint` can be found in this project's root at licenses/LICENSE-num-bigint.
 */
 
-impl<const N: usize, const OM: u8> Uint<N, OM> {
+impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
     #[inline]
     fn fixpoint<F>(mut self, max_bits: Exponent, f: F) -> Self
     where
@@ -638,7 +638,7 @@ impl<const N: usize, const OM: u8> Uint<N, OM> {
     }
 }
 
-impl<const S: bool, const N: usize, const OM: u8> Roots for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> Roots for Integer<S, N, B, OM> {
     #[inline]
     fn sqrt(&self) -> Self {
         if self.is_negative_internal() {
@@ -690,7 +690,7 @@ impl<const S: bool, const N: usize, const OM: u8> Roots for Integer<S, N, OM> {
         guess
             .fixpoint(max_bits, |s| {
                 let q = n / (s * s);
-                let t: Uint<N, OM> = (s << 1) + q;
+                let t: Uint<N, B, OM> = (s << 1) + q;
                 t.div_rem_u64(3).0
             })
             .force_sign()
@@ -741,9 +741,9 @@ impl<const S: bool, const N: usize, const OM: u8> Roots for Integer<S, N, OM> {
     }
 }
 
-impl<const N: usize, const OM: u8> Unsigned for Uint<N, OM> {}
+impl<const N: usize, const B: usize, const OM: u8> Unsigned for Uint<N, B, OM> {}
 
-impl<const N: usize, const OM: u8> Signed for Int<N, OM> {
+impl<const N: usize, const B: usize, const OM: u8> Signed for Int<N, B, OM> {
     #[inline]
     fn abs(&self) -> Self {
         Self::abs(*self)

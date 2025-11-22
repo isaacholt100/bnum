@@ -21,7 +21,7 @@ macro_rules! test_convert_bigints {
         paste::paste! {
             $(
                 impl TestConvert for [<u $bits>] {
-                    type Output = Uint<{$bits / 8}>;
+                    type Output = Uint<{usize::div_ceil($bits, 8)}, $bits>;
 
                     #[inline]
                     fn into(self) -> Self::Output {
@@ -30,7 +30,7 @@ macro_rules! test_convert_bigints {
                 }
 
                 impl TestConvert for [<i $bits>] {
-                    type Output = Int<{$bits / 8}>;
+                    type Output = Int<{usize::div_ceil($bits, 8)}, $bits>;
 
                     #[inline]
                     fn into(self) -> Self::Output {
@@ -45,7 +45,7 @@ macro_rules! test_convert_bigints {
 test_convert_bigints!(128, 64, 32, 16, 8);
 
 impl TestConvert for usize {
-    type Output = Uint<{usize::BITS as usize / 8}>;
+    type Output = Uint<{usize::BITS as usize / 8}, {usize::BITS as usize}>;
 
     #[inline]
     fn into(self) -> Self::Output {
@@ -54,7 +54,7 @@ impl TestConvert for usize {
 }
 
 impl TestConvert for isize {
-    type Output = Int<{isize::BITS as usize / 8}>;
+    type Output = Int<{isize::BITS as usize / 8}, {isize::BITS as usize}>;
 
     #[inline]
     fn into(self) -> Self::Output {
@@ -62,42 +62,12 @@ impl TestConvert for isize {
     }
 }
 
-impl<const S: bool, const N: usize, const OM: u8> TestConvert for Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> TestConvert for Integer<S, N, B, OM> {
     type Output = Self;
 
     #[inline]
     fn into(self) -> Self::Output {
         self
-    }
-}
-
-impl<const N: usize, const OM: u8> From<bnum_old::BUintD8<N>> for Uint<N, OM> {
-    fn from(b: bnum_old::BUintD8<N>) -> Self {
-        Self::from_bytes(*b.digits())
-    }
-}
-
-impl<const N: usize, const OM: u8> From<bnum_old::BIntD8<N>> for Int<N, OM> {
-    fn from(b: bnum_old::BIntD8<N>) -> Self {
-        Uint::from(b.cast_unsigned()).cast_signed()
-    }
-}
-
-impl<const N: usize> TestConvert for bnum_old::BUintD8<N> {
-    type Output = Uint<N>;
-
-    #[inline]
-    fn into(self) -> Self::Output {
-        Uint::from(self)
-    }
-}
-
-impl<const N: usize> TestConvert for bnum_old::BIntD8<N> {
-    type Output = Int<N>;
-
-    #[inline]
-    fn into(self) -> Self::Output {
-        Int::from(self)
     }
 }
 

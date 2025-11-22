@@ -12,7 +12,7 @@ macro_rules! impl_desc {
 
 
 #[doc = impl_desc!()]
-impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, B, OM> {
     /// Returns a tuple of the addition along with a boolean indicating whether an arithmetic overflow would occur. If an overflow would have occurred then the wrapped value is returned.
     /// 
     /// # Examples
@@ -58,8 +58,12 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
                 i += 1;
             }
         }
-        if Self::U128_DIGIT_REMAINDER != 0 {
-            carry = (128 - result.0.leading_zeros()) > (Self::U128_DIGIT_REMAINDER as u32) * 8;
+        if Self::U128_BITS_REMAINDER != 0 {
+            carry = (128 - result.0.leading_zeros()) > Self::U128_BITS_REMAINDER;
+            if carry {
+                debug_assert!(result.0.leading_zeros() == 128 - Self::U128_BITS_REMAINDER - 1);
+                out.set_sign_bits();
+            }
         }
         (out, carry)
     }
@@ -427,7 +431,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
 }
 
 #[doc = concat!("(Unsigned integers only.) ", impl_desc!())]
-impl<const N: usize, const OM: u8> Uint<N, OM> {
+impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
     /// Returns a tuple of the addition (with a signed integer of the same bit width) along with a boolean indicating whether an arithmetic overflow would occur. If an overflow would have occurred then the wrapped value is returned.
     /// 
     /// # Examples
@@ -444,7 +448,7 @@ impl<const N: usize, const OM: u8> Uint<N, OM> {
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn overflowing_add_signed(self, rhs: Int<N, OM>) -> (Self, bool) {
+    pub const fn overflowing_add_signed(self, rhs: Int<N, B, OM>) -> (Self, bool) {
         let (sum, overflow) = self.overflowing_add(rhs.cast_unsigned());
         (sum, rhs.is_negative() != overflow)
     }
@@ -464,14 +468,14 @@ impl<const N: usize, const OM: u8> Uint<N, OM> {
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn overflowing_sub_signed(self, rhs: Int<N, OM>) -> (Self, bool) {
+    pub const fn overflowing_sub_signed(self, rhs: Int<N, B, OM>) -> (Self, bool) {
         let (diff, overflow) = self.overflowing_sub(rhs.cast_unsigned());
         (diff, rhs.is_negative() != overflow)
     }
 }
 
 #[doc = concat!("(Signed integers only.) ", impl_desc!())]
-impl<const N: usize, const OM: u8> Int<N, OM> {
+impl<const N: usize, const B: usize, const OM: u8> Int<N, B, OM> {
     /// Returns a tuple of the subtraction (with an unsigned integer of the same bit width) along with a boolean indicating whether an arithmetic overflow would occur. If an overflow would have occurred then the wrapped value is returned.
     /// 
     /// # Examples
@@ -487,7 +491,7 @@ impl<const N: usize, const OM: u8> Int<N, OM> {
     /// assert_eq!(I256::MIN.overflowing_add_unsigned(U256::MAX), (I256::MAX, false));
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn overflowing_add_unsigned(self, rhs: Uint<N, OM>) -> (Self, bool) {
+    pub const fn overflowing_add_unsigned(self, rhs: Uint<N, B, OM>) -> (Self, bool) {
         let rhs = rhs.cast_signed();
         let (sum, overflow) = self.overflowing_add(rhs);
         (sum, rhs.is_negative() != overflow)
@@ -507,7 +511,7 @@ impl<const N: usize, const OM: u8> Int<N, OM> {
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn overflowing_sub_unsigned(self, rhs: Uint<N, OM>) -> (Self, bool) {
+    pub const fn overflowing_sub_unsigned(self, rhs: Uint<N, B, OM>) -> (Self, bool) {
         let rhs = rhs.cast_signed();
         let (sum, overflow) = self.overflowing_sub(rhs);
         (sum, rhs.is_negative() != overflow)
@@ -614,7 +618,7 @@ mod tests {
 }
 
 #[cfg(test)]
-crate::test::test_all_widths_against_old_types! {
+crate::test::test_all_custom_bit_widths! {
     use crate::test::test_bignum;
 
     test_bignum! {
@@ -630,10 +634,7 @@ crate::test::test_all_widths_against_old_types! {
         function: <utest>::overflowing_shr(a: utest, b: u16)
     }
     test_bignum! {
-        function: <utest>::overflowing_shl(a: utest, b: u16),
-        cases: [
-            (utest::from_str_radix("20550931191544903", 10).unwrap(), 56u16)
-        ]
+        function: <utest>::overflowing_shl(a: utest, b: u16)
     }
     test_bignum! {
         function: <itest>::overflowing_shr(a: itest, b: u16)

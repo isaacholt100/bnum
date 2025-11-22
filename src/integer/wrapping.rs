@@ -10,7 +10,7 @@ macro_rules! impl_desc {
 }
 
 #[doc = impl_desc!()]
-impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, B, OM> {
     /// Wrapping integer addition. Computes `self + rhs` modulo `Self::MAX + 1`.
     /// 
     /// # Examples
@@ -270,7 +270,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
 }
 
 #[doc = concat!("(Unsigned integers only.) ", impl_desc!())]
-impl<const N: usize, const OM: u8> Uint<N, OM> {
+impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
     /// Wrapping integer addition with a signed integer of the same bit width. Computes `self + rhs` modulo `Self::MAX + 1`.
     ///
     /// # Examples
@@ -287,7 +287,7 @@ impl<const N: usize, const OM: u8> Uint<N, OM> {
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn wrapping_add_signed(self, rhs: Int<N, OM>) -> Self {
+    pub const fn wrapping_add_signed(self, rhs: Int<N, B, OM>) -> Self {
         self.overflowing_add_signed(rhs).0
     }
 
@@ -307,7 +307,7 @@ impl<const N: usize, const OM: u8> Uint<N, OM> {
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn wrapping_sub_signed(self, rhs: Int<N, OM>) -> Self {
+    pub const fn wrapping_sub_signed(self, rhs: Int<N, B, OM>) -> Self {
         self.overflowing_sub_signed(rhs).0
     }
 
@@ -336,7 +336,7 @@ impl<const N: usize, const OM: u8> Uint<N, OM> {
 }
 
 #[doc = concat!("(Signed integers only.) ", impl_desc!())]
-impl<const N: usize, const OM: u8> Int<N, OM> {
+impl<const N: usize, const B: usize, const OM: u8> Int<N, B, OM> {
     /// Wrapping integer addition with an unsigned integer of the same bit width. Computes `self + rhs` modulo `Self::MAX + 1`.
     /// 
     /// # Examples
@@ -350,7 +350,7 @@ impl<const N: usize, const OM: u8> Int<N, OM> {
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn wrapping_add_unsigned(self, rhs: Uint<N, OM>) -> Self {
+    pub const fn wrapping_add_unsigned(self, rhs: Uint<N, B, OM>) -> Self {
         self.overflowing_add_unsigned(rhs).0
     }
 
@@ -367,7 +367,7 @@ impl<const N: usize, const OM: u8> Int<N, OM> {
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn wrapping_sub_unsigned(self, rhs: Uint<N, OM>) -> Self {
+    pub const fn wrapping_sub_unsigned(self, rhs: Uint<N, B, OM>) -> Self {
         self.overflowing_sub_unsigned(rhs).0
     }
 

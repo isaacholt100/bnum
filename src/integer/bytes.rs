@@ -3,7 +3,7 @@ use crate::doc;
 use crate::Byte;
 
 /// Methods that convert integers to and from byte arrays and slices.
-impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, B, OM> {
     /// Returns the underlying bytes of `self` as an array.
     /// 
     /// This method is equivalent to [`to_le_bytes`](Self::to_le_bytes).
@@ -76,13 +76,13 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
 
     const ASSERT_IS_VALID: () = {
         assert!(OM <= 2, "invalid overflow mode");
+        assert!(Self::BITS.div_ceil(Byte::BITS) == N as u32 && (if usize::BITS > 32 { N < u32::MAX as usize } else { true }), "`N` must be equal to `B.div_ceil(8)`, unless `B` is `0`");
         assert!(N != 0, "bnum types cannot be zero-sized");
         // `Self::BITS` must be at most `u32::MAX` (i.e. 2^32 - 1)
         // so `N` must be at most (2^32 - 1) / 8 = 2^29 - 1/8 = 2^29 - 1 (rounded down)
         assert!(Self::BITS >= 2, "bnum types must be at least 2 bits"); // having 1 bit is having a boolean so pointless
-        if usize::BITS > 29 {
-            // otherwise, since `N` is a usize, `N` must be at most `usize::MAX <= 2^29 - 1`
-            assert!(N < (1 << 29), "bnum types must be less than 2^29 bytes");
+        if usize::BITS > 32 {
+            assert!((Self::BITS as usize) < (1 << 32), "bnum types must be less than 2^32 bits");
         }
     };
 
@@ -113,7 +113,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
         const { Self::ASSERT_IS_VALID };
         Self { bytes: digits }
     }
-
+    
     /// Returns the representation of `self` as a byte array in big-endian order.
     /// 
     /// # Examples

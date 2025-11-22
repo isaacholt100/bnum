@@ -4,7 +4,7 @@ use crate::wide_digits::{WideDigits, WideDigitsMut};
 use crate::{Integer, Uint};
 
 /// Bigint helper methods: common functions used to implement big integer arithmetic.
-impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, B, OM> {
     /// Computes `self + rhs + carry`, and returns a tuple of the low (wrapping) bits and the high (carry) bit of the result, in that order.
     ///
     /// If `carry` is false, then this method is equivalent to [`overflowing_add`](Self::overflowing_add).
@@ -88,7 +88,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn widening_mul(self, rhs: Self) -> (Uint<N, OM>, Self) {
+    pub const fn widening_mul(self, rhs: Self) -> (Uint<N, B, OM>, Self) {
         if S {
             let (u_lo, u_hi) = self
                 .unsigned_abs_internal()
@@ -109,9 +109,9 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
         }
         // low, high in that order
         #[repr(C)] // so that the arrays are stored in contiguous memory
-        struct DoubleInt<const M: usize>(Uint<M>, Uint<M>);
+        struct DoubleInt<const M: usize, const A: usize>(Uint<M, A>, Uint<M, A>);
 
-        impl<const M: usize> DoubleInt<M> {
+        impl<const M: usize, const A: usize> DoubleInt<M, A> {
             const ZERO: Self = Self(Uint::ZERO, Uint::ZERO);
             const U128_DIGITS: usize = (2 * M).div_ceil(16);
 
@@ -126,7 +126,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
             }
         }
 
-        let mut out = DoubleInt::<N>::ZERO;
+        let mut out = DoubleInt::<N, B>::ZERO;
         let (mut prod, mut carry): (u128, u128);
 
         let mut i = 0;
@@ -148,7 +148,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
 
                     j += 1;
                 }
-                if Self::U128_DIGITS * 2 > DoubleInt::<N>::U128_DIGITS && i == Self::U128_DIGITS - 1
+                if Self::U128_DIGITS * 2 > DoubleInt::<N, B>::U128_DIGITS && i == Self::U128_DIGITS - 1
                 {
                     // index is too large, ...
                     // but should be enough leading zeros that carry is zero
@@ -182,7 +182,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn carrying_mul(self, rhs: Self, carry: Self) -> (Uint<N, OM>, Self) {
+    pub const fn carrying_mul(self, rhs: Self, carry: Self) -> (Uint<N, B, OM>, Self) {
         // we pretend that we have a "super bigint" - a big int with two "digits", where the digits are themselves big ints (Uints). then apply the same logic that an wrapping_add for signed ints is the same as wrapping_add for unsigned ints
         // effectively, we are computing a wrapping_add of the "super bigint"
         let (lo, hi) = self.widening_mul(rhs);
@@ -218,7 +218,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn carrying_mul_add(self, rhs: Self, carry: Self, add: Self) -> (Uint<N, OM>, Self) {
+    pub const fn carrying_mul_add(self, rhs: Self, carry: Self, add: Self) -> (Uint<N, B, OM>, Self) {
         // similarly to carrying_mul
         let (lo, hi) = self.carrying_mul(rhs, carry);
         let (lo, overflow) = lo.overflowing_add(add.force_sign());
@@ -269,7 +269,7 @@ mod tests {
 }
 
 #[cfg(test)]
-crate::test::test_all_widths_against_old_types! {
+crate::test::test_all_custom_bit_widths! {
     use crate::test::test_bignum;
 
     test_bignum! {

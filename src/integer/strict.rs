@@ -7,7 +7,7 @@ macro_rules! impl_desc {
 }
 
 #[doc = impl_desc!()]
-impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, B, OM> {
     /// Strict integer addition. Computes `self + rhs`, panicking if overflow occurs.
     /// 
     /// # Panics
@@ -377,7 +377,7 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, OM> {
 }
 
 #[doc = concat!("(Unsigned integers only.) ", impl_desc!())]
-impl<const N: usize, const OM: u8> Uint<N, OM> {
+impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
     /// Strict addition with a signed integer of the same bit width. Computes `self + rhs`, panicking if overflow occurs.
     /// 
     /// # Panics
@@ -400,7 +400,7 @@ impl<const N: usize, const OM: u8> Uint<N, OM> {
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn strict_add_signed(self, rhs: Int<N, OM>) -> Self {
+    pub const fn strict_add_signed(self, rhs: Int<N, B, OM>) -> Self {
         self.checked_add_signed(rhs)
             .expect(crate::errors::err_msg!("attempt to add with overflow"))
     }
@@ -427,7 +427,7 @@ impl<const N: usize, const OM: u8> Uint<N, OM> {
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn strict_sub_signed(self, rhs: Int<N, OM>) -> Self {
+    pub const fn strict_sub_signed(self, rhs: Int<N, B, OM>) -> Self {
         self.checked_sub_signed(rhs)
             .expect(crate::errors::err_msg!("attempt to subtract with overflow"))
     }
@@ -441,7 +441,7 @@ impl<const N: usize, const OM: u8> Uint<N, OM> {
 }
 
 #[doc = concat!("(Signed integers only.) ", impl_desc!())]
-impl<const N: usize, const OM: u8> Int<N, OM> {
+impl<const N: usize, const B: usize, const OM: u8> Int<N, B, OM> {
     /// Strict absolute value. Computes `self.abs()`, panicking if overflow occurs.
     /// 
     /// # Panics
@@ -490,7 +490,7 @@ impl<const N: usize, const OM: u8> Int<N, OM> {
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn strict_add_unsigned(self, rhs: Uint<N, OM>) -> Self {
+    pub const fn strict_add_unsigned(self, rhs: Uint<N, B, OM>) -> Self {
         self.checked_add_unsigned(rhs)
             .expect(crate::errors::err_msg!("attempt to add with overflow"))
     }
@@ -517,7 +517,7 @@ impl<const N: usize, const OM: u8> Int<N, OM> {
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn strict_sub_unsigned(self, rhs: Uint<N, OM>) -> Self {
+    pub const fn strict_sub_unsigned(self, rhs: Uint<N, B, OM>) -> Self {
         self.checked_sub_unsigned(rhs)
             .expect(crate::errors::err_msg!("attempt to subtract with overflow"))
     }
