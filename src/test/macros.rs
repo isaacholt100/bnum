@@ -337,32 +337,34 @@ macro_rules! test_width_and_sign {
 
 pub(crate) use test_width_and_sign;
 
-macro_rules! test_custom_bit_width {
-    ($bits: literal; $($s: tt) * ) => {
+macro_rules! test_custom_bit_widths {
+    ([$($bits: literal), *]; $tests: item ) => {
         paste::paste! {
-            mod [<bits $bits>] {
-                #[allow(unused_imports)]
-                use super::*;
-                
-                #[allow(non_camel_case_types, unused)]
-                pub type utest = crate::test::BitInt<false, $bits>;
+            $(
+                mod [<bits $bits>] {
+                    #[allow(unused_imports)]
+                    use super::*;
+                    
+                    #[allow(non_camel_case_types, unused)]
+                    pub type utest = crate::test::BitInt<false, $bits>;
 
-                #[allow(non_camel_case_types, unused)]
-                pub type itest = crate::test::BitInt<true, $bits>;
+                    #[allow(non_camel_case_types, unused)]
+                    pub type itest = crate::test::BitInt<true, $bits>;
 
-                #[allow(non_camel_case_types, unused)]
-                pub type UTEST = crate::Uint<{ usize::div_ceil($bits, 8) }, $bits>;
+                    #[allow(non_camel_case_types, unused)]
+                    pub type UTEST = crate::Uint<{ usize::div_ceil($bits, 8) }, $bits>;
 
-                #[allow(non_camel_case_types, unused)]
-                pub type ITEST = crate::Int<{ usize::div_ceil($bits, 8) }, $bits>;
+                    #[allow(non_camel_case_types, unused)]
+                    pub type ITEST = crate::Int<{ usize::div_ceil($bits, 8) }, $bits>;
 
-                $($s)*
-            }
+                    $tests
+                }
+            )*
         }
     };
 }
 
-pub(crate) use test_custom_bit_width;
+pub(crate) use test_custom_bit_widths;
 
 // since we're using u128 digit iterations for performance, testing on the primitives isn't enough, because there will only be one u128 digit. so test against previous version of bnum, which are almost certainly completely correct due to the testing of that version, and the fact they use different sized digits (u8 not u128)
 // but we only need to do this for methods that use the u128 digits (anywhere where .as_wide_digits() or .as_wide_digits_mut() is used)
@@ -373,20 +375,14 @@ macro_rules! test_all_custom_bit_widths {
             #[allow(unused_imports)]
             use super::*;
 
-            crate::test::test_custom_bit_width!(8; $($s)*); // 0 * 128 + 8
-            crate::test::test_custom_bit_width!(16; $($s)*); // 0 * 128 + 16
-            crate::test::test_custom_bit_width!(32; $($s)*); // 0 * 128 + 32
-            crate::test::test_custom_bit_width!(64; $($s)*); // 0 * 128 + 64
-            crate::test::test_custom_bit_width!(128; $($s)*); // 1 * 128 + 0
-
-            crate::test::test_custom_bit_width!(56; $($s)*); // 0 * 128 + 56
-            crate::test::test_custom_bit_width!(144; $($s)*); // 1 * 128 + 16
-            crate::test::test_custom_bit_width!(264; $($s)*); // 2 * 128 + 8
-            crate::test::test_custom_bit_width!(277; $($s)*); // 2 * 128 + 21
-            crate::test::test_custom_bit_width!(488; $($s)*); // 3 * 128 + 104
-            crate::test::test_custom_bit_width!(584; $($s)*); // 4 * 128 + 72
-            crate::test::test_custom_bit_width!(640; $($s)*); // 5 * 128 + 0
-            crate::test::test_custom_bit_width!(512; $($s)*); // 4 * 128 + 0
+            crate::test::test_custom_bit_widths!(
+                [
+                    8, 16, 32, 64, 128, 256, 512, // powers of two
+                    56, 144, 160, 488, // non-powers of two, multiples of 8
+                    2, 3, 4, 5, 7, 9, 11, 15, 23, 31, 43, 59, 61, 73, 89, 97, 101, 113, 129, 173, 255, 289, 366, 402, 422 // non-multiples of 8
+                ];
+                mod inner { use super::*; $($s)* } // a bit of a hack, maybe we can do this more idiomatically while still being able to pass all the widths as a list
+            );
         }
     }
 }

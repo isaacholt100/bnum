@@ -61,6 +61,7 @@ impl<const N: usize,  const B: usize, const OM: u8> Uint<N, B, OM> {
             }
             i += 1;
         }
+        out.set_sign_bits(); // in case of overflow, need to set sign bits
         (out, overflow)
     }
 }

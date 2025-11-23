@@ -81,9 +81,7 @@ pub struct BitInt<const S: bool, const B: usize> {
 }
 
 impl<const S: bool, const B: usize> BitInt<S, B> {
-    const ZERO: Self = Self {
-        bits: [false; B],
-    };
+    const ZERO: Self = Self { bits: [false; B] };
 
     pub const MIN: Self = if S {
         let mut bits = [false; B];
@@ -98,25 +96,27 @@ impl<const S: bool, const B: usize> BitInt<S, B> {
         bits[B - 1] = false; // sign bit
         Self { bits }
     } else {
-        Self {
-            bits: [true; B],
-        }
+        Self { bits: [true; B] }
     };
+
+    pub fn set_bit(&mut self, index: usize, value: bool) {
+        self.bits[index] = value;
+    }
 
     pub fn eq(&self, other: &Self) -> bool {
         self.bits.iter().zip(other.bits.iter()).all(|(a, b)| a == b)
     }
 
     fn is_negative(&self) -> bool {
-        if S {
-            self.bits[B - 1]
-        } else {
-            false
-        }
+        if S { self.bits[B - 1] } else { false }
     }
     pub fn overflowing_shr(self, n: usize) -> (Self, bool) {
         let (n, overflow) = (n % B, n >= B);
-        let mut out = if self.is_negative() { [true; B] } else { [false; B] };
+        let mut out = if self.is_negative() {
+            [true; B]
+        } else {
+            [false; B]
+        };
         for i in n..B {
             out[i - n] = self.bits[i];
         }
@@ -205,10 +205,6 @@ impl<const B: usize> BitInt<false, B> {
         core::cmp::Ordering::Equal
     }
 
-    pub fn set_bit(&mut self, index: usize, value: bool) {
-        self.bits[index] = value;
-    }
-
     pub fn power_of_two(n: usize) -> Self {
         let mut out = Self { bits: [false; B] };
         out.set_bit(n, true);
@@ -234,9 +230,13 @@ impl<const B: usize> BitInt<false, B> {
             let mut carry = false;
             for j in 0..B {
                 let index = i + j;
-                let c = if index < B { low.bit(index) } else { high.bit(index - B) };
+                let c = if index < B {
+                    low.bit(index)
+                } else {
+                    high.bit(index - B)
+                };
                 let prod = (self.bits[i] & rhs.bits[j]) ^ carry ^ c; // self.bits[i] * rhs.bits[j] + carry + c
-                carry = (((self.bits[i] & rhs.bits[j]) as u8 + carry as u8 + c as u8)) >= 2;
+                carry = ((self.bits[i] & rhs.bits[j]) as u8 + carry as u8 + c as u8) >= 2;
 
                 if index < B {
                     low.set_bit(index, prod);
@@ -248,7 +248,7 @@ impl<const B: usize> BitInt<false, B> {
         }
         (low, high)
     }
-    
+
     pub fn overflowing_mul(self, rhs: Self) -> (Self, bool) {
         let (low, high) = self.widening_mul(rhs);
         let overflow = !high.is_zero();
@@ -282,7 +282,7 @@ impl<const B: usize> BitInt<false, B> {
         // https://www.geeksforgeeks.org/computer-organization-architecture/restoring-division-algorithm-unsigned-integer/
         let mut quotient = self;
         let mut remainder = Self::ZERO;
-        for i in 0..B {
+        for _ in 0..B {
             let carry_bit = quotient.bit(B - 1);
             remainder = remainder.overflowing_shl(1).0;
             remainder.set_bit(0, carry_bit);
@@ -318,7 +318,7 @@ impl<const B: usize> BitInt<false, B> {
     }
 }
 
-use core::ops::{Not, BitAnd, BitOr, BitXor};
+use core::ops::{BitAnd, BitOr, BitXor, Not};
 
 impl<const S: bool, const B: usize> Not for BitInt<S, B> {
     type Output = Self;
@@ -332,7 +332,7 @@ impl<const S: bool, const B: usize> Not for BitInt<S, B> {
 
 impl<const S: bool, const B: usize> BitAnd for BitInt<S, B> {
     type Output = Self;
-    
+
     fn bitand(self, rhs: Self) -> Self {
         let mut out = Self::ZERO;
         for i in 0..B {
@@ -402,6 +402,16 @@ macro_rules! integer_from_bit_int {
                 }
             }
 
+            impl<const S: bool> From<crate::Integer<S, {usize::div_ceil($bits, 8)}, $bits>> for BitInt<S, $bits> {
+                fn from(b: crate::Integer<S, {usize::div_ceil($bits, 8)}, $bits>) -> Self {
+                    let mut out = Self::ZERO;
+                    for i in 0..$bits {
+                        out.set_bit(i, b.bit(i as u32));
+                    }
+                    out
+                }
+            }
+
             impl<const S: bool> TestConvert for BitInt<S, $bits> {
                 type Output = crate::Integer<S, {usize::div_ceil($bits, 8)}, $bits>;
 
@@ -414,4 +424,9 @@ macro_rules! integer_from_bit_int {
     }
 }
 
-integer_from_bit_int!(8, 16, 32, 64, 128, 56, 144, 264, 277, 488, 584, 640, 512);
+integer_from_bit_int!(
+    8, 16, 32, 64, 128, 256, 512, // powers of two
+    56, 144, 160, 488, // non-powers of two, multiples of 8
+    2, 3, 4, 5, 7, 9, 11, 15, 23, 31, 43, 59, 61, 73, 89, 97, 101, 113, 129, 173, 255, 289, 366,
+    402, 422 // non-multiples of 8
+);

@@ -74,6 +74,24 @@ pub type Int<const N: usize, const B: usize = 0, const OM: u8 = {crate::Overflow
 #[cfg(feature = "zeroize")]
 impl<const S: bool, const N: usize, const B: usize, const OM: u8> zeroize::DefaultIsZeroes for Integer<S, N, B, OM> {}
 impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, B, OM> {
+    pub(crate) const LAST_BYTE_BITS: u32 = if Self::BITS % Byte::BITS == 0 {
+        Byte::BITS as _
+    } else {
+        Self::BITS % Byte::BITS
+    };
+
+    pub(crate) const LAST_BYTE_PAD_BITS: u32 = Byte::BITS - Self::LAST_BYTE_BITS;
+
+    #[inline(always)]
+    const fn force_bit_width<const A: usize>(self) -> Integer<S, N, A, OM> {
+        Integer::from_bytes(self.bytes)
+    }
+
+    #[inline(always)]
+    const fn widen(self) -> Integer<S, N, 0, OM> {
+        self.force()
+    }
+
     #[inline(always)]
     const fn set_sign_bits(&mut self) {
         self.set_pad_bits(self.is_negative_internal());
@@ -81,7 +99,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
 
     #[inline(always)]
     const fn set_pad_bits(&mut self, value: bool) {
-        if Self::LAST_BYTE_BITS != Byte::BITS {
+        if Self::LAST_BYTE_PAD_BITS != 0 {
             if value {
                 // set pad bits
                 self.bytes[N - 1] |= Byte::MAX << Self::LAST_BYTE_BITS; // 11..100..0
@@ -106,6 +124,15 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
         Integer::from_bytes(self.bytes)
     }
 
+    #[inline(always)]
+    const fn force<const R: bool, const A: usize, const RO: u8>(self) -> Integer<R, N, A, RO> {
+        let mut out = Integer::from_bytes(self.bytes);
+        if R != S {
+            out.set_sign_bits();
+        }
+        out
+    }
+
     /// Creates a new unsigned integer from the given digit. The given digit is stored as the least significant digit.
     #[must_use]
     #[inline(always)]
@@ -127,8 +154,8 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
 }
 
 impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, B, OM> {
-    const U128_DIGITS: usize = N.div_ceil(16);
-    pub(crate) const FULL_U128_DIGITS: usize = N / 16;
+    const U128_DIGITS: usize = (Self::BITS as usize).div_ceil(128);
+    pub(crate) const FULL_U128_DIGITS: usize = (Self::BITS as usize) / 128;
     pub(crate) const U128_DIGIT_REMAINDER: usize = N % 16;
     pub(crate) const LAST_DIGIT_BYTES: usize = if Self::U128_DIGIT_REMAINDER == 0 {
         16

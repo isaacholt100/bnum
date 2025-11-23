@@ -2,7 +2,7 @@ use crate::Exponent;
 use crate::{Byte, digit};
 use crate::{Int, Integer, Uint};
 
-impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
+impl<const N: usize> Uint<N, 0> {
     #[inline]
     const fn sub_partial_digits(&mut self, rhs: Self, start: usize, range: usize) -> bool {
         let mut borrow = false;
@@ -220,11 +220,11 @@ impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
         v = unsafe { Self::unchecked_shl_internal(v, shift) }; // D1
 
         #[repr(C)]
-        struct Remainder<const M: usize, const A: usize> {
+        struct Remainder<const M: usize> {
             first: Byte,
             rest: [Byte; M],
         }
-        impl<const M: usize, const A: usize> Remainder<M, A> {
+        impl<const M: usize> Remainder<M> {
             #[inline]
             const fn digit(&self, index: usize) -> Byte {
                 let ptr = self as *const Self as *const u8;
@@ -242,7 +242,7 @@ impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
                 unsafe { ptr.add(index).write(digit) }
             }
 
-            const fn shr(self, shift: Exponent) -> Uint<M, A> {
+            const fn shr(self, shift: Exponent) -> Uint<M> {
                 let mut out = Uint::ZERO;
                 let mut i = 0;
                 while i < M {
@@ -258,7 +258,7 @@ impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
                 }
                 out
             }
-            const fn new(uint: Uint<M, A>, shift: Exponent) -> Self {
+            const fn new(uint: Uint<M>, shift: Exponent) -> Self {
                 let first = uint.bytes[0] << shift;
                 let rest = uint.wrapping_shr(Byte::BITS - shift);
                 Self {
@@ -266,7 +266,7 @@ impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
                     rest: rest.bytes,
                 }
             }
-            const fn sub(&mut self, rhs: Mul<M, A>, start: usize, range: usize) -> bool {
+            const fn sub(&mut self, rhs: Mul<M>, start: usize, range: usize) -> bool {
                 let mut borrow = false;
                 let mut i = 0;
                 while i <= range {
@@ -283,7 +283,7 @@ impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
                 }
                 borrow
             }
-            const fn add(&mut self, rhs: Uint<M, A>, start: usize, range: usize) {
+            const fn add(&mut self, rhs: Uint<M>, start: usize, range: usize) {
                 let mut carry = false;
                 let mut i = 0;
                 while i < range {
@@ -311,12 +311,12 @@ impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
 
         #[repr(C)] // so we can use pointers to speed up indexing
         #[derive(Clone, Copy)]
-        struct Mul<const M: usize, const A: usize> {
+        struct Mul<const M: usize> {
             rest: [Byte; M],
             last: Byte,
         }
-        impl<const M: usize, const A: usize> Mul<M, A> {
-            const fn new(uint: Uint<M, A>, rhs: Byte) -> Self {
+        impl<const M: usize> Mul<M> {
+            const fn new(uint: Uint<M>, rhs: Byte) -> Self {
                 let mut rest = [0; M];
                 let mut carry: Byte = 0;
                 let mut i = 0;
@@ -381,16 +381,16 @@ impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
                 // `u[j + n - 1] >= v[n - 1]` so we know that estimate for q_hat would be larger than `Digit::MAX`. This is either equal to `q` or `q + 1` (very unlikely to be `q + 1`).
                 Byte::MAX
             };
-            let overflow = u.sub(Mul::new(v.force_overflow_mode(), q_hat), j, n); // D4
+            let overflow = u.sub(Mul::new(v, q_hat), j, n); // D4
 
             if overflow {
                 // D5 - unlikely, probability of this being true is ~ 2 / b where b is the digit base (i.e. `Digit::MAX + 1`)
                 q_hat -= 1;
-                u.add(v.force_overflow_mode(), j, n);
+                u.add(v, j, n);
             }
             q.bytes[j] = q_hat;
         }
-        (q, u.shr(shift).force_overflow_mode())
+        (q, u.shr(shift))
     }
 
     // pub(crate) const fn basecase_div_rem_wide(self, mut v: Self, n: usize) -> (Self, Self) {
@@ -579,21 +579,6 @@ impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
     // }
 
     #[inline]
-    pub(crate) const fn div_rem_u64(self, rhs: u64) -> (Self, u64) {
-        let mut out = Self::ZERO;
-        let mut rem: u64 = 0;
-        let mut i = N.div_ceil(8);
-        while i > 0 {
-            i -= 1;
-            let d = unsafe { self.as_wide_digits().u64_digit(i) };
-            let (q, r) = digit::div_rem_wide_u64(d, rem, rhs);
-            rem = r;
-            unsafe { out.as_wide_digits_mut().set_u64_digit(i, q) };
-        }
-        (out, rem)
-    }
-
-    #[inline]
     pub(crate) const fn div_rem_unchecked_unsigned(self, rhs: Self) -> (Self, Self) {
         use core::cmp::Ordering;
 
@@ -619,7 +604,7 @@ impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
     }
 }
 
-impl<const N: usize, const B: usize, const OM: u8> Int<N, B, OM> {
+impl<const N: usize> Int<N, 0> {
     #[inline]
     pub(crate) const fn div_rem_unchecked_signed(self, rhs: Self) -> (Self, Self) {
         let (div, rem) = self.unsigned_abs().div_rem_unchecked(rhs.unsigned_abs());
@@ -662,20 +647,37 @@ impl<const N: usize, const B: usize, const OM: u8> Int<N, B, OM> {
     }
 }
 
+impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
+    #[inline]
+    pub(crate) const fn div_rem_u64(self, rhs: u64) -> (Self, u64) {
+        let mut out = Self::ZERO;
+        let mut rem: u64 = 0;
+        let mut i = N.div_ceil(8);
+        while i > 0 {
+            i -= 1;
+            let d = unsafe { self.as_wide_digits().u64_digit(i) };
+            let (q, r) = digit::div_rem_wide_u64(d, rem, rhs);
+            rem = r;
+            unsafe { out.as_wide_digits_mut().set_u64_digit(i, q) };
+        }
+        (out, rem)
+    }
+}
+
 impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, B, OM> {
     // don't check that rhs is zero or (if signed) that self is Self::MIN and RHS is -1
     #[inline]
     pub(crate) const fn div_rem_unchecked(self, rhs: Self) -> (Self, Self) {
         if S {
             let (d, r) = self
-                .force_sign()
-                .div_rem_unchecked_signed(rhs.force_sign());
-            (d.force_sign(), r.force_sign())
+                .force()
+                .div_rem_unchecked_signed(rhs.force());
+            (d.force(), r.force())
         } else {
             let (d, r) = self
-                .force_sign()
-                .div_rem_unchecked_unsigned(rhs.force_sign());
-            (d.force_sign(), r.force_sign())
+                .force()
+                .div_rem_unchecked_unsigned(rhs.force());
+            (d.force(), r.force())
         }
     }
 
@@ -684,9 +686,9 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     pub(crate) const fn div_rem_euclid_unchecked(self, rhs: Self) -> (Self, Self) {
         if S {
             let (d, r) = self
-                .force_sign()
-                .div_rem_euclid_unchecked_signed(rhs.force_sign());
-            (d.force_sign(), r.force_sign())
+                .force()
+                .div_rem_euclid_unchecked_signed(rhs.force());
+            (d.force(), r.force())
         } else {
             self.div_rem_unchecked(rhs)
         }

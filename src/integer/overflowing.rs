@@ -10,7 +10,6 @@ macro_rules! impl_desc {
     };
 }
 
-
 #[doc = impl_desc!()]
 impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, B, OM> {
     /// Returns a tuple of the addition along with a boolean indicating whether an arithmetic overflow would occur. If an overflow would have occurred then the wrapped value is returned.
@@ -113,6 +112,8 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
                 i += 1;
             }
         }
+        out.set_sign_bits(); // in case of borrow, need to set sign bits
+
         (out, borrow)
     }
 
@@ -365,13 +366,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
         } else {
             (false, rhs)
         };
-        let out = unsafe {
-            if self.is_negative_internal() {
-                self.unchecked_shr_pad_internal::<true>(shift)
-            } else {
-                self.unchecked_shr_pad_internal::<false>(shift)
-            }
-        };
+        let out = unsafe { self.unchecked_shr_internal(shift) };
         (out, overflow)
     }
 

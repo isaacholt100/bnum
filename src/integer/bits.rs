@@ -191,7 +191,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
                 break;
             }
         }
-        ones - (Byte::BITS - Self::LAST_BYTE_BITS) // remove number of padding bits from count
+        ones - Self::LAST_BYTE_PAD_BITS // remove number of padding bits from count
     }
 
     /// Returns the number of trailing ones in the binary representation of `self`.
@@ -260,8 +260,8 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
                 }
             }
 
-            if Self::LAST_BYTE_BITS != Byte::BITS {
-                out.shr(Byte::BITS - Self::LAST_BYTE_BITS) // this will sign-extend t
+            if Self::LAST_BYTE_PAD_BITS != 0 {
+                out.shr(Self::LAST_BYTE_PAD_BITS) // this will sign-extend t
             } else {
                 out
             }
@@ -289,15 +289,15 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn rotate_left(mut self, n: Exponent) -> Self {
-        if Self::LAST_BYTE_BITS != Byte::BITS {
-            if S {
-                self.set_pad_bits(false); // don't want the sign-extending bits to be shifted as well
-            }
-            let a = self.wrapping_shl(n);
-            let b = self.force_sign::<false>().wrapping_shr(Self::BITS - (n % Self::BITS)).force_sign(); // don't want sign-extending here so cast to unsigned first for unsigned shr
-            let mut out = a.bitor(b);
+        if Self::LAST_BYTE_PAD_BITS != 0 {
+            self.set_pad_bits(false);
+            let wide = Integer::<false, N, 0, OM>::from_bytes(self.bytes);
+            let a = wide.wrapping_shl(n % Self::BITS);
+            let b = wide.wrapping_shr(Self::BITS - (n % Self::BITS));
+            let o = a.bitor(b);
+            let mut out = Self { bytes: o.bytes };
             out.set_sign_bits();
-            out
+            return out;
         } else {
             unsafe { self.unchecked_rotate_left(n % Self::BITS) }
         }
@@ -384,10 +384,8 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
             } else {
                 Self::ZERO
             }
-        } else if self.is_negative_internal() {
-            unsafe { self.unchecked_shr_pad_internal::<true>(rhs) }
         } else {
-            unsafe { self.unchecked_shr_pad_internal::<false>(rhs) }
+            unsafe { self.unchecked_shr_internal(rhs) }
         }
     }
 
@@ -446,6 +444,12 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn reverse_bits(self) -> Self {
+        if Self::LAST_BYTE_PAD_BITS != 0 {
+            let mut out = Integer::<S, N, 0, OM>::from_bytes(self.bytes).reverse_bits();
+            out = out.shr(Self::LAST_BYTE_PAD_BITS); // this will sign-extend, so no need to call set_sign_bits
+            return Self { bytes: out.bytes };
+        }
+
         let mut out = Self::ZERO;
         let mut i = 0;
         while i < Self::U128_DIGITS {
@@ -455,9 +459,6 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
             }
 
             i += 1;
-        }
-        if Self::LAST_BYTE_BITS != Byte::BITS {
-            out = out.shr(Byte::BITS - Self::LAST_BYTE_BITS); // this will sign-extend, so don't need to call set_sign_bits
         }
         out
     }
@@ -492,21 +493,26 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
             }
         }
 
+        out.set_sign_bits();
+
         out
     }
 
     #[inline]
-    pub(crate) const unsafe fn unchecked_shr_pad_internal<const NEG: bool>(
+    pub(crate) const unsafe fn unchecked_shr_internal(
         self,
         rhs: Exponent,
     ) -> Self {
-        let mut out = if NEG { Self::ALL_ONES } else { Self::ZERO };
+        if Self::LAST_BYTE_PAD_BITS != 0 {
+            let mut out = unsafe { Integer::<S, N, 0, OM>::from_bytes(self.bytes)
+                .unchecked_shr_internal(rhs) };
+            return Self { bytes: out.bytes };
+        }
+        let mut out = if self.is_negative_internal() { Self::ALL_ONES } else { Self::ZERO };
         let digit_shift = (rhs / 8) as usize;
         let bit_shift = rhs % 8;
 
         unsafe {
-            let num_copies = N.unchecked_sub(digit_shift);
-
             let mut i = digit_shift;
             while i < N {
                 // we start i at digit_shift, not 0, since the compiler can elide bounds checks when i < N
@@ -516,8 +522,12 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
 
             if bit_shift != 0 {
                 let carry_shift = 128 - bit_shift;
-                let mut carry = if NEG {
-                    let shift_back = if Self::U128_BITS_REMAINDER == 0 {
+
+                let mut i = (Self::BITS - rhs).div_ceil(128) as usize; // we could just start at U128_DIGITS, but then we would just be shifting all ones/all zeros for the unaffected digits (at higher indices) which would do nothing
+
+                let mut carry = if self.is_negative_internal() {
+                    let shift_back = if Self::U128_BITS_REMAINDER == 0 || i != Self::U128_DIGITS {
+                        // if i is not the last digit index, then we have a full u128 digit
                         128 - bit_shift
                     } else {
                         // last digit (the incomplete one) has Self::U128_BITS_REMAINDER bits, so shift back by this minus bit_shift
@@ -527,8 +537,6 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
                 } else {
                     0
                 };
-
-                let mut i = (Self::BITS - rhs).div_ceil(128) as usize; // we could just start at U128_DIGITS, but then we would just be shifting all ones/all zeros for the unaffected digits (at higher indices) which would do nothing
                 while i > 0 {
                     i -= 1;
 
@@ -537,34 +545,6 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
                         .set(i, (current_digit >> bit_shift) | carry);
                     carry = current_digit << carry_shift;
                 }
-
-                // let mut i = digit_shift;
-                // while i + 15 < N {
-                //     let offset = N - 16 - i;
-                //     let current_digit = out.as_wide_digits().get_at_offset(offset);
-                //     out.as_wide_digits_mut()
-                //         .set_at_offset(offset, (current_digit >> bit_shift) | carry);
-                //     carry = current_digit << carry_shift;
-                //     i += 16;
-                // }
-                // let rem = (N - digit_shift) % 16;
-                // if rem != 0 {
-                //     let mut bytes = [0; 16];
-                //     bytes
-                //         .as_mut_ptr()
-                //         .add(16 - rem)
-                //         .copy_from_nonoverlapping(out.digits.as_ptr(), rem);
-                //     let digit = u128::from_le_bytes(bytes);
-                //     let shifted = (digit >> bit_shift) | carry;
-                //     let bytes = shifted.to_le_bytes();
-                //     out.digits
-                //         .as_mut_ptr()
-                //         .copy_from_nonoverlapping(bytes.as_ptr().add(16 - rem), rem);
-                // }
-
-                // if NEG {
-                //     out.digits[num_copies - 1] |= Digit::MAX << (8 - bit_shift);
-                // }
             }
 
             out
@@ -624,6 +604,19 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
         let shift = index % Digit::BITS;
         *digit = *digit & !(1 << shift) | ((value as Digit) << shift);
     }
+}
+
+#[cfg(feature = "arbitrary")]
+#[test]
+fn test_oshr() {
+    use crate::n;
+    use crate::test::BitInt;
+    type U129 = Integer<false, {129 / 8 + 1}, 129>;
+    let a = U129::from_str_radix("101110011100000011111000110110010111111000001100010101000001110100101010100110000101001001111111100111110110101000100010110000000", 2).unwrap();
+    let b = a.reverse_bits();
+    println!("{:0129b}", a);
+    println!("{:0129b}", b);
+    println!("{:?}", BitInt::from(a).reverse_bits());
 }
 
 #[doc = concat!("(Unsigned integers only.) ", impl_desc!())]

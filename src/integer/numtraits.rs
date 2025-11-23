@@ -451,8 +451,8 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> IntegerTrait f
         let mut b_tz = b.trailing_zeros();
         // Normalise `a` and `b` so that both of them has no leading zeros, so both must be odd.
         unsafe {
-            a = a.unchecked_shr_pad_internal::<false>(a_tz);
-            b = b.unchecked_shr_pad_internal::<false>(b_tz);
+            a = a.unchecked_shr_internal(a_tz);
+            b = b.unchecked_shr_internal(b_tz);
         }
 
         if b_tz > a_tz {
@@ -469,7 +469,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> IntegerTrait f
                 return unsafe { Self::unchecked_shl_internal(b, b_tz) };
             }
             unsafe {
-                a = a.unchecked_shr_pad_internal::<false>(a.trailing_zeros());
+                a = a.unchecked_shr_internal(a.trailing_zeros());
             }
         }
     }

@@ -36,12 +36,6 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
         B as _
     };
 
-    pub(crate) const LAST_BYTE_BITS: u32 = if Self::BITS % Byte::BITS == 0 {
-        Byte::BITS as _
-    } else {
-        Self::BITS % Byte::BITS
-    };
-
     /// The total number of bytes that this type contains.
     /// 
     /// # Examples
@@ -114,7 +108,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
         Self::MIN.not()
     } else {
         let mut bytes = [0xFF; N];
-        bytes[N - 1] &= Byte::MAX >> (Byte::BITS - Self::LAST_BYTE_BITS); // pad with zeros at the end
+        bytes[N - 1] &= Byte::MAX >> Self::LAST_BYTE_PAD_BITS; // pad with zeros at the end
         Self::from_bytes(bytes)
     };
 }

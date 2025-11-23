@@ -1,3 +1,4 @@
+use crate::Byte;
 use crate::digit;
 use crate::doc;
 use crate::wide_digits::{WideDigits, WideDigitsMut};
@@ -160,8 +161,15 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
                 i += 1;
             }
         }
-        let (lo, hi) = (out.0.force_overflow_mode(), out.1.force_sign().force_overflow_mode());
-        (lo, hi)
+        let (mut lo, mut hi) = (out.0, out.1);
+        if Self::LAST_BYTE_PAD_BITS != 0 {
+            // if NUM_PAD_BITS = n, want to shift hi by n bits and move the most significant n bits of lo to least significant n bits of hi
+            hi = hi.widen().shl(Self::LAST_BYTE_PAD_BITS).force();
+            let lo_msb = lo.widen().shr(Uint::<N>::BITS - Self::LAST_BYTE_PAD_BITS).force(); // shift by this amount as we are effectively working with a Uint<N, 8 * N>
+            hi = hi.bitor(lo_msb);
+            lo.set_sign_bits();
+        }
+        (lo.force(), hi.force())
     }
 
     /// Computes `self * rhs + carry`, and returns a tuple of the low (wrapping) bits and high (overflow) bits of the result, in that order.
