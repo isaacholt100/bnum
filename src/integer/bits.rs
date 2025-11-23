@@ -1,5 +1,5 @@
 use super::{Integer, Uint};
-use crate::{Byte, Exponent};
+use crate::Exponent;
 use crate::digit::Digit;
 use crate::doc;
 
@@ -499,16 +499,18 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     }
 
     #[inline]
-    pub(crate) const unsafe fn unchecked_shr_internal(
-        self,
-        rhs: Exponent,
-    ) -> Self {
+    pub(crate) const unsafe fn unchecked_shr_internal(self, rhs: Exponent) -> Self {
         if Self::LAST_BYTE_PAD_BITS != 0 {
-            let mut out = unsafe { Integer::<S, N, 0, OM>::from_bytes(self.bytes)
-                .unchecked_shr_internal(rhs) };
-            return Self { bytes: out.bytes };
+            let out = unsafe {
+                Integer::<S, N, 0, OM>::from_bytes(self.bytes).unchecked_shr_internal(rhs)
+            };
+            return out.force();
         }
-        let mut out = if self.is_negative_internal() { Self::ALL_ONES } else { Self::ZERO };
+        let mut out = if self.is_negative_internal() {
+            Self::ALL_ONES
+        } else {
+            Self::ZERO
+        };
         let digit_shift = (rhs / 8) as usize;
         let bit_shift = rhs % 8;
 
@@ -604,19 +606,6 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
         let shift = index % Digit::BITS;
         *digit = *digit & !(1 << shift) | ((value as Digit) << shift);
     }
-}
-
-#[cfg(feature = "arbitrary")]
-#[test]
-fn test_oshr() {
-    use crate::n;
-    use crate::test::BitInt;
-    type U129 = Integer<false, {129 / 8 + 1}, 129>;
-    let a = U129::from_str_radix("101110011100000011111000110110010111111000001100010101000001110100101010100110000101001001111111100111110110101000100010110000000", 2).unwrap();
-    let b = a.reverse_bits();
-    println!("{:0129b}", a);
-    println!("{:0129b}", b);
-    println!("{:?}", BitInt::from(a).reverse_bits());
 }
 
 #[doc = concat!("(Unsigned integers only.) ", impl_desc!())]
@@ -742,15 +731,6 @@ mod tests {
 crate::test::test_all_custom_bit_widths! {
     use crate::test::test_bignum;
 
-    // quickcheck::quickcheck! {
-    //     fn swap_bytes(a: UTEST) -> bool {
-    //         let b = a.swap_bytes();
-    //         let mut bytes = a.to_bytes();
-    //         bytes.reverse();
-
-    //         b.to_bytes() == bytes
-    //     }
-    // }
     test_bignum! {
         function: <utest>::trailing_zeros(a: utest)
     }
@@ -805,7 +785,34 @@ crate::test::test_all_custom_bit_widths! {
     test_bignum! {
         function: <itest>::reverse_bits(a: itest)
     }
-    // test_bignum! {
-    //     function: <utest>::swap_bytes(a: utest)
-    // }
+}
+
+#[cfg(test)]
+mod swap_bytes_tests {
+    macro_rules! test_swap_bytes {
+        ($($bits: literal), *) => {
+            paste::paste! {
+                $(
+                    quickcheck::quickcheck! {
+                        fn [<quickcheck_swap_bytes_u $bits>](a: crate::Uint<{$bits / 8}>) -> bool {
+                            let b = a.swap_bytes();
+                            let mut bytes = a.to_bytes();
+                            bytes.reverse();
+
+                            b.to_bytes() == bytes
+                        }
+                        
+                        fn [<quickcheck_swap_bytes_i $bits>](a: crate::Int<{$bits / 8}>) -> bool {
+                            let b = a.swap_bytes();
+                            let mut bytes = a.to_bytes();
+                            bytes.reverse();
+
+                            b.to_bytes() == bytes
+                        }
+                    }
+                )*
+            }
+        };
+    }
+    test_swap_bytes!(8, 16, 32, 64, 128, 256, 512, 56, 144, 160, 488);
 }

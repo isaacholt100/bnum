@@ -3,42 +3,42 @@ use crate::{Byte, digit};
 use crate::{Int, Integer, Uint};
 
 impl<const N: usize> Uint<N, 0> {
-    #[inline]
-    const fn sub_partial_digits(&mut self, rhs: Self, start: usize, range: usize) -> bool {
-        let mut borrow = false;
-        let mut i = 0;
-        while i <= range {
-            if i + start == N {
-                if i < N && rhs.bytes[i] != 0 {
-                    borrow = true;
-                }
-            } else {
-                let (sub, overflow) =
-                    digit::borrowing_sub(self.bytes[i + start], rhs.bytes[i], borrow);
-                self.bytes[i + start] = sub;
-                borrow = overflow;
-            }
-            i += 1;
-        }
-        borrow
-    }
-    #[inline]
-    const fn add_partial_digits(&mut self, rhs: Self, start: usize, range: usize) {
-        let mut carry = false;
-        let mut i = 0;
-        while i < range {
-            let (sum, overflow) = digit::carrying_add(self.bytes[i + start], rhs.bytes[i], carry);
-            self.bytes[i + start] = sum;
-            carry = overflow;
-            i += 1;
-        }
-        if carry {
-            if range + start != N {
-                self.bytes[range + start] = self.bytes[range + start].wrapping_add(1);
-            }
-        }
-        // debug_assert!(carry);
-    }
+    // #[inline]
+    // const fn sub_partial_digits(&mut self, rhs: Self, start: usize, range: usize) -> bool {
+    //     let mut borrow = false;
+    //     let mut i = 0;
+    //     while i <= range {
+    //         if i + start == N {
+    //             if i < N && rhs.bytes[i] != 0 {
+    //                 borrow = true;
+    //             }
+    //         } else {
+    //             let (sub, overflow) =
+    //                 digit::borrowing_sub(self.bytes[i + start], rhs.bytes[i], borrow);
+    //             self.bytes[i + start] = sub;
+    //             borrow = overflow;
+    //         }
+    //         i += 1;
+    //     }
+    //     borrow
+    // }
+    // #[inline]
+    // const fn add_partial_digits(&mut self, rhs: Self, start: usize, range: usize) {
+    //     let mut carry = false;
+    //     let mut i = 0;
+    //     while i < range {
+    //         let (sum, overflow) = digit::carrying_add(self.bytes[i + start], rhs.bytes[i], carry);
+    //         self.bytes[i + start] = sum;
+    //         carry = overflow;
+    //         i += 1;
+    //     }
+    //     if carry {
+    //         if range + start != N {
+    //             self.bytes[range + start] = self.bytes[range + start].wrapping_add(1);
+    //         }
+    //     }
+    //     // debug_assert!(carry);
+    // }
     // pub(crate) const fn div_rem_knuth(self, rhs: Self, n: usize) -> (Self, Self) {
     //     // The Art of Computer Programming Volume 2 by Donald Knuth, Section 4.3.1, Algorithm D
     //     // using the improvement in solution to exercise 37 in section 4.3.1 (eliminates the normalisation step)
@@ -343,7 +343,7 @@ impl<const N: usize> Uint<N, 0> {
         let v_n_m1 = v.bytes[n - 1];
         let v_n_m2 = v.bytes[n - 2];
 
-        let mut u = Remainder::new(self.force_overflow_mode(), shift);
+        let mut u = Remainder::new(self, shift);
 
         let mut j = m + 1; // D2
         while j > 0 {

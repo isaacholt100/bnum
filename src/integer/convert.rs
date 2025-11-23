@@ -1,7 +1,7 @@
-use crate::{Uint, Integer, Int, Exponent};
-use crate::cast::CastFrom;
-use crate::errors::{TryFromCharError, TryFromIntError, ParseIntError};
 use crate::BTryFrom;
+use crate::cast::CastFrom;
+use crate::errors::{ParseIntError, TryFromCharError, TryFromIntError};
+use crate::{Exponent, Int, Integer, Uint};
 use core::str::FromStr;
 
 pub trait IntegerConvertHelper {
@@ -13,7 +13,9 @@ pub trait IntegerConvertHelper {
     fn leading_ones_at_least_threshold(&self, threshold: Exponent) -> bool;
 }
 
-impl<const S: bool, const N: usize, const B: usize, const OM: u8> IntegerConvertHelper for Integer<S, N, B, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> IntegerConvertHelper
+    for Integer<S, N, B, OM>
+{
     const BITS: Exponent = Self::BITS;
     const SIGNED: bool = S;
 
@@ -176,41 +178,67 @@ macro_rules! integer_try_from_into_primitive_integer {
     }
 }
 
-integer_try_from_into_primitive_integer!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
+integer_try_from_into_primitive_integer!(
+    u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize
+);
 
-impl<const N: usize, const B: usize, const M: usize, const A: usize, const OM: u8> BTryFrom<Uint<M, A, OM>> for Uint<N, B, OM> {
+// impl<
+//     const S: bool,
+//     const N: usize,
+//     const B: usize,
+//     const R: bool,
+//     const M: usize,
+//     const A: usize,
+//     const OM: u8,
+// > BTryFrom<Integer<R, M, A, OM>> for Integer<S, N, B, OM>
+// {
+//     type Error = TryFromIntError;
+
+//     fn try_from(value: Integer<R, M, A, OM>) -> Result<Self, Self::Error> {
+//         integer_try_from_integer(value)
+//     }
+// }
+
+impl<
+    const S: bool,
+    const N: usize,
+    const B: usize,
+    const R: bool,
+    const M: usize,
+    const A: usize,
+    const OM: u8,
+> TryFrom<&Integer<R, M, A, OM>> for Integer<S, N, B, OM>
+{
     type Error = TryFromIntError;
 
-    fn try_from(from: Uint<M, A, OM>) -> Result<Self, Self::Error> {
-        uint_try_from_uint(from)
+    fn try_from(value: &Integer<R, M, A, OM>) -> Result<Self, Self::Error> {
+        integer_try_from_integer(*value)
     }
 }
 
-impl<const N: usize, const B: usize, const M: usize, const A: usize, const OM: u8> TryFrom<Int<N, B, OM>> for Uint<M, A, OM> {
+impl<const N: usize, const B: usize, const M: usize, const A: usize, const OM: u8>
+    TryFrom<Int<N, B, OM>> for Uint<M, A, OM>
+{
     type Error = TryFromIntError;
 
-    fn try_from(from: Int<N, B, OM>) -> Result<Self, Self::Error> {
-        uint_try_from_int(from)
+    fn try_from(value: Int<N, B, OM>) -> Result<Self, Self::Error> {
+        uint_try_from_int(value)
     }
 }
 
-impl<const N: usize, const B: usize, const M: usize, const A: usize, const OM: u8> TryFrom<Uint<N, B, OM>> for Int<M, A, OM> {
+impl<const N: usize, const B: usize, const M: usize, const A: usize, const OM: u8>
+    TryFrom<Uint<N, B, OM>> for Int<M, A, OM>
+{
     type Error = TryFromIntError;
 
-    fn try_from(from: Uint<N, B, OM>) -> Result<Self, Self::Error> {
-        int_try_from_uint(from)
+    fn try_from(value: Uint<N, B, OM>) -> Result<Self, Self::Error> {
+        int_try_from_uint(value)
     }
 }
 
-impl<const M: usize, const A: usize, const N: usize, const B: usize, const OM: u8> BTryFrom<Int<M, A, OM>> for Int<N, B, OM> {
-    type Error = TryFromIntError;
-
-    fn try_from(from: Int<M, A, OM>) -> Result<Self, Self::Error> {
-        int_try_from_int(from)
-    }
-}
-
-impl<const S: bool, const N: usize, const B: usize, const OM: u8> From<bool> for Integer<S, N, B, OM> {
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> From<bool>
+    for Integer<S, N, B, OM>
+{
     #[inline]
     fn from(small: bool) -> Self {
         Self::cast_from(small)
@@ -236,13 +264,13 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> FromStr for In
 #[cfg(test)]
 mod tests {
     use crate::BTryFrom;
-    use crate::test::cast_types::*;
     use crate::test;
+    use crate::test::cast_types::*;
 
     crate::test::test_all! {
         testing unsigned;
 
-        test::test_btryfrom!(utest; TestUint1, TestUint2, TestUint3, TestUint4, TestUint5, TestUint6, TestUint7, TestUint8, TestUint9, TestUint10);
+        test::test_tryfrom_same_sign!(utest; TestUint1, TestUint2, TestUint3, TestUint4, TestUint5, TestUint6, TestUint7, TestUint8, TestUint9, TestUint10);
 
         test::test_from! {
             function: <utest as TryFrom>::try_from,
@@ -256,8 +284,8 @@ mod tests {
 
     crate::test::test_all! {
         testing signed;
-        
-        test::test_btryfrom!(itest; TestInt1, TestInt2, TestInt3, TestInt4, TestInt5, TestInt6, TestInt7, TestInt8, TestInt9, TestInt10);
+
+        test::test_tryfrom_same_sign!(itest; TestInt1, TestInt2, TestInt3, TestInt4, TestInt5, TestInt6, TestInt7, TestInt8, TestInt9, TestInt10);
 
         test::test_from! {
             function: <itest as TryFrom>::try_from,
@@ -268,4 +296,69 @@ mod tests {
             into_types: (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, TestUint1, TestUint2, TestUint3, TestUint4, TestUint5, TestUint6, TestUint7, TestUint8, TestUint9, TestUint10)
         }
     }
+}
+
+#[cfg(test)]
+mod double_custom_bit_width_convert_tests {
+    use crate::BTryFrom;
+    use crate::Integer;
+    use crate::test::BitInt;
+
+    macro_rules! test_double_custom_bit_width_convert {
+        ($($from: literal => $to: literal), *) => {
+            paste::paste! {
+                $(
+                    quickcheck::quickcheck! {
+                        fn [<quickcheck_cast_from_u_ $from _to $to _bits>](v: BitInt<false, $from>) -> bool {
+                            let w = Integer::from(v);
+                            let a = BitInt::<false, $to>::try_from(&v);
+                            let b = Integer::<false, {usize::div_ceil($to, 8)}, $to>::try_from(&w);
+
+                            let w = Integer::from(v);
+                            let c = BitInt::<true, $to>::try_from(&v);
+                            let d = Integer::<true, {usize::div_ceil($to, 8)}, $to>::try_from(&w);
+                            crate::test::test_eq(a, b) && crate::test::test_eq(c, d)
+                        }
+
+                        fn [<quickcheck_cast_from_i_ $from _to $to _bits>](v: BitInt<true, $from>) -> bool {
+                            let w = Integer::from(v);
+                            let a = BitInt::<false, $to>::try_from(&v);
+                            let b = Integer::<false, {usize::div_ceil($to, 8)}, $to>::try_from(&w);
+
+                            let w = Integer::from(v);
+                            let c = BitInt::<true, $to>::try_from(&v);
+                            let d = Integer::<true, {usize::div_ceil($to, 8)}, $to>::try_from(&w);
+                            crate::test::test_eq(a, b) && crate::test::test_eq(c, d)
+                        }
+                    }
+                )*
+            }
+        };
+    }
+
+    test_double_custom_bit_width_convert!(
+        8 => 16,
+        16 => 32,
+        32 => 64,
+        64 => 128,
+        16 => 8,
+        32 => 16,
+        64 => 32,
+        128 => 64,
+        16 => 128,
+        8 => 64,
+        128 => 32,
+        64 => 16,
+        127 => 128,
+        128 => 127,
+        128 => 129,
+        129 => 128,
+        173 => 256,
+        256 => 173,
+        5 => 11,
+        4 => 23,
+        23 => 4,
+        289 => 160,
+        160 => 289
+    );
 }

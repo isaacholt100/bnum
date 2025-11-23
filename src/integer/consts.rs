@@ -1,4 +1,4 @@
-use crate::{Integer, Uint, Int};
+use crate::{Integer, Int};
 use crate::OverflowMode;
 use crate::Byte;
 

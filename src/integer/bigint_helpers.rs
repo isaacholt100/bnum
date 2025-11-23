@@ -1,4 +1,3 @@
-use crate::Byte;
 use crate::digit;
 use crate::doc;
 use crate::wide_digits::{WideDigits, WideDigitsMut};

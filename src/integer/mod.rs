@@ -22,7 +22,7 @@ mod unchecked;
 mod wrapping;
 mod const_trait_fillers;
 
-use crate::{Byte, OverflowMode};
+use crate::Byte;
 use crate::{WideDigits, WideDigitsMut};
 
 use crate::Exponent;
@@ -83,11 +83,6 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     pub(crate) const LAST_BYTE_PAD_BITS: u32 = Byte::BITS - Self::LAST_BYTE_BITS;
 
     #[inline(always)]
-    const fn force_bit_width<const A: usize>(self) -> Integer<S, N, A, OM> {
-        Integer::from_bytes(self.bytes)
-    }
-
-    #[inline(always)]
     const fn widen(self) -> Integer<S, N, 0, OM> {
         self.force()
     }
@@ -117,11 +112,6 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
             out.set_sign_bits();
         }
         out
-    }
-
-    #[inline(always)]
-    pub(crate) const fn force_overflow_mode<const RO: u8>(self) -> Integer<S, N, B, RO> {
-        Integer::from_bytes(self.bytes)
     }
 
     #[inline(always)]
@@ -155,7 +145,6 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
 
 impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, B, OM> {
     const U128_DIGITS: usize = (Self::BITS as usize).div_ceil(128);
-    pub(crate) const FULL_U128_DIGITS: usize = (Self::BITS as usize) / 128;
     pub(crate) const U128_DIGIT_REMAINDER: usize = N % 16;
     pub(crate) const LAST_DIGIT_BYTES: usize = if Self::U128_DIGIT_REMAINDER == 0 {
         16
