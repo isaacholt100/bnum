@@ -132,7 +132,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     }
 
     #[inline]
-    const fn is_even(&self) -> bool {
+    pub(crate) const fn is_even(&self) -> bool {
         (self.bytes[0] & 1) == 0
     }
 

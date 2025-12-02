@@ -310,7 +310,9 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 }
 
 #[cfg(test)]
-crate::test::test_all_widths! {
+crate::test::test_all! {
+    testing floats;
+    
     use crate::test::test_bignum;
     use crate::test::types::{ftest, FTEST};
 

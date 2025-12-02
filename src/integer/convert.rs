@@ -1,4 +1,3 @@
-use crate::BTryFrom;
 use crate::cast::CastFrom;
 use crate::errors::{ParseIntError, TryFromCharError, TryFromIntError};
 use crate::{Exponent, Int, Integer, Uint};
@@ -263,7 +262,6 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> FromStr for In
 
 #[cfg(test)]
 mod tests {
-    use crate::BTryFrom;
     use crate::test;
     use crate::test::cast_types::*;
 
@@ -303,6 +301,7 @@ mod double_custom_bit_width_convert_tests {
     use crate::BTryFrom;
     use crate::Integer;
     use crate::test::BitInt;
+    use crate::literal_parse::get_size_params_from_bits;
 
     macro_rules! test_double_custom_bit_width_convert {
         ($($from: literal => $to: literal), *) => {
@@ -312,22 +311,22 @@ mod double_custom_bit_width_convert_tests {
                         fn [<quickcheck_cast_from_u_ $from _to $to _bits>](v: BitInt<false, $from>) -> bool {
                             let w = Integer::from(v);
                             let a = BitInt::<false, $to>::try_from(&v);
-                            let b = Integer::<false, {usize::div_ceil($to, 8)}, $to>::try_from(&w);
+                            let b = Integer::<false, {get_size_params_from_bits($to).0}, {get_size_params_from_bits($to).1}>::try_from(&w);
 
                             let w = Integer::from(v);
                             let c = BitInt::<true, $to>::try_from(&v);
-                            let d = Integer::<true, {usize::div_ceil($to, 8)}, $to>::try_from(&w);
+                            let d = Integer::<true, {get_size_params_from_bits($to).0}, {get_size_params_from_bits($to).1}>::try_from(&w);
                             crate::test::test_eq(a, b) && crate::test::test_eq(c, d)
                         }
 
                         fn [<quickcheck_cast_from_i_ $from _to $to _bits>](v: BitInt<true, $from>) -> bool {
                             let w = Integer::from(v);
                             let a = BitInt::<false, $to>::try_from(&v);
-                            let b = Integer::<false, {usize::div_ceil($to, 8)}, $to>::try_from(&w);
+                            let b = Integer::<false, {get_size_params_from_bits($to).0}, {get_size_params_from_bits($to).1}>::try_from(&w);
 
                             let w = Integer::from(v);
                             let c = BitInt::<true, $to>::try_from(&v);
-                            let d = Integer::<true, {usize::div_ceil($to, 8)}, $to>::try_from(&w);
+                            let d = Integer::<true, {get_size_params_from_bits($to).0}, {get_size_params_from_bits($to).1}>::try_from(&w);
                             crate::test::test_eq(a, b) && crate::test::test_eq(c, d)
                         }
                     }

@@ -268,37 +268,8 @@ macro_rules! is_prefix_signed {
 
 pub(crate) use is_prefix_signed;
 
-macro_rules! test_types {
-    ($bits: expr $(, $signed: literal)?) => {
-        // $sign should be true or false
-        paste::paste! {
-            #[allow(non_camel_case_types, unused)]
-            pub type utest = [<u $bits>];
-
-            #[allow(non_camel_case_types, unused)]
-            pub type itest = [<i $bits>];
-
-            // #[allow(non_camel_case_types, unused)]
-            // #[cfg(feature = "float")]
-            // pub type ftest = [<f $bits>];
-
-            #[allow(non_camel_case_types, unused)]
-            pub type UTEST = crate::Uint<{ usize::div_ceil($bits, 8) }, $bits>;
-
-            #[allow(non_camel_case_types, unused)]
-            pub type ITEST = crate::Int<{ usize::div_ceil($bits, 8) }, $bits>;
-
-            // #[cfg(feature = "float")]
-            // #[allow(non_camel_case_types, unused)]
-            // pub type FTEST = crate::float::Float<{core::mem::size_of::<ftest>()}, {ftest::MANTISSA_DIGITS as usize - 1}>;
-        }
-    };
-}
-
-pub(crate) use test_types;
-
 macro_rules! test_width_and_sign {
-    ($bits: expr, $prefix: ident, $($s: tt) * ) => {
+    ($bits: expr, $prefix: ident $(, $float: literal)?; $($s: tt) * ) => {
         paste::paste! {
             mod [<$prefix $bits>] {
                 #[allow(unused_imports)]
@@ -310,25 +281,27 @@ macro_rules! test_width_and_sign {
                 #[allow(non_camel_case_types, unused)]
                 pub type itest = [<i $bits>];
 
-                // #[allow(non_camel_case_types, unused)]
-                // #[cfg(feature = "float")]
-                // pub type ftest = [<f $bits>];
+                #[allow(non_camel_case_types, unused)]
+                pub type UTEST = crate::Uint<{ crate::literal_parse::get_size_params_from_bits($bits).0 }, { crate::literal_parse::get_size_params_from_bits($bits).1 }>;
 
                 #[allow(non_camel_case_types, unused)]
-                pub type UTEST = crate::Uint<{ usize::div_ceil($bits, 8) }, $bits>;
-
-                #[allow(non_camel_case_types, unused)]
-                pub type ITEST = crate::Int<{ usize::div_ceil($bits, 8) }, $bits>;
-
-                // #[cfg(feature = "float")]
-                // #[allow(non_camel_case_types, unused)]
-                // pub type FTEST = crate::float::Float<{core::mem::size_of::<ftest>()}, {ftest::MANTISSA_DIGITS as usize - 1}>;
+                pub type ITEST = crate::Int<{ crate::literal_parse::get_size_params_from_bits($bits).0 }, { crate::literal_parse::get_size_params_from_bits($bits).1 }>;
 
                 #[allow(non_camel_case_types, unused)]
                 pub type stest = [<$prefix $bits>];
 
                 #[allow(non_camel_case_types, unused)]
-                pub type STEST = crate::Integer<{ crate::test::is_prefix_signed!($prefix) }, { usize::div_ceil($bits, 8) }, $bits>;
+                pub type STEST = crate::Integer<{ crate::test::is_prefix_signed!($prefix) }, { crate::literal_parse::get_size_params_from_bits($bits).0 }, { crate::literal_parse::get_size_params_from_bits($bits).1 }>;
+
+                $(
+                    #[allow(non_camel_case_types)]
+                    #[cfg(feature = $float)]
+                    pub type ftest = [<f $bits>];
+
+                    #[cfg(feature = $float)]
+                    #[allow(non_camel_case_types)]
+                    pub type FTEST = crate::float::Float<{core::mem::size_of::<ftest>()}, {ftest::MANTISSA_DIGITS as usize - 1}>;
+                )?
 
                 $($s)*
             }
@@ -353,10 +326,10 @@ macro_rules! test_custom_bit_widths {
                     pub type itest = crate::test::BitInt<true, $bits>;
 
                     #[allow(non_camel_case_types, unused)]
-                    pub type UTEST = crate::Uint<{ usize::div_ceil($bits, 8) }, $bits>;
+                    pub type UTEST = crate::Uint<{ crate::literal_parse::get_size_params_from_bits($bits).0 }, { crate::literal_parse::get_size_params_from_bits($bits).1 }>;
 
                     #[allow(non_camel_case_types, unused)]
-                    pub type ITEST = crate::Int<{ usize::div_ceil($bits, 8) }, $bits>;
+                    pub type ITEST = crate::Int<{ crate::literal_parse::get_size_params_from_bits($bits).0 }, { crate::literal_parse::get_size_params_from_bits($bits).1 }>;
 
                     $tests
                 }
@@ -397,10 +370,10 @@ macro_rules! test_all {
             #[allow(unused_imports)]
             use super::*;
 
-            crate::test::test_width_and_sign!(16, u, $($s)*);
-            crate::test::test_width_and_sign!(32, u, $($s)*);
-            crate::test::test_width_and_sign!(64, u, $($s)*);
-            crate::test::test_width_and_sign!(128, u, $($s)*);
+            crate::test::test_width_and_sign!(16, u; $($s)*);
+            crate::test::test_width_and_sign!(32, u; $($s)*);
+            crate::test::test_width_and_sign!(64, u; $($s)*);
+            crate::test::test_width_and_sign!(128, u; $($s)*);
         }
     };
     { testing signed; $($s: tt) * } => {
@@ -409,81 +382,34 @@ macro_rules! test_all {
             #[allow(unused_imports)]
             use super::*;
 
-            crate::test::test_width_and_sign!(16, i, $($s)*);
-            crate::test::test_width_and_sign!(32, i, $($s)*);
-            crate::test::test_width_and_sign!(64, i, $($s)*);
-            crate::test::test_width_and_sign!(128, i, $($s)*);
+            crate::test::test_width_and_sign!(16, i; $($s)*);
+            crate::test::test_width_and_sign!(32, i; $($s)*);
+            crate::test::test_width_and_sign!(64, i; $($s)*);
+            crate::test::test_width_and_sign!(128, i; $($s)*);
         }
     };
     { testing integers; $($s: tt) * } => {
         // for unsigned and signed tests
-        crate::test::test_width_and_sign!(16, u, $($s)*);
-        crate::test::test_width_and_sign!(32, u, $($s)*);
-        crate::test::test_width_and_sign!(64, u, $($s)*);
-        crate::test::test_width_and_sign!(128, u, $($s)*);
+        crate::test::test_width_and_sign!(16, u; $($s)*);
+        crate::test::test_width_and_sign!(32, u; $($s)*);
+        crate::test::test_width_and_sign!(64, u; $($s)*);
+        crate::test::test_width_and_sign!(128, u; $($s)*);
 
-        crate::test::test_width_and_sign!(16, i, $($s)*);
-        crate::test::test_width_and_sign!(32, i, $($s)*);
-        crate::test::test_width_and_sign!(64, i, $($s)*);
-        crate::test::test_width_and_sign!(128, i, $($s)*);
+        crate::test::test_width_and_sign!(16, i; $($s)*);
+        crate::test::test_width_and_sign!(32, i; $($s)*);
+        crate::test::test_width_and_sign!(64, i; $($s)*);
+        crate::test::test_width_and_sign!(128, i; $($s)*);
     };
     { testing floats; $($s: tt) * } => {
-        crate::test::test_width_and_sign!(16, f, $($s)*);
-        crate::test::test_width_and_sign!(32, f, $($s)*);
-        crate::test::test_width_and_sign!(64, f, $($s)*);
-        crate::test::test_width_and_sign!(128, f, $($s)*);
+        // #[cfg(feature = "nightly")]
+        // crate::test::test_width_and_sign!(16, f, "float"; $($s)*);
+
+        crate::test::test_width_and_sign!(32, f, "float"; $($s)*);
+        crate::test::test_width_and_sign!(64, f, "float"; $($s)*);
+
+        // #[cfg(feature = "nightly")]
+        // crate::test::test_width_and_sign!(128, f, "float"; $($s)*);
     };
 }
 
 pub(crate) use test_all;
-
-macro_rules! test_all_widths {
-    { $($s: tt) * } => {
-        mod tests {
-            #[allow(unused_imports)]
-            use super::*;
-
-            mod bits16 {
-                #[allow(unused_imports)]
-                use super::*;
-
-                // #[cfg(not(feature = "nightly"))]
-                #[allow(non_camel_case_types, unused)]
-                type f16 = f32; // this is a bit of a hack, if nightly compiler not being used then we can't use f16s, so we'll declare it to be an f32 instead
-                crate::test::test_types!(16);
-
-                $($s)*
-            }
-
-            mod bits32 {
-                #[allow(unused_imports)]
-                use super::*;
-
-                crate::test::test_types!(32);
-
-                $($s)*
-            }
-            mod bits64 {
-                #[allow(unused_imports)]
-                use super::*;
-
-                crate::test::test_types!(64);
-
-                $($s)*
-            }
-            mod bits128 {
-                #[allow(unused_imports)]
-                use super::*;
-
-                // #[cfg(not(feature = "nightly"))]
-                #[allow(non_camel_case_types, unused)]
-                type f128 = f64; // same hack for f128 as for f16
-                crate::test::test_types!(128);
-
-                $($s)*
-            }
-        }
-    }
-}
-
-pub(crate) use test_all_widths;

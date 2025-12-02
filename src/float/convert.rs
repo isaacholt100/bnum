@@ -2,14 +2,7 @@ use super::{Float, FloatExponent, UnsignedFloatExponent};
 use crate::cast::float::ConvertFloatParts;
 use crate::{Exponent, Int, Uint};
 
-type Digit = u8;
-
 impl<const W: usize> Uint<W> {
-    #[inline]
-    pub(crate) const fn is_even(&self) -> bool {
-        self.digits[0] % 2 == 0
-    }
-
     #[inline]
     pub(crate) const fn is_odd(&self) -> bool {
         !self.is_even()
@@ -28,8 +21,18 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     }
 
     #[inline(always)]
+    pub const fn as_bits(&self) -> &Uint<W> {
+        &self.bits
+    }
+
+    #[inline(always)]
+    pub const fn as_bits_mut(&mut self) -> &mut Uint<W> {
+        &mut self.bits
+    }
+
+    #[inline(always)]
     pub(crate) const fn to_signed_bits(self) -> Int<W> {
-        Int::from_bits(self.to_bits())
+        self.to_bits().cast_signed()
     }
 }
 
@@ -136,7 +139,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             .shl(Self::MB)
             .bitor(mantissa);
         if sign {
-            bits.digits[W - 1] |= 1 << (Digit::BITS - 1);
+            bits.set_bit(Self::BITS - 1, true);
         }
         Self::from_bits(bits)
     }
@@ -229,7 +232,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         shift: Exponent,
     ) -> (FloatExponent, Uint<W>) {
         // we allow current_width to be specified so that we don't have to recompute mantissa.bits() if already known
-        let mut shifted_mantissa = unsafe { mantissa.unchecked_shr_pad_internal::<false>(shift) };
+        let mut shifted_mantissa = unsafe { mantissa.unchecked_shr_internal(shift) };
         if !TIES_EVEN {
             return (exponent, shifted_mantissa); // if not TIES_EVEN, then we truncate
         }
@@ -242,8 +245,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                 if shifted_mantissa.bit(shift) {
                     // check for overflow (with respect to the mantissa bit width)
                     exponent += 1;
-                    shifted_mantissa =
-                        unsafe { shifted_mantissa.unchecked_shr_pad_internal::<false>(1) };
+                    shifted_mantissa = unsafe { shifted_mantissa.unchecked_shr_internal(1) };
                 }
             }
         }
@@ -295,23 +297,27 @@ macro_rules! test_reversible_conversion {
 }
 
 #[cfg(test)]
-crate::test::test_all_widths! {
-    use crate::types::{F32, F64};
+mod tests {
     use crate::test::test_bignum;
+    use crate::types::{F32, F64};
 
-    test_bignum! {
-        function: <ftest>::to_bits(a: ftest)
-    }
-    test_bignum! {
-        function: <f64>::from_bits(a: u64)
-    }
-    test_bignum! {
-        function: <f32>::from_bits(a: u32)
-    }
+    crate::test::test_all! {
+        testing floats;
 
-    test_reversible_conversion!(into_raw_parts, from_raw_parts(a, b, c) -> FTEST, FTEST::to_bits);
-    test_reversible_conversion!(into_biased_parts, from_biased_parts(a, b, c) -> FTEST, FTEST::to_bits);
-    test_reversible_conversion!(into_signed_biased_parts, from_signed_biased_parts(a, b, c) -> FTEST, FTEST::to_bits);
-    test_reversible_conversion!(into_signed_parts, from_signed_parts(a, b, c) -> FTEST, FTEST::to_bits);
-    test_reversible_conversion!(into_normalised_signed_parts, from_normalised_signed_parts(a, b, c) -> FTEST, FTEST::to_bits);
+        test_bignum! {
+            function: <ftest>::to_bits(a: ftest)
+        }
+        test_bignum! {
+            function: <f64>::from_bits(a: u64)
+        }
+        test_bignum! {
+            function: <f32>::from_bits(a: u32)
+        }
+
+        test_reversible_conversion!(into_raw_parts, from_raw_parts(a, b, c) -> FTEST, FTEST::to_bits);
+        test_reversible_conversion!(into_biased_parts, from_biased_parts(a, b, c) -> FTEST, FTEST::to_bits);
+        test_reversible_conversion!(into_signed_biased_parts, from_signed_biased_parts(a, b, c) -> FTEST, FTEST::to_bits);
+        test_reversible_conversion!(into_signed_parts, from_signed_parts(a, b, c) -> FTEST, FTEST::to_bits);
+        test_reversible_conversion!(into_normalised_signed_parts, from_normalised_signed_parts(a, b, c) -> FTEST, FTEST::to_bits);
+    }
 }

@@ -6,6 +6,7 @@ use crate::{
 };
 
 impl<const W: usize, const MB: usize> Float<W, MB> {
+    // TODO: could also use the sqrt algorithm on Uint with twice as many bits, compare performance with this implementation from libm
     pub(super) fn sqrt_internal(self) -> Self {
         handle_nan!(self; self);
         if self.is_zero() {
@@ -23,7 +24,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
         let tiny = Self::from_bits(Uint::cast_from(0b11011u8) << Self::MB); // TODO: may not work for exponents stored with very few bits
 
-        let mut ix = Int::from_bits(bits);
+        let mut ix = bits.cast_signed();
         let mut i: FloatExponent;
         let mut m = (bits >> Self::MB).cast_to_unsigned_float_exponent() as FloatExponent;
         if m == 0 {
@@ -36,7 +37,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             m -= i - 1;
         }
         m -= Self::EXP_BIAS; /* unbias exponent */
-        ix = (ix & Int::from_bits(Uint::MAX >> (Self::BITS - Self::MB))) | (Int::ONE << Self::MB);
+        ix = (ix & (Uint::MAX >> (Self::BITS - Self::MB)).cast_signed()) | (Int::ONE << Self::MB);
         if m & 1 == 1 {
             /* odd m, double x to make it even */
             ix += ix;
@@ -51,11 +52,11 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
         let mut t: Int<W>;
         while !r.is_zero() {
-            t = s + Int::from_bits(r);
+            t = s + r.cast_signed();
             if t <= ix {
-                s = t + Int::from_bits(r);
+                s = t + r.cast_signed();
                 ix -= t;
-                q += Int::from_bits(r);
+                q += r.cast_signed();
             }
             ix += ix;
             r = r >> 1u8;
@@ -68,16 +69,16 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             if z >= Self::ONE {
                 z = Self::ONE + tiny;
                 if z > Self::ONE {
-                    q += Int::TWO;
+                    q += crate::n!(0b10);
                 } else {
-                    q += q & Int::ONE;
+                    q += q & crate::n!(0b1); // kenobi
                 }
             }
         }
 
-        ix = (q >> 1u8) + Int::from_bits((Uint::MAX << (Self::MB + 1 + 2)) >> 2u8);
+        ix = (q >> 1u8) + ((Uint::MAX << (Self::MB + 1 + 2)) >> 2u8).cast_signed();
         ix += (Uint::cast_from_unsigned_float_exponent(m as UnsignedFloatExponent) << Self::MB)
             .cast_signed();
-        Self::from_bits(ix.to_bits())
+        Self::from_bits(ix.cast_unsigned())
     }
 }

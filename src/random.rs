@@ -385,7 +385,9 @@ macro_rules! test_random {
 }
 
 #[cfg(test)]
-crate::test::test_all_widths! {
+crate::test::test_all! {
+    testing floats;
+    
     use rand::SeedableRng;
 
     fn seeded_rngs<R: SeedableRng + Clone>(seed: u64) -> (R, R) {

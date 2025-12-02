@@ -1,7 +1,9 @@
+#![allow(incomplete_features)]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![cfg_attr(
     all(test, feature = "nightly"),
     feature(
+        generic_const_exprs,
         bigint_helper_methods,
         int_roundings,
         float_minimum_maximum,
@@ -36,9 +38,6 @@ pub mod prelude;
 mod wide_digits;
 mod overflow;
 
-// #[doc(inline)]
-// pub use literal_parse::n;
-
 use wide_digits::{WideDigits, WideDigitsMut};
 
 #[cfg(feature = "rand")]
@@ -46,11 +45,11 @@ pub mod random;
 
 pub mod types;
 
-// #[cfg(feature = "float")]
-// mod float;
+#[cfg(feature = "float")]
+mod float;
 
-// #[cfg(feature = "float")]
-// pub use float::Float;
+#[cfg(feature = "float")]
+pub use float::Float;
 
 #[cfg(test)]
 mod test;

@@ -1,6 +1,6 @@
 use super::Float;
+use crate::Byte;
 use crate::Uint;
-use crate::doc;
 use core::cmp::Ordering;
 
 /// Provides `const` function alternatives to methods of common traits, such as `PartialEq` and `PartialCmp`. These functions will be removed once `const` traits are stabilized.
@@ -53,9 +53,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
     #[inline]
     pub(crate) const fn neg(mut self) -> Self {
-        type Digit = u8;
-
-        self.bits.digits[W - 1] ^= 1 << (Digit::BITS - 1);
+        self.bits.bytes[W - 1] ^= 1 << (Byte::BITS - 1); // invert sign bit
         self
     }
 }

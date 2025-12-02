@@ -49,11 +49,11 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             let rem = ((large >> 1 as Exponent) % (s2.as_::<Uint<{ W * 2 }>>())).as_::<Uint<W>>();
             rem
         };
-        if rem * Uint::TWO > s2 {
-            division += Uint::ONE;
-        } else if rem * Uint::TWO == s2 {
-            if (division & Uint::ONE) == Uint::ONE {
-                division += Uint::ONE;
+        if rem * crate::n!(0b10) > s2 {
+            division += crate::n!(0b1);
+        } else if rem * crate::n!(0b10) == s2 {
+            if division.is_odd() {
+                division += crate::n!(0b1);
             }
         }
         if division.bits() == Self::MB + 2 {

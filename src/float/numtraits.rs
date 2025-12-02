@@ -1,5 +1,6 @@
 use super::Float;
 use crate::cast::CastFrom;
+use crate::Integer;
 use num_traits::{AsPrimitive, Bounded, ConstOne, ConstZero, One, Zero, float::TotalOrder};
 
 impl<const W: usize, const MB: usize> Bounded for Float<W, MB> {
@@ -101,6 +102,33 @@ impl_as_primitive!(
     u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64
 );
 
+impl<const W: usize, const MB: usize, const S: bool, const N: usize, const B: usize, const OM: u8>
+    AsPrimitive<Float<W, MB>> for Integer<S, N, B, OM>
+{
+    #[inline]
+    fn as_(self) -> Float<W, MB> {
+        Float::cast_from(self)
+    }
+}
+
+// impl<const W: usize, const MB: usize, const S: bool, const N: usize, const B: usize, const OM: u8>
+//     AsPrimitive<Integer<S, N, B, OM>> for Float<W, MB>
+// {
+//     #[inline]
+//     fn as_(self) -> Integer<S, N, B, OM> {
+//         Integer::cast_from(self)
+//     }
+// }
+
+impl<const W1: usize, const MB1: usize, const W2: usize, const MB2: usize>
+    AsPrimitive<Float<W2, MB2>> for Float<W1, MB1>
+{
+    #[inline]
+    fn as_(self) -> Float<W2, MB2> {
+        Float::cast_from(self)
+    }
+}
+
 impl<const W: usize, const MB: usize> TotalOrder for Float<W, MB> {
     #[inline]
     fn total_cmp(&self, other: &Self) -> core::cmp::Ordering {
@@ -109,16 +137,21 @@ impl<const W: usize, const MB: usize> TotalOrder for Float<W, MB> {
 }
 
 #[cfg(test)]
-crate::test::test_all_widths! {
+mod tests {
     use crate::test::test_bignum;
+    use super::*;
 
-    test_bignum! {
-        function: <ftest as Zero>::is_zero(a: ref &ftest)
-    }
-    test_bignum! {
-        function: <ftest as One>::is_one(a: ref &ftest)
-    }
-    test_bignum! {
-        function: <ftest as TotalOrder>::total_cmp(a: ref &ftest, b: ref &ftest)
+    crate::test::test_all! {
+        testing floats;
+
+        test_bignum! {
+            function: <ftest as Zero>::is_zero(a: ref &ftest)
+        }
+        test_bignum! {
+            function: <ftest as One>::is_one(a: ref &ftest)
+        }
+        test_bignum! {
+            function: <ftest as TotalOrder>::total_cmp(a: ref &ftest, b: ref &ftest)
+        }
     }
 }

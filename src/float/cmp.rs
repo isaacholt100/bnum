@@ -95,34 +95,38 @@ impl<const W: usize, const MB: usize> PartialOrd for Float<W, MB> {
 }
 
 #[cfg(test)]
-crate::test::test_all_widths! {
+mod tests {
     use crate::test::test_bignum;
 
-    test_bignum! {
-        function: <ftest>::max(a: ftest, b: ftest)
-    }
-    test_bignum! {
-        function: <ftest>::min(a: ftest, b: ftest)
-    }
-    #[cfg(feature = "nightly")]
-    test_bignum! {
-        function: <ftest>::maximum(a: ftest, b: ftest)
-    }
-    #[cfg(feature = "nightly")]
-    test_bignum! {
-        function: <ftest>::minimum(a: ftest, b: ftest)
-    }
-    test_bignum! {
-        function: <ftest>::clamp(a: ftest, b: ftest, c: ftest),
-        skip: !(b <= c)
-    }
-    test_bignum! {
-        function: <ftest>::total_cmp(a: ref &ftest, b: ref &ftest)
-    }
-    test_bignum! {
-        function: <ftest>::partial_cmp(a: ref &ftest, b: ref &ftest)
-    }
-    test_bignum! {
-        function: <ftest>::eq(a: ref &ftest, b: ref &ftest)
+    crate::test::test_all! {
+        testing floats;
+
+        test_bignum! {
+            function: <ftest>::max(a: ftest, b: ftest)
+        }
+        test_bignum! {
+            function: <ftest>::min(a: ftest, b: ftest)
+        }
+        #[cfg(feature = "nightly")]
+        test_bignum! {
+            function: <ftest>::maximum(a: ftest, b: ftest)
+        }
+        #[cfg(feature = "nightly")]
+        test_bignum! {
+            function: <ftest>::minimum(a: ftest, b: ftest)
+        }
+        test_bignum! {
+            function: <ftest>::clamp(a: ftest, b: ftest, c: ftest),
+            skip: !(b <= c)
+        }
+        test_bignum! {
+            function: <ftest>::total_cmp(a: ref &ftest, b: ref &ftest)
+        }
+        test_bignum! {
+            function: <ftest>::partial_cmp(a: ref &ftest, b: ref &ftest)
+        }
+        test_bignum! {
+            function: <ftest>::eq(a: ref &ftest, b: ref &ftest)
+        }
     }
 }

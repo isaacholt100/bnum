@@ -389,40 +389,6 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
         }
     }
 
-    /// Reverses the order of the bytes of `self`.
-    ///
-    /// # Examples
-    ///
-    /// Basic usage:
-    ///
-    /// ```
-    /// use bnum::prelude::*;
-    ///
-    /// type U24 = Uint<3>;
-    /// type I24 = Int<3>;
-    ///
-    /// let a: U24 = n!(0x7C283D);
-    /// assert_eq!(a.swap_bytes(), n!(0x3D287C));
-    ///
-    /// let b: I24 = n!(0x1DC87B);
-    /// assert_eq!(b.swap_bytes(), n!(0x7BC81D));
-    /// ```
-    #[must_use = doc::must_use_op!()]
-    #[inline]
-    pub const fn swap_bytes(self) -> Self {
-        let mut out = Self::ZERO;
-        let mut i = 0;
-        while i < Self::U128_DIGITS {
-            unsafe {
-                let d = self.as_wide_digits().get(i);
-                out.as_wide_digits_mut().set_be(i, d.swap_bytes());
-            }
-
-            i += 1;
-        }
-        out
-    }
-
     /// Reverses the order of the bits of `self`.
     ///
     /// # Examples
@@ -605,6 +571,43 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
         let digit = &mut self.bytes[index as usize / Digit::BITS as usize];
         let shift = index % Digit::BITS;
         *digit = *digit & !(1 << shift) | ((value as Digit) << shift);
+    }
+}
+
+#[doc = impl_desc!()]
+impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, 0, OM> {
+    /// Reverses the order of the bytes of `self`.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// use bnum::prelude::*;
+    ///
+    /// type U24 = Uint<3>;
+    /// type I24 = Int<3>;
+    ///
+    /// let a: U24 = n!(0x7C283D);
+    /// assert_eq!(a.swap_bytes(), n!(0x3D287C));
+    ///
+    /// let b: I24 = n!(0x1DC87B);
+    /// assert_eq!(b.swap_bytes(), n!(0x7BC81D));
+    /// ```
+    #[must_use = doc::must_use_op!()]
+    #[inline]
+    pub const fn swap_bytes(self) -> Self {
+        let mut out = Self::ZERO;
+        let mut i = 0;
+        while i < Self::U128_DIGITS {
+            unsafe {
+                let d = self.as_wide_digits().get(i);
+                out.as_wide_digits_mut().set_be(i, d.swap_bytes());
+            }
+
+            i += 1;
+        }
+        out
     }
 }
 

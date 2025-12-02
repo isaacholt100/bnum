@@ -115,7 +115,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     }
 
     #[inline(always)]
-    const fn force<const R: bool, const A: usize, const RO: u8>(self) -> Integer<R, N, A, RO> {
+    pub(crate) const fn force<const R: bool, const A: usize, const RO: u8>(self) -> Integer<R, N, A, RO> {
         let mut out = Integer::from_bytes(self.bytes);
         if R != S {
             out.set_sign_bits();

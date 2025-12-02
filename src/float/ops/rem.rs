@@ -1,6 +1,5 @@
 use super::Float;
 use crate::Exponent;
-use crate::Int;
 use crate::Uint;
 use crate::float::UnsignedFloatExponent;
 
@@ -44,7 +43,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         /* normalize x and y */
         if ex == 0 {
             i = uxi << (Self::BITS - Self::MB);
-            while !Int::from_bits(i).is_negative() {
+            while !i.cast_signed().is_negative() {
                 ex -= 1;
                 i <<= 1 as Exponent;
             }
@@ -57,7 +56,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
         if ey == 0 {
             i = uyi << (Self::BITS - Self::MB);
-            while !Int::from_bits(i).is_negative() {
+            while !i.cast_signed().is_negative() {
                 ey -= 1;
                 i <<= 1 as Exponent;
             }
@@ -70,7 +69,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         /* x mod y */
         while ex > ey {
             i = uxi.wrapping_sub(uyi);
-            if !Int::from_bits(i).is_negative() {
+            if !i.cast_signed().is_negative() {
                 if i.is_zero() {
                     return if self.is_sign_negative() {
                         Self::NEG_ZERO
@@ -86,7 +85,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         }
 
         i = uxi.wrapping_sub(uyi);
-        if !Int::from_bits(i).is_negative() {
+        if !i.cast_signed().is_negative() {
             if i.is_zero() {
                 return if self.is_sign_negative() {
                     Self::NEG_ZERO

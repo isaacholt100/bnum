@@ -16,12 +16,9 @@ TODO: acos, acosh, asin, asinh, atan, atan2, atanh, cbrt, cos, cosh, exp, exp2, 
 impl<const W: usize, const MB: usize> Float<W, MB> {
     #[must_use = doc::must_use_op!(float)]
     #[inline]
-    pub const fn abs(self) -> Self {
-        if self.is_sign_negative() {
-            self.neg()
-        } else {
-            self
-        }
+    pub const fn abs(mut self) -> Self {
+        self.bits.set_bit(Self::BITS - 1, false); // set sign bit to 0
+        self
     }
 
     #[must_use = doc::must_use_op!(float)]
@@ -87,22 +84,26 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 }
 
 #[cfg(test)]
-crate::test::test_all_widths! {
+mod tests {
     use crate::test::test_bignum;
 
-    test_bignum! {
-        function: <ftest>::abs(f: ftest)
+    crate::test::test_all! {
+        testing floats;
+
+        test_bignum! {
+            function: <ftest>::abs(f: ftest)
+        }
+        test_bignum! {
+            function: <ftest>::sqrt(f: ftest)
+        }
+        // test_bignum! {
+        //     function: <ftest>::div_euclid(f1: ftest, f2: ftest)
+        // }
+        test_bignum! {
+            function: <ftest>::rem_euclid(f1: ftest, f2: ftest)
+        }
+        // test_bignum! {
+        //     function: <ftest>::powi(f: ftest, n: i32)
+        // }
     }
-    test_bignum! {
-        function: <ftest>::sqrt(f: ftest)
-    }
-    // test_bignum! {
-    //     function: <ftest>::div_euclid(f1: ftest, f2: ftest)
-    // }
-    test_bignum! {
-        function: <ftest>::rem_euclid(f1: ftest, f2: ftest)
-    }
-    // test_bignum! {
-    //     function: <ftest>::powi(f: ftest, n: i32)
-    // }
 }

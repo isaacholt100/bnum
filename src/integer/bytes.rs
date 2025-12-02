@@ -111,9 +111,170 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     pub const fn from_bytes(digits: [Byte; N]) -> Self {
         // this is the only method where `Self` is explicitly constructed, all other methods use this one indirectly. thus, we can make all assertions about whether `N` is a valid size here.
         const { Self::ASSERT_IS_VALID };
-        Self { bytes: digits }
+        let mut out = Self { bytes: digits };
+        out.set_sign_bits(); // this is important! as the only way of creating a new Integer, this needs to clean the input bytes
+        out
     }
-    
+
+    /// Converts the slice of big endian bytes to an integer. An empty slice is interpreted as zero. If the value represented by the bytes is too large to be stored in `Self`, then `None` is returned.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bnum::prelude::*;
+    /// 
+    /// type U24 = Uint<3>;
+    /// type I24 = Int<3>;
+    /// 
+    /// let a: U24 = n!(0x005CF1);
+    /// 
+    /// let b = U24::from_be_slice(&[0x00, 0x5C, 0xF1]);
+    /// assert_eq!(b, Some(a));
+    /// 
+    /// let c = U24::from_be_slice(&[0x00, 0x00, 0x5C, 0xF1]);
+    /// assert_eq!(c, Some(a));
+    ///
+    /// let d = U24::from_be_slice(&[0x00, 0x00, 0x00, 0x5C, 0xF1]);
+    /// assert_eq!(d, Some(a));
+    /// 
+    /// let e = U24::from_be_slice(&[0x01, 0x00, 0x5C, 0xF1]);
+    /// assert_eq!(e, None);
+    /// 
+    /// let a: I24 = n!(0xFF8A06).cast_signed();
+    /// assert!(a.is_negative());
+    /// 
+    /// let b = I24::from_be_slice(&[0xFF, 0x8A, 0x06]);
+    /// assert_eq!(b, Some(a));
+    /// 
+    /// let c = I24::from_be_slice(&[0xFF, 0xFF, 0x8A, 0x06]);
+    /// assert_eq!(c, Some(a));
+    /// 
+    /// let d = I24::from_be_slice(&[0xFF, 0xFF, 0xFF, 0x8A, 0x06]);
+    /// assert_eq!(d, Some(a));
+    /// 
+    /// let e = I24::from_be_slice(&[0xFE, 0xFF, 0x8A, 0x06]);
+    /// assert_eq!(e, None);
+    /// ```
+    #[must_use]
+    pub const fn from_be_slice(slice: &[u8]) -> Option<Self> {
+        if slice.is_empty() {
+            return Some(Self::ZERO);
+        }
+        let negative = S && (slice[0] as i8).is_negative();
+        if slice.len() > N {
+            let mut i = 0;
+            while i < slice.len() - N {
+                if !negative && slice[i] != 0 {
+                    return None; // too large
+                }
+                if negative && slice[i] != 0xFF {
+                    return None; // too small
+                }
+                i += 1;
+            }
+        }
+        let mut bytes = if negative {
+            [u8::MAX; N]
+        } else {
+            [0; N]
+        };
+        let mut i = N;
+        while i > N.saturating_sub(slice.len()) {
+            i -= 1;
+            bytes[N - 1 - i] = slice[i + slice.len() - N];
+        }
+        if !S && bytes[0].leading_zeros() < Self::LAST_BYTE_PAD_BITS {
+            return None;
+        }
+        if S && !negative && bytes[0].leading_zeros() <= Self::LAST_BYTE_PAD_BITS {
+            return None;
+        }
+        if negative && bytes[0].leading_ones() < Self::LAST_BYTE_PAD_BITS {
+            return None;
+        }
+        Some(Self::from_bytes(bytes))
+    }
+
+    /// Converts the slice of little endian bytes to an integer. An empty slice is interpreted as zero. If the value represented by the bytes is too large to be stored in `Self`, then `None` is returned.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use bnum::prelude::*;
+    /// 
+    /// type U24 = Uint<3>;
+    /// type I24 = Int<3>;
+    /// 
+    /// let a: U24 = n!(0x005CF1);
+    /// let b = U24::from_le_slice(&[0xF1, 0x5C, 0x00]);
+    /// assert_eq!(b, Some(a));
+    /// 
+    /// let c = U24::from_le_slice(&[0xF1, 0x5C]);
+    /// assert_eq!(c, Some(a));
+    ///
+    /// let d = U24::from_le_slice(&[0xF1, 0x5C, 0x00, 0x00, 0x00]);
+    /// assert_eq!(d, Some(a));
+    ///
+    /// let e = U24::from_le_slice(&[0xF1, 0x5C, 0x00, 0x01]);
+    /// assert_eq!(e, None);
+    /// 
+    /// let a: I24 = n!(0xFF8A06).cast_signed();
+    /// assert!(a.is_negative());
+    /// 
+    /// let b = I24::from_le_slice(&[0x06, 0x8A, 0xFF]);
+    /// assert_eq!(b, Some(a));
+    /// 
+    /// let c = I24::from_le_slice(&[0x06, 0x8A]); // 0x8A has a leading one, so the slice represents a negative number
+    /// assert_eq!(c, Some(a));
+    ///
+    /// let d = I24::from_le_slice(&[0x06, 0x8A, 0xFF, 0xFF, 0xFF]);
+    /// assert_eq!(d, Some(a));
+    ///
+    /// let e = I24::from_le_slice(&[0x06, 0x8A, 0xFF, 0xFE]);
+    /// assert_eq!(e, None);
+    /// ```
+    #[must_use]
+    pub const fn from_le_slice(slice: &[u8]) -> Option<Self> {
+        if slice.is_empty() {
+            return Some(Self::ZERO);
+        }
+        let negative = S && (slice[slice.len() - 1] as i8).is_negative();
+        if slice.len() > N {
+            let mut i = N;
+            while i < slice.len() {
+                if !negative && slice[i] != 0 {
+                    return None; // too large
+                }
+                if negative && slice[i] != 0xFF {
+                    return None; // too small
+                }
+                i += 1;
+            }
+        }
+        let mut bytes = if negative {
+            [u8::MAX; N]
+        } else {
+            [0; N]
+        };
+        let mut i = 0;
+        while i < slice.len() && i < N {
+            bytes[i] = slice[i];
+            i += 1;
+        }
+        if !S && bytes[N - 1].leading_zeros() < Self::LAST_BYTE_PAD_BITS {
+            return None;
+        }
+        if S && !negative && bytes[N - 1].leading_zeros() <= Self::LAST_BYTE_PAD_BITS {
+            return None;
+        }
+        if negative && bytes[N - 1].leading_ones() < Self::LAST_BYTE_PAD_BITS {
+            return None;
+        }
+        Some(Self::from_bytes(bytes))
+    }
+}
+
+impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, 0, OM> {    
     /// Returns the representation of `self` as a byte array in big-endian order.
     /// 
     /// # Examples
@@ -208,145 +369,6 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     #[inline]
     pub const fn from_le_bytes(bytes: [u8; N]) -> Self {
         Self::from_bytes(bytes)
-    }
-
-    /// Converts the slice of big endian bytes to an integer. An empty slice is interpreted as zero. If the value represented by the bytes is too large to be stored in `Self`, then `None` is returned.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bnum::prelude::*;
-    /// 
-    /// type U24 = Uint<3>;
-    /// type I24 = Int<3>;
-    /// 
-    /// let a: U24 = n!(0x005CF1);
-    /// 
-    /// let b = U24::from_be_slice(&[0x00, 0x5C, 0xF1]);
-    /// assert_eq!(b, Some(a));
-    /// 
-    /// let c = U24::from_be_slice(&[0x00, 0x00, 0x5C, 0xF1]);
-    /// assert_eq!(c, Some(a));
-    ///
-    /// let d = U24::from_be_slice(&[0x00, 0x00, 0x00, 0x5C, 0xF1]);
-    /// assert_eq!(d, Some(a));
-    /// 
-    /// let e = U24::from_be_slice(&[0x01, 0x00, 0x5C, 0xF1]);
-    /// assert_eq!(e, None);
-    /// 
-    /// let a: I24 = n!(0xFF8A06).cast_signed();
-    /// assert!(a.is_negative());
-    /// 
-    /// let b = I24::from_be_slice(&[0xFF, 0x8A, 0x06]);
-    /// assert_eq!(b, Some(a));
-    /// 
-    /// let c = I24::from_be_slice(&[0xFF, 0xFF, 0x8A, 0x06]);
-    /// assert_eq!(c, Some(a));
-    /// 
-    /// let d = I24::from_be_slice(&[0xFF, 0xFF, 0xFF, 0x8A, 0x06]);
-    /// assert_eq!(d, Some(a));
-    /// 
-    /// let e = I24::from_be_slice(&[0xFE, 0xFF, 0x8A, 0x06]);
-    /// assert_eq!(e, None);
-    /// ```
-    #[must_use]
-    pub const fn from_be_slice(slice: &[u8]) -> Option<Self> {
-        if slice.is_empty() {
-            return Some(Self::ZERO);
-        }
-        let negative = S && (slice[0] as i8).is_negative();
-        if slice.len() > N {
-            let mut i = 0;
-            while i < slice.len() - N {
-                if !negative && slice[i] != 0 {
-                    return None; // too large
-                }
-                if negative && slice[i] != 0xFF {
-                    return None; // too small
-                }
-                i += 1;
-            }
-        }
-        let mut bytes = if negative {
-            [u8::MAX; N]
-        } else {
-            [0; N]
-        };
-        let mut i = N;
-        while i > N.saturating_sub(slice.len()) {
-            i -= 1;
-            bytes[N - 1 - i] = slice[i + slice.len() - N];
-        }
-        Some(Self::from_bytes(bytes))
-    }
-
-    /// Converts the slice of little endian bytes to an integer. An empty slice is interpreted as zero. If the value represented by the bytes is too large to be stored in `Self`, then `None` is returned.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use bnum::prelude::*;
-    /// 
-    /// type U24 = Uint<3>;
-    /// type I24 = Int<3>;
-    /// 
-    /// let a: U24 = n!(0x005CF1);
-    /// let b = U24::from_le_slice(&[0xF1, 0x5C, 0x00]);
-    /// assert_eq!(b, Some(a));
-    /// 
-    /// let c = U24::from_le_slice(&[0xF1, 0x5C]);
-    /// assert_eq!(c, Some(a));
-    ///
-    /// let d = U24::from_le_slice(&[0xF1, 0x5C, 0x00, 0x00, 0x00]);
-    /// assert_eq!(d, Some(a));
-    ///
-    /// let e = U24::from_le_slice(&[0xF1, 0x5C, 0x00, 0x01]);
-    /// assert_eq!(e, None);
-    /// 
-    /// let a: I24 = n!(0xFF8A06).cast_signed();
-    /// assert!(a.is_negative());
-    /// 
-    /// let b = I24::from_le_slice(&[0x06, 0x8A, 0xFF]);
-    /// assert_eq!(b, Some(a));
-    /// 
-    /// let c = I24::from_le_slice(&[0x06, 0x8A]); // 0x8A has a leading one, so the slice represents a negative number
-    /// assert_eq!(c, Some(a));
-    ///
-    /// let d = I24::from_le_slice(&[0x06, 0x8A, 0xFF, 0xFF, 0xFF]);
-    /// assert_eq!(d, Some(a));
-    ///
-    /// let e = I24::from_le_slice(&[0x06, 0x8A, 0xFF, 0xFE]);
-    /// assert_eq!(e, None);
-    /// ```
-    #[must_use]
-    pub const fn from_le_slice(slice: &[u8]) -> Option<Self> {
-        if slice.is_empty() {
-            return Some(Self::ZERO);
-        }
-        let negative = S && (slice[slice.len() - 1] as i8).is_negative();
-        if slice.len() > N {
-            let mut i = N;
-            while i < slice.len() {
-                if !negative && slice[i] != 0 {
-                    return None; // too large
-                }
-                if negative && slice[i] != 0xFF {
-                    return None; // too small
-                }
-                i += 1;
-            }
-        }
-        let mut bytes = if negative {
-            [u8::MAX; N]
-        } else {
-            [0; N]
-        };
-        let mut i = 0;
-        while i < slice.len() && i < N {
-            bytes[i] = slice[i];
-            i += 1;
-        }
-        Some(Self::from_bytes(bytes))
     }
 }
 

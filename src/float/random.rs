@@ -5,12 +5,6 @@ use rand::{Fill, Rng, SeedableRng};
 use super::{Float, FloatExponent};
 use crate::Uint;
 
-fn seeded_rngs<R: SeedableRng + Clone>(seed: u64) -> (R, R) {
-    let rng = R::seed_from_u64(seed);
-    let rng2 = rng.clone(); // need to clone `rng` to produce the same results before it is used as `gen` mutates it
-    (rng, rng2)
-}
-
 impl<const W: usize, const MB: usize> Distribution<Float<W, MB>> for StandardUniform {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Float<W, MB> {
         let random_bits: Uint<W> = rng.random();
@@ -68,28 +62,37 @@ impl<const W: usize, const MB: usize> Distribution<Float<W, MB>> for Open01 {
 }
 
 #[cfg(test)]
-crate::test::test_all_widths! {
+mod tests {
     use crate::test::convert;
     use rand::distr::OpenClosed01;
     use rand::rngs::StdRng;
     use rand::{Rng, SeedableRng};
     use rand::{distr::Open01, rngs::SmallRng};
+    use super::*;
 
-    use super::super::seeded_rngs;
+    fn seeded_rngs<R: SeedableRng + Clone>(seed: u64) -> (R, R) {
+        let rng = R::seed_from_u64(seed);
+        let rng2 = rng.clone(); // need to clone `rng` to produce the same results before it is used as `gen` mutates it
+        (rng, rng2)
+    }
 
-    #[test]
-    fn test_random() {
-        let mut r = StdRng::seed_from_u64(0);
-        let seed = r.random();
-        let (mut r1, mut r2) = seeded_rngs::<SmallRng>(seed);
-        let big: FTEST = r1.random();
-        let prim: ftest = r2.random();
+    crate::test::test_all! {
+        testing floats;
 
-        assert!(convert::test_eq(big, prim));
+        #[test]
+        fn test_random() {
+            let mut r = StdRng::seed_from_u64(0);
+            let seed = r.random();
+            let (mut r1, mut r2) = seeded_rngs::<SmallRng>(seed);
+            let big: FTEST = r1.random();
+            let prim: ftest = r2.random();
 
-        let big: FTEST = r1.sample(OpenClosed01);
-        let prim: ftest = r2.sample(OpenClosed01);
+            assert!(convert::test_eq(big, prim));
 
-        assert!(convert::test_eq(big, prim));
+            let big: FTEST = r1.sample(OpenClosed01);
+            let prim: ftest = r2.sample(OpenClosed01);
+
+            assert!(convert::test_eq(big, prim));
+        }
     }
 }

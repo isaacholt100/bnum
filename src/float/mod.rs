@@ -1,8 +1,8 @@
+use crate::Byte;
 #[cfg(test)]
 use crate::cast::As;
 use crate::doc;
 use crate::{Exponent, Int, Uint};
-use crate::Digit;
 
 #[cfg(test)]
 use crate::types::{F32, F64};
@@ -31,13 +31,13 @@ macro_rules! handle_nan {
     };
 }
 
+mod bytes;
 mod cast;
 mod classify;
 mod cmp;
 mod const_trait_fillers;
 mod consts;
 mod convert;
-mod endian;
 mod math;
 #[cfg(feature = "numtraits")]
 mod numtraits;
@@ -71,7 +71,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
     const MANTISSA_MASK: Uint<W> = Uint::MAX.wrapping_shr(Self::EXPONENT_BITS + 1);
 
-    const SIGN_MASK: Uint<W> = Int::MAX.to_bits();
+    const SIGN_MASK: Uint<W> = Int::MAX.cast_unsigned();
 
     const MANTISSA_IMPLICIT_LEADING_ONE_MASK: Uint<W> = Uint::ONE.shl(Self::MB);
 }
@@ -82,12 +82,12 @@ impl<const W: usize> Uint<W> {
         let mut out = Self::MIN;
         let mut i = 0;
         while exp != 0 && i < W {
-            let masked = exp as Digit & Digit::MAX;
-            out.digits[i] = masked;
-            if UnsignedFloatExponent::BITS <= Digit::BITS {
+            let masked = exp as Byte & Byte::MAX;
+            out.bytes[i] = masked;
+            if UnsignedFloatExponent::BITS <= Byte::BITS {
                 exp = 0;
             } else {
-                exp = exp.wrapping_shr(Digit::BITS);
+                exp = exp.wrapping_shr(Byte::BITS);
             }
             i += 1;
         }
@@ -98,8 +98,8 @@ impl<const W: usize> Uint<W> {
     pub(crate) const fn cast_to_unsigned_float_exponent(self) -> UnsignedFloatExponent {
         let mut out = 0;
         let mut i = 0;
-        while i << crate::digit::BIT_SHIFT < UnsignedFloatExponent::BITS as usize && i < W {
-            out |= (self.digits[i] as UnsignedFloatExponent) << (i << crate::digit::BIT_SHIFT);
+        while i * (Byte::BITS as usize) < UnsignedFloatExponent::BITS as usize && i < W {
+            out |= (self.bytes[i] as UnsignedFloatExponent) << (i * (Byte::BITS as usize));
             i += 1;
         }
         out
@@ -122,7 +122,6 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 }
 
 impl<const W: usize, const MB: usize> Float<W, MB> {
-    #[doc = doc::signum!(F)]
     #[must_use = doc::must_use_op!(float)]
     #[inline]
     pub const fn signum(self) -> Self {
@@ -130,20 +129,14 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         Self::ONE.copysign(self)
     }
 
-    #[doc = doc::copysign!(F)]
     #[must_use = doc::must_use_op!(float)]
     #[inline]
-    pub const fn copysign(self, sign: Self) -> Self {
-        let mut bytes = self.to_le_bytes();
-        if sign.is_sign_negative() {
-            bytes[W - 1] |= 1 << (Digit::BITS - 1);
-        } else {
-            bytes[W - 1] &= (!0) >> 1;
-        }
-        Self::from_le_bytes(bytes)
+    pub const fn copysign(mut self, sign: Self) -> Self {
+        self.as_bits_mut()
+            .set_bit(Self::BITS - 1, sign.is_sign_negative());
+        self
     }
 
-    #[doc = doc::next_up!(F)]
     #[inline]
     pub const fn next_up(self) -> Self {
         use core::num::FpCategory;
@@ -168,7 +161,6 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         }
     }
 
-    #[doc = doc::next_down!(F)]
     #[inline]
     pub const fn next_down(self) -> Self {
         use core::num::FpCategory;
@@ -210,19 +202,23 @@ impl<const W: usize, const MB: usize> quickcheck::Arbitrary for crate::Float<W, 
 }
 
 #[cfg(test)]
-crate::test::test_all_widths! {
+mod tests {
     use crate::test::test_bignum;
 
-    test_bignum! {
-        function: <ftest>::copysign(a: ftest, b: ftest)
-    }
-    test_bignum! {
-        function: <ftest>::signum(a: ftest)
-    }
-    test_bignum! {
-        function: <ftest>::next_up(a: ftest)
-    }
-    test_bignum! {
-        function: <ftest>::next_down(a: ftest)
+    crate::test::test_all! {
+        testing floats;
+
+        test_bignum! {
+            function: <ftest>::copysign(a: ftest, b: ftest)
+        }
+        test_bignum! {
+            function: <ftest>::signum(a: ftest)
+        }
+        test_bignum! {
+            function: <ftest>::next_up(a: ftest)
+        }
+        test_bignum! {
+            function: <ftest>::next_down(a: ftest)
+        }
     }
 }

@@ -11,15 +11,15 @@ pub trait CastUintFromFloatHelper: Zero + One + Bits {
 }
 
 macro_rules! impl_cast_uint_from_float_helper_for_primitive_uint {
-        ($($uint: ident), *) => {
-            $(
-                impl CastUintFromFloatHelper for $uint {
-                    const MAX: Self = Self::MAX;
-                    const MIN: Self = Self::MIN;
-                }
-            )*
-        };
-    }
+    ($($uint: ident), *) => {
+        $(
+            impl CastUintFromFloatHelper for $uint {
+                const MAX: Self = Self::MAX;
+                const MIN: Self = Self::MIN;
+            }
+        )*
+    };
+}
 
 impl_cast_uint_from_float_helper_for_primitive_uint!(u8, u16, u32, u64, u128, usize);
 

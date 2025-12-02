@@ -67,6 +67,7 @@
     - gen_range stuff
 - num_traits::{Bounded, Float, FloatConst, FloatCore, AsPrimitive, FromPrimitive, ToPrimitive, FromBytes, ToBytes, Inv, MulAdd, MulAddAssign, Pow, Signed, Euclid, Num}
 - Division algorithm which doesn't need where clause
+- TestFloat struct for testing that uses rug under the hood. Then can test using test_bignum!, with TestFloat as the base type.
 
 ## Ints
 

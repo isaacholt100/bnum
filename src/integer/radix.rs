@@ -171,7 +171,6 @@ impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
 
         // let mut i = 0;
         for d in &mut self.bytes[0..num_non_zero_digits - 1] {
-            // let mut d = unsafe { self.digits[i] };
             for _ in 0..digits_per_big_digit {
                 let digit = *d & mask; // can truncate to u32 as this is equivalent to bitand-ing with zeros
                 digits.push(digit);

@@ -4,22 +4,22 @@ use crate::helpers::Zero;
 use super::{Float, FloatExponent};
 use crate::Exponent;
 use crate::cast::CastFrom;
-use crate::{Int, Uint};
+use crate::{Int, Uint, Integer};
 
 macro_rules! uint_as_float {
-    ($($uint: ident $(<$N: ident>)?), *) => {
+    ($($uint: ident), *) => {
         $(
-            impl<const W: usize, const MB: usize $(, const $N: usize)?> CastFrom<$uint $(<$N>)?> for Float<W, MB> {
+            impl<const W: usize, const MB: usize> CastFrom<$uint> for Float<W, MB> {
                 #[inline]
-                fn cast_from(value: $uint $(<$N>)?) -> Self {
-                    crate::cast::float::cast_float_from_uint(from)
+                fn cast_from(value: $uint) -> Self {
+                    crate::cast::float::cast_float_from_uint(value)
                 }
             }
         )*
     };
 }
 
-uint_as_float!(u8, u16, u32, u64, u128, usize, Uint<N>);
+uint_as_float!(u8, u16, u32, u64, u128, usize);
 
 macro_rules! int_as_float {
     ($($int: ty), *) => {
@@ -27,7 +27,7 @@ macro_rules! int_as_float {
             impl<const W: usize, const MB: usize> CastFrom<$int> for Float<W, MB> {
                 fn cast_from(value: $int) -> Self {
                     let pos_cast = Self::cast_from(value.unsigned_abs());
-                    if from.is_negative() {
+                    if value.is_negative() {
                         -pos_cast
                     } else {
                         pos_cast
@@ -40,19 +40,24 @@ macro_rules! int_as_float {
 
 int_as_float!(i8, i16, i32, i64, i128, isize);
 
-impl<const W: usize, const MB: usize, const N: usize> CastFrom<Int<N>> for Float<W, MB> {
-    fn cast_from(value: Int<N>) -> Self {
-        let pos_cast = Self::cast_from(value.unsigned_abs());
-        if from.is_negative() {
-            -pos_cast
+impl<const W: usize, const MB: usize, const S: bool, const N: usize, const B: usize, const OM: u8> CastFrom<Integer<S, N, B, OM>> for Float<W, MB> {
+    fn cast_from(value: Integer<S, N, B, OM>) -> Self {
+        if !S {
+            return crate::cast::float::cast_float_from_uint(value.force::<_, B, _>());
+        }
+        let f = Self::cast_from(value.unsigned_abs_internal());
+        if value.is_negative_internal() {
+            -f
         } else {
-            pos_cast
+            f
         }
     }
 }
 
 impl<const W: usize, const MB: usize, const N: usize> CastFrom<Float<W, MB>> for Int<N> {
-    crate::int::cast::cast_int_from_float!(Float<W, MB>);
+    fn cast_from(value: Float<W, MB>) -> Self {
+        crate::integer::cast::cast_int_from_float!(value)
+    }
 }
 
 macro_rules! float_as_int {
@@ -61,8 +66,8 @@ macro_rules! float_as_int {
             impl<const W: usize, const MB: usize> CastFrom<Float<W, MB>> for $int {
                 #[inline]
                 fn cast_from(value: Float<W, MB>) -> Self {
-                    if from.is_sign_negative() {
-                        let u = <$uint>::cast_from(-from);
+                    if value.is_sign_negative() {
+                        let u = <$uint>::cast_from(-value);
                         if u >= Self::MIN as $uint {
                             Self::MIN
                         } else {
@@ -92,7 +97,6 @@ macro_rules! float_as_uint {
                 #[inline]
                 fn cast_from(value: Float<W, MB>) -> Self {
                     crate::cast::float::cast_uint_from_float(value)
-                    // uint_cast_from_float(from)
                 }
             }
         )*
@@ -178,7 +182,7 @@ impl<const W1: usize, const MB1: usize, const W2: usize, const MB2: usize> CastF
 {
     #[inline]
     fn cast_from(value: Float<W2, MB2>) -> Self {
-        cast_float_from_float(from)
+        cast_float_from_float(value)
     }
 }
 
@@ -188,14 +192,14 @@ macro_rules! primitive_and_big_float_cast {
             impl<const W: usize, const MB: usize> CastFrom<$primitive_float_type> for Float<W, MB> {
                 #[inline]
                 fn cast_from(value: $primitive_float_type) -> Self {
-                    cast_float_from_float(from)
+                    cast_float_from_float(value)
                 }
             }
 
             impl<const W: usize, const MB: usize> CastFrom<Float<W, MB>> for $primitive_float_type {
                 #[inline]
                 fn cast_from(value: Float<W, MB>) -> Self {
-                    cast_float_from_float(from)
+                    cast_float_from_float(value)
                 }
             }
         )*
@@ -205,32 +209,36 @@ macro_rules! primitive_and_big_float_cast {
 primitive_and_big_float_cast!(f32, f64);
 
 #[cfg(test)]
-crate::test::test_all_widths! {
+mod tests {
     use crate::cast::{CastFrom, CastTo};
     use crate::test::cast_types::*;
     use crate::test::{test_from, test_into};
 
-    test_from! {
-        function: <ftest as CastFrom>::cast_from,
-        from_types: (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64, UTEST, ITEST, TestUint1, TestUint2, TestUint3, TestUint4, TestUint5, TestUint6, TestUint7, TestUint8, TestUint9, TestUint10, TestInt1, TestInt2, TestInt3, TestInt4, TestInt5, TestInt6, TestInt7, TestInt8, TestInt9, TestInt10)
-    }
+    crate::test::test_all! {
+        testing floats;
 
-    test_into! {
-        function: <ftest as CastTo>::cast_to,
-        into_types: (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64)
-    }
+        test_from! {
+            function: <ftest as CastFrom>::cast_from,
+            from_types: (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64, UTEST, ITEST, TestUint1, TestUint2, TestUint3, TestUint4, TestUint5, TestUint6, TestUint7, TestUint8, TestUint9, TestUint10, TestInt1, TestInt2, TestInt3, TestInt4, TestInt5, TestInt6, TestInt7, TestInt8, TestInt9, TestInt10)
+        }
 
-    #[test]
-    fn test_cast_float() {
-        use crate::cast::As;
-        let f1 = FTEST::from_bits(3472883712u32.as_());
-        let f2 = f32::from_bits(3472883712u32);
-        // dbg!(f2);
-        let u1 = u32::cast_from(f1);
-        let u2 = u32::cast_from(f2);
-        // println!("{:?}", u1);
-        // println!("{:?}", u2);
-    }
+        test_into! {
+            function: <ftest as CastTo>::cast_to,
+            into_types: (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64)
+        }
 
-    // crate::ints::cast::test_cast_to_bigint!(ftest; UTESTD8, UTESTD16, UTESTD32, UTESTD64, TestUint1, TestUint2, TestUint3, TestUint4, TestUint5, TestUint6, TestUint7, TestUint8, ITESTD8, ITESTD16, ITESTD32, ITESTD64, TestInt1, TestInt2, TestInt3, TestInt4, TestInt5, TestInt6, TestInt7, TestInt8);
+        #[test]
+        fn test_cast_float() {
+            use crate::cast::As;
+            let f1 = FTEST::from_bits(3472883712u32.as_());
+            let f2 = f32::from_bits(3472883712u32);
+            // dbg!(f2);
+            let u1 = u32::cast_from(f1);
+            let u2 = u32::cast_from(f2);
+            // println!("{:?}", u1);
+            // println!("{:?}", u2);
+        }
+
+        // crate::ints::cast::test_cast_to_bigint!(ftest; UTESTD8, UTESTD16, UTESTD32, UTESTD64, TestUint1, TestUint2, TestUint3, TestUint4, TestUint5, TestUint6, TestUint7, TestUint8, ITESTD8, ITESTD16, ITESTD32, ITESTD64, TestInt1, TestInt2, TestInt3, TestInt4, TestInt5, TestInt6, TestInt7, TestInt8);
+    }
 }

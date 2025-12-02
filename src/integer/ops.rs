@@ -132,52 +132,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Rem for Intege
 //     }
 // }
 
-macro_rules! full_op_impl {
-    (<$(const $C: ident : $CType: ty), +> $OpTrait: ident, $AssignTrait: ident, $rhs: ty, $op: ident, $assign: ident for $int: ty) => {
-        impl<$(const $C: $CType), +> $OpTrait<&$rhs> for $int {
-            type Output = $int;
-
-            #[inline]
-            fn $op(self, rhs: &$rhs) -> Self::Output {
-                $OpTrait::<$rhs>::$op(self, *rhs)
-            }
-        }
-
-        impl<$(const $C: $CType), +> $OpTrait<&$rhs> for &$int {
-            type Output = $int;
-
-            #[inline]
-            fn $op(self, rhs: &$rhs) -> Self::Output {
-                $OpTrait::<$rhs>::$op(*self, *rhs)
-            }
-        }
-
-        impl<$(const $C: $CType), +> $OpTrait<$rhs> for &$int {
-            type Output = $int;
-
-            #[inline]
-            fn $op(self, rhs: $rhs) -> Self::Output {
-                $OpTrait::<$rhs>::$op(*self, rhs)
-            }
-        }
-
-        impl<$(const $C: $CType), +> $AssignTrait<$rhs> for $int {
-            #[inline]
-            fn $assign(&mut self, rhs: $rhs) {
-                *self = $OpTrait::$op(*self, rhs);
-            }
-        }
-
-        impl<$(const $C: $CType), +> $AssignTrait<&$rhs> for $int {
-            #[inline]
-            fn $assign(&mut self, rhs: &$rhs) {
-                self.$assign(*rhs);
-            }
-        }
-    }
-}
-
-pub(crate) use full_op_impl;
+use crate::helpers::full_op_impl;
 
 full_op_impl!(<const S: bool, const N: usize, const B: usize, const OM: u8> BitAnd, BitAndAssign, Integer<S, N, B, OM>, bitand, bitand_assign for Integer<S, N, B, OM>);
 full_op_impl!(<const S: bool, const N: usize, const B: usize, const OM: u8> BitOr, BitOrAssign, Integer<S, N, B, OM>, bitor, bitor_assign for Integer<S, N, B, OM>);

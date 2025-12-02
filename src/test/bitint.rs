@@ -2,7 +2,7 @@ use crate::Integer;
 use crate::cast::CastFrom;
 use core::fmt::{self, Debug, Formatter};
 use super::TestConvert;
-use quickcheck::{Arbitrary, Gen};
+use quickcheck::Arbitrary;
 
 // This is a simple integer type which we use to test against methods on `Integer` that access the underlying bytes, or use wide digits.
 // the idea is that the correctnesss of any methods not accessing the underlying bytes or using wide digits will depend on the correctness of the methods (down the call stack) that do access the underlying bytes or use wide digits
@@ -299,13 +299,13 @@ impl<const S: bool, const B: usize, const R: bool, const A: usize> TryFrom<&BitI
             },
             (true, true) => {
                 if value.is_negative() {
-                    if (A - (value.leading_ones() as usize) > B - 1) {
+                    if A - (value.leading_ones() as usize) > B - 1 {
                         Err(crate::errors::TryFromIntError(()))
                     } else {
                         Ok(Self::cast_from(value))
                     }
                 } else {
-                    if (A - (value.leading_zeros() as usize) > B - 1) {
+                    if A - (value.leading_zeros() as usize) > B - 1 {
                         Err(crate::errors::TryFromIntError(()))
                     } else {
                         Ok(Self::cast_from(value))
@@ -427,10 +427,12 @@ impl<const S: bool, const B: usize> Debug for BitInt<S, B> {
     }
 }
 
+use crate::literal_parse::get_size_params_from_bits;
+
 macro_rules! integer_from_bit_int {
     ($($bits: literal), *) => {
         $(
-            impl<const S: bool> From<BitInt<S, $bits>> for Integer<S, {usize::div_ceil($bits, 8)}, $bits> {
+            impl<const S: bool> From<BitInt<S, $bits>> for Integer<S, {get_size_params_from_bits($bits).0}, {get_size_params_from_bits($bits).1}> {
                 fn from(b: BitInt<S, $bits>) -> Self {
                     let mut out = if b.is_negative() {
                         Self::ALL_ONES
@@ -444,8 +446,8 @@ macro_rules! integer_from_bit_int {
                 }
             }
 
-            impl<const S: bool> From<Integer<S, {usize::div_ceil($bits, 8)}, $bits>> for BitInt<S, $bits> {
-                fn from(b: Integer<S, {usize::div_ceil($bits, 8)}, $bits>) -> Self {
+            impl<const S: bool> From<Integer<S, {get_size_params_from_bits($bits).0}, {get_size_params_from_bits($bits).1}>> for BitInt<S, $bits> {
+                fn from(b: Integer<S, {get_size_params_from_bits($bits).0}, {get_size_params_from_bits($bits).1}>) -> Self {
                     let mut out = Self::ZERO;
                     for i in 0..$bits {
                         out.set_bit(i, b.bit(i as u32));
@@ -455,7 +457,7 @@ macro_rules! integer_from_bit_int {
             }
 
             impl<const S: bool> TestConvert for BitInt<S, $bits> {
-                type Output = Integer<S, {usize::div_ceil($bits, 8)}, $bits>;
+                type Output = Integer<S, {get_size_params_from_bits($bits).0}, {get_size_params_from_bits($bits).1}>;
 
                 #[inline]
                 fn into(self) -> Self::Output {

@@ -7,6 +7,7 @@ use crate::float::UnsignedFloatExponent;
 use core::num::FpCategory;
 
 impl<const W: usize, const MB: usize> Float<W, MB> {
+    // TODO: use algorithm on Uint with twice as many bits, compare performance with this one
     #[inline]
     pub(crate) fn mul_internal(self, rhs: Self, negative: bool) -> Self {
         let (a, b) = (self, rhs);
@@ -91,7 +92,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             //mant.1 >>= 1 as Exponent;
             mant.0 >>= 1 as Exponent;
             if carry {
-                mant.0 |= Int::MIN.to_bits();
+                mant.0 |= Int::MIN.cast_unsigned();
             }
         }
 

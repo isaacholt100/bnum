@@ -414,3 +414,13 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
         }
     }
 }
+
+pub(crate) const fn get_size_params_from_bits(bits: usize) -> (usize, usize) {
+    let bytes = bits.div_ceil(crate::Byte::BITS as usize);
+    let b = if bits % (crate::Byte::BITS as usize) == 0 {
+        0
+    } else {
+        bits
+    };
+    (bytes, b)
+}

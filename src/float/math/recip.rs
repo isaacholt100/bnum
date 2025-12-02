@@ -98,7 +98,9 @@ impl super::F32 {
 }
 
 #[cfg(test)]
-crate::test::test_all_widths! {
+crate::test::test_all! {
+    testing floats;
+    
 
 
     /*#[test]

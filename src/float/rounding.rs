@@ -1,61 +1,8 @@
 use super::{Float, FloatExponent};
 use crate::Exponent;
+use crate::Uint;
 use crate::doc;
 use crate::float::UnsignedFloatExponent;
-use crate::{Uint, Digit};
-
-impl<const W: usize> Uint<W> {
-    #[inline]
-    pub(crate) const fn to_exp_type(&self) -> Option<Exponent> {
-        let mut out = 0;
-        let mut i = 0;
-        if Digit::BITS > Exponent::BITS {
-            let small = self.digits[i] as Exponent;
-            let trunc = small as Digit;
-            if self.digits[i] != trunc {
-                return None;
-            }
-            out = small;
-            i = 1;
-        } else {
-            loop {
-                let shift = i << crate::digit::BIT_SHIFT;
-                if i >= W || shift >= Exponent::BITS as usize {
-                    break;
-                }
-                out |= (self.digits[i] as Exponent) << shift;
-                i += 1;
-            }
-        }
-
-        while i < W {
-            if self.digits[i] != 0 {
-                return None;
-            }
-            i += 1;
-        }
-
-        Some(out)
-    }
-
-    #[inline]
-    pub(crate) const fn from_exp_type(int: Exponent) -> Option<Self> {
-        let mut out = Self::ZERO;
-        let mut i = 0;
-        while i << crate::digit::BIT_SHIFT < Exponent::BITS as usize {
-            let d = (int >> (i << crate::digit::BIT_SHIFT)) as Digit;
-            if d != 0 {
-                if i < W {
-                    out.digits[i] = d;
-                } else {
-                    return None;
-                }
-            }
-            i += 1;
-        }
-        Some(out)
-    }
-}
 
 /// Rounding methods.
 impl<const W: usize, const MB: usize> Float<W, MB> {
@@ -254,25 +201,29 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 }
 
 #[cfg(test)]
-crate::test::test_all_widths! {
+mod tests {
     use crate::test::test_bignum;
 
-    test_bignum! {
-        function: <ftest>::floor(f: ftest)
-    }
-    test_bignum! {
-        function: <ftest>::ceil(f: ftest)
-    }
-    test_bignum! {
-        function: <ftest>::round(f: ftest)
-    }
-    test_bignum! {
-        function: <ftest>::round_ties_even(f: ftest)
-    }
-    test_bignum! {
-        function: <ftest>::trunc(f: ftest)
-    }
-    test_bignum! {
-        function: <ftest>::fract(f: ftest)
+    crate::test::test_all! {
+        testing floats;
+
+        test_bignum! {
+            function: <ftest>::floor(f: ftest)
+        }
+        test_bignum! {
+            function: <ftest>::ceil(f: ftest)
+        }
+        test_bignum! {
+            function: <ftest>::round(f: ftest)
+        }
+        test_bignum! {
+            function: <ftest>::round_ties_even(f: ftest)
+        }
+        test_bignum! {
+            function: <ftest>::trunc(f: ftest)
+        }
+        test_bignum! {
+            function: <ftest>::fract(f: ftest)
+        }
     }
 }

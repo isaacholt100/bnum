@@ -103,21 +103,21 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
         let overflow = !(mant >> (MB + 3)).is_zero();
         if !overflow {
-            if mant.digits[0] & 0b11 == 0b11 || mant.digits[0] & 0b110 == 0b110 {
-                mant += Uint::FOUR; // += 0b100
+            if mant.bytes[0] & 0b11 == 0b11 || mant.bytes[0] & 0b110 == 0b110 {
+                mant += crate::n!(0b100); // += 0b100
                 if !(mant >> (MB + 3)).is_zero() {
                     mant >>= 1 as Exponent;
                     a_exp += 1;
                 }
             }
         } else {
-            match mant.digits[0] & 0b111 {
+            match mant.bytes[0] & 0b111 {
                 0b111 | 0b110 | 0b101 => {
-                    mant += Uint::EIGHT; // 0b1000
+                    mant += crate::n!(0b1000); // 0b1000
                 }
                 0b100 => {
-                    if mant.digits[0] & 0b1000 == 0b1000 {
-                        mant += Uint::EIGHT; // 0b1000
+                    if mant.bytes[0] & 0b1000 == 0b1000 {
+                        mant += crate::n!(0b1000); // 0b1000
                     }
                 }
                 _ => {}

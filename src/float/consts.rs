@@ -1,6 +1,5 @@
 use super::{Float, FloatExponent, UnsignedFloatExponent};
 use crate::integer::Uint;
-use crate::doc;
 
 /// Associated constants.
 impl<const W: usize, const MB: usize> Float<W, MB> {
@@ -105,10 +104,10 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 }
 
 #[cfg(test)]
-crate::test::test_all_widths! {
-    use crate::types::{F32, F64};
+mod tests {
     use crate::Exponent;
     use crate::test::TestConvert;
+    use crate::types::{F32, F64};
 
     macro_rules! test_constant {
         ($big: ident :: $constant: ident == $primitive: expr) => {
@@ -138,34 +137,38 @@ crate::test::test_all_widths! {
             )*
         };
     }
+    
+    crate::test::test_all! {
+        testing floats;
 
-    test_constants! {
-        /*NAN, */INFINITY, NEG_INFINITY, MAX, MIN, MIN_POSITIVE, EPSILON, /*MIN_EXP, MAX_EXP,*/ RADIX, MANTISSA_DIGITS, DIGITS
+        test_constants! {
+            /*NAN, */INFINITY, NEG_INFINITY, MAX, MIN, MIN_POSITIVE, EPSILON, /*MIN_EXP, MAX_EXP,*/ RADIX, MANTISSA_DIGITS, DIGITS
+        }
+        // don't test NAN as Rust f64/f32 NAN bit pattern not guaranteed to be stable across version
+
+        // #[test]
+        // fn nan_consts_is_nan() {
+        //     assert!(FTEST::NAN.is_nan());
+        //     assert!(FTEST::QNAN.is_nan());
+        // }
+
+        test_numeric_constants![
+            (ZERO, 0.0),
+            (NEG_ZERO, -0.0),
+            (ONE, 1.0),
+            (QUARTER, 0.25),
+            (HALF, 0.5),
+            (NEG_ONE, -1),
+            (TWO, 2)
+        ];
+
+        test_constant!(F64::BITS == 64 as Exponent);
+        test_constant!(F32::BITS == 32 as Exponent);
+        test_constant!(F64::EXPONENT_BITS == 11 as Exponent);
+        test_constant!(F32::EXPONENT_BITS == 8 as Exponent);
+        test_constant!(F64::EXP_BIAS == 1023i128);
+        test_constant!(F32::EXP_BIAS == 127i128);
+        test_constant!(F64::MAX_UNBIASED_EXP == 2046u128);
+        test_constant!(F32::MAX_UNBIASED_EXP == 254u128);
     }
-    // don't test NAN as Rust f64/f32 NAN bit pattern not guaranteed to be stable across version
-
-    // #[test]
-    // fn nan_consts_is_nan() {
-    //     assert!(FTEST::NAN.is_nan());
-    //     assert!(FTEST::QNAN.is_nan());
-    // }
-
-    test_numeric_constants![
-        (ZERO, 0.0),
-        (NEG_ZERO, -0.0),
-        (ONE, 1.0),
-        (QUARTER, 0.25),
-        (HALF, 0.5),
-        (NEG_ONE, -1),
-        (TWO, 2)
-    ];
-
-    test_constant!(F64::BITS == 64 as Exponent);
-    test_constant!(F32::BITS == 32 as Exponent);
-    test_constant!(F64::EXPONENT_BITS == 11 as Exponent);
-    test_constant!(F32::EXPONENT_BITS == 8 as Exponent);
-    test_constant!(F64::EXP_BIAS == 1023i128);
-    test_constant!(F32::EXP_BIAS == 127i128);
-    test_constant!(F64::MAX_UNBIASED_EXP == 2046u128);
-    test_constant!(F32::MAX_UNBIASED_EXP == 254u128);
 }

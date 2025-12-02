@@ -21,7 +21,7 @@ macro_rules! test_convert_bigints {
         paste::paste! {
             $(
                 impl TestConvert for [<u $bits>] {
-                    type Output = Uint<{usize::div_ceil($bits, 8)}, $bits>;
+                    type Output = Uint<{get_size_params_from_bits($bits).0}, {get_size_params_from_bits($bits).1}>;
 
                     #[inline]
                     fn into(self) -> Self::Output {
@@ -30,7 +30,7 @@ macro_rules! test_convert_bigints {
                 }
 
                 impl TestConvert for [<i $bits>] {
-                    type Output = Int<{usize::div_ceil($bits, 8)}, $bits>;
+                    type Output = Int<{get_size_params_from_bits($bits).0}, {get_size_params_from_bits($bits).1}>;
 
                     #[inline]
                     fn into(self) -> Self::Output {
@@ -44,8 +44,10 @@ macro_rules! test_convert_bigints {
 
 test_convert_bigints!(128, 64, 32, 16, 8);
 
+use crate::literal_parse::get_size_params_from_bits;
+
 impl TestConvert for usize {
-    type Output = Uint<{usize::BITS as usize / 8}, {usize::BITS as usize}>;
+    type Output = Uint<{get_size_params_from_bits(usize::BITS as usize).0}, {get_size_params_from_bits(usize::BITS as usize).1}>;
 
     #[inline]
     fn into(self) -> Self::Output {
@@ -54,7 +56,7 @@ impl TestConvert for usize {
 }
 
 impl TestConvert for isize {
-    type Output = Int<{isize::BITS as usize / 8}, {isize::BITS as usize}>;
+    type Output = Int<{get_size_params_from_bits(isize::BITS as usize).0}, {get_size_params_from_bits(isize::BITS as usize).1}>;
 
     #[inline]
     fn into(self) -> Self::Output {
@@ -98,29 +100,29 @@ impl TestConvert for f32 {
     }
 }
 
-// #[cfg(feature = "float")]
-// impl TestConvert for crate::types::F64 {
-//     type Output = u64;
+#[cfg(feature = "float")]
+impl TestConvert for crate::types::F64 {
+    type Output = u64;
 
-//     #[inline]
-//     fn into(self) -> Self::Output {
-//         use crate::cast::As;
+    #[inline]
+    fn into(self) -> Self::Output {
+        use crate::cast::As;
 
-//         self.to_bits().as_()
-//     }
-// }
+        self.to_bits().as_()
+    }
+}
 
-// #[cfg(feature = "float")]
-// impl TestConvert for crate::types::F32 {
-//     type Output = u32;
+#[cfg(feature = "float")]
+impl TestConvert for crate::types::F32 {
+    type Output = u32;
 
-//     #[inline]
-//     fn into(self) -> Self::Output {
-//         use crate::cast::As;
+    #[inline]
+    fn into(self) -> Self::Output {
+        use crate::cast::As;
 
-//         self.to_bits().as_()
-//     }
-// }
+        self.to_bits().as_()
+    }
+}
 
 impl<T: TestConvert, U: TestConvert> TestConvert for (T, U) {
     type Output = (<T as TestConvert>::Output, <U as TestConvert>::Output);
