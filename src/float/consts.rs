@@ -106,6 +106,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 #[cfg(test)]
 mod tests {
     use crate::Exponent;
+    use super::FloatExponent;
     use crate::test::TestConvert;
     use crate::types::{F32, F64};
 
@@ -166,9 +167,9 @@ mod tests {
         test_constant!(F32::BITS == 32 as Exponent);
         test_constant!(F64::EXPONENT_BITS == 11 as Exponent);
         test_constant!(F32::EXPONENT_BITS == 8 as Exponent);
-        test_constant!(F64::EXP_BIAS == 1023i128);
-        test_constant!(F32::EXP_BIAS == 127i128);
-        test_constant!(F64::MAX_UNBIASED_EXP == 2046u128);
-        test_constant!(F32::MAX_UNBIASED_EXP == 254u128);
+        test_constant!(F64::EXP_BIAS == 1023 as FloatExponent);
+        test_constant!(F32::EXP_BIAS == 127 as FloatExponent);
+        test_constant!(F64::MAX_UNBIASED_EXP == 2046 as Exponent);
+        test_constant!(F32::MAX_UNBIASED_EXP == 254 as Exponent);
     }
 }

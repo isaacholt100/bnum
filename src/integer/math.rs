@@ -417,6 +417,22 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
 
 #[doc = concat!("(Unsigned integers only.) ", impl_desc!())]
 impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
+    #[inline]
+    pub fn isqrt(self) -> Self { // TODO: this is MUCH slower than sqrt on BUint from previous version. work out why and fix it
+        // Newton's method
+        if self.is_zero() {
+            return Self::ZERO;
+        }
+        let mut x = Self::power_of_two(self.bits() / 2 + 1);
+        loop {
+            let y = x.midpoint(self.div(x)); // can't have overflow as x is strictly decreasing with each iteration
+            if y.ge(&x) {
+                return x;
+            }
+            x = y;
+        }
+    }
+
     /// Casts `self` to a signed integer type of the same bit width, leaving the memory representation unchanged.
     ///
     /// This is function equivalent to using the [`As`](crate::cast::As) trait to cast `self` to [`Int<N, B, OM>`](crate::Int).
@@ -755,6 +771,9 @@ mod tests {
         }
         test_bignum! {
             function: <utest>::cast_signed(a: utest)
+        }
+        test_bignum! {
+            function: <utest>::isqrt(a: utest)
         }
     }
     crate::test::test_all! {

@@ -48,7 +48,7 @@ macro_rules! test_bignum {
             fn [<cases_ $primitive _ $Trait _ $function>]() {
                 $(
                     let (big, primitive) = crate::test::results!(<$primitive as $Trait> :: $function ($($($re2)? TryInto::try_into($arg).expect("test argument conversion failed")), *));
-                    assert_eq!(big, primitive);
+                    assert_eq!(big, primitive, "failed cases assertion with inputs {:?}", ($($arg), *));
                 )*
             }
         }

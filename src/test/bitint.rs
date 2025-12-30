@@ -128,7 +128,28 @@ impl<const S: bool, const B: usize> BitInt<S, B> {
     }
 }
 
+use crate::errors::ParseIntError;
+use core::num::IntErrorKind;
+use crate::cast::As;
+
 impl<const B: usize> BitInt<false, B> {
+    pub fn from_str_radix(s: &str, radix: u32) -> Result<Self, crate::errors::ParseIntError> {
+        if radix < 2 || radix > 36 {
+            panic!("radix must be in the range 2..=36");
+        }
+        let mut out = Self::ZERO;
+        for c in s.chars() {
+            let digit = c.to_digit(radix).ok_or(ParseIntError { kind: IntErrorKind::InvalidDigit })?;
+            let (new_out, o1) = out.overflowing_mul(radix.as_());
+            let (new_out, o2) = new_out.overflowing_add(digit.as_());
+            if o1 || o2 {
+                return Err(ParseIntError { kind: IntErrorKind::PosOverflow });
+            }
+            out = new_out;
+        }
+        Ok(out)
+    }
+
     pub fn cmp(&self, rhs: &Self) -> core::cmp::Ordering {
         for i in (0..B).rev() {
             if self.bits[i] != rhs.bits[i] {

@@ -10,10 +10,10 @@ macro_rules! int_types {
     { $($bits: literal $u: ident $i: ident; ) *}  => {
         $(
             #[doc = int_type_doc!($bits, "unsigned")]
-            pub type $u = crate::Uint::<{ usize::div_ceil($bits, 8) }, $bits>;
+            pub type $u = crate::Uint::<{ crate::literal_parse::get_size_params_from_bits($bits).0 }, { crate::literal_parse::get_size_params_from_bits($bits).1 }>;
 
             #[doc = int_type_doc!($bits, "signed")]
-            pub type $i = crate::Int::<{ usize::div_ceil($bits, 8) }, $bits>;
+            pub type $i = crate::Int::<{ crate::literal_parse::get_size_params_from_bits($bits).0 }, { crate::literal_parse::get_size_params_from_bits($bits).1 }>;
         )*
     };
 }

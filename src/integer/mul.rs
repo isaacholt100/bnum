@@ -64,6 +64,25 @@ impl<const N: usize,  const B: usize, const OM: u8> Uint<N, B, OM> {
         out.set_sign_bits(); // in case of overflow, need to set sign bits
         (out, overflow)
     }
+
+    #[inline]
+    pub(crate) const fn mul_u128_digit(self, rhs: u128) -> (Self, bool) {
+        let mut out = Self::ZERO;
+        let (mut prod, mut carry) = (0, 0);
+        let mut i = 0;
+        while i < Self::U128_DIGITS {
+            let d = unsafe { self.as_wide_digits().get(i) };
+            (prod, carry) = digit::carrying_mul_u128(d, rhs, carry, 0);
+            unsafe {
+                out.as_wide_digits_mut().set(i, prod);
+            }
+            i += 1;
+        }
+        let overflow = carry != 0 || (Self::U128_BITS_REMAINDER != 0 && 128 - prod.leading_zeros() > Self::U128_BITS_REMAINDER);
+
+        out.set_sign_bits();
+        (out, overflow)
+    }
 }
 
 // fn karatsuba<const N: usize>(a: Uint<N>, b: Uint<N>, start_index: usize, end_index: usize) -> Uint<N> {
@@ -100,3 +119,27 @@ impl<const N: usize,  const B: usize, const OM: u8> Uint<N, B, OM> {
 //     let (a1karat_widening(x1, y1);
 //     karat_widening(x0, y0);
 // }
+
+#[cfg(test)]
+mod tests {
+    use crate::cast::As;
+
+    crate::test::test_all! {
+        testing unsigned;
+
+        quickcheck::quickcheck! {
+            fn quickcheck_mul_u128(a: UTEST, b: u128) -> quickcheck::TestResult {
+                let c = match UTEST::try_from(b) {
+                    Ok(v) => v,
+                    Err(_) => return quickcheck::TestResult::discard(),
+                };
+                quickcheck::TestResult::from_bool(a.mul_u128_digit(b) == a.overflowing_mul(c))
+            }
+        }
+
+        #[test]
+        fn cases_mul_u128() {
+            assert_eq!(UTEST::from_byte(27).pow(3).overflowing_mul(UTEST::from_byte(8)), UTEST::from_byte(27).pow(3).mul_u128_digit(8));
+        }
+    }
+}

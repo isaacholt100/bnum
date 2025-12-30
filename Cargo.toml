@@ -15,7 +15,7 @@ rust-version = "1.86.0"
 
 exclude = ["src/float/*", "src/tests", "TODO.txt"] # TODO: make sure to include these when they are ready
 
-[features]  
+[features]
 default = ["alloc"]
 nightly = []
 float = []

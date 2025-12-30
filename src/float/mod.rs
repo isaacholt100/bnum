@@ -58,8 +58,8 @@ pub struct Float<const W: usize, const MB: usize> {
     bits: Uint<W>,
 }
 
-pub(crate) type FloatExponent = i128; // TODO: decide whether this should be i128 or i32 (or i64). benefit of i128: more exponents possible. benefit of i32: this is what f32, f64 use.
-pub(crate) type UnsignedFloatExponent = u128;
+pub(crate) type FloatExponent = i32; // TODO: decide whether this should be i128 or i32 (or i64). benefit of i128: more exponents possible. benefit of i32: this is what f32, f64 use, aligns better with u32 exponents used for ints
+pub(crate) type UnsignedFloatExponent = u32; // TODO: change these to just Exponent and SignedExponent
 
 // TODO: implement rand traits
 

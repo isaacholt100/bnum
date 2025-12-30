@@ -183,13 +183,14 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
             i -= 1;
             bytes[N - 1 - i] = slice[i + slice.len() - N];
         }
-        if !S && bytes[0].leading_zeros() < Self::LAST_BYTE_PAD_BITS {
+        // not bytes[0] as now the ordering is correct! (little endian)
+        if !S && bytes[N - 1].leading_zeros() < Self::LAST_BYTE_PAD_BITS {
             return None;
         }
-        if S && !negative && bytes[0].leading_zeros() <= Self::LAST_BYTE_PAD_BITS {
+        if S && !negative && bytes[N - 1].leading_zeros() <= Self::LAST_BYTE_PAD_BITS {
             return None;
         }
-        if negative && bytes[0].leading_ones() < Self::LAST_BYTE_PAD_BITS {
+        if negative && bytes[N - 1].leading_ones() < Self::LAST_BYTE_PAD_BITS {
             return None;
         }
         Some(Self::from_bytes(bytes))
@@ -399,13 +400,15 @@ mod tests {
                         };
 
                         let mut bytes = int.[<to_ $endian _bytes>](); // random input bytes
+
                         // first, test that the original bytes as slice is converted back to the same integer
                         let mut passed = convert::test_eq(Big::[<from_ $endian _slice>](&bytes[..]), Some(int));
-
+                        
                         let bytes_vec = [<$endian _bytes_vec>](&bytes[..], pad_bits, pad_length); // random vector padded with a random amount of bytes
                         // test that the padded bytes are still converted back to the same integer
                         passed &= convert::test_eq(Big::[<from_ $endian _slice>](&bytes_vec[..]), Some(int));
 
+                        
                         // most significant byte position, range of bytes indices to change to padding bits, range of bytes indices that will result in the same integer without the padding bits
                         let (msb, pad_range, slice_range) = [<$endian _pad>](pad_length, Primitive::BITS);
 

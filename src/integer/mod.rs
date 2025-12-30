@@ -23,6 +23,7 @@ mod wrapping;
 mod const_trait_fillers;
 
 use crate::Byte;
+use crate::digits::Digits;
 use crate::{WideDigits, WideDigitsMut};
 
 use crate::Exponent;
@@ -73,6 +74,17 @@ pub type Int<const N: usize, const B: usize = 0, const OM: u8 = {crate::Overflow
 
 #[cfg(feature = "zeroize")]
 impl<const S: bool, const N: usize, const B: usize, const OM: u8> zeroize::DefaultIsZeroes for Integer<S, N, B, OM> {}
+
+impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
+    const fn has_valid_pad_bits(&self) -> bool {
+        if Self::LAST_BYTE_PAD_BITS == 0 {
+            true
+        } else {
+            (self.bytes[N - 1] >> Self::LAST_BYTE_BITS) == 0
+        }
+    }
+}
+
 impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, B, OM> {
     pub(crate) const LAST_BYTE_BITS: u32 = if Self::BITS % Byte::BITS == 0 {
         Byte::BITS as _
@@ -140,6 +152,11 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     #[inline]
     pub(crate) const fn as_wide_digits_mut(&mut self) -> WideDigitsMut<N, false, false> {
         WideDigitsMut::new(&mut self.bytes)
+    }
+
+    #[inline]
+    pub(crate) const fn as_digits(&self) -> &Digits<16, N> {
+        unsafe { &*(&self.bytes as *const u8 as *const _) }
     }
 }
 

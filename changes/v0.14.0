@@ -29,8 +29,6 @@
 - fix behaviour of left shifts in no overflow checks mode
 - TODO:
     - use u128/u64 digit division algorithm
-    - fix tests against old types, don't use old types but write out the algorithms manually (there aren't too many to write, can just copy and paste)
-    - complete documentation (not just links to the Rust primitive equivalent)
 
 - remove as_bits, as_bits_mut from Int
 - remove 2, 3, ..., 10 from Uint and Int, -1, -2, ..., -3 from Int

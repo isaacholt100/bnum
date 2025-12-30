@@ -56,16 +56,16 @@ impl<T> DerefMut for Slice<T> {
 /// ```
 /// // Fill a `Vec` of length 10 with random `I256`s
 ///
-/// use bnum::types::I256;
+/// use bnum::prelude::*;
 /// use bnum::random;
 /// use rand::rngs::StdRng;
 /// use rand::SeedableRng;
 ///
-/// let mut v = vec![I256::ZERO; 10];
+/// let mut v = vec![n!(0 I256); 10];
 /// let mut rng = StdRng::seed_from_u64(0);
 ///
 /// random::fill_slice(&mut v, &mut rng);
-/// // each initial `I256::ZERO` is replaced with a random `I256`
+/// // each initial zero is replaced with a random `I256`
 ///
 /// println!("{:?}", v);
 /// ```
@@ -386,7 +386,7 @@ macro_rules! test_random {
 
 #[cfg(test)]
 crate::test::test_all! {
-    testing floats;
+    testing integers;
     
     use rand::SeedableRng;
 
@@ -396,6 +396,5 @@ crate::test::test_all! {
         (rng, rng2)
     }
 
-    test_random!(utest; StdRng, SmallRng);
-    test_random!(itest; StdRng, SmallRng);
+    test_random!(stest; StdRng, SmallRng);
 }

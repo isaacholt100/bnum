@@ -341,39 +341,9 @@ macro_rules! from_primitive_float {
                     };
                 }
             }
-            if !f.is_finite() {
-                return None;
-            }
-            if f == 0.0 {
-                return Some(Self::ZERO);
-            }
-            let (sign, exp, mant) = f.into_normalised_signed_parts();
-            if sign {
-                return None;
-            }
-            if exp < -1 {
-                // in this case, the value is at most a half, so we round (ties to even) to zero
-                return Some(Self::ZERO);
-            }
-            if exp == -1 {
-                // exponent is -1, so value is in range [1/2, 1)
-                if mant.is_power_of_two() {
-                    // in this case, the value is exactly 1/2, so we round (ties to even) to zero
-                    return Some(Self::ZERO);
-                }
-                return Some(Self::ONE);
-            }
-
-            let exp = exp as Exponent;
-            if exp >= Self::BITS {
-                return None;
-            }
-            let mant_bit_width = mant.bits();
-            if exp <= mant_bit_width - 1 {
-                // in this case, we have a fractional part to truncate
-                Some(Self::cast_from(mant >> (mant_bit_width - 1 - exp))) // the right shift means the mantissa now has exp + 1 bits, and as we must have exp < U::BITS, the shifted mantissa is no wider than U
-            } else {
-                Some(Self::cast_from(mant) << (exp - (mant_bit_width - 1)))
+            match crate::cast::float::uint_try_from_float::<$float, Uint<N, B, OM>>(f) {
+                Ok(u) => Some(u.force_sign::<S>()),
+                Err(_) => None,
             }
         }
     };
@@ -402,7 +372,6 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> FromPrimitive 
     from_primitive_int!(i128, from_i128);
     from_primitive_int!(isize, from_isize);
 
-    // TODO: replace this with code from the cast/float module
     from_primitive_float!(from_f32, f32, S);
     from_primitive_float!(from_f64, f64, S);
 }
@@ -534,7 +503,7 @@ macro_rules! prim_int_method {
     };
 }
 
-impl<const S: bool, const N: usize, const B: usize, const OM: u8> PrimInt for Integer<S, N, B, OM> {
+impl<const S: bool, const N: usize, const OM: u8> PrimInt for Integer<S, N, 0, OM> {
     #[inline]
     fn from_be(x: Self) -> Self {
         if cfg!(target_endian = "big") {
@@ -606,35 +575,32 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> PrimInt for In
     }
 }
 
-/*
-The `fixpoint` function and the implementation of `Roots` below are adapted from the Rust `num_bigint` library, https://docs.rs/num-bigint/latest/num_bigint/, modified under the MIT license. The changes are released under either the MIT license or the Apache License 2.0, as described in the README. See LICENSE-MIT or LICENSE-APACHE at the project root.
-
-The appropriate copyright notice for the `num_bigint` code is given below:
-Copyright (c) 2014 The Rust Project Developers
-
-The original license file and copyright notice for `num_bigint` can be found in this project's root at licenses/LICENSE-num-bigint.
-*/
-
 impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
     #[inline]
-    fn fixpoint<F>(mut self, max_bits: Exponent, f: F) -> Self
-    where
-        F: Fn(Self) -> Self,
-    {
-        let mut xn = f(self);
-        while self < xn {
-            self = if xn.bits() > max_bits {
-                Self::power_of_two(max_bits)
-            } else {
-                xn
-            };
-            xn = f(self);
+    const fn nth_root_internal(self, n: Exponent) -> Self {
+        if self.is_zero() {
+            return self;
         }
-        while self > xn {
-            self = xn;
-            xn = f(self);
+        let bit_width = self.bits();
+        if n > bit_width {
+            // in this case, output should be < (2^bit_width)^(1/n) < 2^1 = 2, and output must be at least 1, so output is 1
+            return Self::ONE;
         }
-        self
+        let e = if bit_width % n == 0 {
+            bit_width / n
+        } else {
+            bit_width / n + 1
+        };
+        let mut x = Self::power_of_two(e);
+        loop {
+            let y = (x.mul_u128_digit(n as u128 - 1).0.add(self.div(x.pow(n - 1))))
+                .div_rem_u64(n as u64)
+                .0;
+            if y.ge(&x) {
+                return x;
+            }
+            x = y;
+        }
     }
 }
 
@@ -644,56 +610,31 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Roots for Inte
         if self.is_negative_internal() {
             panic!(crate::errors::err_msg!("imaginary square root"))
         }
-        if self.is_zero() || self.is_one() {
-            return *self;
-        }
+        // TODO: use Karatsuba square algorithm for larger bit widths
 
         #[cfg(not(test))]
         // disable this when testing as this condition will always be true when testing against primitives, so the rest of the algorithm wouldn't be tested
         if let Some(n) = self.to_u128() {
             return Self::cast_from(n.sqrt());
         }
-        let n = self.force_sign::<false>();
-        let bits = n.bits();
-        let max_bits = bits / 2 + 1;
 
-        let guess = Uint::power_of_two(max_bits);
-        guess
-            .fixpoint(max_bits, |s| {
-                let q = n / s;
-                let t = s + q;
-                t >> 1
-            })
-            .force_sign()
+        if self.is_zero() {
+            return Self::ZERO;
+        }
+        let mut u = self.force_sign::<false>();
+        let mut x = Uint::power_of_two(u.bits() / 2 + 1);
+        loop {
+            let y = x.midpoint(u.div(x)); // can't have overflow as x is strictly decreasing with each iteration
+            if y.ge(&x) {
+                return x.force_sign();
+            }
+            x = y;
+        }
     }
 
     #[inline]
     fn cbrt(&self) -> Self {
-        if self.is_negative_internal() {
-            let out = self.unsigned_abs_internal().cbrt();
-            return out.wrapping_neg().force_sign();
-        }
-        if self.is_zero() || self.is_one() {
-            return *self;
-        }
-
-        #[cfg(not(test))]
-        // disable this when testing as this condition will always be true when testing against primitives, so the rest of the algorithm wouldn't be tested
-        if let Some(n) = self.to_u128() {
-            return Self::cast_from(n.cbrt());
-        }
-        let n = self.force_sign::<false>();
-        let bits = n.bits();
-        let max_bits = bits / 3 + 1;
-
-        let guess = Uint::power_of_two(max_bits);
-        guess
-            .fixpoint(max_bits, |s| {
-                let q = n / (s * s);
-                let t: Uint<N, B, OM> = (s << 1) + q;
-                t.div_rem_u64(3).0
-            })
-            .force_sign()
+        self.nth_root(3)
     }
 
     #[inline]
@@ -702,40 +643,13 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Roots for Inte
             0 => panic!(crate::errors::err_msg!("attempt to calculate zeroth root")),
             1 => *self,
             2 => self.sqrt(),
-            3 => self.cbrt(),
             _ => {
                 if self.is_negative_internal() {
                     let out = self.unsigned_abs_internal().nth_root(n);
                     return out.wrapping_neg().force_sign();
                 }
-                if self.is_zero() || self.is_one() {
-                    return *self;
-                }
 
-                #[cfg(not(test))]
-                // disable this when testing as this condition will always be true when testing against primitives, so the rest of the algorithm wouldn't be tested
-                if let Some(x) = self.to_u128() {
-                    return Self::cast_from(x.nth_root(n));
-                }
-                let num = self.force_sign::<false>();
-                let bits = num.bits();
-                if bits <= n {
-                    return Self::ONE;
-                }
-
-                let max_bits = bits / n + 1;
-
-                let guess = Uint::power_of_two(max_bits);
-                let n_minus_1 = n - 1;
-
-                guess
-                    .fixpoint(max_bits, |s| {
-                        let q = num / s.pow(n_minus_1);
-                        let mul = Uint::cast_from(n_minus_1);
-                        let t = s * mul + q;
-                        t.div_rem_unchecked(Uint::cast_from(n)).0
-                    })
-                    .force_sign()
+                self.force_sign().nth_root_internal(n).force_sign()
             }
         }
     }
@@ -932,7 +846,7 @@ mod tests {
         }
 
         test_bignum! {
-            function: <stest>::sqrt(a: ref &stest),
+            function: <stest as Roots>::sqrt(a: ref &stest),
             skip: {
                 #[allow(unused_comparisons)]
                 let cond = a < 0;
@@ -941,10 +855,10 @@ mod tests {
             }
         }
         test_bignum! {
-            function: <stest>::cbrt(a: ref &stest)
+            function: <stest as Roots>::cbrt(a: ref &stest)
         }
         test_bignum! {
-            function: <stest>::nth_root(a: ref &stest, n: u32),
+            function: <stest as Roots>::nth_root(a: ref &stest, n: u32),
             skip: n == 0 || {
                 #[allow(unused_comparisons)]
                 let cond = a < 0;

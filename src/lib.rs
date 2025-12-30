@@ -36,6 +36,7 @@ mod helpers;
 pub mod literal_parse;
 pub mod prelude;
 mod wide_digits;
+mod digits;
 mod overflow;
 
 use wide_digits::{WideDigits, WideDigitsMut};
@@ -58,6 +59,10 @@ type Exponent = u32;
 type Byte = u8;
 
 pub use integer::{Int, Integer, Uint};
+
+fn test() {
+    let _ = crate::n!(123);
+}
 
 /// Trait for fallible conversions between `bnum` integer types.
 ///

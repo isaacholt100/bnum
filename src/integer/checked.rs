@@ -289,7 +289,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// assert_eq!(n!(2 I512).checked_pow(512), None);
     /// ```
     #[must_use = doc::must_use_op!()]
-    #[inline]
+    #[inline(always)]
     pub const fn checked_pow(mut self, mut exp: Exponent) -> Option<Self> {
         if S {
             return match self.unsigned_abs_internal().checked_pow(exp) {
@@ -306,7 +306,6 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
                 None => None,
             };
         }
-        // TODO: see if Rust compiler can optimise use of overflowing_pow here
         // https://en.wikipedia.org/wiki/Exponentiation_by_squaring#Basic_method
         if exp == 0 {
             return Some(Self::ONE);
@@ -359,7 +358,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
         if rhs.is_zero() {
             return None;
         }
-        let rem = self.wrapping_rem_euclid(rhs); // TODO: we are checking that rhs is non-zero twice here
+        let rem = self.wrapping_rem_euclid(rhs);
         if rem.is_zero() {
             return Some(self);
         }

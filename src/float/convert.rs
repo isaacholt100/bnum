@@ -177,9 +177,9 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     }
 
     #[inline]
-    pub(crate) const fn into_signed_biased_parts(self) -> (bool, i128, Uint<W>) {
+    pub(crate) const fn into_signed_biased_parts(self) -> (bool, FloatExponent, Uint<W>) {
         let (sign, exp, mant) = self.into_biased_parts();
-        (sign, exp as i128, mant)
+        (sign, exp as _, mant)
     }
 
     #[inline]
