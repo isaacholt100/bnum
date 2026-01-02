@@ -298,7 +298,6 @@ mod tests {
 
 #[cfg(test)]
 mod double_custom_bit_width_convert_tests {
-    use crate::BTryFrom;
     use crate::Integer;
     use crate::test::BitInt;
     use crate::literal_parse::get_size_params_from_bits;

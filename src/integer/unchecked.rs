@@ -109,12 +109,12 @@ mod tests {
             function: unsafe <stest>::unchecked_mul(a: stest, b: stest),
             skip: a.checked_mul(b).is_none()
         }
-        #[cfg(feature = "nightly")] // since unchecked_shifts are not stable yet
+        #[cfg(nightly)] // since unchecked_shifts are not stable yet
         test_bignum! {
             function: unsafe <stest>::unchecked_shl(a: stest, b: u8),
             skip: a.checked_shl(b as u32).is_none()
         }
-        #[cfg(feature = "nightly")] // since unchecked_shifts are not stable yet
+        #[cfg(nightly)] // since unchecked_shifts are not stable yet
         test_bignum! {
             function: unsafe <stest>::unchecked_shr(a: stest, b: u8),
             skip: a.checked_shr(b as u32).is_none()
@@ -123,7 +123,7 @@ mod tests {
     crate::test::test_all! {
         testing signed;
 
-        #[cfg(feature = "nightly")] // since unchecked_neg is not stable yet
+        #[cfg(nightly)] // since unchecked_neg is not stable yet
         test_bignum! {
             function: unsafe <itest>::unchecked_neg(a: itest),
             skip: a.checked_neg().is_none()

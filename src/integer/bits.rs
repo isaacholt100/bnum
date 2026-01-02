@@ -21,14 +21,14 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// use bnum::prelude::*;
     /// use bnum::types::{U1024, I1024};
     ///
-    /// assert_eq!(n!(0b101101 U1024).count_ones(), 4);
+    /// assert_eq!(n!(0b101101U1024).count_ones(), 4);
     /// assert_eq!(U1024::MAX.count_ones(), 1024);
     /// assert_eq!(U1024::MIN.count_ones(), 0);
     ///
-    /// assert_eq!(n!(0b1110111 I1024).count_ones(), 6);
+    /// assert_eq!(n!(0b1110111I1024).count_ones(), 6);
     /// assert_eq!(I1024::MAX.count_ones(), 1023);
     /// assert_eq!(I1024::MIN.count_ones(), 1);
-    /// assert_eq!(n!(-1 I1024).count_ones(), 1024);
+    /// assert_eq!(n!(-1I1024).count_ones(), 1024);
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -59,7 +59,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     ///
     /// assert_eq!(I512::MAX.count_zeros(), 1);
     /// assert_eq!(I512::MIN.count_zeros(), 511);
-    /// assert_eq!(n!(-1 I512).count_zeros(), 0);
+    /// assert_eq!(n!(-1I512).count_zeros(), 0);
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -79,11 +79,11 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     ///
     /// assert_eq!(U256::MAX.leading_zeros(), 0);
     /// assert_eq!(U256::MIN.leading_zeros(), 256);
-    /// assert_eq!(n!(1 U256).leading_zeros(), 255);
+    /// assert_eq!(n!(1U256).leading_zeros(), 255);
     ///
     /// assert_eq!(I256::MAX.leading_zeros(), 1);
     /// assert_eq!(I256::MIN.leading_zeros(), 0);
-    /// assert_eq!(n!(0 I256).leading_zeros(), 256);
+    /// assert_eq!(n!(0I256).leading_zeros(), 256);
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -107,12 +107,12 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// use bnum::types::{U2048, I2048};
     ///
     /// assert_eq!(U2048::MAX.trailing_zeros(), 0);
-    /// assert_eq!(n!(0 U2048).trailing_zeros(), 2048);
+    /// assert_eq!(n!(0U2048).trailing_zeros(), 2048);
     /// assert_eq!(U2048::power_of_two(279).trailing_zeros(), 279);
     ///
     /// assert_eq!(I2048::MAX.trailing_zeros(), 0);
     /// assert_eq!(I2048::MIN.trailing_zeros(), 2047);
-    /// assert_eq!(n!(-16 I2048).trailing_zeros(), 4);
+    /// assert_eq!(n!(-16I2048).trailing_zeros(), 4);
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -169,7 +169,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// use bnum::types::{U1024, I1024};
     ///
     /// assert_eq!(U1024::MAX.leading_ones(), 1024);
-    /// assert_eq!(n!(0 U1024).leading_ones(), 0);
+    /// assert_eq!(n!(0U1024).leading_ones(), 0);
     /// assert_eq!((U1024::MAX << 5u32).leading_ones(), 1019);
     ///
     /// assert_eq!(I1024::MIN.leading_ones(), 1);
@@ -205,7 +205,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// use bnum::types::{U512, I512};
     ///
     /// assert_eq!(U512::MAX.trailing_ones(), 512);
-    /// assert_eq!(n!(0 U512).trailing_ones(), 0);
+    /// assert_eq!(n!(0U512).trailing_ones(), 0);
     /// assert_eq!((U512::MAX >> 9u32).trailing_ones(), 503);
     ///
     /// assert_eq!(I512::MIN.trailing_ones(), 0);
@@ -337,7 +337,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// use bnum::prelude::*;
     /// use bnum::types::{U2048, I2048};
     ///
-    /// assert_eq!(n!(1 U2048).unbounded_shl(1), n!(2));
+    /// assert_eq!(n!(1U2048).unbounded_shl(1), n!(2));
     /// assert_eq!(U2048::MAX.unbounded_shl(2048), n!(0));
     /// assert_eq!(U2048::MAX.unbounded_shl(2049), n!(0));
     ///
@@ -367,12 +367,12 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// use bnum::prelude::*;
     /// use bnum::types::{U1024, I1024};
     ///
-    /// assert_eq!(n!(2 U1024).unbounded_shr(1), n!(1));
+    /// assert_eq!(n!(2U1024).unbounded_shr(1), n!(1));
     /// assert_eq!(U1024::MAX.unbounded_shr(1024), n!(0));
     /// assert_eq!(U1024::MAX.unbounded_shr(1030), n!(0));
     ///
     /// assert_eq!(I1024::MIN.unbounded_shr(1023), n!(-1));
-    /// assert_eq!(n!(-1 I1024).unbounded_shr(1024), n!(-1));
+    /// assert_eq!(n!(-1I1024).unbounded_shr(1024), n!(-1));
     /// assert_eq!(I1024::MAX.unbounded_shr(1025), n!(0));
     /// ```
     #[must_use = doc::must_use_op!()]
@@ -528,12 +528,12 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// ```
     /// use bnum::prelude::*;
     ///
-    /// let a = n!(0b1101001101 U24);
+    /// let a = n!(0b1101001101U24);
     /// for i in [0, 2, 3, 6, 8, 9] {
     ///     assert!(a.bit(i));
     /// }
     ///
-    /// let b = n!(0b0010110010 I24);
+    /// let b = n!(0b0010110010I24);
     /// for i in [1, 4, 5, 7] {
     ///     assert!(b.bit(i));
     /// }
@@ -554,13 +554,13 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// ```
     /// use bnum::prelude::*;
     ///
-    /// let mut a = n!(0b1001011001001 U24);
+    /// let mut a = n!(0b1001011001001U24);
     /// a.set_bit(2, true);
     /// assert_eq!(a, n!(0b1001011001101));
     /// a.set_bit(1, false); // no change
     /// assert_eq!(a, n!(0b1001011001101));
     ///
-    /// let mut b = n!(0b010010110110100 I24);
+    /// let mut b = n!(0b010010110110100I24);
     /// b.set_bit(4, false);
     /// assert_eq!(b, n!(0b010010110100100));
     /// b.set_bit(0, false); // no change
@@ -626,7 +626,7 @@ impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
     /// use bnum::types::U256;
     ///
     /// assert_eq!(U256::MAX.bits(), 256);
-    /// assert_eq!(n!(0 U256).bits(), 0);
+    /// assert_eq!(n!(0U256).bits(), 0);
     /// ```
     #[must_use]
     #[inline]
@@ -638,8 +638,8 @@ impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
 // #[test]
 // fn test_rev_bits() {
 //     use crate::n;
-//     let a = n!(0b11001110 U8).cast_signed();
-//     let b = n!(0b10111000 U8).cast_signed();
+//     let a = n!(0b11001110U8).cast_signed();
+//     let b = n!(0b10111000U8).cast_signed();
 
 //     dbg!(a == b);
 // }

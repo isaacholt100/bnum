@@ -107,11 +107,11 @@ mod tests {
         test_bignum! {
             function: <ftest>::min(a: ftest, b: ftest)
         }
-        #[cfg(feature = "nightly")]
+        #[cfg(nightly)]
         test_bignum! {
             function: <ftest>::maximum(a: ftest, b: ftest)
         }
-        #[cfg(feature = "nightly")]
+        #[cfg(nightly)]
         test_bignum! {
             function: <ftest>::minimum(a: ftest, b: ftest)
         }

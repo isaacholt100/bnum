@@ -17,11 +17,11 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// use bnum::prelude::*;
     /// use bnum::types::{U1024, I1024};
     ///
-    /// assert_eq!(n!(1 U1024).carrying_add(n!(1), true), (n!(3), false));
+    /// assert_eq!(n!(1U1024).carrying_add(n!(1), true), (n!(3), false));
     /// assert_eq!(U1024::MAX.carrying_add(n!(1), false), (n!(0), true));
     /// assert_eq!(U1024::MAX.carrying_add(U1024::MAX, true), (U1024::MAX, true));
     ///
-    /// assert_eq!(n!(1 I1024).carrying_add(n!(1), true), (n!(3), false));
+    /// assert_eq!(n!(1I1024).carrying_add(n!(1), true), (n!(3), false));
     /// assert_eq!(I1024::MAX.carrying_add(n!(0), true), (I1024::MIN, true));
     /// assert_eq!(I1024::MAX.carrying_add(I1024::MAX, true), (n!(-1), true));
     /// assert_eq!(I1024::MIN.carrying_add(I1024::MIN, true), (n!(1), true));
@@ -50,11 +50,11 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// use bnum::prelude::*;
     /// use bnum::types::{U512, I512};
     ///
-    /// assert_eq!(n!(2 U512).borrowing_sub(n!(1), true), (n!(0), false));
+    /// assert_eq!(n!(2U512).borrowing_sub(n!(1), true), (n!(0), false));
     /// assert_eq!(U512::MIN.borrowing_sub(n!(1), false), (U512::MAX, true));
     /// assert_eq!(U512::MAX.borrowing_sub(U512::MAX, true), (U512::MAX, true));
     ///
-    /// assert_eq!(n!(1 I512).borrowing_sub(n!(1 I512), true), (n!(-1 I512), false));
+    /// assert_eq!(n!(1I512).borrowing_sub(n!(1I512), true), (n!(-1I512), false));
     /// assert_eq!(I512::MIN.borrowing_sub(n!(1), false), (I512::MAX, true));
     /// assert_eq!(n!(0).borrowing_sub(I512::MIN, true), (I512::MAX, false));
     /// ```
@@ -80,10 +80,10 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// use bnum::prelude::*;
     /// use bnum::types::{U256, I256};
     ///
-    /// assert_eq!(n!(7 U256).widening_mul(n!(3)), (n!(21), n!(0)));
-    /// assert_eq!(n!(2 U256).pow(255).widening_mul(n!(2 U256).pow(100)), (n!(0), n!(2 U256).pow(99)));
+    /// assert_eq!(n!(7U256).widening_mul(n!(3)), (n!(21), n!(0)));
+    /// assert_eq!(n!(2U256).pow(255).widening_mul(n!(2U256).pow(100)), (n!(0), n!(2U256).pow(99)));
     /// 
-    /// assert_eq!(n!(-5 I256).widening_mul(n!(8)), (n!(-40).cast_unsigned(), n!(-1)));
+    /// assert_eq!(n!(-5I256).widening_mul(n!(8)), (n!(-40).cast_unsigned(), n!(-1)));
     /// assert_eq!(I256::MIN.widening_mul(n!(2)), (n!(0), n!(-1)));
     /// ```
     #[must_use = doc::must_use_op!()]
@@ -181,10 +181,10 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// use bnum::prelude::*;
     /// use bnum::types::{U2048, I2048};
     ///
-    /// assert_eq!(n!(7 U2048).carrying_mul(n!(3), n!(5)), (n!(26), n!(0)));
+    /// assert_eq!(n!(7U2048).carrying_mul(n!(3), n!(5)), (n!(26), n!(0)));
     /// assert_eq!(U2048::MAX.carrying_mul(U2048::MAX, U2048::MAX), (n!(0), U2048::MAX));
     ///
-    /// assert_eq!(n!(-5 I2048).carrying_mul(n!(8), n!(-6)), (n!(-46).cast_unsigned(), n!(-1)));
+    /// assert_eq!(n!(-5I2048).carrying_mul(n!(8), n!(-6)), (n!(-46).cast_unsigned(), n!(-1)));
     /// assert_eq!(I2048::MIN.carrying_mul(n!(2), n!(3)), (n!(3), n!(-1)));
     /// ```
     #[must_use = doc::must_use_op!()]
@@ -217,10 +217,10 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// use bnum::prelude::*;
     /// use bnum::types::{U2048, I2048};
     ///
-    /// assert_eq!(n!(7 U2048).carrying_mul_add(n!(3), n!(5), n!(12)), (n!(38), n!(0)));
+    /// assert_eq!(n!(7U2048).carrying_mul_add(n!(3), n!(5), n!(12)), (n!(38), n!(0)));
     /// assert_eq!(U2048::MAX.carrying_mul_add(U2048::MAX, U2048::MAX, U2048::MAX), (U2048::MAX, U2048::MAX));
     /// 
-    /// assert_eq!(n!(-5 I2048).carrying_mul_add(n!(8), n!(-6), n!(-11)), (n!(-57).cast_unsigned(), n!(-1)));
+    /// assert_eq!(n!(-5I2048).carrying_mul_add(n!(8), n!(-6), n!(-11)), (n!(-57).cast_unsigned(), n!(-1)));
     /// assert_eq!(I2048::MIN.carrying_mul_add(n!(2), n!(3), n!(-2)), (n!(1), n!(-1)));
     /// ```
     #[must_use = doc::must_use_op!()]
@@ -239,7 +239,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     }
 }
 
-#[cfg(all(test, feature = "nightly"))] // since bigint_helpers not stable for signed integers yet
+#[cfg(all(test, nightly))] // since bigint_helpers not stable for signed integers yet
 mod tests {
     use crate::test::test_bignum;
 

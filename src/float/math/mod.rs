@@ -26,7 +26,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         self.sqrt_internal()
     }
 
-    #[cfg(feature = "nightly")]
+    #[cfg(nightly)]
     #[must_use = doc::must_use_op!(float)]
     #[inline]
     pub fn div_euclid(self, rhs: Self) -> Self
@@ -55,7 +55,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         }
     }
 
-    #[cfg(feature = "nightly")]
+    #[cfg(nightly)]
     #[must_use = doc::must_use_op!(float)]
     #[inline]
     pub fn powi(mut self, n: i32) -> Self

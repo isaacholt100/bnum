@@ -61,7 +61,7 @@ impl<T> DerefMut for Slice<T> {
 /// use rand::rngs::StdRng;
 /// use rand::SeedableRng;
 ///
-/// let mut v = vec![n!(0 I256); 10];
+/// let mut v = vec![n!(0I256); 10];
 /// let mut rng = StdRng::seed_from_u64(0);
 ///
 /// random::fill_slice(&mut v, &mut rng);

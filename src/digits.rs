@@ -1,4 +1,3 @@
-use crate::Exponent;
 use core::mem::transmute;
 
 #[repr(C)]

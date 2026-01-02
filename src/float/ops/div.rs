@@ -8,10 +8,7 @@ use core::num::FpCategory;
 
 impl<const W: usize, const MB: usize> Float<W, MB> {
     #[inline]
-    pub(crate) fn div_internal(self, rhs: Self, negative: bool) -> Self
-    where
-        [(); W * 2]:,
-    {
+    pub(crate) fn div_internal(self, rhs: Self, negative: bool) -> Self {
         let (a, b) = (self, rhs);
         let (_, e1, s1) = a.into_biased_parts();
         let (_, e2, s2) = b.into_biased_parts();
@@ -76,10 +73,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     }
 
     #[inline]
-    pub(super) fn div(self, rhs: Self) -> Self
-    where
-        [(); W * 2]:,
-    {
+    pub(super) fn div(self, rhs: Self) -> Self {
         let negative = self.is_sign_negative() ^ rhs.is_sign_negative();
         match (self.classify(), rhs.classify()) {
             (FpCategory::Nan, _) | (_, FpCategory::Nan) => Self::NAN,

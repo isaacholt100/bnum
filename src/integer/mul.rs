@@ -122,8 +122,6 @@ impl<const N: usize,  const B: usize, const OM: u8> Uint<N, B, OM> {
 
 #[cfg(test)]
 mod tests {
-    use crate::cast::As;
-
     crate::test::test_all! {
         testing unsigned;
 

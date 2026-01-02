@@ -1,8 +1,7 @@
-use crate::{Byte, Exponent, Integer, Uint};
+use crate::{Byte, Integer, Uint};
 use super::MAX_RADIX_POWERS;
 use crate::integer::radix::assert_range;
 use alloc::{string::String, vec::Vec};
-use core::iter::Iterator;
 
 #[inline]
 const fn digit_to_str_byte(digit: u8) -> u8 {
@@ -219,7 +218,7 @@ impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
     }
 
     #[inline]
-    fn to_inexact_bitwise_digits_le(mut self, radix: u32) -> Vec<u8> {
+    fn to_inexact_bitwise_digits_le(self, radix: u32) -> Vec<u8> {
         let bit_width = self.bits();
         let radix_log2 = radix.ilog2();
         let mask = u8::MAX >> (u8::BITS - radix_log2);
@@ -250,7 +249,7 @@ impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
     }
 
     #[inline]
-    fn to_exact_bitwise_digits_le(mut self, radix: u32) -> Vec<u8> {
+    fn to_exact_bitwise_digits_le(self, radix: u32) -> Vec<u8> {
         let radix_log2 = radix.ilog2();
         let mask = u8::MAX >> (u8::BITS - radix_log2);
         let mut digits = Vec::with_capacity(Self::BITS.div_ceil(radix_log2) as usize);
@@ -367,10 +366,6 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
 
 #[cfg(test)]
 mod tests {
-    use crate::test::test_bignum;
-    use core::num::IntErrorKind;
-    use core::str::FromStr;
-
     crate::test::test_all! {
         testing integers;
         

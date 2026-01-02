@@ -51,7 +51,7 @@ fn p<const S: bool, const N: usize, const B: usize, const OM: u8>(x: Integer<S, 
 }
 
 // 2*10^3 + 3*10^2 + 5*10 + 7 = 2357
-assert_eq!(p(n!(10 U256)), n!(2357));
+assert_eq!(p(n!(10U256)), n!(2357));
 // evaluates p(10) as a 16-bit unsigned integer
 
 type U24w = nt!(U24w);
@@ -137,7 +137,6 @@ assert_eq!(f_n, n!(354224848179261915075));
 | `quickcheck` | No       | The [`Arbitrary`](https://docs.rs/quickcheck/latest/quickcheck/trait.Arbitrary.html) trait from the [`quickcheck`](https://docs.rs/quickcheck/latest/quickcheck/) crate. **Note: currently, this feature cannot be used with `no_std`.** |
 | `zeroize`    | No       | The [`Zeroize`](https://docs.rs/zeroize/latest/zeroize/trait.Zeroize.html) trait from the [`zeroize`](https://docs.rs/zeroize/latest/zeroize/) crate. |
 | `valuable`   | No       | The [`Valuable`](https://docs.rs/valuable/latest/valuable/trait.Valuable.html) trait from the [`valuable`](https://docs.rs/valuable/latest/valuable/) crate. |
-| `nightly`    | No       | Testing methods whose counterparts on the primitive integers are only available on nightly. |
 
 ## Testing
 

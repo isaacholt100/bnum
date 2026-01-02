@@ -86,7 +86,7 @@ macro_rules! multiple_impls {
         $(
             primitive_cast_impl!($from as [u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64]);
 
-            #[cfg(all(test, feature = "nightly"))]
+            #[cfg(all(test, nightly))]
             primitive_cast_impl!($from as [f16, f128]);
         )*
     };

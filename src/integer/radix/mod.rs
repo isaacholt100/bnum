@@ -2,11 +2,6 @@ mod from_radix;
 #[cfg(feature = "alloc")]
 mod to_radix;
 
-use crate::{Uint, Integer};
-use crate::errors::ParseIntError;
-use crate::{Byte, digit};
-use core::num::IntErrorKind;
-
 macro_rules! assert_range {
     ($radix: expr, $max: expr) => {
         assert!(

@@ -1,12 +1,11 @@
 #![allow(incomplete_features)]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 #![cfg_attr(
-    all(test, feature = "nightly"),
+    all(test, nightly),
     feature(
-        generic_const_exprs,
         bigint_helper_methods,
         int_roundings,
-        float_minimum_maximum,
+        // float_minimum_maximum,
         wrapping_next_power_of_two,
         unchecked_shifts,
         unchecked_neg,
@@ -59,10 +58,6 @@ type Exponent = u32;
 type Byte = u8;
 
 pub use integer::{Int, Integer, Uint};
-
-fn test() {
-    let _ = crate::n!(123);
-}
 
 /// Trait for fallible conversions between `bnum` integer types.
 ///

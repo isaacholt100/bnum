@@ -4,7 +4,7 @@ use core::iter::{Iterator, Product, Sum};
 use core::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Rem, RemAssign, Sub, SubAssign};
 
 mod add;
-#[cfg(feature = "nightly")]
+#[cfg(nightly)]
 mod div;
 mod mul;
 mod rem;
@@ -71,11 +71,7 @@ impl<'a, const W: usize, const MB: usize> Product<&'a Self> for Float<W, MB> {
     }
 }
 
-#[cfg(feature = "nightly")]
-impl<const W: usize, const MB: usize> Div for Float<W, MB>
-where
-    [(); W * 2]:,
-{
+impl<const W: usize, const MB: usize> Div for Float<W, MB> {
     type Output = Self;
 
     #[inline]

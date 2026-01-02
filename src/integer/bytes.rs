@@ -15,10 +15,10 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// ```
     /// use bnum::prelude::*;
     /// 
-    /// let a = n!(0xE3BD89 U24);
+    /// let a = n!(0xE3BD89U24);
     /// assert_eq!(a.to_bytes(), [0x89, 0xBD, 0xE3]);
     /// 
-    /// let b = n!(0x0A412F I24);
+    /// let b = n!(0x0A412FI24);
     /// assert_eq!(b.to_bytes(), [0x2F, 0x41, 0x0A]);
     /// ```
     #[must_use]
@@ -36,10 +36,10 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// ```
     /// use bnum::prelude::*;
     /// 
-    /// let a = n!(0xD1FB70 U24);
+    /// let a = n!(0xD1FB70U24);
     /// assert_eq!(a.as_bytes(), &[0x70, 0xFB, 0xD1]);
     /// 
-    /// let b = n!(0x3F23A1 I24);
+    /// let b = n!(0x3F23A1I24);
     /// assert_eq!(b.as_bytes(), &[0xA1, 0x23, 0x3F]);
     /// ```
     #[must_use]
@@ -57,13 +57,13 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// ```
     /// use bnum::prelude::*;
     /// 
-    /// let mut a = n!(0xD1FB70 U24);
+    /// let mut a = n!(0xD1FB70U24);
     /// let bytes = a.as_bytes_mut();
     /// bytes[0] = 0x3D;
     /// bytes[2] = 0xA5;
     /// assert_eq!(a, n!(0xA5FB3D));
     /// 
-    /// let mut b = n!(0x1D3C4E I24);
+    /// let mut b = n!(0x1D3C4EI24);
     /// let bytes = b.as_bytes_mut();
     /// bytes[1] = 0xFF;
     /// assert_eq!(b, n!(0x1DFF4E));

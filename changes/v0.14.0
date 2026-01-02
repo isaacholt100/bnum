@@ -27,8 +27,6 @@
 - added compile time assertion about valid bit size
 - detect overflow checks rather than if in debug build or not (so match integer behaviour exactly)
 - fix behaviour of left shifts in no overflow checks mode
-- TODO:
-    - use u128/u64 digit division algorithm
 
 - remove as_bits, as_bits_mut from Int
 - remove 2, 3, ..., 10 from Uint and Int, -1, -2, ..., -3 from Int

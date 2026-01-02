@@ -401,13 +401,13 @@ macro_rules! test_all {
         crate::test::test_width_and_sign!(128, i; $($s)*);
     };
     { testing floats; $($s: tt) * } => {
-        // #[cfg(feature = "nightly")]
+        // #[cfg(nightly)]
         // crate::test::test_width_and_sign!(16, f, "float"; $($s)*);
 
         crate::test::test_width_and_sign!(32, f, "float"; $($s)*);
         crate::test::test_width_and_sign!(64, f, "float"; $($s)*);
 
-        // #[cfg(feature = "nightly")]
+        // #[cfg(nightly)]
         // crate::test::test_width_and_sign!(128, f, "float"; $($s)*);
     };
 }

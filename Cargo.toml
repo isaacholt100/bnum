@@ -17,7 +17,6 @@ exclude = ["src/float/*", "src/tests", "TODO.txt"] # TODO: make sure to include 
 
 [features]
 default = ["alloc"]
-nightly = []
 float = []
 alloc = []
 serde = ["dep:serde", "serde-big-array"]

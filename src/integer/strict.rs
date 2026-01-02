@@ -19,8 +19,8 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// ```
     /// use bnum::prelude::*;
     /// 
-    /// assert_eq!(n!(2 U24).strict_add(n!(3 U24)), n!(5 U24));
-    /// assert_eq!(n!(-2 I24).strict_add(n!(-3 I24)), n!(-5 I24));
+    /// assert_eq!(n!(2U24).strict_add(n!(3U24)), n!(5U24));
+    /// assert_eq!(n!(-2I24).strict_add(n!(-3I24)), n!(-5I24));
     /// ```
     /// The following examples will panic due to overflow:
     /// ```should_panic
@@ -47,8 +47,8 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// ```
     /// use bnum::prelude::*;
     /// 
-    /// assert_eq!(n!(5 U24).strict_sub(n!(2 U24)), n!(3 U24));
-    /// assert_eq!(n!(-5 I24).strict_sub(n!(-2 I24)), n!(-3 I24));
+    /// assert_eq!(n!(5U24).strict_sub(n!(2U24)), n!(3U24));
+    /// assert_eq!(n!(-5I24).strict_sub(n!(-2I24)), n!(-3I24));
     /// ```
     /// The following example will panic due to overflow:
     /// ```should_panic
@@ -75,8 +75,8 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// ```
     /// use bnum::prelude::*;
     /// 
-    /// assert_eq!(n!(2 U24).strict_mul(n!(3 U24)), n!(6 U24));
-    /// assert_eq!(n!(-2 I24).strict_mul(n!(3 I24)), n!(-6 I24));
+    /// assert_eq!(n!(2U24).strict_mul(n!(3U24)), n!(6U24));
+    /// assert_eq!(n!(-2I24).strict_mul(n!(3I24)), n!(-6I24));
     /// ```
     /// The following example will panic due to overflow:
     /// ```should_panic
@@ -105,8 +105,8 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// ```
     /// use bnum::prelude::*;
     /// 
-    /// assert_eq!(n!(9 U24).strict_div(n!(4)), n!(2));
-    /// assert_eq!(n!(-9 I24).strict_div(n!(4)), n!(-2));
+    /// assert_eq!(n!(9U24).strict_div(n!(4)), n!(2));
+    /// assert_eq!(n!(-9I24).strict_div(n!(4)), n!(-2));
     /// ```
     /// The following example will panic due to overflow:
     /// ```should_panic
@@ -119,7 +119,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// ```should_panic
     /// use bnum::prelude::*;
     /// 
-    /// let _ = n!(10 U2048).strict_div(n!(0));
+    /// let _ = n!(10U2048).strict_div(n!(0));
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -146,8 +146,8 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// ```
     /// use bnum::prelude::*;
     /// 
-    /// assert_eq!(n!(9 U24).strict_div_euclid(n!(4)), n!(2));
-    /// assert_eq!(n!(-9 I24).strict_div_euclid(n!(4)), n!(-3));
+    /// assert_eq!(n!(9U24).strict_div_euclid(n!(4)), n!(2));
+    /// assert_eq!(n!(-9I24).strict_div_euclid(n!(4)), n!(-3));
     /// ```
     /// The following example will panic due to overflow:
     /// ```should_panic
@@ -160,7 +160,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// ```should_panic
     /// use bnum::prelude::*;
     /// 
-    /// let _ = n!(10 U256).strict_div_euclid(n!(0));
+    /// let _ = n!(10U256).strict_div_euclid(n!(0));
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -187,8 +187,8 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// ```
     /// use bnum::prelude::*;
     /// 
-    /// assert_eq!(n!(9 U24).strict_rem(n!(4)), n!(1));
-    /// assert_eq!(n!(-9 I24).strict_rem(n!(4)), n!(-1));
+    /// assert_eq!(n!(9U24).strict_rem(n!(4)), n!(1));
+    /// assert_eq!(n!(-9I24).strict_rem(n!(4)), n!(-1));
     /// ```
     /// The following example will panic due to overflow:
     /// ```should_panic
@@ -201,7 +201,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// ```should_panic
     /// use bnum::prelude::*;
     /// 
-    /// let _ = n!(10 U512).strict_rem(n!(0));
+    /// let _ = n!(10U512).strict_rem(n!(0));
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -228,8 +228,8 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// ```
     /// use bnum::prelude::*;
     /// 
-    /// assert_eq!(n!(9 U24).strict_rem_euclid(n!(4)), n!(1));
-    /// assert_eq!(n!(-9 I24).strict_rem_euclid(n!(4)), n!(3));
+    /// assert_eq!(n!(9U24).strict_rem_euclid(n!(4)), n!(1));
+    /// assert_eq!(n!(-9I24).strict_rem_euclid(n!(4)), n!(3));
     /// ```
     /// The following example will panic due to overflow:
     /// ```should_panic
@@ -242,7 +242,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// ```should_panic
     /// use bnum::prelude::*;
     /// 
-    /// let _ = n!(10 U1024).strict_rem_euclid(n!(0));
+    /// let _ = n!(10U1024).strict_rem_euclid(n!(0));
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -269,14 +269,14 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// ```
     /// use bnum::prelude::*;
     /// 
-    /// assert_eq!(n!(0 U24).strict_neg(), n!(0));
-    /// assert_eq!(n!(5 I24).strict_neg(), n!(-5));
+    /// assert_eq!(n!(0U24).strict_neg(), n!(0));
+    /// assert_eq!(n!(5I24).strict_neg(), n!(-5));
     /// ```
     /// The following examples will panic due to overflow:
     /// ```should_panic
     /// use bnum::prelude::*;
     /// 
-    /// let _ = n!(1 U256).strict_neg();
+    /// let _ = n!(1U256).strict_neg();
     /// ```
     /// 
     /// ```should_panic
@@ -302,14 +302,14 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// ```
     /// use bnum::prelude::*;
     /// 
-    /// assert_eq!(n!(3 U24).strict_shl(2), n!(12 U24));
-    /// assert_eq!(n!(-3 I24).strict_shl(2), n!(-12 I24));
+    /// assert_eq!(n!(3U24).strict_shl(2), n!(12U24));
+    /// assert_eq!(n!(-3I24).strict_shl(2), n!(-12I24));
     /// ```
     /// The following example will panic due to overflow:
     /// ```should_panic
     /// use bnum::prelude::*;
     /// 
-    /// let _ = n!(1 U512).strict_shl(512);
+    /// let _ = n!(1U512).strict_shl(512);
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -330,8 +330,8 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// ```
     /// use bnum::prelude::*;
     /// 
-    /// assert_eq!(n!(17 U24).strict_shr(2), n!(4 U24));
-    /// assert_eq!(n!(-23 I24).strict_shr(2), n!(-6 I24));
+    /// assert_eq!(n!(17U24).strict_shr(2), n!(4U24));
+    /// assert_eq!(n!(-23I24).strict_shr(2), n!(-6I24));
     /// ```
     /// The following example will panic due to overflow:
     /// ```should_panic
@@ -358,14 +358,14 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// ```
     /// use bnum::prelude::*;
     /// 
-    /// assert_eq!(n!(2 U24).strict_pow(3), n!(8));
-    /// assert_eq!(n!(-3 I24).strict_pow(5), n!(-243));
+    /// assert_eq!(n!(2U24).strict_pow(3), n!(8));
+    /// assert_eq!(n!(-3I24).strict_pow(5), n!(-243));
     /// ```
     /// The following example will panic due to overflow:
     /// ```should_panic
     /// use bnum::prelude::*;
     /// 
-    /// let _ = n!(2 U2048).strict_pow(2048);
+    /// let _ = n!(2U2048).strict_pow(2048);
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -389,14 +389,14 @@ impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
     /// ```
     /// use bnum::prelude::*;
     /// 
-    /// assert_eq!(n!(5 U24).strict_add_signed(n!(-2 I24)), n!(3 U24));
+    /// assert_eq!(n!(5U24).strict_add_signed(n!(-2I24)), n!(3U24));
     /// ```
     /// The following example will panic due to overflow:
     /// ```should_panic
     /// use bnum::prelude::*;
     /// use bnum::types::U256;
     /// 
-    /// let _ = U256::MIN.strict_add_signed(n!(-1 I256));
+    /// let _ = U256::MIN.strict_add_signed(n!(-1I256));
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -416,14 +416,14 @@ impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
     /// ```
     /// use bnum::prelude::*;
     /// 
-    /// assert_eq!(n!(5 U24).strict_sub_signed(n!(-2 I24)), n!(7 U24));
+    /// assert_eq!(n!(5U24).strict_sub_signed(n!(-2I24)), n!(7U24));
     /// ```
     /// The following example will panic due to overflow:
     /// ```should_panic
     /// use bnum::prelude::*;
     /// use bnum::types::U256;
     /// 
-    /// let _ = U256::MAX.strict_sub_signed(n!(-1 I256));
+    /// let _ = U256::MAX.strict_sub_signed(n!(-1I256));
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -453,7 +453,7 @@ impl<const N: usize, const B: usize, const OM: u8> Int<N, B, OM> {
     /// ```
     /// use bnum::prelude::*;
     /// 
-    /// assert_eq!(n!(-5 I24).strict_abs(), n!(5 I24));
+    /// assert_eq!(n!(-5I24).strict_abs(), n!(5I24));
     /// ```
     /// The following example will panic due to overflow:
     /// ```should_panic
@@ -479,14 +479,14 @@ impl<const N: usize, const B: usize, const OM: u8> Int<N, B, OM> {
     /// ```
     /// use bnum::prelude::*;
     /// 
-    /// assert_eq!(n!(5 I24).strict_add_unsigned(n!(2 U24)), n!(7 I24));
+    /// assert_eq!(n!(5I24).strict_add_unsigned(n!(2U24)), n!(7I24));
     /// ```
     /// The following example will panic due to overflow:
     /// ```should_panic
     /// use bnum::prelude::*;
     /// use bnum::types::I1024;
     /// 
-    /// let _ = I1024::MAX.strict_add_unsigned(n!(1 U1024));
+    /// let _ = I1024::MAX.strict_add_unsigned(n!(1U1024));
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -506,14 +506,14 @@ impl<const N: usize, const B: usize, const OM: u8> Int<N, B, OM> {
     /// ```
     /// use bnum::prelude::*;
     /// 
-    /// assert_eq!(n!(5 I24).strict_sub_unsigned(n!(7 U24)), n!(-2 I24));
+    /// assert_eq!(n!(5I24).strict_sub_unsigned(n!(7U24)), n!(-2I24));
     /// ```
     /// The following example will panic due to overflow:
     /// ```should_panic
     /// use bnum::prelude::*;
     /// use bnum::types::I2048;
     /// 
-    /// let _ = I2048::MIN.strict_sub_unsigned(n!(1 U2048));
+    /// let _ = I2048::MIN.strict_sub_unsigned(n!(1U2048));
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]

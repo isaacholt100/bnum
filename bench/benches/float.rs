@@ -71,9 +71,9 @@ fn bench_add(c: &mut Criterion) {
     let mut group = c.benchmark_group("round");
     let mut rng = rand::rngs::StdRng::seed_from_u64(0);
     let big_inputs = (0..SAMPLE_SIZE)
-        .map(|_| rng.random::<(Uint<{N*8}>, u32)>())
+        .map(|_| rng.random::<(Uint<{N*8}>, Uint<{N * 8}>)>())
         .map(|(a, b)| (
-            ((a, b), (bnum_old::BUint::bfrom(a), b))
+            ((a, b), (bnum_old::BUint::bfrom(a), bnum_old::BUint::bfrom(b)))
             // ((a.to_str_radix(16), b), (a.to_str_radix(16), b))
         ));
     let (inputs1, inputs2) = unzip::unzip2(big_inputs);
@@ -87,13 +87,13 @@ fn bench_add(c: &mut Criterion) {
     // }));
     group.bench_with_input(BenchmarkId::new("Iterative", "d8"), &inputs1, |b, inputs| b.iter(|| {
         inputs.iter().cloned().map(|(a, b)| {
-            a.nth_root(7)
+            a.cbrt()
             // Uint::<{N*8}>::from_str_radix(&a, 16)
         }).collect::<Vec<_>>()
     }));
     group.bench_with_input(BenchmarkId::new("Iterative", "d64"), &inputs2, |b, inputs| b.iter(|| {
         inputs.iter().cloned().map(|(a, b)| {
-            a.nth_root(7)
+            a.cbrt()
             // bnum_old::BUint::<N>::from_str_radix(&a, 16)
         }).collect::<Vec<_>>()
     }));

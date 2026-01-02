@@ -31,10 +31,10 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// use bnum::prelude::*;
     /// use bnum::types::{U1024, I1024};
     ///
-    /// assert_eq!(n!(1 U1024).checked_add(n!(1)), Some(n!(2)));
+    /// assert_eq!(n!(1U1024).checked_add(n!(1)), Some(n!(2)));
     /// assert_eq!(U1024::MAX.checked_add(n!(1)), None);
     /// 
-    /// assert_eq!(n!(1 I1024).checked_add(n!(-1)), Some(n!(0)));
+    /// assert_eq!(n!(1I1024).checked_add(n!(-1)), Some(n!(0)));
     /// assert_eq!(I1024::MIN.checked_add(n!(-1)), None);
     /// ```
     #[must_use = doc::must_use_op!()]
@@ -53,10 +53,10 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// use bnum::prelude::*;
     /// use bnum::types::{U256, I256};
     /// 
-    /// assert_eq!(n!(1 U256).checked_sub(n!(1)), Some(n!(0)));
+    /// assert_eq!(n!(1U256).checked_sub(n!(1)), Some(n!(0)));
     /// assert_eq!(U256::MIN.checked_sub(n!(1)), None);
     /// 
-    /// assert_eq!(n!(-1 I256).checked_sub(n!(1)), Some(n!(-2)));
+    /// assert_eq!(n!(-1I256).checked_sub(n!(1)), Some(n!(-2)));
     /// assert_eq!(I256::MAX.checked_sub(n!(-1)), None);
     /// ```
     #[must_use = doc::must_use_op!()]
@@ -75,10 +75,10 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// use bnum::prelude::*;
     /// use bnum::types::{U512, I512};
     /// 
-    /// assert_eq!(n!(1 U512).checked_mul(n!(1)), Some(n!(1)));
+    /// assert_eq!(n!(1U512).checked_mul(n!(1)), Some(n!(1)));
     /// assert_eq!(U512::MAX.checked_mul(n!(3)), None);
     /// 
-    /// assert_eq!(n!(2 I512).checked_mul(n!(3)), Some(n!(6)));
+    /// assert_eq!(n!(2I512).checked_mul(n!(3)), Some(n!(6)));
     /// assert_eq!(I512::MIN.checked_mul(n!(-1)), None);
     /// ```
     #[must_use = doc::must_use_op!()]
@@ -97,10 +97,10 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// use bnum::prelude::*;
     /// use bnum::types::{U256, I256};
     /// 
-    /// assert_eq!(n!(5 U256).checked_div(n!(2)), Some(n!(2)));
-    /// assert_eq!(n!(1 U256).checked_div(n!(0)), None);
+    /// assert_eq!(n!(5U256).checked_div(n!(2)), Some(n!(2)));
+    /// assert_eq!(n!(1U256).checked_div(n!(0)), None);
     /// 
-    /// assert_eq!(n!(-13 I256).checked_div(n!(5)), Some(n!(-2)));
+    /// assert_eq!(n!(-13I256).checked_div(n!(5)), Some(n!(-2)));
     /// assert_eq!(I256::MIN.checked_div(n!(-1)), None);
     /// ```
     #[must_use = doc::must_use_op!()]
@@ -125,10 +125,10 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// use bnum::prelude::*;
     /// use bnum::types::{U2048, I2048};
     /// 
-    /// assert_eq!(n!(13 U2048).checked_div_euclid(n!(5)), Some(n!(2)));
+    /// assert_eq!(n!(13U2048).checked_div_euclid(n!(5)), Some(n!(2)));
     /// assert_eq!(U2048::MAX.checked_div_euclid(n!(0)), None);
     /// 
-    /// assert_eq!(n!(-13 I2048).checked_div_euclid(n!(5)), Some(n!(-3)));
+    /// assert_eq!(n!(-13I2048).checked_div_euclid(n!(5)), Some(n!(-3)));
     /// assert_eq!(I2048::MIN.checked_div_euclid(n!(-1)), None);
     /// ```
     #[must_use = doc::must_use_op!()]
@@ -151,10 +151,10 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// use bnum::prelude::*;
     /// use bnum::types::{U1024, I1024};
     /// 
-    /// assert_eq!(n!(5 U1024).checked_rem(n!(2)), Some(n!(1)));
-    /// assert_eq!(n!(1 U1024).checked_rem(n!(0)), None);
+    /// assert_eq!(n!(5U1024).checked_rem(n!(2)), Some(n!(1)));
+    /// assert_eq!(n!(1U1024).checked_rem(n!(0)), None);
     /// 
-    /// assert_eq!(n!(-13 I1024).checked_rem(n!(5)), Some(n!(-3)));
+    /// assert_eq!(n!(-13I1024).checked_rem(n!(5)), Some(n!(-3)));
     /// assert_eq!(I1024::MIN.checked_rem(n!(-1)), None);
     /// ```
     #[must_use = doc::must_use_op!()]
@@ -179,10 +179,10 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// use bnum::prelude::*;
     /// use bnum::types::{U512, I512};
     /// 
-    /// assert_eq!(n!(13 U512).checked_rem_euclid(n!(5)), Some(n!(3)));
+    /// assert_eq!(n!(13U512).checked_rem_euclid(n!(5)), Some(n!(3)));
     /// assert_eq!(U512::MAX.checked_rem_euclid(n!(0)), None);
     /// 
-    /// assert_eq!(n!(-13 I512).checked_rem_euclid(n!(5)), Some(n!(2)));
+    /// assert_eq!(n!(-13I512).checked_rem_euclid(n!(5)), Some(n!(2)));
     /// assert_eq!(I512::MIN.checked_rem_euclid(n!(-1)), None);
     /// ```
     #[must_use = doc::must_use_op!()]
@@ -207,10 +207,10 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// use bnum::prelude::*;
     /// use bnum::types::{U256, I256};
     /// 
-    /// assert_eq!(n!(1 U256).checked_neg(), None);
-    /// assert_eq!(n!(0 U256).checked_neg(), Some(n!(0)));
+    /// assert_eq!(n!(1U256).checked_neg(), None);
+    /// assert_eq!(n!(0U256).checked_neg(), Some(n!(0)));
     /// 
-    /// assert_eq!(n!(1 I256).checked_neg(), Some(n!(-1)));
+    /// assert_eq!(n!(1I256).checked_neg(), Some(n!(-1)));
     /// assert_eq!(I256::MIN.checked_neg(), None);
     /// ```
     #[must_use = doc::must_use_op!()]
@@ -233,12 +233,12 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// use bnum::prelude::*;
     /// use bnum::types::{U2048, I2048};
     /// 
-    /// assert_eq!(n!(1 U2048).checked_shl(1), Some(n!(2)));
-    /// assert_eq!(n!(1 U2048).checked_shl(2048), None);
-    /// assert_eq!(n!(2 U2048).checked_shl(2047), Some(n!(0)));
+    /// assert_eq!(n!(1U2048).checked_shl(1), Some(n!(2)));
+    /// assert_eq!(n!(1U2048).checked_shl(2048), None);
+    /// assert_eq!(n!(2U2048).checked_shl(2047), Some(n!(0)));
     /// 
-    /// assert_eq!(n!(-1 I2048).checked_shl(2), Some(n!(-4)));
-    /// assert_eq!(n!(-1 I2048).checked_shl(2048), None);
+    /// assert_eq!(n!(-1I2048).checked_shl(2), Some(n!(-4)));
+    /// assert_eq!(n!(-1I2048).checked_shl(2048), None);
     /// assert_eq!(n!(-1).checked_shl(2047), Some(I2048::MIN));
     /// ```
     #[must_use = doc::must_use_op!()]
@@ -257,11 +257,11 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// use bnum::prelude::*;
     /// use bnum::types::{U1024, I1024};
     ///
-    /// assert_eq!(n!(1 U1024).checked_shr(1), Some(n!(0)));
+    /// assert_eq!(n!(1U1024).checked_shr(1), Some(n!(0)));
     /// assert_eq!(U1024::MAX.checked_shr(1024), None);
     /// assert_eq!(U1024::MAX.checked_shr(1023), Some(n!(1)));
     /// 
-    /// assert_eq!(n!(-1 I1024).checked_shr(1), Some(n!(-1)));
+    /// assert_eq!(n!(-1I1024).checked_shr(1), Some(n!(-1)));
     /// assert_eq!(I1024::MIN.checked_shr(1024), None);
     /// assert_eq!(I1024::MIN.checked_shr(I1024::BITS - 1), Some(n!(-1)));
     /// ```
@@ -281,12 +281,12 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// use bnum::prelude::*;
     /// use bnum::types::{U512, I512};
     /// 
-    /// assert_eq!(n!(2 U512).checked_pow(10), Some(n!(1024)));
-    /// assert_eq!(n!(2 U512).checked_pow(512), None);
+    /// assert_eq!(n!(2U512).checked_pow(10), Some(n!(1024)));
+    /// assert_eq!(n!(2U512).checked_pow(512), None);
     /// 
-    /// assert_eq!(n!(-2 I512).checked_pow(3), Some(n!(-8)));
+    /// assert_eq!(n!(-2I512).checked_pow(3), Some(n!(-8)));
     /// assert_eq!(n!(-2).checked_pow(511), Some(I512::MIN));
-    /// assert_eq!(n!(2 I512).checked_pow(512), None);
+    /// assert_eq!(n!(2I512).checked_pow(512), None);
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline(always)]
@@ -339,18 +339,18 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// use bnum::prelude::*;
     /// use bnum::types::{U256, I256};
     /// 
-    /// assert_eq!(n!(4 U256).checked_next_multiple_of(n!(2)), Some(n!(4)));
-    /// assert_eq!(n!(17 U256).checked_next_multiple_of(n!(7)), Some(n!(21)));
-    /// assert_eq!(n!(1 U256).checked_next_multiple_of(n!(0)), None);
+    /// assert_eq!(n!(4U256).checked_next_multiple_of(n!(2)), Some(n!(4)));
+    /// assert_eq!(n!(17U256).checked_next_multiple_of(n!(7)), Some(n!(21)));
+    /// assert_eq!(n!(1U256).checked_next_multiple_of(n!(0)), None);
     /// assert_eq!(U256::MAX.checked_next_multiple_of(n!(2)), None);
     /// assert_eq!(U256::MAX.checked_next_multiple_of(n!(1)), Some(U256::MAX));
     /// 
-    /// assert_eq!(n!(-9 I256).checked_next_multiple_of(n!(-3)), Some(n!(-9)));
-    /// assert_eq!(n!(-10 I256).checked_next_multiple_of(n!(4)), Some(n!(-8)));
-    /// assert_eq!(n!(-17 I256).checked_next_multiple_of(n!(-4)), Some(n!(-20)));
-    /// assert_eq!(n!(83 I256).checked_next_multiple_of(n!(-6)), Some(n!(78)));
+    /// assert_eq!(n!(-9I256).checked_next_multiple_of(n!(-3)), Some(n!(-9)));
+    /// assert_eq!(n!(-10I256).checked_next_multiple_of(n!(4)), Some(n!(-8)));
+    /// assert_eq!(n!(-17I256).checked_next_multiple_of(n!(-4)), Some(n!(-20)));
+    /// assert_eq!(n!(83I256).checked_next_multiple_of(n!(-6)), Some(n!(78)));
     /// assert_eq!(I256::MIN.checked_next_multiple_of(n!(2)), Some(I256::MIN));
-    /// assert_eq!(n!(0 I256).checked_next_multiple_of(n!(3)), Some(n!(0)));
+    /// assert_eq!(n!(0I256).checked_next_multiple_of(n!(3)), Some(n!(0)));
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -381,12 +381,12 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// use bnum::prelude::*;
     /// use bnum::types::{U2048, I2048};
     /// 
-    /// assert_eq!(n!(1 U2048).checked_ilog2(), Some(0));
+    /// assert_eq!(n!(1U2048).checked_ilog2(), Some(0));
     /// assert_eq!(U2048::MAX.checked_ilog2(), Some(2047));
-    /// assert_eq!(n!(0 U2048).checked_ilog2(), None);
+    /// assert_eq!(n!(0U2048).checked_ilog2(), None);
     /// 
     /// assert_eq!(I2048::MAX.checked_ilog2(), Some(2046));
-    /// assert_eq!(n!(-1 I2048).checked_ilog2(), None);
+    /// assert_eq!(n!(-1I2048).checked_ilog2(), None);
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -409,12 +409,12 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// ```
     /// use bnum::prelude::*;
     /// 
-    /// assert_eq!(n!(1 U1024).checked_ilog10(), Some(0));
-    /// assert_eq!(n!(1000 U1024).checked_ilog10(), Some(3));
-    /// assert_eq!(n!(0 U1024).checked_ilog10(), None);
+    /// assert_eq!(n!(1U1024).checked_ilog10(), Some(0));
+    /// assert_eq!(n!(1000U1024).checked_ilog10(), Some(3));
+    /// assert_eq!(n!(0U1024).checked_ilog10(), None);
     /// 
-    /// assert_eq!(n!(100 I1024).checked_ilog10(), Some(2));
-    /// assert_eq!(n!(-1 I1024).checked_ilog10(), None);
+    /// assert_eq!(n!(100I1024).checked_ilog10(), Some(2));
+    /// assert_eq!(n!(-1I1024).checked_ilog10(), None);
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -446,12 +446,12 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// use bnum::prelude::*;
     /// use bnum::types::{U512, I512};
     /// 
-    /// assert_eq!(n!(9 U512).checked_ilog(n!(3)), Some(2));
-    /// assert_eq!(n!(1 U512).checked_ilog(n!(1)), None);
-    /// assert_eq!(n!(0 U512).checked_ilog(n!(0)), None);
+    /// assert_eq!(n!(9U512).checked_ilog(n!(3)), Some(2));
+    /// assert_eq!(n!(1U512).checked_ilog(n!(1)), None);
+    /// assert_eq!(n!(0U512).checked_ilog(n!(0)), None);
     /// 
-    /// assert_eq!(n!(65 I512).checked_ilog(n!(4)), Some(3));
-    /// assert_eq!(n!(2 I512).checked_ilog(n!(-1)), None);
+    /// assert_eq!(n!(65I512).checked_ilog(n!(4)), Some(3));
+    /// assert_eq!(n!(2I512).checked_ilog(n!(-1)), None);
     /// assert_eq!(I512::MIN.checked_ilog(n!(2)), None);
     /// ```
     #[must_use = doc::must_use_op!()]
@@ -509,9 +509,9 @@ impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
     /// use bnum::prelude::*;
     /// use bnum::types::U512;
     /// 
-    /// assert_eq!(n!(1 U512).checked_add_signed(n!(1)), Some(n!(2)));
+    /// assert_eq!(n!(1U512).checked_add_signed(n!(1)), Some(n!(2)));
     /// assert_eq!(U512::MAX.checked_add_signed(n!(1)), None);
-    /// assert_eq!(n!(1 U512).checked_add_signed(n!(-2)), None);
+    /// assert_eq!(n!(1U512).checked_add_signed(n!(-2)), None);
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -529,9 +529,9 @@ impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
     /// use bnum::prelude::*;
     /// use bnum::types::U2048;
     /// 
-    /// assert_eq!(n!(1 U2048).checked_sub_signed(n!(-1)), Some(n!(2)));
+    /// assert_eq!(n!(1U2048).checked_sub_signed(n!(-1)), Some(n!(2)));
     /// assert_eq!(U2048::MAX.checked_sub_signed(n!(-1)), None);
-    /// assert_eq!(n!(1 U2048).checked_sub_signed(n!(2)), None);
+    /// assert_eq!(n!(1U2048).checked_sub_signed(n!(2)), None);
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -549,9 +549,9 @@ impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
     /// use bnum::prelude::*;
     /// use bnum::types::U1024;
     /// 
-    /// assert_eq!(n!(1 U1024).checked_signed_diff(n!(2)), Some(n!(-1)));
+    /// assert_eq!(n!(1U1024).checked_signed_diff(n!(2)), Some(n!(-1)));
     /// assert_eq!(U1024::MAX.checked_signed_diff(n!(1)), None);
-    /// assert_eq!(n!(2 U1024).checked_signed_diff(n!(1)), Some(n!(1)));
+    /// assert_eq!(n!(2U1024).checked_signed_diff(n!(1)), Some(n!(1)));
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -575,8 +575,8 @@ impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
     /// use bnum::prelude::*;
     /// use bnum::types::U256;
     /// 
-    /// assert_eq!(n!(16 U256).checked_next_power_of_two(), Some(n!(16)));
-    /// assert_eq!(n!(17 U256).checked_next_power_of_two(), Some(n!(32)));
+    /// assert_eq!(n!(16U256).checked_next_power_of_two(), Some(n!(16)));
+    /// assert_eq!(n!(17U256).checked_next_power_of_two(), Some(n!(32)));
     /// assert_eq!(U256::MAX.checked_next_power_of_two(), None);
     /// ```
     #[must_use = doc::must_use_op!()]
@@ -605,9 +605,9 @@ impl<const N: usize, const B: usize, const OM: u8> Int<N, B, OM> {
     /// use bnum::prelude::*;
     /// use bnum::types::{I512, U512};
     /// 
-    /// assert_eq!(n!(-1 I512).checked_add_unsigned(n!(1)), Some(n!(0)));
+    /// assert_eq!(n!(-1I512).checked_add_unsigned(n!(1)), Some(n!(0)));
     /// assert_eq!(I512::MIN.checked_add_unsigned(U512::MAX), Some(I512::MAX));
-    /// assert_eq!(n!(0 I512).checked_add_unsigned(U512::MAX), None);
+    /// assert_eq!(n!(0I512).checked_add_unsigned(U512::MAX), None);
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -625,8 +625,8 @@ impl<const N: usize, const B: usize, const OM: u8> Int<N, B, OM> {
     /// use bnum::prelude::*;
     /// use bnum::types::{I1024, U1024};
     /// 
-    /// assert_eq!(n!(-1 I1024).checked_sub_unsigned(n!(1)), Some(n!(-2)));
-    /// assert_eq!(n!(0 I1024).checked_sub_unsigned(U1024::MAX), None);
+    /// assert_eq!(n!(-1I1024).checked_sub_unsigned(n!(1)), Some(n!(-2)));
+    /// assert_eq!(n!(0I1024).checked_sub_unsigned(U1024::MAX), None);
     /// assert_eq!(I1024::MAX.checked_sub_unsigned(U1024::MAX), Some(I1024::MIN));
     /// ```
     #[must_use = doc::must_use_op!()]
@@ -645,8 +645,8 @@ impl<const N: usize, const B: usize, const OM: u8> Int<N, B, OM> {
     /// use bnum::prelude::*;
     /// use bnum::types::I2048;
     /// 
-    /// assert_eq!(n!(-123 I2048).checked_abs(), Some(n!(123)));
-    /// assert_eq!(n!(456 I2048).checked_abs(), Some(n!(456)));
+    /// assert_eq!(n!(-123I2048).checked_abs(), Some(n!(123)));
+    /// assert_eq!(n!(456I2048).checked_abs(), Some(n!(456)));
     /// assert_eq!(I2048::MIN.checked_abs(), None);
     /// ```
     #[must_use = doc::must_use_op!()]
@@ -712,7 +712,7 @@ mod tests {
         test_bignum! {
             function: <stest>::checked_pow(a: stest, b: u16)
         }
-        #[cfg(feature = "nightly")] // since int_roundings are not stable yet
+        #[cfg(nightly)] // since int_roundings are not stable yet
         test_bignum! {
             function: <stest>::checked_next_multiple_of(a: stest, b: stest)
         }

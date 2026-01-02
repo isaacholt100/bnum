@@ -42,8 +42,8 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// use bnum::prelude::*;
     /// use bnum::types::{U256, I256};
     ///
-    /// assert_eq!(n!(3 U256).pow(5), n!(243));
-    /// assert_eq!(n!(-7 I256).pow(3), n!(-343));
+    /// assert_eq!(n!(3U256).pow(5), n!(243));
+    /// assert_eq!(n!(-7I256).pow(3), n!(-343));
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -68,8 +68,8 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// ```
     /// use bnum::prelude::*;
     /// 
-    /// assert_eq!(n!(37 U512).div_euclid(n!(8)), n!(4));
-    /// assert_eq!(n!(-37 I512).div_euclid(n!(8)), n!(-5));
+    /// assert_eq!(n!(37U512).div_euclid(n!(8)), n!(4));
+    /// assert_eq!(n!(-37I512).div_euclid(n!(8)), n!(-5));
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -88,8 +88,8 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// ```
     /// use bnum::prelude::*;
     /// 
-    /// assert_eq!(n!(37 U1024).rem_euclid(n!(8)), n!(5));
-    /// assert_eq!(n!(-37 I1024).rem_euclid(n!(-8)), n!(3));
+    /// assert_eq!(n!(37U1024).rem_euclid(n!(8)), n!(5));
+    /// assert_eq!(n!(-37I1024).rem_euclid(n!(-8)), n!(3));
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -108,8 +108,8 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// ```
     /// use bnum::prelude::*;
     /// 
-    /// assert!(n!(16 U2048).is_power_of_two());
-    /// assert!(!n!(-8 I2048).is_power_of_two());
+    /// assert!(n!(16U2048).is_power_of_two());
+    /// assert!(!n!(-8I2048).is_power_of_two());
     /// ```
     #[must_use]
     #[inline]
@@ -143,10 +143,10 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// ```
     /// use bnum::prelude::*;
     /// 
-    /// assert_eq!(n!(10 U256).midpoint(n!(22)), n!(16));
-    /// assert_eq!(n!(12 U256).midpoint(n!(21)), n!(16));
-    /// assert_eq!(n!(-10 I256).midpoint(n!(2)), n!(-4));
-    /// assert_eq!(n!(-13 I256).midpoint(n!(0)), n!(-6));
+    /// assert_eq!(n!(10U256).midpoint(n!(22)), n!(16));
+    /// assert_eq!(n!(12U256).midpoint(n!(21)), n!(16));
+    /// assert_eq!(n!(-10I256).midpoint(n!(2)), n!(-4));
+    /// assert_eq!(n!(-13I256).midpoint(n!(0)), n!(-6));
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -173,8 +173,8 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// ```
     /// use bnum::prelude::*;
     /// 
-    /// assert_eq!(n!(16 U512).ilog2(), 4);
-    /// assert_eq!(n!(20 I512).ilog2(), 4);
+    /// assert_eq!(n!(16U512).ilog2(), 4);
+    /// assert_eq!(n!(20I512).ilog2(), 4);
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -194,8 +194,8 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// ```
     /// use bnum::prelude::*;
     /// 
-    /// assert_eq!(n!(1000 U512).ilog10(), 3);
-    /// assert_eq!(n!(9999 I512).ilog10(), 3);
+    /// assert_eq!(n!(1000U512).ilog10(), 3);
+    /// assert_eq!(n!(9999I512).ilog10(), 3);
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -217,8 +217,8 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// ```
     /// use bnum::prelude::*;
     /// 
-    /// assert_eq!(n!(243 U1024).ilog(n!(3)), 5);
-    /// assert_eq!(n!(124 I1024).ilog(n!(5)), 2);
+    /// assert_eq!(n!(243U1024).ilog(n!(3)), 5);
+    /// assert_eq!(n!(124I1024).ilog(n!(5)), 2);
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -237,8 +237,8 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// ```
     /// use bnum::prelude::*;
     /// 
-    /// assert_eq!(n!(12 U2048).abs_diff(n!(30)), n!(18));
-    /// assert_eq!(n!(-12 I2048).abs_diff(n!(5)), n!(17));
+    /// assert_eq!(n!(12U2048).abs_diff(n!(30)), n!(18));
+    /// assert_eq!(n!(-12I2048).abs_diff(n!(5)), n!(17));
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -264,11 +264,11 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// ```
     /// use bnum::prelude::*;
     /// 
-    /// assert_eq!(n!(20 U256).next_multiple_of(n!(6)), n!(24));
-    /// assert_eq!(n!(0 U256).next_multiple_of(n!(5)), n!(0));
+    /// assert_eq!(n!(20U256).next_multiple_of(n!(6)), n!(24));
+    /// assert_eq!(n!(0U256).next_multiple_of(n!(5)), n!(0));
     /// 
-    /// assert_eq!(n!(18 I256).next_multiple_of(n!(-4)), n!(16));
-    /// assert_eq!(n!(-17 I256).next_multiple_of(n!(-11)), n!(-22));
+    /// assert_eq!(n!(18I256).next_multiple_of(n!(-4)), n!(16));
+    /// assert_eq!(n!(-17I256).next_multiple_of(n!(-11)), n!(-22));
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -294,8 +294,8 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// ```
     /// use bnum::prelude::*;
     /// 
-    /// assert_eq!(n!(37 U512).div_floor(n!(8)), n!(4));
-    /// assert_eq!(n!(-37 I512).div_floor(n!(8)), n!(-5));
+    /// assert_eq!(n!(37U512).div_floor(n!(8)), n!(4));
+    /// assert_eq!(n!(-37I512).div_floor(n!(8)), n!(-5));
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -330,8 +330,8 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// ```
     /// use bnum::prelude::*;
     /// 
-    /// assert_eq!(n!(37 U512).div_ceil(n!(8)), n!(5));
-    /// assert_eq!(n!(-37 I512).div_ceil(n!(8)), n!(-4));
+    /// assert_eq!(n!(37U512).div_ceil(n!(8)), n!(5));
+    /// assert_eq!(n!(-37I512).div_ceil(n!(8)), n!(-4));
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -356,11 +356,11 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// ```
     /// use bnum::prelude::*;
     /// 
-    /// assert!(n!(0 U1024).is_zero());
-    /// assert!(n!(0 I1024).is_zero());
+    /// assert!(n!(0U1024).is_zero());
+    /// assert!(n!(0I1024).is_zero());
     /// 
-    /// assert!(!n!(1 U1024).is_zero());
-    /// assert!(!n!(-1 I1024).is_zero());
+    /// assert!(!n!(1U1024).is_zero());
+    /// assert!(!n!(-1I1024).is_zero());
     /// ```
     #[must_use]
     #[inline]
@@ -384,11 +384,11 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// ```
     /// use bnum::prelude::*;
     /// 
-    /// assert!(n!(1 U2048).is_one());
-    /// assert!(n!(1 I2048).is_one());
+    /// assert!(n!(1U2048).is_one());
+    /// assert!(n!(1I2048).is_one());
     /// 
-    /// assert!(!n!(0 U2048).is_one());
-    /// assert!(!n!(-1 I2048).is_one());
+    /// assert!(!n!(0U2048).is_one());
+    /// assert!(!n!(-1I2048).is_one());
     /// ```
     #[must_use]
     #[inline]
@@ -445,8 +445,8 @@ impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
     /// use bnum::prelude::*;
     /// use bnum::types::{U256, I256};
     ///
-    /// assert_eq!(U256::MAX.cast_signed(), n!(-1 I256));
-    /// assert_eq!(n!(0 U256).cast_signed(), n!(0 I256));
+    /// assert_eq!(U256::MAX.cast_signed(), n!(-1I256));
+    /// assert_eq!(n!(0U256).cast_signed(), n!(0I256));
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -465,9 +465,9 @@ impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
     /// ```
     /// use bnum::prelude::*;
     /// 
-    /// assert_eq!(n!(20 U256).next_power_of_two(), n!(32));
-    /// assert_eq!(n!(16 U256).next_power_of_two(), n!(16));
-    /// assert_eq!(n!(0 U256).next_power_of_two(), n!(1));
+    /// assert_eq!(n!(20U256).next_power_of_two(), n!(32));
+    /// assert_eq!(n!(16U256).next_power_of_two(), n!(16));
+    /// assert_eq!(n!(0U256).next_power_of_two(), n!(1));
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -520,7 +520,7 @@ impl<const N: usize, const B: usize, const OM: u8> Int<N, B, OM> {
     /// use bnum::types::U512;
     /// 
     /// assert_eq!(n!(-1).cast_unsigned(), U512::MAX);
-    /// assert_eq!(n!(0 I512).cast_unsigned(), n!(0 U512));
+    /// assert_eq!(n!(0I512).cast_unsigned(), n!(0U512));
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -536,8 +536,8 @@ impl<const N: usize, const B: usize, const OM: u8> Int<N, B, OM> {
     /// use bnum::prelude::*;
     /// use bnum::types::I1024;
     /// 
-    /// assert_eq!(n!(-20 I1024).unsigned_abs(), n!(20));
-    /// assert_eq!(n!(15 I1024).unsigned_abs(), n!(15));
+    /// assert_eq!(n!(-20I1024).unsigned_abs(), n!(20));
+    /// assert_eq!(n!(15I1024).unsigned_abs(), n!(15));
     /// assert_eq!(I1024::MIN.unsigned_abs(), I1024::MIN.cast_unsigned());
     /// ```
     #[must_use = doc::must_use_op!()]
@@ -563,8 +563,8 @@ impl<const N: usize, const B: usize, const OM: u8> Int<N, B, OM> {
     /// ```
     /// use bnum::prelude::*;
     /// 
-    /// assert_eq!(n!(-20 I2048).abs(), n!(20));
-    /// assert_eq!(n!(15 I2048).abs(), n!(15));
+    /// assert_eq!(n!(-20I2048).abs(), n!(20));
+    /// assert_eq!(n!(15I2048).abs(), n!(15));
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -583,9 +583,9 @@ impl<const N: usize, const B: usize, const OM: u8> Int<N, B, OM> {
     /// ```
     /// use bnum::prelude::*;
     /// 
-    /// assert_eq!(n!(42 I256).signum(), n!(1));
-    /// assert_eq!(n!(-7 I256).signum(), n!(-1));
-    /// assert_eq!(n!(0 I256).signum(), n!(0));
+    /// assert_eq!(n!(42I256).signum(), n!(1));
+    /// assert_eq!(n!(-7I256).signum(), n!(-1));
+    /// assert_eq!(n!(0I256).signum(), n!(0));
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -606,9 +606,9 @@ impl<const N: usize, const B: usize, const OM: u8> Int<N, B, OM> {
     /// ```
     /// use bnum::prelude::*;
     /// 
-    /// assert!(n!(314 I512).is_positive());
-    /// assert!(!n!(-159 I512).is_positive());
-    /// assert!(!n!(0 I512).is_positive());
+    /// assert!(n!(314I512).is_positive());
+    /// assert!(!n!(-159I512).is_positive());
+    /// assert!(!n!(0I512).is_positive());
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -624,9 +624,9 @@ impl<const N: usize, const B: usize, const OM: u8> Int<N, B, OM> {
     /// ```
     /// use bnum::prelude::*;
     /// 
-    /// assert!(n!(-271 I512).is_negative());
-    /// assert!(!n!(828 I512).is_negative());
-    /// assert!(!n!(0 I512).is_negative());
+    /// assert!(n!(-271I512).is_negative());
+    /// assert!(!n!(828I512).is_negative());
+    /// assert!(!n!(0I512).is_negative());
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -743,17 +743,17 @@ mod tests {
             function: <stest>::ilog10(a: stest),
             skip: a <= 0
         }
-        #[cfg(feature = "nightly")] // since int_roundings are not stable yet
+        #[cfg(nightly)] // since int_roundings are not stable yet
         test_bignum! {
             function: <stest>::next_multiple_of(a: stest, b: stest),
             skip: crate::test::debug_skip!(a.checked_next_multiple_of(b).is_none()) || b == 0
         }
-        #[cfg(feature = "nightly")] // since int_roundings are not stable yet
+        #[cfg(nightly)] // since int_roundings are not stable yet
         test_bignum! {
             function: <stest>::div_floor(a: stest, b: stest),
             skip: a.checked_div(b).is_none()
         }
-        #[cfg(feature = "nightly")] // since int_roundings are not stable yet
+        #[cfg(nightly)] // since int_roundings are not stable yet
         test_bignum! {
             function: <stest>::div_ceil(a: stest, b: stest),
             skip: a.checked_div(b).is_none()

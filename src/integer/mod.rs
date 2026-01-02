@@ -77,7 +77,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> zeroize::Defau
 
 impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
     const fn has_valid_pad_bits(&self) -> bool {
-        if Self::LAST_BYTE_PAD_BITS == 0 {
+        if Self::LAST_BYTE_BITS == 8 {
             true
         } else {
             (self.bytes[N - 1] >> Self::LAST_BYTE_BITS) == 0

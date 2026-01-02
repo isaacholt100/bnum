@@ -22,7 +22,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// use bnum::prelude::*;
     /// use bnum::types::{U1024, I1024};
     /// 
-    /// assert_eq!(n!(1 U1024).overflowing_add(n!(1)), (n!(2), false));
+    /// assert_eq!(n!(1U1024).overflowing_add(n!(1)), (n!(2), false));
     /// assert_eq!(U1024::MAX.overflowing_add(n!(1)), (n!(0), true));
     /// 
     /// assert_eq!(I1024::MIN.overflowing_add(n!(-1)), (I1024::MAX, true));
@@ -77,7 +77,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// use bnum::prelude::*;
     /// use bnum::types::{U256, I256};
     /// 
-    /// assert_eq!(n!(1 U256).overflowing_sub(n!(1)), (n!(0), false));
+    /// assert_eq!(n!(1U256).overflowing_sub(n!(1)), (n!(0), false));
     /// assert_eq!(U256::MIN.overflowing_sub(n!(1)), (U256::MAX, true));
     /// 
     /// assert_eq!(I256::MIN.overflowing_sub(n!(1)), (I256::MAX, true));
@@ -127,10 +127,10 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// use bnum::prelude::*;
     /// use bnum::types::{U512, I512};
     /// 
-    /// assert_eq!(n!(1 U512).overflowing_mul(n!(1)), (n!(1), false));
+    /// assert_eq!(n!(1U512).overflowing_mul(n!(1)), (n!(1), false));
     /// assert_eq!(U512::power_of_two(511).overflowing_mul(n!(2)), (n!(0), true));
     /// 
-    /// assert_eq!(n!(-3 I512).overflowing_mul(n!(-7)), (n!(21), false));
+    /// assert_eq!(n!(-3I512).overflowing_mul(n!(-7)), (n!(21), false));
     /// assert_eq!(I512::MIN.overflowing_mul(n!(-1)), (I512::MIN, true));
     /// ```
     #[must_use = doc::must_use_op!()]
@@ -168,8 +168,8 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// use bnum::prelude::*;
     /// use bnum::types::{U1024, I1024};
     /// 
-    /// assert_eq!(n!(5 U1024).overflowing_div(n!(2)), (n!(2), false));
-    /// assert_eq!(n!(-23 I1024).overflowing_div(n!(4)), (n!(-5), false));
+    /// assert_eq!(n!(5U1024).overflowing_div(n!(2)), (n!(2), false));
+    /// assert_eq!(n!(-23I1024).overflowing_div(n!(4)), (n!(-5), false));
     /// assert_eq!(I1024::MIN.overflowing_div(n!(-1)), (I1024::MIN, true));
     /// ```
     #[must_use = doc::must_use_op!()]
@@ -200,8 +200,8 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// use bnum::prelude::*;
     /// use bnum::types::{U2048, I2048};
     /// 
-    /// assert_eq!(n!(13 U2048).overflowing_div_euclid(n!(5)), (n!(2), false));
-    /// assert_eq!(n!(-23 I2048).overflowing_div_euclid(n!(4)), (n!(-6), false));
+    /// assert_eq!(n!(13U2048).overflowing_div_euclid(n!(5)), (n!(2), false));
+    /// assert_eq!(n!(-23I2048).overflowing_div_euclid(n!(4)), (n!(-6), false));
     /// assert_eq!(I2048::MIN.overflowing_div_euclid(n!(-1)), (I2048::MIN, true));
     /// ```
     #[must_use = doc::must_use_op!()]
@@ -232,8 +232,8 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// use bnum::prelude::*;
     /// use bnum::types::{U1024, I1024};
     /// 
-    /// assert_eq!(n!(5 U1024).overflowing_rem(n!(2)), (n!(1), false));
-    /// assert_eq!(n!(-23 I1024).overflowing_rem(n!(4)), (n!(-3), false));
+    /// assert_eq!(n!(5U1024).overflowing_rem(n!(2)), (n!(1), false));
+    /// assert_eq!(n!(-23I1024).overflowing_rem(n!(4)), (n!(-3), false));
     /// assert_eq!(I1024::MIN.overflowing_rem(n!(-1)), (n!(0), true));
     /// ```
     #[must_use = doc::must_use_op!()]
@@ -265,8 +265,8 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// use bnum::prelude::*;
     /// use bnum::types::{U512, I512};
     /// 
-    /// assert_eq!(n!(13 U512).overflowing_rem_euclid(n!(5)), (n!(3), false));
-    /// assert_eq!(n!(-23 I512).overflowing_rem_euclid(n!(4)), (n!(1), false));
+    /// assert_eq!(n!(13U512).overflowing_rem_euclid(n!(5)), (n!(3), false));
+    /// assert_eq!(n!(-23I512).overflowing_rem_euclid(n!(4)), (n!(1), false));
     /// assert_eq!(I512::MIN.overflowing_rem_euclid(n!(-1)), (n!(0), true));
     /// ```
     #[must_use = doc::must_use_op!()]
@@ -296,10 +296,10 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// use bnum::prelude::*;
     /// use bnum::types::{U256, I256};
     /// 
-    /// assert_eq!(n!(1 U256).overflowing_neg(), (U256::MAX, true));
-    /// assert_eq!(n!(0 U256).overflowing_neg(), (n!(0), false));
+    /// assert_eq!(n!(1U256).overflowing_neg(), (U256::MAX, true));
+    /// assert_eq!(n!(0U256).overflowing_neg(), (n!(0), false));
     /// 
-    /// assert_eq!(n!(1 I256).overflowing_neg(), (n!(-1), false));
+    /// assert_eq!(n!(1I256).overflowing_neg(), (n!(-1), false));
     /// assert_eq!(I256::MIN.overflowing_neg(), (I256::MIN, true));
     /// ```
     #[must_use = doc::must_use_op!()]
@@ -319,13 +319,13 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// use bnum::prelude::*;
     /// use bnum::types::{U2048, I2048};
     /// 
-    /// assert_eq!(n!(1 U2048).overflowing_shl(1), (n!(2), false));
-    /// assert_eq!(n!(1 U2048).overflowing_shl(2049), (n!(2), true));
-    /// assert_eq!(n!(1 U2048).overflowing_shl(2048), (n!(1), true));
+    /// assert_eq!(n!(1U2048).overflowing_shl(1), (n!(2), false));
+    /// assert_eq!(n!(1U2048).overflowing_shl(2049), (n!(2), true));
+    /// assert_eq!(n!(1U2048).overflowing_shl(2048), (n!(1), true));
     /// 
-    /// assert_eq!(n!(-2 I2048).overflowing_shl(3), (n!(-16), false));
-    /// assert_eq!(n!(-2 I2048).overflowing_shl(2051), (n!(-16), true));
-    /// assert_eq!(n!(-2 I2048).overflowing_shl(2048), (n!(-2), true));
+    /// assert_eq!(n!(-2I2048).overflowing_shl(3), (n!(-16), false));
+    /// assert_eq!(n!(-2I2048).overflowing_shl(2051), (n!(-16), true));
+    /// assert_eq!(n!(-2I2048).overflowing_shl(2048), (n!(-2), true));
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -349,12 +349,12 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// use bnum::prelude::*;
     /// use bnum::types::{U1024, I1024};
     /// 
-    /// assert_eq!(n!(1 U1024).overflowing_shr(1), (n!(0), false));
-    /// assert_eq!(n!(2 U1024).overflowing_shr(1025), (n!(1), true));
+    /// assert_eq!(n!(1U1024).overflowing_shr(1), (n!(0), false));
+    /// assert_eq!(n!(2U1024).overflowing_shr(1025), (n!(1), true));
     /// assert_eq!(U1024::MAX.overflowing_shr(1024), (U1024::MAX, true));
     /// assert_eq!(U1024::MAX.overflowing_shr(1023), (n!(1), false));
     /// 
-    /// assert_eq!(n!(-4 I1024).overflowing_shr(2), (n!(-1), false));
+    /// assert_eq!(n!(-4I1024).overflowing_shr(2), (n!(-1), false));
     /// assert_eq!(I1024::MIN.overflowing_shr(1023), (n!(-1), false));
     /// assert_eq!(I1024::MIN.overflowing_shr(1024), (I1024::MIN, true));
     /// ```
@@ -380,12 +380,12 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// use bnum::prelude::*;
     /// use bnum::types::{U512, I512};
     /// 
-    /// assert_eq!(n!(2 U512).overflowing_pow(10), (n!(1024), false));
-    /// assert_eq!(n!(2 U512).overflowing_pow(512), (n!(0), true));
+    /// assert_eq!(n!(2U512).overflowing_pow(10), (n!(1024), false));
+    /// assert_eq!(n!(2U512).overflowing_pow(512), (n!(0), true));
     /// 
-    /// assert_eq!(n!(-7 I512).overflowing_pow(3), (n!(-343), false));
-    /// assert_eq!(n!(-2 I512).overflowing_pow(511), (I512::MIN, false));
-    /// assert_eq!(n!(2 I512).overflowing_pow(511), (I512::MIN, true));
+    /// assert_eq!(n!(-7I512).overflowing_pow(3), (n!(-343), false));
+    /// assert_eq!(n!(-2I512).overflowing_pow(511), (I512::MIN, false));
+    /// assert_eq!(n!(2I512).overflowing_pow(511), (I512::MIN, true));
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -437,9 +437,9 @@ impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
     /// use bnum::prelude::*;
     /// use bnum::types::{U512, I512};
     /// 
-    /// assert_eq!(n!(1 U512).overflowing_add_signed(n!(1)), (n!(2), false));
+    /// assert_eq!(n!(1U512).overflowing_add_signed(n!(1)), (n!(2), false));
     /// assert_eq!(U512::MAX.overflowing_add_signed(n!(1)), (n!(0), true));
-    /// assert_eq!(n!(1 U512).overflowing_add_signed(n!(-2)), (U512::MAX, true));
+    /// assert_eq!(n!(1U512).overflowing_add_signed(n!(-2)), (U512::MAX, true));
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -457,9 +457,9 @@ impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
     /// use bnum::prelude::*;
     /// use bnum::types::{U2048, I2048};
     /// 
-    /// assert_eq!(n!(1 U2048).overflowing_sub_signed(n!(-1)), (n!(2), false));
+    /// assert_eq!(n!(1U2048).overflowing_sub_signed(n!(-1)), (n!(2), false));
     /// assert_eq!(U2048::MAX.overflowing_sub_signed(n!(-1)), (n!(0), true));
-    /// assert_eq!(n!(1 U2048).overflowing_sub_signed(n!(2)), (U2048::MAX, true));
+    /// assert_eq!(n!(1U2048).overflowing_sub_signed(n!(2)), (U2048::MAX, true));
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
@@ -481,7 +481,7 @@ impl<const N: usize, const B: usize, const OM: u8> Int<N, B, OM> {
     /// use bnum::prelude::*;
     /// use bnum::types::{U256, I256};
     /// 
-    /// assert_eq!(n!(-1 I256).overflowing_add_unsigned(n!(1)), (n!(0), false));
+    /// assert_eq!(n!(-1I256).overflowing_add_unsigned(n!(1)), (n!(0), false));
     /// assert_eq!(I256::MAX.overflowing_add_unsigned(n!(1)), (I256::MIN, true));
     /// assert_eq!(I256::MIN.overflowing_add_unsigned(U256::MAX), (I256::MAX, false));
     #[must_use = doc::must_use_op!()]
@@ -500,7 +500,7 @@ impl<const N: usize, const B: usize, const OM: u8> Int<N, B, OM> {
     /// use bnum::prelude::*;
     /// use bnum::types::{U512, I512};
     /// 
-    /// assert_eq!(n!(1 I512).overflowing_sub_unsigned(n!(1)), (n!(0), false));
+    /// assert_eq!(n!(1I512).overflowing_sub_unsigned(n!(1)), (n!(0), false));
     /// assert_eq!(I512::MIN.overflowing_sub_unsigned(n!(1)), (I512::MAX, true));
     /// assert_eq!(I512::MAX.overflowing_sub_unsigned(U512::MAX), (I512::MIN, false));
     /// ```
@@ -520,8 +520,8 @@ impl<const N: usize, const B: usize, const OM: u8> Int<N, B, OM> {
     /// use bnum::prelude::*;
     /// use bnum::types::I1024;
     /// 
-    /// assert_eq!(n!(-123 I1024).overflowing_abs(), (n!(123), false));
-    /// assert_eq!(n!(456 I1024).overflowing_abs(), (n!(456), false));
+    /// assert_eq!(n!(-123I1024).overflowing_abs(), (n!(123), false));
+    /// assert_eq!(n!(456I1024).overflowing_abs(), (n!(456), false));
     /// assert_eq!(I1024::MIN.overflowing_abs(), (I1024::MIN, true));
     /// ```
     #[must_use = doc::must_use_op!()]
