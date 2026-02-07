@@ -36,3 +36,4 @@
 - remove Int::{from,to}_radix_{b,l}_e
 - remove Div/Rem<u64> for Uint
 - remove ONE, ZERO, NEG_ONE consts (not needed now we have the n! macro)
+- remove CastFrom from prelude

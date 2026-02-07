@@ -1,86 +1,14 @@
 use super::Uint;
-use crate::digit;
 
-impl<const N: usize,  const B: usize, const OM: u8> Uint<N, B, OM> {
-    // naive O(N^2) "digit by digit" multiplication
-    #[inline]
-    pub(super) const fn long_mul(self, rhs: Self) -> (Self, bool) {
-        let mut overflow = false;
-        let mut out = Self::ZERO;
-        let (mut prod, mut carry): (u128, u128);
-
-        let mut i = 0;
-        while i < Self::U128_DIGITS {
-            let self_digit_i = unsafe { self.as_wide_digits().get(i) };
-            carry = 0;
-            let mut j = 0;
-            unsafe {
-                while j < Self::U128_DIGITS - 1 - i {
-                    let index = i + j;
-                    (prod, carry) = digit::carrying_mul_u128(
-                        self_digit_i,
-                        rhs.as_wide_digits().get(j),
-                        carry,
-                        out.as_wide_digits().get(index),
-                    );
-                    out.as_wide_digits_mut().set(index, prod);
-                    j += 1;
-                }
-            }
-            // unfortunately, we have to handle the last digit separately, as otherwise we need to initialise prod, which slows performance considerably
-            let (prod, c) = digit::carrying_mul_u128(
-                self_digit_i,
-                unsafe { rhs.as_wide_digits().get(j) },
-                carry,
-                out.as_wide_digits().last(),
-            );
-            out.as_wide_digits_mut().set_last(prod);
-
-            if Self::U128_BITS_REMAINDER != 0 {
-                if 128 - Self::U128_BITS_REMAINDER > prod.leading_zeros() { // prod needs to be initialised here
-                    overflow = true;
-                }
-            }
-            if c != 0 {
-                overflow = true;
-            } else if self_digit_i != 0 {
-                if j < Self::U128_DIGITS - 1 && rhs.as_wide_digits().last() != 0 {
-                    overflow = true;
-                } else {
-                    j += 1;
-                    unsafe {
-                        while j < Self::U128_DIGITS - 1 {
-                            if rhs.as_wide_digits().get(j) != 0 {
-                                overflow = true;
-                                break;
-                            }
-                            j += 1;
-                        }
-                    }
-                }
-            }
-            i += 1;
-        }
-        out.set_sign_bits(); // in case of overflow, need to set sign bits
-        (out, overflow)
-    }
-
+impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
     #[inline]
     pub(crate) const fn mul_u128_digit(self, rhs: u128) -> (Self, bool) {
-        let mut out = Self::ZERO;
-        let (mut prod, mut carry) = (0, 0);
-        let mut i = 0;
-        while i < Self::U128_DIGITS {
-            let d = unsafe { self.as_wide_digits().get(i) };
-            (prod, carry) = digit::carrying_mul_u128(d, rhs, carry, 0);
-            unsafe {
-                out.as_wide_digits_mut().set(i, prod);
-            }
-            i += 1;
-        }
-        let overflow = carry != 0 || (Self::U128_BITS_REMAINDER != 0 && 128 - prod.leading_zeros() > Self::U128_BITS_REMAINDER);
+        let (out, mut overflow) = self.to_digits::<u128>().mul_digit(rhs);
+        let mut out = out.to_integer();
 
-        out.set_sign_bits();
+        overflow |= !out.has_valid_pad_bits();
+        out.set_sign_bits(); // in case of overflow, need to set sign bits
+
         (out, overflow)
     }
 }

@@ -75,16 +75,6 @@ pub type Int<const N: usize, const B: usize = 0, const OM: u8 = {crate::Overflow
 #[cfg(feature = "zeroize")]
 impl<const S: bool, const N: usize, const B: usize, const OM: u8> zeroize::DefaultIsZeroes for Integer<S, N, B, OM> {}
 
-impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
-    const fn has_valid_pad_bits(&self) -> bool {
-        if Self::LAST_BYTE_BITS == 8 {
-            true
-        } else {
-            (self.bytes[N - 1] >> Self::LAST_BYTE_BITS) == 0
-        }
-    }
-}
-
 impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, B, OM> {
     pub(crate) const LAST_BYTE_BITS: u32 = if Self::BITS % Byte::BITS == 0 {
         Byte::BITS as _
@@ -114,6 +104,15 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
                 // clear pad bits
                 self.bytes[N - 1] &= !(Byte::MAX << Self::LAST_BYTE_BITS); // 00..011..1
             }
+        }
+    }
+    
+    #[inline(always)]
+    const fn has_valid_pad_bits(&self) -> bool {
+        if Self::LAST_BYTE_BITS == 8 {
+            true
+        } else {
+            (self.bytes[N - 1] >> Self::LAST_BYTE_BITS) == 0
         }
     }
 
@@ -155,8 +154,13 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     }
 
     #[inline]
-    pub(crate) const fn as_digits(&self) -> &Digits<16, N> {
-        unsafe { &*(&self.bytes as *const u8 as *const _) }
+    pub(crate) const fn as_digits<D>(&self) -> &Digits<D, N> {
+        Digits::from_integer_ref(&self)
+    }
+
+    #[inline]
+    pub(crate) const fn to_digits<D>(self) -> Digits<D, N> {
+        Digits::from_integer(self)
     }
 }
 
@@ -191,13 +195,12 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> quickcheck::Ar
     fn arbitrary(g: &mut quickcheck::Gen) -> Self {
         let mut out = Self::ZERO;
         let mut i = 0;
-        unsafe {
             while i < Self::U128_DIGITS {
-                let a = <u128 as quickcheck::Arbitrary>::arbitrary(g);
-                out.as_wide_digits_mut().set(i, a);
-                i += 1;
-            }
+            let a = <u128 as quickcheck::Arbitrary>::arbitrary(g);
+            out.as_wide_digits_mut().set(i, a);
+            i += 1;
         }
+    
         out
     }
 }

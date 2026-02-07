@@ -1,7 +1,6 @@
 use super::{Integer, Uint};
-use crate::Exponent;
-use crate::digit::Digit;
 use crate::doc;
+use crate::{Byte, Exponent};
 
 macro_rules! impl_desc {
     () => {
@@ -33,15 +32,10 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn count_ones(mut self) -> Exponent {
-        self.set_pad_bits(false); // don't want to count sign-extending bits
-        let mut ones = 0;
-        let mut i = 0;
-        while i < Self::U128_DIGITS {
-            let digit = unsafe { self.as_wide_digits().get(i) };
-            ones += digit.count_ones();
-            i += 1;
+        if S {
+            self.set_pad_bits(false); // don't want to count sign-extending pad bits
         }
-        ones
+        self.to_digits::<u32>().count_ones()
     }
 
     /// Returns the number of ones in the binary representation of `self`.
@@ -87,75 +81,14 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn leading_zeros(self) -> Exponent {
-        self.not().leading_ones()
-    }
-
-    // this method breaks early if the threshold is exceeded, which provides a speed up when converting between different width integer types
-    pub(crate) const fn leading_zeros_at_least_threshold(&self, threshold: Exponent) -> bool {
-        self.not().leading_ones_at_least_threshold(threshold)
-    }
-
-    /// Returns the number of trailing zeros in the binary representation of `self`.
-    ///
-    /// # Examples
-    ///
-    /// Basic usage:
-    ///
-    /// ```
-    /// use bnum::prelude::*;
-    /// use bnum::types::{U2048, I2048};
-    ///
-    /// assert_eq!(U2048::MAX.trailing_zeros(), 0);
-    /// assert_eq!(n!(0U2048).trailing_zeros(), 2048);
-    /// assert_eq!(U2048::power_of_two(279).trailing_zeros(), 279);
-    ///
-    /// assert_eq!(I2048::MAX.trailing_zeros(), 0);
-    /// assert_eq!(I2048::MIN.trailing_zeros(), 2047);
-    /// assert_eq!(n!(-16I2048).trailing_zeros(), 4);
-    /// ```
-    #[must_use = doc::must_use_op!()]
-    #[inline]
-    pub const fn trailing_zeros(self) -> Exponent {
-        let mut zeros = 0;
-        let mut i = 0;
-        unsafe {
-            while i < Self::U128_DIGITS {
-                let digit = self.as_wide_digits().get(i);
-                let tz = digit.trailing_zeros();
-                zeros += tz;
-                if tz != u128::BITS {
-                    return zeros;
-                }
-                i += 1;
-            }
-        }
-        // may have counted padding bits in the last digit: if we did count them, then all the lower order bits were zero as well, so the count would exceed Self::BITS. so can take min with Self::BITS
-        if zeros >= Self::BITS {
-            Self::BITS
-        } else {
-            zeros
-        }
+    pub const fn leading_zeros(mut self) -> Exponent {
+        self.set_pad_bits(false);
+        self.to_digits::<u32>().leading_zeros() - Self::LAST_BYTE_PAD_BITS
     }
 
     // this method breaks early if the threshold is exceeded, which provides a speed up when converting between different width integer types
     pub(crate) const fn leading_ones_at_least_threshold(&self, threshold: Exponent) -> bool {
         self.leading_ones() >= threshold
-        // don't need to use larger digits, the compiler optimises this code well
-        // let mut ones = 0;
-        // let mut i = N;
-        // while i > 0 {
-        //     i -= 1;
-        //     let digit = self.bytes[i];
-        //     ones += digit.leading_ones();
-        //     if ones >= threshold {
-        //         return true;
-        //     }
-        //     if digit != Digit::MAX {
-        //         break;
-        //     }
-        // }
-        // false
     }
 
     /// Returns the number of leading ones in the binary representation of `self`.
@@ -179,19 +112,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn leading_ones(mut self) -> Exponent {
-        self.set_pad_bits(true); // need to pad with 1s otherwise the loop will break immediately
-        // don't need to use larger digits, the compiler optimises this code well
-        let mut ones = 0;
-        let mut i = N;
-        while i > 0 {
-            i -= 1;
-            let digit = self.bytes[i];
-            ones += digit.leading_ones();
-            if digit != Digit::MAX {
-                break;
-            }
-        }
-        ones - Self::LAST_BYTE_PAD_BITS // remove number of padding bits from count
+        self.not().leading_zeros()
     }
 
     /// Returns the number of trailing ones in the binary representation of `self`.
@@ -218,6 +139,36 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
         self.not().trailing_zeros()
     }
 
+    // this method breaks early if the threshold is exceeded, which provides a speed up when converting between different width integer types
+    pub(crate) const fn leading_zeros_at_least_threshold(&self, threshold: Exponent) -> bool {
+        self.leading_zeros() >= threshold
+    }
+
+    /// Returns the number of trailing zeros in the binary representation of `self`.
+    ///
+    /// # Examples
+    ///
+    /// Basic usage:
+    ///
+    /// ```
+    /// use bnum::prelude::*;
+    /// use bnum::types::{U2048, I2048};
+    ///
+    /// assert_eq!(U2048::MAX.trailing_zeros(), 0);
+    /// assert_eq!(n!(0U2048).trailing_zeros(), 2048);
+    /// assert_eq!(U2048::power_of_two(279).trailing_zeros(), 279);
+    ///
+    /// assert_eq!(I2048::MAX.trailing_zeros(), 0);
+    /// assert_eq!(I2048::MIN.trailing_zeros(), 2047);
+    /// assert_eq!(n!(-16I2048).trailing_zeros(), 4);
+    /// ```
+    #[must_use = doc::must_use_op!()]
+    #[inline]
+    pub const fn trailing_zeros(self) -> Exponent {
+        let tz = self.to_digits::<u32>().trailing_zeros();
+        if tz >= Self::BITS { Self::BITS } else { tz }
+    }
+
     #[inline]
     const unsafe fn rotate_bytes_left(self, n: usize) -> Self {
         // this is no slower than using pointers with add and copy_from_nonoverlapping
@@ -235,37 +186,6 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
         }
 
         out
-    }
-
-    #[inline]
-    const unsafe fn unchecked_rotate_left(self, rhs: Exponent) -> Self {
-        unsafe {
-            let digit_shift = (rhs / 8) as usize;
-            let bit_shift = rhs % 8;
-
-            let mut out = self.rotate_bytes_left(digit_shift);
-
-            if bit_shift != 0 {
-                let carry_shift = 128 - bit_shift;
-                let mut carry =
-                    out.as_wide_digits().last() >> (8 * Self::LAST_DIGIT_BYTES as u32 - bit_shift);
-
-                let mut i = 0;
-                while i < Self::U128_DIGITS {
-                    let current_digit = out.as_wide_digits().get(i);
-                    out.as_wide_digits_mut()
-                        .set(i, (current_digit << bit_shift) | carry);
-                    carry = current_digit >> carry_shift;
-                    i += 1;
-                }
-            }
-
-            if Self::LAST_BYTE_PAD_BITS != 0 {
-                out.shr(Self::LAST_BYTE_PAD_BITS) // this will sign-extend t
-            } else {
-                out
-            }
-        }
     }
 
     /// Rotates the bits of `self` to the left by `n` places.
@@ -299,7 +219,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
             out.set_sign_bits();
             return out;
         } else {
-            unsafe { self.unchecked_rotate_left(n % Self::BITS) }
+            unsafe { self.to_digits::<u8>().unchecked_rotate_left(n % Self::BITS).to_integer() }
         }
     }
 
@@ -411,22 +331,12 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     #[inline]
     pub const fn reverse_bits(self) -> Self {
         if Self::LAST_BYTE_PAD_BITS != 0 {
-            let mut out = Integer::<S, N, 0, OM>::from_bytes(self.bytes).reverse_bits();
+            let mut out = self.force::<S, 0, OM>().reverse_bits();
             out = out.shr(Self::LAST_BYTE_PAD_BITS); // this will sign-extend, so no need to call set_sign_bits
-            return Self { bytes: out.bytes };
+            return out.force();
         }
 
-        let mut out = Self::ZERO;
-        let mut i = 0;
-        while i < Self::U128_DIGITS {
-            unsafe {
-                let d = self.as_wide_digits().get(i);
-                out.as_wide_digits_mut().set_be(i, d.reverse_bits());
-            }
-
-            i += 1;
-        }
-        out
+        self.to_digits::<u8>().reverse_bits().to_integer() // 1 byte is faster than any other digit size
     }
 
     #[inline]
@@ -449,15 +359,14 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
 
             let mut i = (rhs / 128) as usize;
             while i < Self::U128_DIGITS {
-                let current_digit = unsafe { out.as_wide_digits().get(i) };
-                unsafe {
-                    out.as_wide_digits_mut()
-                        .set(i, (current_digit << bit_shift) | carry)
-                };
+                let current_digit = out.as_wide_digits().get(i);
+                out.as_wide_digits_mut()
+                    .set(i, (current_digit << bit_shift) | carry);
                 carry = current_digit >> carry_shift;
                 i += 1;
             }
         }
+        // let mut out = self.to_digits::<u64>().unchecked_shl(rhs).to_integer();
 
         out.set_sign_bits();
 
@@ -480,43 +389,41 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
         let digit_shift = (rhs / 8) as usize;
         let bit_shift = rhs % 8;
 
-        unsafe {
-            let mut i = digit_shift;
-            while i < N {
-                // we start i at digit_shift, not 0, since the compiler can elide bounds checks when i < N
-                out.bytes[i - digit_shift] = self.bytes[i];
-                i += 1;
-            }
-
-            if bit_shift != 0 {
-                let carry_shift = 128 - bit_shift;
-
-                let mut i = (Self::BITS - rhs).div_ceil(128) as usize; // we could just start at U128_DIGITS, but then we would just be shifting all ones/all zeros for the unaffected digits (at higher indices) which would do nothing
-
-                let mut carry = if self.is_negative_internal() {
-                    let shift_back = if Self::U128_BITS_REMAINDER == 0 || i != Self::U128_DIGITS {
-                        // if i is not the last digit index, then we have a full u128 digit
-                        128 - bit_shift
-                    } else {
-                        // last digit (the incomplete one) has Self::U128_BITS_REMAINDER bits, so shift back by this minus bit_shift
-                        Self::U128_BITS_REMAINDER - bit_shift
-                    };
-                    u128::MAX << shift_back // if negative, then we initialise the carry to have the correct number of sign bits (we can get this expression by looking for the expression for carry shift in the while loop. the previous digit will have been all ones (unless this was the last digit, but then we can view it as having infinite leading ones, as this still represents the same value))
-                } else {
-                    0
-                };
-                while i > 0 {
-                    i -= 1;
-
-                    let current_digit = out.as_wide_digits().get(i);
-                    out.as_wide_digits_mut()
-                        .set(i, (current_digit >> bit_shift) | carry);
-                    carry = current_digit << carry_shift;
-                }
-            }
-
-            out
+        let mut i = digit_shift;
+        while i < N {
+            // we start i at digit_shift, not 0, since the compiler can elide bounds checks when i < N
+            out.bytes[i - digit_shift] = self.bytes[i];
+            i += 1;
         }
+
+        if bit_shift != 0 {
+            let carry_shift = 128 - bit_shift;
+
+            let mut i = (Self::BITS - rhs).div_ceil(128) as usize; // we could just start at U128_DIGITS, but then we would just be shifting all ones/all zeros for the unaffected digits (at higher indices) which would do nothing
+
+            let mut carry = if self.is_negative_internal() {
+                let shift_back = if Self::U128_BITS_REMAINDER == 0 || i != Self::U128_DIGITS {
+                    // if i is not the last digit index, then we have a full u128 digit
+                    128 - bit_shift
+                } else {
+                    // last digit (the incomplete one) has Self::U128_BITS_REMAINDER bits, so shift back by this minus bit_shift
+                    Self::U128_BITS_REMAINDER - bit_shift
+                };
+                u128::MAX << shift_back // if negative, then we initialise the carry to have the correct number of sign bits (we can get this expression by looking for the expression for carry shift in the while loop. the previous digit will have been all ones (unless this was the last digit, but then we can view it as having infinite leading ones, as this still represents the same value))
+            } else {
+                0
+            };
+            while i > 0 {
+                i -= 1;
+
+                let current_digit = out.as_wide_digits().get(i);
+                out.as_wide_digits_mut()
+                    .set(i, (current_digit >> bit_shift) | carry);
+                carry = current_digit << carry_shift;
+            }
+        }
+
+        out
     }
 
     /// Returns a boolean representing the bit in the given position (`true` if the bit is 1). The least significant bit is at index `0`, the most significant bit is at index `Self::BITS - 1`.
@@ -541,8 +448,8 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     #[must_use]
     #[inline]
     pub const fn bit(&self, index: Exponent) -> bool {
-        let digit = self.bytes[index as usize / Digit::BITS as usize];
-        digit & (1 << (index % Digit::BITS)) != 0
+        let digit = self.bytes[index as usize / Byte::BITS as usize];
+        digit & (1 << (index % Byte::BITS)) != 0
     }
 
     /// Sets/unsets the bit in the given position (i.e. to `1` if `value` is `true`). The least significant bit is at index `0`, the most significant bit is at index `Self::BITS - 1`.
@@ -568,9 +475,9 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// ```
     #[inline]
     pub const fn set_bit(&mut self, index: Exponent, value: bool) {
-        let digit = &mut self.bytes[index as usize / Digit::BITS as usize];
-        let shift = index % Digit::BITS;
-        *digit = *digit & !(1 << shift) | ((value as Digit) << shift);
+        let digit = &mut self.bytes[index as usize / Byte::BITS as usize];
+        let shift = index % Byte::BITS;
+        *digit = *digit & !(1 << shift) | ((value as Byte) << shift);
     }
 }
 
@@ -597,17 +504,10 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, 0, OM> {
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn swap_bytes(self) -> Self {
-        let mut out = Self::ZERO;
-        let mut i = 0;
-        while i < Self::U128_DIGITS {
-            unsafe {
-                let d = self.as_wide_digits().get(i);
-                out.as_wide_digits_mut().set_be(i, d.swap_bytes());
-            }
-
-            i += 1;
-        }
-        out
+        // let mut bytes = self.bytes;
+        // bytes.reverse(); // this is faster than manually swapping using uN::swap_bytes
+        // Self { bytes }
+        self.to_digits::<u64>().swap_bytes().to_integer() // u8 is fastest
     }
 }
 
@@ -631,7 +531,7 @@ impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
     #[must_use]
     #[inline]
     pub const fn bits(&self) -> Exponent {
-        Self::BITS as Exponent - self.leading_zeros()
+        self.to_digits::<u32>().bit_width()
     }
 }
 
@@ -804,7 +704,7 @@ mod swap_bytes_tests {
 
                             b.to_bytes() == bytes
                         }
-                        
+
                         fn [<quickcheck_swap_bytes_i $bits>](a: crate::Int<{$bits / 8}>) -> bool {
                             let b = a.swap_bytes();
                             let mut bytes = a.to_bytes();

@@ -1,8 +1,7 @@
 use super::Uint;
 use crate::Exponent;
-use crate::{Integer, Int};
-use crate::digit;
 use crate::doc;
+use crate::{Int, Integer};
 
 macro_rules! impl_desc {
     () => {
@@ -13,18 +12,18 @@ macro_rules! impl_desc {
 #[doc = impl_desc!()]
 impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, B, OM> {
     /// Returns a tuple of the addition along with a boolean indicating whether an arithmetic overflow would occur. If an overflow would have occurred then the wrapped value is returned.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// Basic usage:
-    /// 
+    ///
     /// ```
     /// use bnum::prelude::*;
     /// use bnum::types::{U1024, I1024};
-    /// 
+    ///
     /// assert_eq!(n!(1U1024).overflowing_add(n!(1)), (n!(2), false));
     /// assert_eq!(U1024::MAX.overflowing_add(n!(1)), (n!(0), true));
-    /// 
+    ///
     /// assert_eq!(I1024::MIN.overflowing_add(n!(-1)), (I1024::MAX, true));
     /// assert_eq!(I1024::MAX.overflowing_add(n!(1)), (I1024::MIN, true));
     /// ```
@@ -32,7 +31,11 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     #[inline]
     pub const fn overflowing_add(self, rhs: Self) -> (Self, bool) {
         if S {
-            let sum = self.force_sign::<false>().overflowing_add(rhs.force_sign()).0.force_sign(); // we don't care about the overflow here, and we use this instead of wrapping_add, since that would lead to infinite recursion
+            let sum = self
+                .force_sign::<false>()
+                .overflowing_add(rhs.force_sign())
+                .0
+                .force_sign(); // we don't care about the overflow here, and we use this instead of wrapping_add, since that would lead to infinite recursion
             let overflow = match (self.is_negative_internal(), rhs.is_negative_internal()) {
                 (false, false) => sum.is_negative_internal(),
                 (true, true) => !sum.is_negative_internal(),
@@ -40,46 +43,27 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
             };
             return (sum, overflow);
         }
-        let mut out = Self::ZERO;
-        let mut carry = false;
-        let mut i = 0;
-        let mut result = (0, false);
+        let (out, carry) = self.to_digits::<u128>().overflowing_add(rhs.to_digits());
 
-        unsafe {
-            while i < Self::U128_DIGITS {
-                result = digit::carrying_add_u128(
-                    self.as_wide_digits().get(i),
-                    rhs.as_wide_digits().get(i),
-                    carry,
-                );
-                out.as_wide_digits_mut().set(i, result.0);
-                carry = result.1;
-                i += 1;
-            }
-        }
-        if Self::U128_BITS_REMAINDER != 0 {
-            carry = (128 - result.0.leading_zeros()) > Self::U128_BITS_REMAINDER;
-            if carry {
-                debug_assert!(result.0.leading_zeros() == 128 - Self::U128_BITS_REMAINDER - 1);
-                out.set_sign_bits();
-            }
-        }
-        (out, carry)
+        let mut out = out.to_integer();
+        let overflow = carry || !out.has_valid_pad_bits();
+        out.set_sign_bits(); // in case of carry, need to set sign bits
+        (out, overflow)
     }
 
     /// Returns a tuple of the subtraction along with a boolean indicating whether an arithmetic overflow would occur. If an overflow would have occurred then the wrapped value is returned.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// Basic usage:
-    /// 
+    ///
     /// ```
     /// use bnum::prelude::*;
     /// use bnum::types::{U256, I256};
-    /// 
+    ///
     /// assert_eq!(n!(1U256).overflowing_sub(n!(1)), (n!(0), false));
     /// assert_eq!(U256::MIN.overflowing_sub(n!(1)), (U256::MAX, true));
-    /// 
+    ///
     /// assert_eq!(I256::MIN.overflowing_sub(n!(1)), (I256::MAX, true));
     /// assert_eq!(I256::MAX.overflowing_sub(n!(-1)), (I256::MIN, true));
     /// ```
@@ -87,7 +71,11 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     #[inline]
     pub const fn overflowing_sub(self, rhs: Self) -> (Self, bool) {
         if S {
-            let sub = self.force_sign::<false>().overflowing_sub(rhs.force_sign()).0.force_sign(); // we don't care about the overflow here, and we use this instead of wrapping_sub, since that would lead to infinite recursion
+            let sub = self
+                .force_sign::<false>()
+                .overflowing_sub(rhs.force_sign())
+                .0
+                .force_sign(); // we don't care about the overflow here, and we use this instead of wrapping_sub, since that would lead to infinite recursion
             let overflow = match (self.is_negative_internal(), rhs.is_negative_internal()) {
                 (false, true) => sub.is_negative_internal(),
                 (true, false) => !sub.is_negative_internal(),
@@ -96,40 +84,27 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
             return (sub, overflow);
         }
 
-        let mut out = Self::ZERO;
-        let mut borrow = false;
-        let mut i = 0;
-        unsafe {
-            while i < Self::U128_DIGITS {
-                // the last full u128 digits cause an overflow iff the truncated last digits cause an overflow
-                let result = digit::borrowing_sub_u128(
-                    self.as_wide_digits().get(i),
-                    rhs.as_wide_digits().get(i),
-                    borrow,
-                );
-                out.as_wide_digits_mut().set(i, result.0);
-                borrow = result.1;
-                i += 1;
-            }
-        }
+        let (out, borrow) = self.to_digits::<u128>().overflowing_sub(rhs.to_digits());
+        let mut out = out.to_integer();
+        // the last full u128 digits cause an overflow iff the truncated last digits cause an overflow, so don't need further checks for overflow if Self::U128_BITS_REMAINDER != 0
         out.set_sign_bits(); // in case of borrow, need to set sign bits
 
         (out, borrow)
     }
 
     /// Returns a tuple of the multiplication along with a boolean indicating whether an arithmetic overflow would occur. If an overflow would have occurred then the wrapped value is returned.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// Basic usage:
-    /// 
+    ///
     /// ```
     /// use bnum::prelude::*;
     /// use bnum::types::{U512, I512};
-    /// 
+    ///
     /// assert_eq!(n!(1U512).overflowing_mul(n!(1)), (n!(1), false));
     /// assert_eq!(U512::power_of_two(511).overflowing_mul(n!(2)), (n!(0), true));
-    /// 
+    ///
     /// assert_eq!(n!(-3I512).overflowing_mul(n!(-7)), (n!(21), false));
     /// assert_eq!(I512::MIN.overflowing_mul(n!(-1)), (I512::MIN, true));
     /// ```
@@ -138,7 +113,9 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     pub const fn overflowing_mul(self, rhs: Self) -> (Self, bool) {
         if S {
             // TODO: might be possible to do this without using abs, as the wrapping calculation is the same as just casting to unsigned
-            let (uint, overflow) = self.unsigned_abs_internal().overflowing_mul(rhs.unsigned_abs_internal());
+            let (uint, overflow) = self
+                .unsigned_abs_internal()
+                .overflowing_mul(rhs.unsigned_abs_internal());
             let out = uint.force_sign();
             return if self.is_negative_internal() == rhs.is_negative_internal() {
                 (out, overflow || out.is_negative_internal())
@@ -150,24 +127,32 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
             };
         }
         // TODO: implement a faster multiplication algorithm for large values of `N`
-        let (m, o) = self.force_sign().long_mul(rhs.force_sign());
-        (m.force_sign(), o)
+        let a = self.to_digits::<u128>();
+        let b = rhs.to_digits::<u128>();
+        
+        let (out, mut overflow) = a.overflowing_mul(b);
+        let mut out = out.to_integer();
+
+        overflow |= !out.has_valid_pad_bits();
+        out.set_sign_bits(); // in case of overflow, need to set sign bits
+
+        (out, overflow)
     }
 
     /// Returns a tuple of the division along with a boolean indicating whether overflow occurred. Note that this can only happen for signed integers, when `self` is [`Self::MIN`] and `rhs` is `-1`.
-    /// 
+    ///
     /// # Panics
-    /// 
+    ///
     /// This function will panic if `rhs` is zero.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// Basic usage:
     ///
     /// ```
     /// use bnum::prelude::*;
     /// use bnum::types::{U1024, I1024};
-    /// 
+    ///
     /// assert_eq!(n!(5U1024).overflowing_div(n!(2)), (n!(2), false));
     /// assert_eq!(n!(-23I1024).overflowing_div(n!(4)), (n!(-5), false));
     /// assert_eq!(I1024::MIN.overflowing_div(n!(-1)), (I1024::MIN, true));
@@ -187,19 +172,19 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     }
 
     /// Returns a tuple of the Euclidean division along with a boolean indicating whether overflow occurred. Note that this can only happen for signed integers, when `self` is [`Self::MIN`] and `rhs` is `-1`.
-    /// 
+    ///
     /// # Panics
-    /// 
+    ///
     /// This function will panic if `rhs` is zero.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// Basic usage:
-    /// 
+    ///
     /// ```
     /// use bnum::prelude::*;
     /// use bnum::types::{U2048, I2048};
-    /// 
+    ///
     /// assert_eq!(n!(13U2048).overflowing_div_euclid(n!(5)), (n!(2), false));
     /// assert_eq!(n!(-23I2048).overflowing_div_euclid(n!(4)), (n!(-6), false));
     /// assert_eq!(I2048::MIN.overflowing_div_euclid(n!(-1)), (I2048::MIN, true));
@@ -219,19 +204,19 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     }
 
     /// Returns a tuple of the remainder along with a boolean indicating whether overflow occurred during division. Note that this can only happen for signed integers, when `self` is [`Self::MIN`] and `rhs` is `-1`.
-    /// 
+    ///
     /// # Panics
-    /// 
+    ///
     /// This function will panic if `rhs` is zero.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// Basic usage:
-    /// 
+    ///
     /// ```
     /// use bnum::prelude::*;
     /// use bnum::types::{U1024, I1024};
-    /// 
+    ///
     /// assert_eq!(n!(5U1024).overflowing_rem(n!(2)), (n!(1), false));
     /// assert_eq!(n!(-23I1024).overflowing_rem(n!(4)), (n!(-3), false));
     /// assert_eq!(I1024::MIN.overflowing_rem(n!(-1)), (n!(0), true));
@@ -252,19 +237,19 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     }
 
     /// Returns a tuple of the Euclidean remainder along with a boolean indicating whether overflow occurred during division. Note that this can only happen for signed integers, when `self` is [`Self::MIN`] and `rhs` is `-1`.
-    /// 
+    ///
     /// # Panics
-    /// 
+    ///
     /// This function will panic if `rhs` is zero.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// Basic usage:
-    /// 
+    ///
     /// ```
     /// use bnum::prelude::*;
     /// use bnum::types::{U512, I512};
-    /// 
+    ///
     /// assert_eq!(n!(13U512).overflowing_rem_euclid(n!(5)), (n!(3), false));
     /// assert_eq!(n!(-23I512).overflowing_rem_euclid(n!(4)), (n!(1), false));
     /// assert_eq!(I512::MIN.overflowing_rem_euclid(n!(-1)), (n!(0), true));
@@ -285,20 +270,20 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     }
 
     /// Returns a tuple of `!self + 1` along with a boolean indicating whether an arithmetic overflow would occur. If an overflow would have occurred then the wrapped value is returned.
-    /// 
+    ///
     /// Note that the second item of the tuple will be `true` if `self` is not zero.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// Basic usage:
-    /// 
+    ///
     /// ```
     /// use bnum::prelude::*;
     /// use bnum::types::{U256, I256};
-    /// 
+    ///
     /// assert_eq!(n!(1U256).overflowing_neg(), (U256::MAX, true));
     /// assert_eq!(n!(0U256).overflowing_neg(), (n!(0), false));
-    /// 
+    ///
     /// assert_eq!(n!(1I256).overflowing_neg(), (n!(-1), false));
     /// assert_eq!(I256::MIN.overflowing_neg(), (I256::MIN, true));
     /// ```
@@ -310,19 +295,19 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     }
 
     /// Returns a tuple of the left shift along with a boolean indicating whether `rhs` is greater than or equal to `Self::BITS`. If `rhs >= Self::BITS` then the returned value is `self` left-shifted by `rhs % Self::BITS`.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// Basic usage:
-    /// 
+    ///
     /// ```
     /// use bnum::prelude::*;
     /// use bnum::types::{U2048, I2048};
-    /// 
+    ///
     /// assert_eq!(n!(1U2048).overflowing_shl(1), (n!(2), false));
     /// assert_eq!(n!(1U2048).overflowing_shl(2049), (n!(2), true));
     /// assert_eq!(n!(1U2048).overflowing_shl(2048), (n!(1), true));
-    /// 
+    ///
     /// assert_eq!(n!(-2I2048).overflowing_shl(3), (n!(-16), false));
     /// assert_eq!(n!(-2I2048).overflowing_shl(2051), (n!(-16), true));
     /// assert_eq!(n!(-2I2048).overflowing_shl(2048), (n!(-2), true));
@@ -331,29 +316,25 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     #[inline]
     pub const fn overflowing_shl(self, rhs: Exponent) -> (Self, bool) {
         unsafe {
-            if rhs >= Self::BITS {
-                (Self::unchecked_shl_internal(self, rhs % Self::BITS), true)
-            } else {
-                (Self::unchecked_shl_internal(self, rhs), false)
-            }
+            (Self::unchecked_shl_internal(self, rhs % Self::BITS), rhs >= Self::BITS)
         }
     }
 
     /// Returns a tuple of the right shift along with a boolean indicating whether `rhs` is greater than or equal to `Self::BITS`. If `rhs >= Self::BITS` then the returned value is `self` right-shifted by `rhs % Self::BITS`.
     ///
     /// # Examples
-    /// 
+    ///
     /// Basic usage:
-    /// 
+    ///
     /// ```
     /// use bnum::prelude::*;
     /// use bnum::types::{U1024, I1024};
-    /// 
+    ///
     /// assert_eq!(n!(1U1024).overflowing_shr(1), (n!(0), false));
     /// assert_eq!(n!(2U1024).overflowing_shr(1025), (n!(1), true));
     /// assert_eq!(U1024::MAX.overflowing_shr(1024), (U1024::MAX, true));
     /// assert_eq!(U1024::MAX.overflowing_shr(1023), (n!(1), false));
-    /// 
+    ///
     /// assert_eq!(n!(-4I1024).overflowing_shr(2), (n!(-1), false));
     /// assert_eq!(I1024::MIN.overflowing_shr(1023), (n!(-1), false));
     /// assert_eq!(I1024::MIN.overflowing_shr(1024), (I1024::MIN, true));
@@ -371,18 +352,18 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     }
 
     /// Returns a tuple of the exponentiation along with a boolean indicating whether an arithmetic overflow would occur. If an overflow would have occurred then the wrapped value is returned.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// Basic usage:
-    /// 
+    ///
     /// ```
     /// use bnum::prelude::*;
     /// use bnum::types::{U512, I512};
-    /// 
+    ///
     /// assert_eq!(n!(2U512).overflowing_pow(10), (n!(1024), false));
     /// assert_eq!(n!(2U512).overflowing_pow(512), (n!(0), true));
-    /// 
+    ///
     /// assert_eq!(n!(-7I512).overflowing_pow(3), (n!(-343), false));
     /// assert_eq!(n!(-2I512).overflowing_pow(511), (I512::MIN, false));
     /// assert_eq!(n!(2I512).overflowing_pow(511), (I512::MIN, true));
@@ -428,15 +409,15 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
 #[doc = concat!("(Unsigned integers only.) ", impl_desc!())]
 impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
     /// Returns a tuple of the addition (with a signed integer of the same bit width) along with a boolean indicating whether an arithmetic overflow would occur. If an overflow would have occurred then the wrapped value is returned.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// Basic usage:
-    /// 
+    ///
     /// ```
     /// use bnum::prelude::*;
     /// use bnum::types::{U512, I512};
-    /// 
+    ///
     /// assert_eq!(n!(1U512).overflowing_add_signed(n!(1)), (n!(2), false));
     /// assert_eq!(U512::MAX.overflowing_add_signed(n!(1)), (n!(0), true));
     /// assert_eq!(n!(1U512).overflowing_add_signed(n!(-2)), (U512::MAX, true));
@@ -449,14 +430,14 @@ impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
     }
 
     /// Returns a tuple of the subtraction (with a signed integer of the same bit width) along with a boolean indicating whether an arithmetic overflow would occur. If an overflow would have occurred then the wrapped value is returned.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// Basic usage:
     /// ```
     /// use bnum::prelude::*;
     /// use bnum::types::{U2048, I2048};
-    /// 
+    ///
     /// assert_eq!(n!(1U2048).overflowing_sub_signed(n!(-1)), (n!(2), false));
     /// assert_eq!(U2048::MAX.overflowing_sub_signed(n!(-1)), (n!(0), true));
     /// assert_eq!(n!(1U2048).overflowing_sub_signed(n!(2)), (U2048::MAX, true));
@@ -472,15 +453,15 @@ impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
 #[doc = concat!("(Signed integers only.) ", impl_desc!())]
 impl<const N: usize, const B: usize, const OM: u8> Int<N, B, OM> {
     /// Returns a tuple of the subtraction (with an unsigned integer of the same bit width) along with a boolean indicating whether an arithmetic overflow would occur. If an overflow would have occurred then the wrapped value is returned.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// Basic usage:
-    /// 
+    ///
     /// ```
     /// use bnum::prelude::*;
     /// use bnum::types::{U256, I256};
-    /// 
+    ///
     /// assert_eq!(n!(-1I256).overflowing_add_unsigned(n!(1)), (n!(0), false));
     /// assert_eq!(I256::MAX.overflowing_add_unsigned(n!(1)), (I256::MIN, true));
     /// assert_eq!(I256::MIN.overflowing_add_unsigned(U256::MAX), (I256::MAX, false));
@@ -493,13 +474,13 @@ impl<const N: usize, const B: usize, const OM: u8> Int<N, B, OM> {
     }
 
     /// Returns a tuple of the subtraction (with an unsigned integer of the same bit width) along with a boolean indicating whether an arithmetic overflow would occur. If an overflow would have occurred then the wrapped value is returned.
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// use bnum::prelude::*;
     /// use bnum::types::{U512, I512};
-    /// 
+    ///
     /// assert_eq!(n!(1I512).overflowing_sub_unsigned(n!(1)), (n!(0), false));
     /// assert_eq!(I512::MIN.overflowing_sub_unsigned(n!(1)), (I512::MAX, true));
     /// assert_eq!(I512::MAX.overflowing_sub_unsigned(U512::MAX), (I512::MIN, false));
@@ -513,13 +494,13 @@ impl<const N: usize, const B: usize, const OM: u8> Int<N, B, OM> {
     }
 
     /// Returns a tuple of the absolute value of `self` along with a boolean indicating whether an arithmetic overflow would occur. If an overflow would have occurred then the wrapped value is returned (this can only happen when `self` equals `Self::MIN`, in which case `Self::MIN` is returned).
-    /// 
+    ///
     /// # Examples
-    /// 
+    ///
     /// ```
     /// use bnum::prelude::*;
     /// use bnum::types::I1024;
-    /// 
+    ///
     /// assert_eq!(n!(-123I1024).overflowing_abs(), (n!(123), false));
     /// assert_eq!(n!(456I1024).overflowing_abs(), (n!(456), false));
     /// assert_eq!(I1024::MIN.overflowing_abs(), (I1024::MIN, true));

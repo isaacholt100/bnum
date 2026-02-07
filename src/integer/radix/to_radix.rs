@@ -227,7 +227,7 @@ impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
         let mut offset_bit_width = 0;
         let mut carry_bits = 0;
         for i in 0..num_non_zero_digits {
-            let d = unsafe { self.as_wide_digits().get(i) }; // we use wide digits as there will be fewer times when the accessed bits spans two consecutive digits, rather than just within one digit
+            let d = self.as_wide_digits().get(i); // we use wide digits as there will be fewer times when the accessed bits spans two consecutive digits, rather than just within one digit
             let digit = (d << offset_bit_width) as u8 & mask; // can truncate to u8 as this is equivalent to bitand-ing with zeros
             digits.push(digit | carry_bits);
             let mut j = radix_log2 - offset_bit_width;

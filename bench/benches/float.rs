@@ -1,7 +1,9 @@
 use bnum_old::cast::CastFrom as CastFromOld;
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use rand::prelude::*;
 use bnum::cast::CastFrom;
+
+use core::hint::black_box;
 
 mod unzip;
 
@@ -32,6 +34,7 @@ macro_rules! new_to_old {
         $(
             impl BFrom<Uint<{$N * 8}>> for bnum_old::BUint<$N> {
                 fn bfrom(b: Uint<{$N * 8}>) -> Self {
+                    assert!(core::mem::size_of::<Self>() == core::mem::size_of::<Uint<{$N * 8}>>());
                     let digits = *b.as_bytes();
                     let old_d8 = bnum_old::BUintD8::from_digits(digits);
                     let out = <Self as bnum_old::cast::CastFrom<bnum_old::BUintD8<{$N * 8}>>>::cast_from(old_d8);
@@ -43,6 +46,23 @@ macro_rules! new_to_old {
             impl BFrom<Int<{$N * 8}>> for bnum_old::BInt<$N> {
                 fn bfrom(b: Int<{$N * 8}>) -> Self {
                     Self::from_bits(bnum_old::BUint::bfrom(b.cast_unsigned()))
+                }
+            }
+
+            impl BFrom<Uint<{$N * 4}>> for bnum_old::BUintD32<$N> {
+                fn bfrom(b: Uint<{$N * 4}>) -> Self {
+                    assert!(core::mem::size_of::<Self>() == core::mem::size_of::<Uint<{$N * 4}>>());
+                    let digits = *b.as_bytes();
+                    let old_d8 = bnum_old::BUintD8::from_digits(digits);
+                    let out = <Self as bnum_old::cast::CastFrom<bnum_old::BUintD8<{$N * 4}>>>::cast_from(old_d8);
+                    // assert_eq!(out.to_str_radix(16), b.to_str_radix(16));
+                    out
+                }
+            }
+
+            impl BFrom<Int<{$N * 4}>> for bnum_old::BIntD32<$N> {
+                fn bfrom(b: Int<{$N * 4}>) -> Self {
+                    Self::from_bits(bnum_old::BUintD32::bfrom(b.cast_unsigned()))
                 }
             }
         )*
@@ -63,20 +83,31 @@ const fn last_digit_index<const N: usize>(b: &bnum_old::BUint<N>) -> usize {
 }
 
 const N: usize = 10;
+const M: usize = N * 2;
 new_to_old!(N);
+new_to_old!(M);
 
 use num_integer::Roots;
+
+fn from_be_bytes2(mut bytes: [u8; 16]) -> u128 {
+    bytes.reverse();
+    u128::from_le_bytes(bytes)
+}
 
 fn bench_add(c: &mut Criterion) {
     let mut group = c.benchmark_group("round");
     let mut rng = rand::rngs::StdRng::seed_from_u64(0);
     let big_inputs = (0..SAMPLE_SIZE)
-        .map(|_| rng.random::<(Uint<{N*8}>, Uint<{N * 8}>)>())
-        .map(|(a, b)| (
-            ((a, b), (bnum_old::BUint::bfrom(a), bnum_old::BUint::bfrom(b)))
+        .map(|_| rng.random::<(Uint<{N*8}>, Uint<{N * 8}>, u32)>())
+        .map(|(a, b, c)| (
+            (
+                (a, b, c),
+                (bnum_old::BUint::bfrom(a), bnum_old::BUint::bfrom(b), c),
+                (bnum_old::BUintD32::bfrom(a), bnum_old::BUintD32::bfrom(b), c),
+            )
             // ((a.to_str_radix(16), b), (a.to_str_radix(16), b))
         ));
-    let (inputs1, inputs2) = unzip::unzip2(big_inputs);
+    let (inputs1, inputs2, inputs3) = unzip::unzip3(big_inputs);
 
     let s = Uint::<{N*8}>::MAX.to_str_radix(10);
 
@@ -85,18 +116,53 @@ fn bench_add(c: &mut Criterion) {
     //         let _ = black_box(a).floor();
     //     }
     // }));
-    group.bench_with_input(BenchmarkId::new("Iterative", "d8"), &inputs1, |b, inputs| b.iter(|| {
-        inputs.iter().cloned().map(|(a, b)| {
-            a.cbrt()
-            // Uint::<{N*8}>::from_str_radix(&a, 16)
-        }).collect::<Vec<_>>()
-    }));
-    group.bench_with_input(BenchmarkId::new("Iterative", "d64"), &inputs2, |b, inputs| b.iter(|| {
-        inputs.iter().cloned().map(|(a, b)| {
-            a.cbrt()
-            // bnum_old::BUint::<N>::from_str_radix(&a, 16)
-        }).collect::<Vec<_>>()
-    }));
+    let mut i = 0;
+
+    group.bench_with_input(BenchmarkId::new("Iterative", "d8"), "d8", |b, _| b.iter_batched(|| {
+        i += 1;
+        inputs1[i % SAMPLE_SIZE]
+    }, |(a, b, c)| {
+        a.sqrt()
+    }, criterion::BatchSize::SmallInput));
+
+    i = 0;
+    group.bench_with_input(BenchmarkId::new("Iterative", "d64"), "d64", |b, _| b.iter_batched(|| {
+        i += 1;
+        inputs2[i % SAMPLE_SIZE]
+    }, |(a, b, c)| {
+        a.sqrt()
+    }, criterion::BatchSize::SmallInput));
+    // TODO: comopare with rug, ruint, num_bigint, etc, primitives
+
+    i = 0;
+    group.bench_with_input(BenchmarkId::new("Iterative", "d32"), "d32", |b, _| b.iter_batched(|| {
+        i += 1;
+        inputs3[i % SAMPLE_SIZE]
+    }, |(a, b, c)| {
+        a.rotate_left(c)
+    }, criterion::BatchSize::SmallInput));
+
+    // group.bench_with_input(BenchmarkId::new("Iterative", "d8"), &inputs1, |b, inputs| b.iter(|| {
+    //     i += 1;
+
+    //     inputs[i % SAMPLE_SIZE].0 .0.swap_bytes();
+    //     inputs.iter().cloned().map(|(a, b, c)| {
+    //         black_box(a).swap_bytes()
+    //         // Uint::<{N*8}>::from_str_radix(&a, 16)
+    //     }).collect::<Vec<_>>()
+    // }));
+    // group.bench_with_input(BenchmarkId::new("Iterative", "d64"), &inputs2, |b, inputs| b.iter(|| {
+    //     inputs.iter().cloned().map(|(a, b, c)| {
+    //         black_box(a).swap_bytes()
+    //         // bnum_old::BUint::<N>::from_str_radix(&a, 16)
+    //     }).collect::<Vec<_>>()
+    // }));
+    // group.bench_with_input(BenchmarkId::new("Iterative", "d32"), &inputs3, |b, inputs| b.iter(|| {
+    //     inputs.iter().cloned().map(|(a, b, c)| {
+    //         a * b
+    //         // bnum_old::BUintD32::<N>::from_str_radix(&a, 16)
+    //     }).collect::<Vec<_>>()
+    // }));
     group.finish();
 }
 

@@ -144,7 +144,7 @@ This crate is tested with the [`quickcheck`](https://docs.rs/quickcheck/latest/q
 
 ## Minimum Supported Rust Version
 
-The current Minimum Supported Rust Version (MSRV) is `1.86.0`. <!-- TODO: check that this is inline with msrv specified in Cargo.toml-->
+The current Minimum Supported Rust Version (MSRV) is `1.87.0`. <!-- TODO: check that this is inline with msrv specified in Cargo.toml-->
 
 ## Roadmap
 

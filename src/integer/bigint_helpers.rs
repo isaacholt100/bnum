@@ -1,4 +1,3 @@
-use crate::digit;
 use crate::doc;
 use crate::wide_digits::{WideDigits, WideDigitsMut};
 use crate::{Integer, Uint};
@@ -82,7 +81,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     ///
     /// assert_eq!(n!(7U256).widening_mul(n!(3)), (n!(21), n!(0)));
     /// assert_eq!(n!(2U256).pow(255).widening_mul(n!(2U256).pow(100)), (n!(0), n!(2U256).pow(99)));
-    /// 
+    ///
     /// assert_eq!(n!(-5I256).widening_mul(n!(8)), (n!(-40).cast_unsigned(), n!(-1)));
     /// assert_eq!(I256::MIN.widening_mul(n!(2)), (n!(0), n!(-1)));
     /// ```
@@ -107,64 +106,16 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
                 (u_lo, u_hi.force_sign())
             };
         }
-        // low, high in that order
-        #[repr(C)] // so that the arrays are stored in contiguous memory
-        struct DoubleInt<const M: usize, const A: usize>(Uint<M, A>, Uint<M, A>);
+        let a = self.to_digits::<u128>().grow::<2, 0>();
+        let b = rhs.to_digits::<u128>().grow::<2, 0>();
+        let m = a.long_mul::<true>(b).0;
+        let (mut lo, mut hi): (Uint<N>, Uint<N>) = unsafe { core::mem::transmute_copy(&m) };
 
-        impl<const M: usize, const A: usize> DoubleInt<M, A> {
-            const ZERO: Self = Self(Uint::ZERO, Uint::ZERO);
-            const U128_DIGITS: usize = (2 * M).div_ceil(16);
-
-            #[inline]
-            const fn as_wide_digits(&self) -> WideDigits<M, true, false> {
-                WideDigits::new(&self.0.bytes)
-            }
-
-            #[inline]
-            const fn as_wide_digits_mut(&mut self) -> WideDigitsMut<M, true, false> {
-                WideDigitsMut::new(&mut self.0.bytes)
-            }
-        }
-
-        let mut out = DoubleInt::<N, B>::ZERO;
-        let (mut prod, mut carry): (u128, u128);
-
-        let mut i = 0;
-        unsafe {
-            while i < Self::U128_DIGITS {
-                carry = 0;
-                let self_digit_i = self.as_wide_digits().get(i);
-
-                let mut j = 0;
-                while j < Self::U128_DIGITS {
-                    let index = i + j;
-                    (prod, carry) = digit::carrying_mul_u128(
-                        self_digit_i,
-                        rhs.as_wide_digits().get(j),
-                        carry,
-                        out.as_wide_digits().get(index),
-                    );
-                    out.as_wide_digits_mut().set(index, prod);
-
-                    j += 1;
-                }
-                if Self::U128_DIGITS * 2 > DoubleInt::<N, B>::U128_DIGITS && i == Self::U128_DIGITS - 1
-                {
-                    // index is too large, ...
-                    // but should be enough leading zeros that carry is zero
-                    debug_assert!(carry == 0);
-                } else {
-                    out.as_wide_digits_mut().set(i + Self::U128_DIGITS, carry);
-                }
-
-                i += 1;
-            }
-        }
-        let (mut lo, mut hi) = (out.0, out.1);
         if Self::LAST_BYTE_PAD_BITS != 0 {
             // if NUM_PAD_BITS = n, want to shift hi by n bits and move the most significant n bits of lo to least significant n bits of hi
-            hi = hi.widen().shl(Self::LAST_BYTE_PAD_BITS).force();
-            let lo_msb = lo.widen().shr(Uint::<N>::BITS - Self::LAST_BYTE_PAD_BITS).force(); // shift by this amount as we are effectively working with a Uint<N, 8 * N>
+            hi = hi.shl(Self::LAST_BYTE_PAD_BITS);
+            let lo_msb = lo
+                .shr(Uint::<N>::BITS - Self::LAST_BYTE_PAD_BITS); // shift by this amount as we are effectively working with a Uint<N, 8 * N>
             hi = hi.bitor(lo_msb);
             lo.set_sign_bits();
         }
@@ -219,13 +170,18 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     ///
     /// assert_eq!(n!(7U2048).carrying_mul_add(n!(3), n!(5), n!(12)), (n!(38), n!(0)));
     /// assert_eq!(U2048::MAX.carrying_mul_add(U2048::MAX, U2048::MAX, U2048::MAX), (U2048::MAX, U2048::MAX));
-    /// 
+    ///
     /// assert_eq!(n!(-5I2048).carrying_mul_add(n!(8), n!(-6), n!(-11)), (n!(-57).cast_unsigned(), n!(-1)));
     /// assert_eq!(I2048::MIN.carrying_mul_add(n!(2), n!(3), n!(-2)), (n!(1), n!(-1)));
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn carrying_mul_add(self, rhs: Self, carry: Self, add: Self) -> (Uint<N, B, OM>, Self) {
+    pub const fn carrying_mul_add(
+        self,
+        rhs: Self,
+        carry: Self,
+        add: Self,
+    ) -> (Uint<N, B, OM>, Self) {
         // similarly to carrying_mul
         let (lo, hi) = self.carrying_mul(rhs, carry);
         let (lo, overflow) = lo.overflowing_add(add.force_sign());
