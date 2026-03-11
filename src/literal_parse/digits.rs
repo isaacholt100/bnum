@@ -63,8 +63,6 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
             return Err(ParseIntLiteralError::UnsignedNegation);
         }
 
-        // TODO: need to use from_buf_radix because need to handle negation as well
-        // have extra const gen param for skipping over underscores in from_buf_radix
         match Uint::from_buf_radix::<true, true, true>(digit_bytes, radix) {
             Ok(uint) => {
                 let out = uint.force_sign::<S>();

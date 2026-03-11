@@ -16,6 +16,10 @@ mod numtraits;
 mod ops;
 mod overflowing;
 mod radix;
+
+#[cfg(feature = "rand")]
+mod random;
+
 mod saturating;
 mod strict;
 mod unchecked;
@@ -24,9 +28,8 @@ mod const_trait_fillers;
 
 use crate::Byte;
 use crate::digits::Digits;
-use crate::{WideDigits, WideDigitsMut};
 
-use crate::Exponent;
+use crate::OverflowMode;
 use crate::doc;
 
 #[cfg(feature = "serde")]
@@ -40,20 +43,26 @@ use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
 
 use core::default::Default;
 
-/// A fixed-size integer type, generic over signedness, byte-width, and overflow behaviour.
+/// A fixed-size integer type, generic over signedness, bit width, and overflow behaviour.
 /// 
-/// `Integer` has three const-generic parameters:
-/// - `S`, of type `bool`, which determines whether the integer behaves as an unsigned integer (`S = false`), or a signed integer (`S = true`);
-/// - `N`, of type `usize`, which specifies how many bytes the integer should contain. The bytes are stored in little endian (least significant byte first).
-/// - `OM`, of type `u8`, which specifies the behaviour of the type when arithmetic overflow occurs. There are three possible modes:
-///    - `0` (wrapping): arithmetic operations wrap around on overflow.
-///    - `1` (panicking): arithmetic operations panic on overflow.
-///    - `2` (saturating): arithmetic operations saturate on overflow.
-/// By default, `OM` is set to `0` if the `overflow-checks` flag is disabled, and `1` if the `overflow-checks` flag is enabled. The enum [`OverflowMode`] has variants corresponding to each mode.
+/// `Integer` has four const-generic parameters:
+/// - `S`: determines whether the integer behaves as an unsigned integer (`S = false`), or a signed integer (`S = true`);
+/// - `N`: specifies how many bytes should be used to store the integer. The bytes are stored in little endian order (least significant byte first).
+/// - `B`: specifies the bit width of the integer. If `B = 0` (the default value), then the bit width of the integer is taken to be `N * 8`. Otherwise, the bit width is taken to be `B`, and in this case it is required that `N - 8 < B*8 <= N` (i.e. `N = B.div_ceil(8)`).
+/// - `OM`: specifies the behaviour of the type when arithmetic overflow occurs. There are three valid overflow modes, each corresponding to a variant of the [`OverflowMode`] enum:
+///    - `0` ([`Wrapping`](OverflowMode::Wrapping)): arithmetic operations wrap around on overflow.
+///    - `1` ([`Panicking`](OverflowMode::Panicking)): arithmetic operations panic on overflow.
+///    - `2` ([`Saturating`](OverflowMode::Saturating)): arithmetic operations saturate on overflow.  
+/// By default, `OM` is set to `0` if the [`overflow-checks` flag](https://doc.rust-lang.org/cargo/reference/profiles.html#overflow-checks) is disabled, and `1` if the [`overflow-checks` flag](https://doc.rust-lang.org/cargo/reference/profiles.html#overflow-checks) is enabled.
 /// 
-/// `Integer` aims to exactly replicate the API and behaviour of Rust's built-in integer types: `u8`, `i8`, `u16`, `i16`, `u32`, `i32`, `u64`, `i64`, `u128`, `i128`, `usize` and `isize`.
-///
-/// `Integer` implements all the arithmetic traits from the [`core::ops`](https://doc.rust-lang.org/core/ops/) module. The behaviour of the implementation of these traits is the same as for Rust's primitive integers - i.e. in debug mode it panics on overflow, and in release mode it performs two's complement wrapping (see <https://doc.rust-lang.org/book/ch03-02-data-types.html#integer-overflow>). However, an attempt to divide by zero or calculate a remainder with a divisor of zero will always panic, unless the [`checked_`](#method.checked_div) methods are used, which never panic.
+/// `Integer` closely follows the API and behaviour of Rust's primitive integer types: `u8`, `i8`, `u16`, `i16`, `u32`, `i32`, `u64`, `i64`, `u128`, `i128`, `usize` and `isize`. The only differences are:
+/// - The primitive integers are stored in native-endian byte order. `Integer`s are always stored in little-endian byte order.
+/// - Primitive integers are serialised in [`serde`](https://docs.rs/serde/latest/serde/) as decimal strings. `Integer`s are serialised using [`derive(Serialize)`](https://docs.rs/serde/latest/serde/derive.Serialize.html), i.e. as a struct.
+/// - The primitive integers panic on arithmetic overflow if [`overflow-checks`](https://doc.rust-lang.org/cargo/reference/profiles.html#overflow-checks) is enabled, and wrap around on overflow if [`overflow-checks`](https://doc.rust-lang.org/cargo/reference/profiles.html#overflow-checks) is disabled. The overflow behaviour of `Integer` is determined by [`Self::OVERFLOW_MODE`]:
+///    - [`Wrapping`](OverflowMode::Wrapping): arithmetic operations wrap around on overflow, so the behaviour is the same as the [`Wrapping(T)`](core::num::Wrapping) type in the standard library (i.e. the same as the primitive integer type behaviour when `overflow-checks` is disabled).
+///    - [`Panicking`](OverflowMode::Panicking): arithmetic operations panic on overflow, so the behaviour is the same as the primitive integer type behaviour when `overflow-checks` is enabled.
+///    - [`Saturating`](OverflowMode::Saturating): arithmetic operations saturate on overflow, so the behaviour is the same as the [`Saturating(T)`](core::num::Saturating) type in the standard library.
+///    - [`OverflowMode::DEFAULT`]: the overflow behaviour is the same as the primitive integer type overflow behaviour.
 #[derive(Clone, Copy, Hash, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
@@ -63,14 +72,16 @@ use core::default::Default;
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[cfg_attr(feature = "valuable", derive(valuable::Valuable))]
 #[repr(transparent)]
-pub struct Integer<const S: bool, const N: usize, const B: usize = 0, const OM: u8 = {crate::OverflowMode::DEFAULT.to_u8()}> {
+pub struct Integer<const S: bool, const N: usize, const B: usize = 0, const OM: u8 = {OverflowMode::DEFAULT as u8}> {
     #[cfg_attr(feature = "serde", serde(with = "BigArray"))]
     pub(crate) bytes: [Byte; N],
 }
 
-pub type Uint<const N: usize, const B: usize = 0, const OM: u8 = {crate::OverflowMode::DEFAULT.to_u8()}> = Integer<false, N, B, OM>;
+/// Unsigned integer type with const-generic bit width and overflow behaviour. By default, the overflow behaviour is the same as the primitive integer types (i.e. panicking when the `overflow-checks` flag is enabled, and wrapping when `overflow-checks` is disabled). For more details, see the documentation for [`Integer`].
+pub type Uint<const N: usize, const B: usize = 0, const OM: u8 = {OverflowMode::DEFAULT as u8}> = Integer<false, N, B, OM>;
 
-pub type Int<const N: usize, const B: usize = 0, const OM: u8 = {crate::OverflowMode::DEFAULT.to_u8()}> = Integer<true, N, B, OM>;
+/// Signed integer type with const-generic bit width and overflow behaviour. By default, the overflow behaviour is the same as the primitive integer types (i.e. panicking when the `overflow-checks` flag is enabled, and wrapping when `overflow-checks` is disabled). For more details, see the documentation for [`Integer`].
+pub type Int<const N: usize, const B: usize = 0, const OM: u8 = {OverflowMode::DEFAULT as u8}> = Integer<true, N, B, OM>;
 
 #[cfg(feature = "zeroize")]
 impl<const S: bool, const N: usize, const B: usize, const OM: u8> zeroize::DefaultIsZeroes for Integer<S, N, B, OM> {}
@@ -144,16 +155,6 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     }
 
     #[inline]
-    pub(crate) const fn as_wide_digits(&self) -> WideDigits<N, false, false> {
-        WideDigits::new(&self.bytes)
-    }
-
-    #[inline]
-    pub(crate) const fn as_wide_digits_mut(&mut self) -> WideDigitsMut<N, false, false> {
-        WideDigitsMut::new(&mut self.bytes)
-    }
-
-    #[inline]
     pub(crate) const fn as_digits<D>(&self) -> &Digits<D, N> {
         Digits::from_integer_ref(&self)
     }
@@ -162,17 +163,6 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     pub(crate) const fn to_digits<D>(self) -> Digits<D, N> {
         Digits::from_integer(self)
     }
-}
-
-impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, B, OM> {
-    const U128_DIGITS: usize = (Self::BITS as usize).div_ceil(128);
-    pub(crate) const U128_DIGIT_REMAINDER: usize = N % 16;
-    pub(crate) const LAST_DIGIT_BYTES: usize = if Self::U128_DIGIT_REMAINDER == 0 {
-        16
-    } else {
-        Self::U128_DIGIT_REMAINDER
-    };
-    pub(crate) const U128_BITS_REMAINDER: Exponent = Self::BITS % 128;
 }
 
 impl<const N: usize, const B: usize, const OM: u8> Int<N, B, OM> {
@@ -192,16 +182,9 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Default for In
 
 #[cfg(any(test, feature = "quickcheck"))]
 impl<const S: bool, const N: usize, const B: usize, const OM: u8> quickcheck::Arbitrary for Integer<S, N, B, OM> {
+    #[inline]
     fn arbitrary(g: &mut quickcheck::Gen) -> Self {
-        let mut out = Self::ZERO;
-        let mut i = 0;
-            while i < Self::U128_DIGITS {
-            let a = <u128 as quickcheck::Arbitrary>::arbitrary(g);
-            out.as_wide_digits_mut().set(i, a);
-            i += 1;
-        }
-    
-        out
+        <Digits<u128, N> as quickcheck::Arbitrary>::arbitrary(g).to_integer()
     }
 }
 

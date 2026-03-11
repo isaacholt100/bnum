@@ -105,15 +105,15 @@ use crate::cast::CastFrom;
 #[allow(unused_imports)]
 use crate::cast::float::{CastFloatFromUintHelper, CastUintFromFloatHelper, FloatMantissa};
 
-#[cfg(feature = "float")]
-impl<const N: usize, const B: usize> FloatMantissa for Uint<N, B> {
-    const MAX: Self = Self::MAX;
+// #[cfg(feature = "float")]
+// impl<const N: usize, const B: usize> FloatMantissa for Uint<N, B> {
+//     const MAX: Self = Self::MAX;
 
-    #[inline]
-    fn is_power_of_two(self) -> bool {
-        Self::is_power_of_two(self)
-    }
-}
+//     #[inline]
+//     fn is_power_of_two(self) -> bool {
+//         Self::is_power_of_two(self)
+//     }
+// }
 
 impl<const N: usize, const B: usize, const OM: u8> CastUintFromFloatHelper for Uint<N, B, OM> {
     const MAX: Self = Self::MAX;

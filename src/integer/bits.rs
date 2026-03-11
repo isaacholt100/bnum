@@ -111,7 +111,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// ```
     #[must_use = doc::must_use_op!()]
     #[inline]
-    pub const fn leading_ones(mut self) -> Exponent {
+    pub const fn leading_ones(self) -> Exponent {
         self.not().leading_zeros()
     }
 
@@ -169,25 +169,6 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
         if tz >= Self::BITS { Self::BITS } else { tz }
     }
 
-    #[inline]
-    const unsafe fn rotate_bytes_left(self, n: usize) -> Self {
-        // this is no slower than using pointers with add and copy_from_nonoverlapping
-        let mut out = Self::ZERO;
-        let mut i = n;
-        while i < N {
-            out.bytes[i] = self.bytes[i - n];
-            i += 1;
-        }
-        let init_index = N - n;
-        let mut i = init_index;
-        while i < N {
-            out.bytes[i - init_index] = self.bytes[i];
-            i += 1;
-        }
-
-        out
-    }
-
     /// Rotates the bits of `self` to the left by `n` places.
     ///
     /// # Examples
@@ -219,9 +200,12 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
             out.set_sign_bits();
             return out;
         } else {
-            unsafe { self.to_digits::<u8>().unchecked_rotate_left(n % Self::BITS).to_integer() }
+            // u32 is fastest
+            unsafe { self.to_digits::<u32>().unchecked_rotate_left(n % Self::BITS).to_integer() }
         }
     }
+
+    // TODO: maybe add const `cast` function to cast to other integer with different params. would behave differently depending on overflow mode
 
     /// Rotates the bits of `self` to the right by `n` places.
     ///
@@ -341,32 +325,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
 
     #[inline]
     pub(crate) const unsafe fn unchecked_shl_internal(self, rhs: Exponent) -> Self {
-        let mut out = Self::ZERO;
-        let digit_shift = (rhs / 8) as usize;
-        let bit_shift = rhs % 8;
-
-        let mut i = digit_shift;
-        while i < N {
-            // we start i at digit_shift, not 0, since the compiler can elide bounds checks when i < N
-            // this is no slower than using pointers with add and copy_from_nonoverlapping
-            out.bytes[i] = self.bytes[i - digit_shift];
-            i += 1;
-        }
-
-        if bit_shift != 0 {
-            let carry_shift = 128 - bit_shift;
-            let mut carry = 0;
-
-            let mut i = (rhs / 128) as usize;
-            while i < Self::U128_DIGITS {
-                let current_digit = out.as_wide_digits().get(i);
-                out.as_wide_digits_mut()
-                    .set(i, (current_digit << bit_shift) | carry);
-                carry = current_digit >> carry_shift;
-                i += 1;
-            }
-        }
-        // let mut out = self.to_digits::<u64>().unchecked_shl(rhs).to_integer();
+        let mut out = unsafe { self.to_digits::<u64>().unchecked_shl(rhs).to_integer() };
 
         out.set_sign_bits();
 
@@ -377,53 +336,11 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     pub(crate) const unsafe fn unchecked_shr_internal(self, rhs: Exponent) -> Self {
         if Self::LAST_BYTE_PAD_BITS != 0 {
             let out = unsafe {
-                Integer::<S, N, 0, OM>::from_bytes(self.bytes).unchecked_shr_internal(rhs)
+                self.widen().unchecked_shr_internal(rhs)
             };
             return out.force();
         }
-        let mut out = if self.is_negative_internal() {
-            Self::ALL_ONES
-        } else {
-            Self::ZERO
-        };
-        let digit_shift = (rhs / 8) as usize;
-        let bit_shift = rhs % 8;
-
-        let mut i = digit_shift;
-        while i < N {
-            // we start i at digit_shift, not 0, since the compiler can elide bounds checks when i < N
-            out.bytes[i - digit_shift] = self.bytes[i];
-            i += 1;
-        }
-
-        if bit_shift != 0 {
-            let carry_shift = 128 - bit_shift;
-
-            let mut i = (Self::BITS - rhs).div_ceil(128) as usize; // we could just start at U128_DIGITS, but then we would just be shifting all ones/all zeros for the unaffected digits (at higher indices) which would do nothing
-
-            let mut carry = if self.is_negative_internal() {
-                let shift_back = if Self::U128_BITS_REMAINDER == 0 || i != Self::U128_DIGITS {
-                    // if i is not the last digit index, then we have a full u128 digit
-                    128 - bit_shift
-                } else {
-                    // last digit (the incomplete one) has Self::U128_BITS_REMAINDER bits, so shift back by this minus bit_shift
-                    Self::U128_BITS_REMAINDER - bit_shift
-                };
-                u128::MAX << shift_back // if negative, then we initialise the carry to have the correct number of sign bits (we can get this expression by looking for the expression for carry shift in the while loop. the previous digit will have been all ones (unless this was the last digit, but then we can view it as having infinite leading ones, as this still represents the same value))
-            } else {
-                0
-            };
-            while i > 0 {
-                i -= 1;
-
-                let current_digit = out.as_wide_digits().get(i);
-                out.as_wide_digits_mut()
-                    .set(i, (current_digit >> bit_shift) | carry);
-                carry = current_digit << carry_shift;
-            }
-        }
-
-        out
+        unsafe { self.to_digits::<u64>().unchecked_shr(rhs, self.is_negative_internal()).to_integer() }
     }
 
     /// Returns a boolean representing the bit in the given position (`true` if the bit is 1). The least significant bit is at index `0`, the most significant bit is at index `Self::BITS - 1`.

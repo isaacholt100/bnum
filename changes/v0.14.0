@@ -7,9 +7,9 @@
 - only 8 bit digits
 - rename to Uint, Int
 - add alloc features
-- MSRV 1.65.0 -> 1.86.0
+- MSRV 1.65.0 -> 1.87.0
 - use 2024 edition
-- use rand 0.9.0, so update try_fill_slice to fill_slice (no option returned)
+- use rand 0.10.0
 - make as_bits_mut, digits_mut, set_bit const
 - remove Uint From [u8; N] and vice versa
 - remove parse_str_radix from Uint and Int
@@ -22,7 +22,6 @@
 - correct behaviour of is_multiple_of for Int and Uint (previously panicked if rhs was zero)
 - correct behaviour of mod_floor and div_floor of num_integer::Integer trait for signed ints
 - add OverflowingMul impl from num_traits to Uint and Int
-- replace Div<Digit> by Div<u64> and Rem<Digit> by Rem<u64>
 - Debug impl in no_alloc is padded hex string
 - added compile time assertion about valid bit size
 - detect overflow checks rather than if in debug build or not (so match integer behaviour exactly)
@@ -34,6 +33,7 @@
 - remove .bits() from Int
 - remove from_digit()
 - remove Int::{from,to}_radix_{b,l}_e
-- remove Div/Rem<u64> for Uint
+- remove Div/Rem<Digit> for Uint
 - remove ONE, ZERO, NEG_ONE consts (not needed now we have the n! macro)
 - remove CastFrom from prelude
+- remove Slice struct in random module, remove try_fill_slice function (superseded by rand 0.10 Fill trait)

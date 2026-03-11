@@ -5,8 +5,6 @@ use crate::Int;
 use num_integer::{Roots, Integer as IntegerTrait};
 
 use crate::cast::CastFrom;
-use crate::cast::float::ConvertFloatParts;
-use crate::helpers::Bits;
 
 use num_traits::ops::overflowing::{OverflowingAdd, OverflowingMul, OverflowingSub};
 use num_traits::{
@@ -607,29 +605,7 @@ impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
 impl<const S: bool, const N: usize, const B: usize, const OM: u8> Roots for Integer<S, N, B, OM> {
     #[inline]
     fn sqrt(&self) -> Self {
-        if self.is_negative_internal() {
-            panic!(crate::errors::err_msg!("imaginary square root"))
-        }
-        // TODO: use Karatsuba square algorithm for larger bit widths
-
-        #[cfg(not(test))]
-        // disable this when testing as this condition will always be true when testing against primitives, so the rest of the algorithm wouldn't be tested
-        if let Some(n) = self.to_u128() {
-            return Self::cast_from(n.sqrt());
-        }
-
-        if self.is_zero() {
-            return Self::ZERO;
-        }
-        let mut u = self.force_sign::<false>();
-        let mut x = Uint::power_of_two(u.bits() / 2 + 1);
-        loop {
-            let y = x.midpoint(u.div(x)); // can't have overflow as x is strictly decreasing with each iteration
-            if y.ge(&x) {
-                return x.force_sign();
-            }
-            x = y;
-        }
+        self.isqrt()
     }
 
     #[inline]

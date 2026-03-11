@@ -10,6 +10,21 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// - If `OM` is `0`, the overflow mode is [`OverflowMode::Wrapping`].
     /// - If `OM` is `1`, the overflow mode is [`OverflowMode::Panicking`].
     /// - If `OM` is `2`, the overflow mode is [`OverflowMode::Saturating`].
+    /// 
+    /// # Examples
+    /// 
+    /// ```
+    /// use bnum::prelude::*;
+    /// use bnum::OverflowMode;
+    /// 
+    /// type U264w = nt!(U264w);
+    /// type I155p = nt!(I155p);
+    /// type I512s = nt!(I512s);
+    /// 
+    /// assert_eq!(U264w::OVERFLOW_MODE, OverflowMode::Wrapping);
+    /// assert_eq!(I155p::OVERFLOW_MODE, OverflowMode::Panicking);
+    /// assert_eq!(I512s::OVERFLOW_MODE, OverflowMode::Saturating);
+    /// ```
     pub const OVERFLOW_MODE: OverflowMode = if OM == OverflowMode::Wrapping.to_u8() {
         OverflowMode::Wrapping
     } else if OM == OverflowMode::Panicking.to_u8() {
@@ -17,10 +32,10 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     } else if OM == OverflowMode::Saturating.to_u8() {
         OverflowMode::Saturating
     } else {
-        unreachable!()
+        panic!("invalid overflow mode: `OM` must be `0`, `1`, or `2`")
     };
 
-    /// The total number of bits that this type contains.
+    /// The bit width of the type.
     /// 
     /// # Examples
     /// 
@@ -75,7 +90,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
 
     pub(crate) const ALL_ONES: Self = Self::from_bytes([0xFF; N]);
 
-    /// The minimum value that this type can represent. For unsigned integers, this is `0`. For signed integers, this is `-2^(Self::BITS - 1)`.
+    /// The minimum value that this type can represent. For unsigned integers, this is `0`. For signed integers, this is `-2**(Self::BITS - 1)`.
     /// 
     /// # Examples
     /// 
@@ -94,7 +109,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
         Self::ZERO
     };
 
-    /// The maximum value that this type can represent. For unsigned integers, this is `2^Self::BITS - 1`. For signed integers, this is `2^(Self::BITS - 1) - 1`.
+    /// The maximum value that this type can represent. For unsigned integers, this is `2**Self::BITS - 1`. For signed integers, this is `2**(Self::BITS - 1) - 1`.
     /// 
     /// # Examples
     /// 

@@ -6,86 +6,9 @@ pub use digits::*;
 pub use type_descriptor::*;
 pub use panic::*;
 
-/// Create constant `Integer`s from native integer literals.
+/// Creates an [`Integer`](crate::Integer) type with the specified const-generic parameters from a type descriptor.
 /// 
-/// The `n!` macro parses integer literals to [`Integer`] values at compile time. It supports a similar integer literal syntax as Rust's built-in integer types:
-/// - The prefix `0b` indicates a binary literal (base 2).
-/// - The prefix `0o` indicates an octal literal (base 8).
-/// - The prefix `0x` indicates a hexadecimal literal (base 16).
-/// - Literals are parsed in as decimal literals (base 10) if no prefix is specified.
-/// 
-/// `n!` can be invoked in two ways:
-/// 1. With just an integer literal, e.g. `n!(0xABCDEF)`. In this case, the const-generic parameters of the created [`Integer`] are left unspecified, so this must be used in a context where type inference can determine the parameters. For example: `let a: Integer<false, 16> = n!(0xABCDEF);` would be valid, but `let b = n!(0xABCDEF);` would trigger a compile error (unless `b` was subsequently used in a context which allowed for type inference).
-/// 2. With an integer literal followed by a type descriptor, e.g. `n!(0xABCDEFU128w)`. The type descriptor may be any valid argument to the [`nt!`](crate::nt) macro. The type descriptor specifies the const-generic parameters of the created [`Integer`]. For more information about valid type descriptors, see the documentation for the [`nt!`](crate::nt) macro.
-/// 
-/// Invoking `n!` with invalid arguments will also trigger a compile error. This can happen if:
-/// - The literal is out of range for the type (works for inferred types and types specified using a type descriptor). Note that this does not depend on the overflow mode of the type.
-/// - The literal contains an invalid digits, e.g. `n!(0b102)` or `n!(1AU512)`.
-/// - A `-` sign appears at the start of the literal when the type is unsigned, e.g. `n!(-123U256)`.
-/// - The type descriptor is invalid.
-/// 
-/// 
-/// # Examples
-/// 
-/// ```
-/// use bnum::prelude::*; // n! is re-exported in the prelude
-/// 
-/// let a: Integer<false, 16> = n!(0xABCDEF); // type inferred from context
-/// ```
-/// 
-/// ```
-/// use bnum::prelude::*;
-/// 
-/// let b = n!(123456I511s); // type specified using type descriptor
-/// // type descriptor specifies signed 511-bit integer with saturating overflow behaviour
-/// // note that we don't need to define a type alias I511s here
-/// ```
-/// 
-/// The following example will fail to compile, since the compiler is unable to infer the type of the integer:
-/// ```compile_fail
-/// use bnum::prelude::*;
-/// 
-/// let a = n!(0o7654321);
-/// ```
-/// 
-/// The following example will fail to compile, since the literal is out of range for the specified type:
-/// ```compile_fail
-/// use bnum::prelude::*;
-/// 
-/// let c = n!(0x1000000U24);
-/// ```
-/// 
-/// The following example will fail to compile, since the literal contains an invalid digit for the specified base:
-/// ```compile_fail
-/// use bnum::prelude::*;
-/// use bnum::types::I256;
-/// 
-/// let d: I256 = n!(1234A);
-/// ```
-/// 
-/// The following example will fail to compile, since the given type descriptor is invalid:
-/// ```compile_fail
-/// use bnum::prelude::*;
-/// 
-/// let e = n!(12345U1024x);
-/// ```
-#[macro_export]
-macro_rules! m {
-    ($lit: literal $suffix:ident) => {
-        const { $crate::from_literal_str!(stringify!($lit), <$crate::nt!($suffix)>) }
-    };
-    ($lit: literal) => {
-        const { $crate::from_literal_str!(stringify!($lit), $crate::Integer) }
-    };
-    ($($_: tt)*) => {
-        compile_error!("expected integer literal followed by optional type descriptor, e.g. `0xFFFF` or `123456 I256`");
-    };
-}
-
-
-/// Creates an `Integer` type with the specified const-generic parameters from a type descriptor.
-/// 
-/// The `nt!` macro takes a type descriptor and simply outputs [`Integer<S, N, B, OM>`], where the const-generic parameters `S`, `N` and `OM` are determined from the type descriptor.
+/// The `nt!` macro takes a type descriptor and simply outputs [`Integer<S, N, B, OM>`](crate::Integer), where the const-generic parameters `S`, `N` and `OM` are determined from the type descriptor.
 /// 
 /// A type descriptor has the following format: `<sign><bit_width><overflow_mode>?`:
 /// - `<sign>` is either `I` (specifying a signed integer) or `U` (specifying an unsigned integer).
@@ -188,6 +111,69 @@ macro_rules! from_literal_str {
     };
 }
 
+/// Create constant [`Integer`](crate::Integer) values from native integer literals.
+/// 
+/// The `n!` macro parses integer literals to [`Integer`](crate::Integer) values at compile time. It supports a similar integer literal syntax as Rust's built-in integer types:
+/// - The prefix `0b` indicates a binary literal (base 2).
+/// - The prefix `0o` indicates an octal literal (base 8).
+/// - The prefix `0x` indicates a hexadecimal literal (base 16).
+/// - Literals are parsed in as decimal literals (base 10) if no prefix is specified.
+/// 
+/// `n!` can be invoked in two ways:
+/// 1. With just an integer literal, e.g. `n!(0xABCDEF)`. In this case, the const-generic parameters of the created [`Integer`](crate::Integer) are left unspecified, so this must be used in a context where type inference can determine the parameters. For example: `let a: Integer<false, 16> = n!(0xABCDEF);` would be valid, but `let b = n!(0xABCDEF);` would trigger a compile error (unless `b` was subsequently used in a context which allowed for type inference).
+/// 2. With an integer literal followed by a type descriptor, e.g. `n!(0xabcdefU128w)`. The type descriptor may be any valid argument to the [`nt!`](crate::nt) macro. The type descriptor specifies the const-generic parameters of the created [`Integer`](crate::Integer). For more information about valid type descriptors, see the documentation for the [`nt!`](crate::nt) macro.
+/// 
+/// Invoking `n!` with invalid arguments will also trigger a compile error. This can happen if:
+/// - The literal is out of range for the type (works for inferred types and types specified using a type descriptor). Note that this does not depend on the overflow mode of the type.
+/// - The literal contains an invalid digits, e.g. `n!(0b102)` or `n!(1AU512)`.
+/// - A `-` sign appears at the start of the literal when the type is unsigned, e.g. `n!(-123U256)`.
+/// - The type descriptor is invalid.
+/// 
+/// 
+/// # Examples
+/// 
+/// ```
+/// use bnum::prelude::*; // n! is re-exported in the prelude
+/// 
+/// let a: Integer<false, 16> = n!(0xABCDEF); // type inferred from context
+/// ```
+/// 
+/// ```
+/// use bnum::prelude::*;
+/// 
+/// let b = n!(123456I511s); // type specified using type descriptor
+/// // type descriptor specifies signed 511-bit integer with saturating overflow behaviour
+/// // note that we don't need to define a type alias I511s here
+/// ```
+/// 
+/// The following example will fail to compile, since the compiler is unable to infer the type of the integer:
+/// ```compile_fail
+/// use bnum::prelude::*;
+/// 
+/// let a = n!(0o7654321);
+/// ```
+/// 
+/// The following example will fail to compile, since the literal is out of range for the specified type:
+/// ```compile_fail
+/// use bnum::prelude::*;
+/// 
+/// let c = n!(0x1000000U24);
+/// ```
+/// 
+/// The following example will fail to compile, since the literal contains an invalid digit for the specified base:
+/// ```compile_fail
+/// use bnum::prelude::*;
+/// use bnum::types::I256;
+/// 
+/// let d: I256 = n!(1234A);
+/// ```
+/// 
+/// The following example will fail to compile, since the given type descriptor is invalid:
+/// ```compile_fail
+/// use bnum::prelude::*;
+/// 
+/// let e = n!(12345U1024x);
+/// ```
 // TODO: support other prefixes, e.g. 0t for base 3, 0q for base 4, 0z for base 36, etc.
 #[macro_export]
 macro_rules! n {

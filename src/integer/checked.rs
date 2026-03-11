@@ -710,7 +710,8 @@ mod tests {
             ]
         }
         test_bignum! {
-            function: <stest>::checked_pow(a: stest, b: u16)
+            function: <stest>::checked_pow(a: stest, b: u16),
+            cases: [(2, 512)]
         }
         #[cfg(nightly)] // since int_roundings are not stable yet
         test_bignum! {

@@ -222,29 +222,41 @@ impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
         let bit_width = self.bits();
         let radix_log2 = radix.ilog2();
         let mask = u8::MAX >> (u8::BITS - radix_log2);
+
         let mut digits = Vec::with_capacity(Self::BITS.div_ceil(radix_log2) as usize);
+
         let num_non_zero_digits = bit_width.div_ceil(u128::BITS) as usize; // number of non-zero u128 digits
         let mut offset_bit_width = 0;
         let mut carry_bits = 0;
+
+        let self_digits = self.to_digits::<u128>();
+
         for i in 0..num_non_zero_digits {
-            let d = self.as_wide_digits().get(i); // we use wide digits as there will be fewer times when the accessed bits spans two consecutive digits, rather than just within one digit
+            let d = self_digits.get(i); // we use wide digits as there will be fewer times when the accessed bits spans two consecutive digits, rather than just within one digit
             let digit = (d << offset_bit_width) as u8 & mask; // can truncate to u8 as this is equivalent to bitand-ing with zeros
             digits.push(digit | carry_bits);
+
             let mut j = radix_log2 - offset_bit_width;
             while j <= u128::BITS - radix_log2 {
                 let digit = (d >> j) as u8 & mask; // can truncate to u8 as this is equivalent to bitand-ing with zeros
                 digits.push(digit);
+
                 j += radix_log2;
             }
+
             offset_bit_width = radix_log2 - ((j + radix_log2) % u128::BITS); // this is faster than j - u128::BITS as uses bit and optimisation
+
             carry_bits = (d >> j) as u8; // can truncate to u8 as this is equivalent to bitand-ing with zeros
         }
+
         if carry_bits != 0 {
             digits.push(carry_bits);
         }
+
         while let Some(&0) = digits.last() {
             digits.pop();
         }
+
         digits
     }
 

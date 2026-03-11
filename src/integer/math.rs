@@ -389,7 +389,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
         if self.is_zero() {
             return Self::ZERO;
         }
-        let mut u = self.force_sign::<false>();
+        let u = self.force_sign::<false>();
         let mut x = Uint::power_of_two(u.bits() / 2 + 1);
         loop {
             let y = x.midpoint(u.div(x)); // can't have overflow as x is strictly decreasing with each iteration
@@ -785,6 +785,10 @@ mod tests {
         }
         test_bignum! {
             function: <itest>::cast_unsigned(a: itest)
+        }
+        test_bignum! {
+            function: <itest>::isqrt(a: itest),
+            skip: a < 0
         }
     }
 }

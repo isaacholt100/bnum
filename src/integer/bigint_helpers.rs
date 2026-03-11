@@ -1,5 +1,4 @@
 use crate::doc;
-use crate::wide_digits::{WideDigits, WideDigitsMut};
 use crate::{Integer, Uint};
 
 /// Bigint helper methods: common functions used to implement big integer arithmetic.

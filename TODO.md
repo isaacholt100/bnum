@@ -73,7 +73,6 @@
 
 - Faster mulitplication algorithm for larger integers
 - Faster division algorithms for larger integers
-- isqrt methods
 - Update serde to use decimal string instead of struct debug - but CHECK that all serde options serialise primitive ints as decimal strings
 - create more efficient implementation of ilog10 (see e.g. Hacker's Delight book)
 - modpow
@@ -94,5 +93,4 @@
 - work out and add assertions about sizes of float mantissa and exponent widths, etc.
 - maybe mention that serde impl is different from primitives
 - check you're happy with the layout of the random crate-level module
-- maybe add additional optimal type parameter (default u128) WideDigit, which specifies the wide digit to be iterated over (e.g. if memory usage really is a concern, or could somehow find a way of making this internal based on the size of the integer). this would also make testing of non standard bit widhts easier (just compare against use u8 wide digits)
 - maybe rewrite code using while let Some(x) = iter.next() (using const iterator like methods), this will mean easier to migrate to iterators when they are const

@@ -340,9 +340,6 @@ macro_rules! test_custom_bit_widths {
 
 pub(crate) use test_custom_bit_widths;
 
-// since we're using u128 digit iterations for performance, testing on the primitives isn't enough, because there will only be one u128 digit. so test against previous version of bnum, which are almost certainly completely correct due to the testing of that version, and the fact they use different sized digits (u8 not u128)
-// but we only need to do this for methods that use the u128 digits (anywhere where .as_wide_digits() or .as_wide_digits_mut() is used)
-// test for a few different widths, with different widths of the truncated last digit (Self::BITS % 128)
 macro_rules! test_all_custom_bit_widths {
     { $($s: tt) * } => {
         mod custom_bit_width_tests {

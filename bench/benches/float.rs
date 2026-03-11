@@ -122,7 +122,7 @@ fn bench_add(c: &mut Criterion) {
         i += 1;
         inputs1[i % SAMPLE_SIZE]
     }, |(a, b, c)| {
-        a.sqrt()
+        a.rotate_left(c)
     }, criterion::BatchSize::SmallInput));
 
     i = 0;
@@ -130,7 +130,7 @@ fn bench_add(c: &mut Criterion) {
         i += 1;
         inputs2[i % SAMPLE_SIZE]
     }, |(a, b, c)| {
-        a.sqrt()
+        a.rotate_left(c)
     }, criterion::BatchSize::SmallInput));
     // TODO: comopare with rug, ruint, num_bigint, etc, primitives
 

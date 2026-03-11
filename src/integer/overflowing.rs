@@ -520,6 +520,14 @@ impl<const N: usize, const B: usize, const OM: u8> Int<N, B, OM> {
 mod tests {
     use crate::test::test_bignum;
 
+    #[test]
+    fn test_om() {
+        use crate::types::U256;
+        use crate::n;
+
+        assert_eq!((n!(1U256) << 128u32).overflowing_mul((n!(1U256) << 128u32)), (n!(0), true));
+    }
+
     crate::test::test_all! {
         testing unsigned;
 
@@ -588,7 +596,8 @@ mod tests {
             function: <stest>::overflowing_shr(a: stest, b: u16)
         }
         test_bignum! {
-            function: <stest>::overflowing_pow(a: stest, b: u16)
+            function: <stest>::overflowing_pow(a: stest, b: u16),
+            cases: [(2, 512)]
         }
     }
 }

@@ -1,5 +1,4 @@
-use core::mem::transmute;
-use core::{cmp::PartialEq, marker::PhantomData};
+use core::marker::PhantomData;
 
 use crate::{Exponent, Integer};
 
@@ -86,6 +85,7 @@ impl<D, const N: usize, const M: usize, const E: usize> Digits<D, N, M, E> {
     }
 
     const ALL_ZEROS: Self = Self([[0; N]; M], [0; E], PhantomData);
+    const ALL_ONES: Self = Self([[u8::MAX; N]; M], [u8::MAX; E], PhantomData);
 
     const BYTE_LEN: usize = M * N + E;
 
@@ -130,6 +130,7 @@ digits_impl! {
     indices;
     type Digit = u8, u16, u32, u64, u128;
 
+    #[allow(dead_code)]
     impl<const N: usize, const M: usize, const E: usize> Digits<Digit, N, M, E> {
     /// checks if index is within bounds only in debug mode
         #[inline]
@@ -233,6 +234,7 @@ digits_impl! {
     methods;
     type Digit = u8, u16, u32, u64, u128;
 
+    #[allow(dead_code)] // because we don't use all these methods for each digit, just usually a single digit for a given method
     impl<const N: usize, const M: usize, const E: usize> Digits<Digit, N, M, E> {
         #[inline]
         pub const fn count_ones(self) -> Exponent {
@@ -476,14 +478,14 @@ digits_impl! {
         pub const fn long_mul<const WIDEN: bool>(self, rhs: Self) -> (Self, bool) {
             let mut overflow = false;
             let mut out = Self::ALL_ZEROS;
-            let (mut prod, mut carry): (Digit, Digit) = (0, 0);
+            let mut prod: Digit = 0;
 
             let mut i = 0;
             loop {
                 if (WIDEN && i >= Self::DIGIT_LEN.div_ceil(2)) || (!WIDEN && i >= Self::DIGIT_LEN) {
                     break;
                 }
-                carry = 0;
+                let mut carry = 0;
                 let mut j = 0;
                 loop {
                     if (WIDEN && j >= Self::DIGIT_LEN.div_ceil(2)) || (!WIDEN && i + j >= Self::DIGIT_LEN) {
@@ -514,15 +516,17 @@ digits_impl! {
                 } else if carry != 0 {
                     overflow = true;
                 } else if self.get(i) != 0 {
-                    j += 1;
+                    // j += 1;
                     while j < Self::DIGIT_LEN {
                         if rhs.get(j) != 0 {
                             overflow = true;
                             break;
                         }
+
                         j += 1;
                     }
                 }
+
                 i += 1;
             }
             (out, overflow)
@@ -556,7 +560,7 @@ digits_impl! {
         }
 
         #[inline]
-        pub const fn unchecked_shl(self, rhs: Exponent) -> Self {
+        pub const unsafe fn unchecked_shl(self, rhs: Exponent) -> Self {
             let byte_shift = (rhs / 8) as usize;
             let bit_shift = rhs % 8;
             let mut out = Self::ALL_ZEROS;
@@ -574,10 +578,56 @@ digits_impl! {
 
                 let mut i = (rhs / Digit::BITS) as usize;
                 while i < Self::DIGIT_LEN {
-                    let d = self.get(i);
+                    let d = out.get(i);
                     out.set(i, (d << bit_shift) | carry);
                     carry = d >> carry_shift;
+
                     i += 1;
+                }
+            }
+
+            out
+        }
+
+        #[inline]
+        pub(crate) const unsafe fn unchecked_shr(self, rhs: Exponent, negative_sign_extend: bool) -> Self {
+            let mut out = if negative_sign_extend {
+                Self::ALL_ONES
+            } else {
+                Self::ALL_ZEROS
+            };
+            let byte_shift = (rhs / 8) as usize;
+            let bit_shift = rhs % 8;
+
+            unsafe {
+                out
+                    .as_mut_ptr()
+                    .copy_from_nonoverlapping(self.as_ptr().add(byte_shift), Self::BYTE_LEN - byte_shift);
+            }
+
+            if bit_shift != 0 {
+                let carry_shift = Digit::BITS - bit_shift;
+
+                let mut i = (Self::BITS - rhs).div_ceil(Digit::BITS) as usize; // we could just start at DIGIT_LEN, but then we would just be shifting all ones/all zeros for the unaffected digits (at higher indices) which would do nothing
+
+                let mut carry = if negative_sign_extend {
+                    let shift_back = if Self::LAST_DIGIT_BITS == Digit::BITS || i != Self::DIGIT_LEN {
+                        // if i is not the last digit index, then we have a full digit
+                        carry_shift
+                    } else {
+                        // last digit (the incomplete one) has Self::LAST_DIGIT_BITS bits, so shift back by this minus bit_shift
+                        Self::LAST_DIGIT_BITS - bit_shift
+                    };
+                    Digit::MAX << shift_back // if negative, then we initialise the carry to have the correct number of sign bits (we can get this expression by looking at the expression for carry shift in the while loop. the previous digit will have been all ones (unless this was the last digit, but then we can view it as having infinite leading ones, as this still represents the same value))
+                } else {
+                    0
+                };
+                while i > 0 {
+                    i -= 1;
+
+                    let current_digit = out.get(i);
+                    out.set(i, (current_digit >> bit_shift) | carry);
+                    carry = current_digit << carry_shift;
                 }
             }
 
@@ -612,6 +662,23 @@ digits_impl! {
                 }
             }
 
+            out
+        }
+    }
+}
+
+#[cfg(any(test, feature = "quickcheck"))]
+digits_impl! {
+    quickcheck_arbitrary;
+    type Digit = u8, u16, u32, u64, u128;
+
+    impl<const N: usize, const M: usize, const E: usize> quickcheck::Arbitrary for Digits<Digit, N, M, E> {
+        #[inline]
+        fn arbitrary(g: &mut quickcheck::Gen) -> Self {
+            let mut out = Self::ALL_ZEROS;
+            for i in 0..Self::DIGIT_LEN {
+                out.set(i, <Digit as quickcheck::Arbitrary>::arbitrary(g));
+            }
             out
         }
     }
@@ -665,6 +732,7 @@ digits_impl! {
     knuth_division;
     type Digit = u8, u16, u32, u64;
 
+    #[allow(dead_code)]
     impl<const N: usize, const M: usize, const E: usize> Digits<Digit, N, M, E> {
         #[inline]
         pub const fn digit_carrying_mul_add(a: Digit, b: Digit, c: Digit, carry: Digit) -> (Digit, Digit) {

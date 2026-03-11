@@ -88,6 +88,8 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
 
     /// Creates a new integer from the given array of bytes. The first byte in the array is interpreted as the least significant byte, the last byte in the array is interpreted as the most significant byte.
     /// 
+    /// If [`Self::BITS`] is not a multiple of `8`, then the high-order bits are ignored.
+    /// 
     /// This method is equivalent to [`from_le_bytes`](Self::from_le_bytes).
     /// 
     /// # Examples
@@ -99,12 +101,15 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// 
     /// type U24 = Uint<3>;
     /// type I24 = Int<3>;
+    /// type U15 = nt!(U15);
     /// 
     /// let bytes = [0x56, 0x34, 0x12];
     /// assert_eq!(U24::from_bytes(bytes), n!(0x123456));
     /// 
     /// let bytes = [0xFE, 0xDC, 0x7B];
     /// assert_eq!(I24::from_bytes(bytes), n!(0x7BDCFE));
+    /// 
+    /// assert_eq!(U15::from_bytes([0xFF, 0xFF]), U15::MAX); // = 0x7FFF. the high-order bit is ignored
     /// ```
     #[must_use]
     #[inline(always)]

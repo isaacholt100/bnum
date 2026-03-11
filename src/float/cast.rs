@@ -4,7 +4,7 @@ use crate::helpers::Zero;
 use super::{Float, FloatExponent};
 use crate::Exponent;
 use crate::cast::CastFrom;
-use crate::{Int, Uint, Integer};
+use crate::{Int, Integer, Uint};
 
 macro_rules! uint_as_float {
     ($($uint: ident), *) => {
@@ -40,17 +40,15 @@ macro_rules! int_as_float {
 
 int_as_float!(i8, i16, i32, i64, i128, isize);
 
-impl<const W: usize, const MB: usize, const S: bool, const N: usize, const B: usize, const OM: u8> CastFrom<Integer<S, N, B, OM>> for Float<W, MB> {
+impl<const W: usize, const MB: usize, const S: bool, const N: usize, const B: usize, const OM: u8>
+    CastFrom<Integer<S, N, B, OM>> for Float<W, MB>
+{
     fn cast_from(value: Integer<S, N, B, OM>) -> Self {
         if !S {
             return crate::cast::float::cast_float_from_uint(value.force::<_, B, _>());
         }
         let f = Self::cast_from(value.unsigned_abs_internal());
-        if value.is_negative_internal() {
-            -f
-        } else {
-            f
-        }
+        if value.is_negative_internal() { -f } else { f }
     }
 }
 
@@ -112,7 +110,6 @@ impl<const W: usize, const MB: usize> FloatCastHelper for Float<W, MB> {
     const MIN_SUBNORMAL_EXP: FloatExponent = Self::MIN_SUBNORMAL_EXP;
     const INFINITY: Self = Self::INFINITY;
     const ZERO: Self = Self::ZERO;
-    const NEG_ZERO: Self = Self::NEG_ZERO;
 
     #[inline]
     fn is_nan(&self) -> bool {
@@ -124,6 +121,82 @@ impl<const W: usize, const MB: usize> FloatCastHelper for Float<W, MB> {
         Self::is_infinite(*self)
     }
 }
+
+trait FloatCastFromFloatHelper: FloatCastHelper {
+    const NEG_ZERO: Self;
+    const MIN_SUBNORMAL_EXP: FloatExponent;
+
+    fn round_exponent_mantissa<const TIES_EVEN: bool>(
+        exponent: Self::SignedExp,
+        mantissa: Self::Mantissa,
+        shift: Exponent,
+    ) -> (Self::SignedExp, Self::Mantissa);
+    fn from_normalised_signed_parts(
+        sign: bool,
+        exponent: Self::SignedExp,
+        mantissa: Self::Mantissa,
+    ) -> Self;
+}
+
+macro_rules! impl_float_cast_from_float_helper_for_primitive_float {
+    ($($float_type: ty), *) => {
+        $(
+            impl FloatCastFromFloatHelper for $float_type {
+                const NEG_ZERO: Self = -0.0;
+                const MIN_SUBNORMAL_EXP: <Self as ConvertFloatParts>::SignedExp = Self::MIN_EXP + 1 - Self::MANTISSA_DIGITS as <Self as ConvertFloatParts>::SignedExp;
+
+                #[inline]
+                fn round_exponent_mantissa<const TIES_EVEN: bool>(
+                    mut exponent: Self::SignedExp,
+                    mantissa: Self::Mantissa,
+                    shift: Exponent,
+                ) -> (Self::SignedExp, Self::Mantissa) {
+                    let mut shifted_mantissa = mantissa >> shift;
+                    if !TIES_EVEN {
+                        return (exponent, shifted_mantissa); // if not TIES_EVEN, then we truncate
+                    }
+                    let discarded_shifted_bits =
+                        mantissa & (<$mantissa_type>::MAX >> ($float_bit_width - shift));
+                    if discarded_shifted_bits.bit(shift - 1) {
+                        // in this case, the discarded portion is at least a half
+                        if shifted_mantissa % 2 == 1 || !discarded_shifted_bits.is_power_of_two() {
+                            // in this case, ties to even says we round up. checking if not a power of two tells us that there is at least one bit set to 1 (after the most significant bit set to 1). we check in this order as is_odd is O(1) whereas is_power_of_two is O(N)
+                            shifted_mantissa = shifted_mantissa + 1;
+                            if shifted_mantissa.bit(shift) {
+                                // check for overflow (with respect to the mantissa bit width)
+                                exponent += 1;
+                                shifted_mantissa = shifted_mantissa >> 1;
+                            }
+                        }
+                    }
+                    (exponent, shifted_mantissa)
+                }
+
+                #[inline]
+                fn from_normalised_signed_parts(
+                    sign: bool,
+                    exponent: Self::SignedExp,
+                    mantissa: Self::Mantissa,
+                ) -> Self {
+                    use crate::helpers::Bits;
+
+                    debug_assert!(mantissa == 0 || mantissa.bits() == Self::MANTISSA_DIGITS);
+                    if exponent < Self::MIN_EXP - 1 {
+                        let shift = (Self::MIN_EXP - 1 - exponent) as Exponent;
+                        let (out_exponent, out_mantissa) =
+                            Self::round_exponent_mantissa::<true>(Self::MIN_EXP - 1, mantissa, shift);
+
+                        Self::from_signed_parts(sign, out_exponent, out_mantissa)
+                    } else {
+                        Self::from_signed_parts(sign, exponent, mantissa)
+                    }
+                }
+            }
+        )*
+    };
+}
+
+impl_float_cast_from_float_helper_for_primitive_float!(f32, f64);
 
 fn cast_float_from_float<T, U>(f: T) -> U
 where
