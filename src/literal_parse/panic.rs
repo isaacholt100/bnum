@@ -37,8 +37,8 @@ mod tests {
 
     #[test]
     fn test_concat_strs() {
-        const MSGS: &[&str] = &["Hello, ", "world!", " This ", "is", " ", "a ", "test."];
-        const CONCATENATED: [u8; 29] = concat_strs::<29>(MSGS);
-        assert_eq!(&CONCATENATED, b"Hello, world! This is a test.");
+        let msgs: &[&str] = &["Hello, ", "world!", " This ", "is", " ", "a ", "test."];
+        let concatenated: [u8; 29] = concat_strs::<29>(msgs);
+        assert_eq!(&concatenated, b"Hello, world! This is a test.");
     }
 }
