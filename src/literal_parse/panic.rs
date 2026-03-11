@@ -30,3 +30,15 @@ pub const fn concat_strs<'a, const LEN: usize>(msgs: &[&'a str]) -> [u8; LEN] {
     assert!(write_index == LEN); // should have correctly determined LEN from the macro which called this function
     buf
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_concat_strs() {
+        const MSGS: &[&str] = &["Hello, ", "world!", " This ", "is", " ", "a ", "test."];
+        const CONCATENATED: [u8; 29] = concat_strs::<29>(MSGS);
+        assert_eq!(&CONCATENATED, b"Hello, world! This is a test.");
+    }
+}

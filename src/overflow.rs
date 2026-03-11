@@ -50,3 +50,26 @@ impl OverflowMode {
         self as u8
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_str_eq() {
+        assert!(str_eq("hello", "hello"));
+        assert!(!str_eq("hello", "world"));
+        assert!(str_eq("", ""));
+        assert!(str_eq("a", "a"));
+        assert!(str_eq("hi there", "hi there"));
+        assert!(!str_eq("hello", "helloo"));
+        assert!(!str_eq("", "a"));
+    }
+
+    #[test]
+    fn test_overflow_mode_to_u8() {
+        assert_eq!(OverflowMode::Wrapping.to_u8(), 0);
+        assert_eq!(OverflowMode::Panicking.to_u8(), 1);
+        assert_eq!(OverflowMode::Saturating.to_u8(), 2);
+    }
+}

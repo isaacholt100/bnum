@@ -264,3 +264,23 @@ pub const fn get_negative_radix_digits_type_descriptor(literal_str: &str) -> (bo
     let type_descriptor = unsafe { core::str::from_utf8_unchecked(type_descriptor_bytes) }; // SAFETY: type_descriptor_bytes is a slice of the original literal_str, which is valid UTF-8, so this is valid UTF-8
     (negative, radix, digit_bytes, type_descriptor)
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_n_macro() {
+        type I256 = nt!(I256);
+        let a: I256 = n!(0x_ABCDEF_);
+        assert_eq!(a.to_str_radix(16), "abcdef");
+
+        let b = n!(1_23_456U511s);
+        assert_eq!(b.to_str_radix(10), "123456");
+
+        let c = n!(0o123_45_670U257w);
+        assert_eq!(c.to_str_radix(8), "12345670");
+
+        type I24p = nt!(I24p);
+        let d: I24p = n!(0b101010111100110111_I24p);
+        assert_eq!(d.to_str_radix(2), "101010111100110111");
+    }
+}

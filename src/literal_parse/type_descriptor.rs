@@ -165,3 +165,29 @@ pub const fn get_size_params_from_bits(bits: usize) -> (usize, usize) {
     };
     (bytes, b)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_size_params() {
+        for (bits, n, b) in [
+            (1, 1, 1),
+            (7, 1, 7),
+            (8, 1, 0),
+            (9, 2, 9),
+            (15, 2, 15),
+            (16, 2, 0),
+            (17, 3, 17),
+            (31, 4, 31),
+            (32, 4, 0),
+            (33, 5, 33),
+            (255, 32, 255),
+            (256, 32, 0),
+            (257, 33, 257),
+        ] {
+            assert_eq!(get_size_params_from_bits(bits), (n, b));
+        }
+    }
+}
