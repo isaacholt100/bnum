@@ -18,7 +18,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install latest stable Rust
         run: rustup install stable
-      - name: Run tests
+      - name: Run unit tests
         # NOTE: consider using https://github.com/frewsxcv/cargo-all-features, because all features != their arbitrary combinations
         run: cargo test --lib
   doc_tests:
@@ -27,7 +27,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install latest stable Rust
         run: rustup install stable
-      - name: Run test
+      - name: Run doc tests
         # NOTE: consider using https://github.com/frewsxcv/cargo-all-features, because all features != their arbitrary combinations
         run: cargo test --doc
   test_nightly:
@@ -38,5 +38,5 @@ jobs:
         run: rustup install nightly
       - name: Set nightly as default
         run: rustup default nightly
-      - name: Run all tests
+      - name: Run all unit tests
         run: cargo test --all-features --lib

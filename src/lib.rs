@@ -3,12 +3,11 @@
 #![cfg_attr(
     all(test, nightly),
     feature(
-        bigint_helper_methods,
+        widening_mul,
+        signed_bigint_helpers,
         int_roundings,
         // float_minimum_maximum,
         wrapping_next_power_of_two,
-        unchecked_shifts,
-        unchecked_neg,
         f16,
         f128,
         int_from_ascii

@@ -20,5 +20,5 @@ jobs:
         uses: taiki-e/install-action@cargo-binstall
       - name: Install cargo-msrv
         run: cargo binstall cargo-msrv --no-confirm
-      - name: verify MSRV
+      - name: Verify MSRV
         run: cargo msrv verify
