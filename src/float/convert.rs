@@ -134,7 +134,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         exponent: UnsignedFloatExponent,
         mantissa: Uint<W>,
     ) -> Self {
-        debug_assert!(mantissa.bits() <= Self::MB);
+        debug_assert!(mantissa.bit_width() <= Self::MB);
         let mut bits = Uint::cast_from_unsigned_float_exponent(exponent)
             .shl(Self::MB)
             .bitor(mantissa);
@@ -213,12 +213,12 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     #[inline]
     pub(crate) const fn into_normalised_signed_parts(self) -> (bool, FloatExponent, Uint<W>) {
         let (sign, exp, mant) = self.into_signed_parts();
-        let shift = Self::MB + 1 - mant.bits();
+        let shift = Self::MB + 1 - mant.bit_width();
         if shift == 0 {
             (sign, exp, mant)
         } else {
             let normalised_mant = unsafe { mant.unchecked_shl_internal(shift) }; // SAFETY: we can use unchecked variant since shift is <= Self::MB + 1 < number of bits of float
-            debug_assert!(normalised_mant.is_zero() || normalised_mant.bits() == Self::MB + 1);
+            debug_assert!(normalised_mant.is_zero() || normalised_mant.bit_width() == Self::MB + 1);
             let normalised_exp = exp - (shift as FloatExponent);
 
             (sign, normalised_exp, normalised_mant)
@@ -231,7 +231,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         mantissa: Uint<W>,
         shift: Exponent,
     ) -> (FloatExponent, Uint<W>) {
-        // we allow current_width to be specified so that we don't have to recompute mantissa.bits() if already known
+        // we allow current_width to be specified so that we don't have to recompute mantissa.bit_width() if already known
         let mut shifted_mantissa = unsafe { mantissa.unchecked_shr_internal(shift) };
         if !TIES_EVEN {
             return (exponent, shifted_mantissa); // if not TIES_EVEN, then we truncate
@@ -258,7 +258,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         exponent: FloatExponent,
         mantissa: Uint<W>,
     ) -> Self {
-        debug_assert!(mantissa.is_zero() || mantissa.bits() == Self::MB + 1);
+        debug_assert!(mantissa.is_zero() || mantissa.bit_width() == Self::MB + 1);
 
         if exponent < Self::MIN_EXP - 1 {
             let shift = (Self::MIN_EXP - 1 - exponent) as Exponent;

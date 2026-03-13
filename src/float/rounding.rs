@@ -171,7 +171,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                     Self::ZERO
                 } else {
                     let unshifted_mantissa = mantissa.bitand(mask.not());
-                    let shift = Self::MB + 1 - unshifted_mantissa.bits(); // amount of zeros before the first 1 in the fractional part 0.0...01...
+                    let shift = Self::MB + 1 - unshifted_mantissa.bit_width(); // amount of zeros before the first 1 in the fractional part 0.0...01...
                     // debug_assert!(shift > 0);
                     let fract_mantissa = unshifted_mantissa.shl(shift);
                     let abs_fract_exponent = (shift - small_exponent) as UnsignedFloatExponent; // absolute value of exponent of fractional part

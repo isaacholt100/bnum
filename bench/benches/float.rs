@@ -122,7 +122,7 @@ fn bench_add(c: &mut Criterion) {
         i += 1;
         inputs1[i % SAMPLE_SIZE]
     }, |(a, b, c)| {
-        a.rotate_left(c)
+        a.leading_zeros()
     }, criterion::BatchSize::SmallInput));
 
     i = 0;
@@ -130,7 +130,7 @@ fn bench_add(c: &mut Criterion) {
         i += 1;
         inputs2[i % SAMPLE_SIZE]
     }, |(a, b, c)| {
-        a.rotate_left(c)
+        a.leading_zeros()
     }, criterion::BatchSize::SmallInput));
     // TODO: comopare with rug, ruint, num_bigint, etc, primitives
 
@@ -139,7 +139,7 @@ fn bench_add(c: &mut Criterion) {
         i += 1;
         inputs3[i % SAMPLE_SIZE]
     }, |(a, b, c)| {
-        a.rotate_left(c)
+        a.leading_zeros()
     }, criterion::BatchSize::SmallInput));
 
     // group.bench_with_input(BenchmarkId::new("Iterative", "d8"), &inputs1, |b, inputs| b.iter(|| {

@@ -296,6 +296,22 @@ digits_impl! {
         }
 
         #[inline]
+        pub const fn leading_zeros2(&self) -> Exponent {
+            let mut zeros = 0;
+            let mut i = Self::DIGIT_LEN;
+            while i > 0 {
+                i -= 1;
+                let digit = self.get(i);
+                let lz = digit.leading_zeros();
+                zeros += lz;
+                if lz != Digit::BITS {
+                    return zeros - (Self::LAST_DIGIT_PAD_BYTES as u32 * 8);
+                }
+            }
+            zeros - (Self::LAST_DIGIT_PAD_BYTES as u32 * 8)
+        }
+
+        #[inline]
         pub const fn bit_width(self) -> Exponent {
             Self::BITS - self.leading_zeros()
         }

@@ -4,7 +4,7 @@ use crate::Uint;
 pub trait Bits {
     const BITS: Exponent;
 
-    fn bits(&self) -> Exponent;
+    fn bit_width(&self) -> Exponent;
     fn bit(&self, index: Exponent) -> bool;
 }
 
@@ -14,7 +14,7 @@ macro_rules! impl_bits_for_uint {
             const BITS: Exponent = Self::BITS as Exponent;
 
             #[inline]
-            fn bits(&self) -> Exponent {
+            fn bit_width(&self) -> Exponent {
                 (Self::BITS - self.leading_zeros()) as Exponent
             }
 
@@ -32,8 +32,8 @@ impl<const N: usize, const B: usize, const OM: u8> Bits for Uint<N, B, OM> {
     const BITS: Exponent = Self::BITS;
 
     #[inline]
-    fn bits(&self) -> Exponent {
-        Self::bits(&self)
+    fn bit_width(&self) -> Exponent {
+        Self::bit_width(*self)
     }
 
     #[inline]

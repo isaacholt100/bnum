@@ -43,7 +43,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                     // - 0 or 1, if exp_diff > 1.
 
                     // so in the exp_diff = 0 or 1 cases, just shift back by the required amount
-                    let mut shift_back = Self::MANTISSA_DIGITS - mant.bits();
+                    let mut shift_back = Self::MANTISSA_DIGITS - mant.bit_width();
                     // dbg!(shift_back);
                     // dbg!(exp_diff);
                     if exp_diff == 1 {
@@ -140,7 +140,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
         let mut mant = a_mant - shifted_b_mant;
 
-        if mant.bits() == Self::MB + 2 {
+        if mant.bit_width() == Self::MB + 2 {
             if mant & Uint::cast_from(0b10u8) == Uint::cast_from(0b10u8) && !sticky_bit {
                 mant += Uint::ONE;
             }
@@ -167,7 +167,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
             mant = a_mant - shifted_b_mant;
 
-            if mant.bits() == Self::MB + 2 {
+            if mant.bit_width() == Self::MB + 2 {
                 if mant & Uint::cast_from(0b10u8) == Uint::cast_from(0b10u8) && !sticky_bit {
                     mant += Uint::ONE;
                 }
@@ -182,7 +182,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                 {
                     mant -= Uint::ONE;
                 }
-                let bits = mant.bits();
+                let bits = mant.bit_width();
                 mant <<= Self::MB + 1 - bits;
                 a_exp -= MB as FloatExponent + 2 - bits as FloatExponent;
                 if !a_exp.is_positive() {

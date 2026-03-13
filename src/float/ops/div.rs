@@ -13,8 +13,8 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         let (_, e1, s1) = a.into_biased_parts();
         let (_, e2, s2) = b.into_biased_parts();
 
-        let b1 = s1.bits();
-        let b2 = s2.bits();
+        let b1 = s1.bit_width();
+        let b2 = s2.bit_width();
 
         let mut e =
             (e1 as FloatExponent) - (e2 as FloatExponent) + Self::EXP_BIAS + (b1 as FloatExponent)
@@ -37,7 +37,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         };
         let mut division = (large / (s2.as_::<Uint<{ W * 2 }>>())).as_::<Uint<W>>();
 
-        let rem = if division.bits() != Self::MB + 2 {
+        let rem = if division.bit_width() != Self::MB + 2 {
             let rem = (large % (s2.as_::<Uint<{ W * 2 }>>())).as_::<Uint<W>>();
             rem
         } else {
@@ -53,7 +53,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                 division += crate::n!(0b1);
             }
         }
-        if division.bits() == Self::MB + 2 {
+        if division.bit_width() == Self::MB + 2 {
             e += 1;
             division >>= 1 as Exponent;
         }
@@ -62,7 +62,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             return Self::INFINITY;
         }
 
-        if e == 1 && division.bits() < Self::MB + 1 {
+        if e == 1 && division.bit_width() < Self::MB + 1 {
             return Self::from_raw_parts(negative, 0, division);
         }
 

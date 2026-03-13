@@ -1,3 +1,7 @@
+//! Items relating to the generation of random [`Integer`](crate::Integer) values.
+//!
+//! The `rand` feature must be enabled to use items from this module.
+
 /*
 Most of the code in this file is adapted from code from the Rust `rand` library, https://docs.rs/rand/latest/rand/, modified under the MIT license. The changes are released under either the MIT license or the Apache License 2.0, as described in the README. See LICENSE-MIT or LICENSE-APACHE at the project root.
 The original license file for `rand` can be found in this project's root at licenses/LICENSE-rand.
@@ -8,12 +12,6 @@ Copyright 2013-2017 The Rust Project Developers.
 Copyright 2018-2020 Developers of the Rand project.
 Copyright 2017 The Rust Project Developers.
 */
-
-
-
-//! Utilities for generating random bnum integers.
-//!
-//! The `rand` feature must be enabled to use items from this module.
 
 use crate::Integer;
 use crate::Uint;

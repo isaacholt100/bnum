@@ -219,7 +219,7 @@ impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
 
     #[inline]
     fn to_inexact_bitwise_digits_le(self, radix: u32) -> Vec<u8> {
-        let bit_width = self.bits();
+        let bit_width = self.bit_width();
         let radix_log2 = radix.ilog2();
         let mask = u8::MAX >> (u8::BITS - radix_log2);
 
@@ -267,7 +267,7 @@ impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
         let mut digits = Vec::with_capacity(Self::BITS.div_ceil(radix_log2) as usize);
         debug_assert!(mask.trailing_ones() == radix_log2);
         debug_assert!(mask.count_ones() == radix_log2); // mask is l low-order 1s
-        let num_non_zero_digits = self.bits().div_ceil(Byte::BITS) as usize;
+        let num_non_zero_digits = self.bit_width().div_ceil(Byte::BITS) as usize;
         let digits_per_big_digit = Byte::BITS / radix_log2;
 
         for i in 0..num_non_zero_digits - 1 {

@@ -1,8 +1,8 @@
-//! Type aliases for big signed and unsigned integers.
+//! Type aliases for unsigned and signed integers. Each type alias has the same overflow behaviour as that of the primitive integer types, i.e. wrap on overflow if `overflow-checks` are disabled and panic on overflow if `overflow-checks` are enabled.
 
 macro_rules! int_type_doc {
     ($bits: literal, $sign: literal) => {
-        concat!($bits, "-bit ", $sign, " integer type.")
+        concat!($bits, "-bit ", $sign, " integer type, with overflow behaviour controlled by the `overflow-checks` flag.")
     };
 }
 

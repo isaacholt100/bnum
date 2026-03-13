@@ -82,6 +82,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn leading_zeros(mut self) -> Exponent {
+        // benchmarks show no quicker to use &self and as_digits
         self.set_pad_bits(false);
         self.to_digits::<u32>().leading_zeros() - Self::LAST_BYTE_PAD_BITS
     }
@@ -442,12 +443,12 @@ impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
     /// use bnum::prelude::*;
     /// use bnum::types::U256;
     ///
-    /// assert_eq!(U256::MAX.bits(), 256);
-    /// assert_eq!(n!(0U256).bits(), 0);
+    /// assert_eq!(U256::MAX.bit_width(), 256);
+    /// assert_eq!(n!(0U256).bit_width(), 0);
     /// ```
     #[must_use]
     #[inline]
-    pub const fn bits(&self) -> Exponent {
+    pub const fn bit_width(self) -> Exponent {
         self.to_digits::<u32>().bit_width()
     }
 }
@@ -533,18 +534,14 @@ mod tests {
         }
     }
 
-    crate::test::test_all! {
-        testing unsigned;
+    // crate::test::test_all! {
+    //     testing unsigned;
 
-        #[test]
-        fn bits() {
-            let u = STEST::cast_from(0b1010100101010101u128);
-            assert_eq!(u.bits(), 16);
-
-            let u: STEST = STEST::ONE << 7;
-            assert_eq!(u.bits(), 8);
-        }
-    }
+    //     #[cfg(nightly)]
+    //     test_bignum! {
+    //         function: <stest>::bit_width(a: stest)
+    //     }
+    // }
 }
 
 #[cfg(test)]

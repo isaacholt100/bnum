@@ -87,7 +87,7 @@ where
             if exp >= U::BITS {
                 return Err(UintFromFloatError::Overflow);
             }
-            let mant_bit_width = mant.bits();
+            let mant_bit_width = mant.bit_width();
             if exp <= mant_bit_width - 1 {
                 // in this case, we have a fractional part to truncate
                 Ok(U::cast_from(mant >> (mant_bit_width - 1 - exp))) // the right shift means the mantissa now has exp + 1 bits, and as we must have exp < U::BITS, the shifted mantissa is no wider than U

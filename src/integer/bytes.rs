@@ -82,7 +82,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
         // so `N` must be at most (2^32 - 1) / 8 = 2^29 - 1/8 = 2^29 - 1 (rounded down)
         assert!(Self::BITS >= 2, "bnum types must be at least 2 bits"); // having 1 bit is having a boolean so pointless
         if usize::BITS > 32 {
-            assert!((Self::BITS as usize) < (1 << 32), "bnum types must be less than 2^32 bits");
+            assert!((Self::BITS as usize) < (1 << 32), "bnum types must be less than 2**32 bits");
         }
     };
 

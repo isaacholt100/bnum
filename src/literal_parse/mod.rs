@@ -6,23 +6,23 @@ pub use digits::*;
 pub use type_descriptor::*;
 pub use panic::*;
 
-/// Creates an [`Integer`](crate::Integer) type with the specified const-generic parameters from a type descriptor.
+/// Returns a concrete instantiation of the [`Integer`](crate::Integer) type with the specified const-generic parameters from a type descriptor.
 /// 
-/// The `nt!` macro takes a type descriptor and simply outputs [`Integer<S, N, B, OM>`](crate::Integer), where the const-generic parameters `S`, `N` and `OM` are determined from the type descriptor.
+/// The `nt!` macro takes a type descriptor (which is an identifier fragment) and simply outputs [`Integer<S, N, B, OM>`](crate::Integer), where the const-generic parameters `S`, `N`, `B` and `OM` are determined from the type descriptor.
 /// 
 /// A type descriptor has the following format: `<sign><bit_width><overflow_mode>?`:
 /// - `<sign>` is either `I` (specifying a signed integer) or `U` (specifying an unsigned integer).
 /// - `<bit_width>` is a decimal integer specifying the bit width of the integer type. The bit width must be at least `2` and at most `2^32 - 1`.
 /// - `<overflow_mode>` is optional, and if specified must be one of:
-///     - `w` for wrapping overflow mode.
-///     - `p` for panicking overflow mode.
-///     - `s` for saturating overflow mode.
+///     - `w` for wrapping overflow mode ([`OverflowMode::Wrapping`](crate::OverflowMode::Wrapping)).
+///     - `p` for panicking overflow mode ([`OverflowMode::Panicking`](crate::OverflowMode::Panicking)).
+///     - `s` for saturating overflow mode ([`OverflowMode::Saturating`](crate::OverflowMode::Saturating)).
 ///     
-///     If `<overflow_mode>` is omitted, the default overflow mode is used.
+///     If `<overflow_mode>` is omitted, the default overflow mode ([`OverflowMode::DEFAULT`](crate::OverflowMode::DEFAULT)) is used.
 /// 
-/// If the given type descriptor is not in this format, a compile error will be triggered.
+/// If the given type descriptor is not in this format, a compile error will be triggered when the type is used (when the type is unused, no compile-error will be triggered).
 /// 
-/// If you want to create `Integer` values rather than types, use the [`n!`](crate::n) macro.
+/// If you want to create [`Integer`](crate::Integer) values rather than types, use the [`n!`](crate::n) macro.
 /// 
 /// # Examples
 /// 
@@ -113,21 +113,21 @@ macro_rules! from_literal_str {
 
 /// Create constant [`Integer`](crate::Integer) values from native integer literals.
 /// 
-/// The `n!` macro parses integer literals to [`Integer`](crate::Integer) values at compile time. It supports a similar integer literal syntax as Rust's built-in integer types:
+/// The `n!` macro converts integer literals to [`Integer`](crate::Integer) values at compile time. It supports a similar integer literal syntax as Rust's built-in integer types:
 /// - The prefix `0b` indicates a binary literal (base 2).
 /// - The prefix `0o` indicates an octal literal (base 8).
 /// - The prefix `0x` indicates a hexadecimal literal (base 16).
-/// - Literals are parsed in as decimal literals (base 10) if no prefix is specified.
+/// - Literals are treated as decimal literals (base 10) if no prefix is specified.
 /// 
-/// `n!` can be invoked in two ways:
-/// 1. With just an integer literal, e.g. `n!(0xABCDEF)`. In this case, the const-generic parameters of the created [`Integer`](crate::Integer) are left unspecified, so this must be used in a context where type inference can determine the parameters. For example: `let a: Integer<false, 16> = n!(0xABCDEF);` would be valid, but `let b = n!(0xABCDEF);` would trigger a compile error (unless `b` was subsequently used in a context which allowed for type inference).
-/// 2. With an integer literal followed by a type descriptor, e.g. `n!(0xabcdefU128w)`. The type descriptor may be any valid argument to the [`nt!`](crate::nt) macro. The type descriptor specifies the const-generic parameters of the created [`Integer`](crate::Integer). For more information about valid type descriptors, see the documentation for the [`nt!`](crate::nt) macro.
+/// `n!` accepts two forms of integer literal as input:
+/// 1. Suffix-free, e.g. `n!(0xABCDEF)`. In this case, the const-generic parameters of the created [`Integer`](crate::Integer) are left unspecified, so this must be used in a context where type inference can determine the parameters. For example: `let a: Integer<false, 16> = n!(0xABCDEF);` would be valid, but `let b = n!(0xABCDEF);` would trigger a compile error (unless `b` was subsequently used in a context which allowed for type inference).
+/// 2. With a suffix, e.g. `n!(0xabcdefU128w)`. The suffix may be any valid argument to the [`nt!`](crate::nt) macro. The suffix is referred to as a _type descriptor_, as it specifies the const-generic parameters of the created [`Integer`](crate::Integer). For more information about valid type descriptors, see the documentation for the [`nt!`](crate::nt) macro.
 /// 
 /// Invoking `n!` with invalid arguments will also trigger a compile error. This can happen if:
-/// - The literal is out of range for the type (works for inferred types and types specified using a type descriptor). Note that this does not depend on the overflow mode of the type.
-/// - The literal contains an invalid digits, e.g. `n!(0b102)` or `n!(1AU512)`.
+/// - The literal is out of range for the target type (works for inferred types and types specified by a suffix). Note that this will always cause a compile error, regardless of the overflow mode of the type.
+/// - The literal contains an invalid digits.
 /// - A `-` sign appears at the start of the literal when the type is unsigned, e.g. `n!(-123U256)`.
-/// - The type descriptor is invalid.
+/// - The suffix is an invalid type descriptor.
 /// 
 /// 
 /// # Examples
@@ -141,8 +141,8 @@ macro_rules! from_literal_str {
 /// ```
 /// use bnum::prelude::*;
 /// 
-/// let b = n!(123456I511s); // type specified using type descriptor
-/// // type descriptor specifies signed 511-bit integer with saturating overflow behaviour
+/// let b = n!(123456_I511s); // type specified by the suffix
+/// // suffix specifies signed 511-bit integer with saturating overflow behaviour
 /// // note that we don't need to define a type alias I511s here
 /// ```
 /// 

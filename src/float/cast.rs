@@ -180,7 +180,7 @@ macro_rules! impl_float_cast_from_float_helper_for_primitive_float {
                 ) -> Self {
                     use crate::helpers::Bits;
 
-                    debug_assert!(mantissa == 0 || mantissa.bits() == Self::MANTISSA_DIGITS);
+                    debug_assert!(mantissa == 0 || mantissa.bit_width() == Self::MANTISSA_DIGITS);
                     if exponent < Self::MIN_EXP - 1 {
                         let shift = (Self::MIN_EXP - 1 - exponent) as Exponent;
                         let (out_exponent, out_mantissa) =

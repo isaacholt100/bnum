@@ -15,7 +15,7 @@ impl<const W: usize, const MB: usize> Distribution<Float<W, MB>> for StandardUni
         if mantissa.is_one() {
             return Float::HALF_EPSILON;
         }
-        let mantissa_bits = mantissa.bits();
+        let mantissa_bits = mantissa.bit_width();
         let abs_exponent = Float::<W, MB>::MB + 2 - mantissa_bits; // has to be in this order to prevent overflow
         Float::from_signed_parts(
             false,
@@ -33,7 +33,7 @@ impl<const W: usize, const MB: usize> Distribution<Float<W, MB>> for OpenClosed0
         if mantissa.is_zero() {
             return Float::HALF_EPSILON;
         }
-        let mantissa_bits = mantissa.bits();
+        let mantissa_bits = mantissa.bit_width();
         let abs_exponent = Float::<W, MB>::MB + 2 - mantissa_bits; // has to be in this order to prevent overflow
         Float::from_signed_parts(
             false,
@@ -50,7 +50,7 @@ impl<const W: usize, const MB: usize> Distribution<Float<W, MB>> for Open01 {
         if mantissa.is_zero() {
             return Float::HALF_EPSILON;
         }
-        let mantissa_bits = mantissa.bits();
+        let mantissa_bits = mantissa.bit_width();
         let abs_exponent = Float::<W, MB>::MB + 1 - mantissa_bits; // has to be in this order to prevent overflow
         let exponent = -(abs_exponent as FloatExponent);
         let mut mantissa = mantissa.shl(1).bitor(Uint::ONE); // = 2*mantissa + 1

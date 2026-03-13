@@ -30,7 +30,7 @@ where
     F::Mantissa: CastFrom<U> + One,
     U: CastFloatFromUintHelper + Copy,
 {
-    let bit_width = value.bits(); // number of bits needed to specify value = exponent of largest power of two smaller than value. so bit_width will be one less than the exponent of the float
+    let bit_width = value.bit_width(); // number of bits needed to specify value = exponent of largest power of two smaller than value. so bit_width will be one less than the exponent of the float
     if bit_width == 0 {
         // in this case, value is zero
         return F::ZERO;

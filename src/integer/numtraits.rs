@@ -579,7 +579,7 @@ impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
         if self.is_zero() {
             return self;
         }
-        let bit_width = self.bits();
+        let bit_width = self.bit_width();
         if n > bit_width {
             // in this case, output should be < (2^bit_width)^(1/n) < 2^1 = 2, and output must be at least 1, so output is 1
             return Self::ONE;

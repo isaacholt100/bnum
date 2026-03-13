@@ -394,7 +394,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
         if self.is_negative_internal() {
             None
         } else {
-            self.force_sign::<false>().bits().checked_sub(1)
+            self.force_sign::<false>().bit_width().checked_sub(1)
         }
     }
 
@@ -585,7 +585,7 @@ impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
         if self.is_power_of_two() {
             return Some(self);
         }
-        let bits = self.bits();
+        let bits = self.bit_width();
         if bits == Self::BITS {
             return None;
         }

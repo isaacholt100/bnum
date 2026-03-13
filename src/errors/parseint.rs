@@ -1,16 +1,19 @@
 use core::fmt::{self, Debug, Display, Formatter};
 use core::num::IntErrorKind;
+use core::error::Error;
 
 /// The error type that is returned when parsing an integer from an invalid source.
 ///
 /// This error can occur when the [`from_str_radix`](crate::Integer::from_str_radix) or [`FromStr::from_str`](core::str::FromStr::from_str) methods of [`Integer`](crate::Integer) are called with an invalid input string.
-#[derive(PartialEq, Eq, Clone, Debug)]
+#[derive(PartialEq, Eq, Clone, Copy, Debug, Hash)]
 pub struct ParseIntError {
     pub(crate) kind: IntErrorKind,
 }
 
+impl Error for ParseIntError {}
+
 impl ParseIntError {
-    /// Returns the enum [`IntErrorKind`], which shows the reason that the parsing input was invalid.
+    /// Returns the enum [`IntErrorKind`], which indicates the reason that the parsing input was invalid.
     pub const fn kind(&self) -> &IntErrorKind {
         &self.kind
     }

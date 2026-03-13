@@ -16,12 +16,12 @@
 
 Rust provides 12 fixed-width integer types out of the box: `uN` and `iN`, for `N = 8, 16, 32, 64, 128`, as well as `usize` and `isize`. This interface has several limitations:
 - Only a few possible bit widths.
-- The types are distinct rather than being generic over bit width, meaning that generic code cannot automatically be written over arbitrary bit widths or signedness.
-- Each type must have the same overflow behaviour, globally controlled by the `overflow-checks` flag: either panic on overflow if `overflow-checks` is enabled, or wrap on overflow if not. If you wanted to specify custom overflow behaviour, you would have to use the `Wrapping<T>` or `Saturating<T>` wrapper types from the standard library, which are cumbersome.
+- The types are distinct rather than being generic over bit width and signedness, meaning that generic code cannot automatically be written over arbitrary bit widths or signedness.
+- Each type has the same overflow behaviour, which is globally controlled by the `overflow-checks` flag: either panic on overflow if `overflow-checks` is enabled, or wrap on overflow if not. To specify custom overflow behaviour, the `Wrapping<T>` or `Saturating<T>` wrapper types from the standard library must be used, which are cumbersome.
 
 `bnum` addresses each of these limitations by providing a _single generic integer type_ `Integer`, which has const-generic parameters to specify:
 - The bit width of the integer: any `usize` between `2` and `2**32 - 1`.
-- Whether the integer is signed or unsigned.
+- Whether the integer type is signed or unsigned.
 - The overflow behaviour of the integer: wrapping, saturating, or panicking.
 
 <!-- More specifically, `Integer<S, N, OM>` specifies an integer type which:
@@ -69,7 +69,7 @@ let b = p(I44s::MAX); // result is too large to be represented by the type, so s
 // let c = p(U53p::MAX); // this would result in panic due to overflow
 ```
   
-For more information on the `Integer` type and the `n!` and `nt!` macros, see the crate level documentation.
+For more information on the `Integer` type and the `n!` and `nt!` macros, see the item-level documentation of each.
 
 ## Key features
 
@@ -134,14 +134,14 @@ assert_eq!(f_n, n!(354224848179261915075));
 | Feature name | Default? | Enables... |
 |--------------|----------|------------|
 | `alloc`      | Yes      | Methods which require a global allocator (i.e. formatting and radix conversion). |
-| `arbitrary`  | No       | The [`Arbitrary`](https://docs.rs/arbitrary/latest/arbitrary/trait.Arbitrary.html) trait from the [`arbitrary`](https://docs.rs/arbitrary/latest/arbitrary/) crate. **Note: currently, this feature cannot be used with `no_std` (see [this issue](https://github.com/rust-fuzz/arbitrary/issues/38)).** |
-| `rand`       | No       | Creation of random `bnum` types via the [`rand`](https://docs.rs/rand/latest/rand/) crate. |
+| `arbitrary`  | No       | Implementation of the [`Arbitrary`](https://docs.rs/arbitrary/latest/arbitrary/trait.Arbitrary.html) trait from the [`arbitrary`](https://docs.rs/arbitrary/latest/arbitrary/) crate. **Note: currently, this feature cannot be used with `no_std` (see [this issue](https://github.com/rust-fuzz/arbitrary/issues/38)).** |
+| `rand`       | No       | Generate random `Integer` values via the [`rand`](https://docs.rs/rand/latest/rand/) crate. |
 | `serde`      | No       | Serialization and deserialization via the [`serde`](https://docs.rs/serde/latest/serde/) and [`serde_big_array`](https://docs.rs/serde-big-array/latest/serde_big_array/) crates. |
 | `borsh`      | No       | Serialization and deserialization via the [`borsh`](https://docs.rs/borsh/latest/borsh/) crate. |
 | `numtraits`  | No       | Implementations of all relevant traits from the [`num_traits`](https://docs.rs/num-traits/latest/num_traits/) and [`num_integer`](https://docs.rs/num-integer/latest/num_integer/) crates, such as [`AsPrimitive`](https://docs.rs/num-traits/latest/num_traits/cast/trait.AsPrimitive.html), [`Signed`](https://docs.rs/num-traits/latest/num_traits/sign/trait.Signed.html), [`Integer`](https://docs.rs/num-integer/latest/num_integer/trait.Integer.html) and [`Roots`](https://docs.rs/num-integer/latest/num_integer/trait.Roots.html). |
-| `quickcheck` | No       | The [`Arbitrary`](https://docs.rs/quickcheck/latest/quickcheck/trait.Arbitrary.html) trait from the [`quickcheck`](https://docs.rs/quickcheck/latest/quickcheck/) crate. **Note: currently, this feature cannot be used with `no_std`.** |
-| `zeroize`    | No       | The [`Zeroize`](https://docs.rs/zeroize/latest/zeroize/trait.Zeroize.html) trait from the [`zeroize`](https://docs.rs/zeroize/latest/zeroize/) crate. |
-| `valuable`   | No       | The [`Valuable`](https://docs.rs/valuable/latest/valuable/trait.Valuable.html) trait from the [`valuable`](https://docs.rs/valuable/latest/valuable/) crate. |
+| `quickcheck` | No       | Implementatio of the [`Arbitrary`](https://docs.rs/quickcheck/latest/quickcheck/trait.Arbitrary.html) trait from the [`quickcheck`](https://docs.rs/quickcheck/latest/quickcheck/) crate. **Note: currently, this feature cannot be used with `no_std`.** |
+| `zeroize`    | No       | Implementation of the [`Zeroize`](https://docs.rs/zeroize/latest/zeroize/trait.Zeroize.html) trait from the [`zeroize`](https://docs.rs/zeroize/latest/zeroize/) crate. |
+| `valuable`   | No       | Implementation of the [`Valuable`](https://docs.rs/valuable/latest/valuable/trait.Valuable.html) trait from the [`valuable`](https://docs.rs/valuable/latest/valuable/) crate. |
 
 ## Testing
 

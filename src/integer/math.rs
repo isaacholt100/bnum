@@ -390,7 +390,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
             return Self::ZERO;
         }
         let u = self.force_sign::<false>();
-        let mut x = Uint::power_of_two(u.bits() / 2 + 1);
+        let mut x = Uint::power_of_two(u.bit_width() / 2 + 1);
         loop {
             let y = x.midpoint(u.div(x)); // can't have overflow as x is strictly decreasing with each iteration
             if y.ge(&x) {

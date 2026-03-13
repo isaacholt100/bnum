@@ -38,7 +38,7 @@ pub enum OverflowMode {
 impl OverflowMode {
     /// The default overflow mode, which is the mode used for [`Integer`](crate::Integer) types when the const-generic parameter `OM` is not explicitly specified. 
     /// 
-    /// The value of `DEFAULT` is controlled by the [`overflow-checks` flag](https://doc.rust-lang.org/cargo/reference/profiles.html#overflow-checks): if overflow checks are enabled, then `DEFAULT` is `OverflowMode::Panicking`; if overflow checks are disabled, then `DEFAULT` is `OverflowMode::Wrapping`.
+    /// The value of `DEFAULT` is controlled by the [`overflow-checks` flag](https://doc.rust-lang.org/cargo/reference/profiles.html#overflow-checks): if overflow checks are enabled, then `DEFAULT` is `Self::Panicking`; if overflow checks are disabled, then `DEFAULT` is `Self::Wrapping`.
     pub const DEFAULT: Self = if GLOBAL_OVERFLOW_CHECKS {
         OverflowMode::Panicking
     } else {

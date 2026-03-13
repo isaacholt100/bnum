@@ -10,9 +10,9 @@ criterion = { version = "0.5" }
 bnum = { path = "../", features = ["rand", "alloc", "numtraits"] }
 num-traits = "0.2"
 uint = "0.9"
-rand = { version = "0.9", features = ["std", "std_rng"] }
+rand = { version = "0.10", features = ["std", "std_rng"] }
 paste = "1.0"
-bnum-old = { package = "bnum", version = "0.12.1", features = ["rand", "numtraits"]}
+bnum-old = { package = "bnum", version = "0.13", features = ["rand", "numtraits"]}
 num-integer = "0.1"
 
 [[bench]]

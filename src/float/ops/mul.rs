@@ -17,10 +17,10 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         // TODO: make so as_ can infer type so can switch trait definition if needed
         let mut mant_prod = mant_a.widening_mul(mant_b);
 
-        let prod_bits = if mant_prod.1.bits() == 0 {
-            mant_prod.0.bits()
+        let prod_bits = if mant_prod.1.bit_width() == 0 {
+            mant_prod.0.bit_width()
         } else {
-            mant_prod.1.bits() + Self::BITS
+            mant_prod.1.bit_width() + Self::BITS
         };
 
         if prod_bits == 0 {
@@ -96,16 +96,16 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             }
         }
 
-        let mut m1b = mant.1.bits();
+        let mut m1b = mant.1.bit_width();
         if m1b != 0 {
             m1b -= 1;
         }
         /*let bits = if m1b == 0 {
-            mant.0.bits()
+            mant.0.bit_width()
         } else {
             m1b + Self::BITS
         };*/
-        let m0b = mant.0.bits();
+        let m0b = mant.0.bit_width();
         if m0b > Self::MB + 1 {
             // it's possible that the mantissa has too many bits, so shift it right and increase the exponent until it has the correct number of bits
             let inc = m0b - (Self::MB + 1);

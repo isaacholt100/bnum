@@ -25,7 +25,7 @@
 - Debug impl in no_alloc is padded hex string
 - added compile time assertion about valid bit size
 - detect overflow checks rather than if in debug build or not (so match integer behaviour exactly)
-- fix behaviour of left shifts in no overflow checks mode
+- fix behaviour of shifts in no overflow checks mode
 
 - remove as_bits, as_bits_mut from Int
 - remove 2, 3, ..., 10 from Uint and Int, -1, -2, ..., -3 from Int
@@ -37,3 +37,5 @@
 - remove ONE, ZERO, NEG_ONE consts (not needed now we have the n! macro)
 - remove CastFrom from prelude
 - remove Slice struct in random module, remove try_fill_slice function (superseded by rand 0.10 Fill trait)
+- rename Uint::bits to bit_width, takes self not &self
+- implement core::error::Error trait for error types
