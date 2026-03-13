@@ -5,7 +5,7 @@ use core::error::Error;
 /// The error type that is returned when parsing an integer from an invalid source.
 ///
 /// This error can occur when the [`from_str_radix`](crate::Integer::from_str_radix) or [`FromStr::from_str`](core::str::FromStr::from_str) methods of [`Integer`](crate::Integer) are called with an invalid input string.
-#[derive(PartialEq, Eq, Clone, Copy, Debug, Hash)]
+#[derive(PartialEq, Eq, Clone, Copy, Debug)]
 pub struct ParseIntError {
     pub(crate) kind: IntErrorKind,
 }

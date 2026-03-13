@@ -107,8 +107,7 @@ macro_rules! impl_convert_float_parts_for_primitive_float {
             #[inline]
             fn into_normalised_signed_parts(self) -> (bool, Self::SignedExp, Self::Mantissa) {
                 let (sign, exp, mant) = self.into_signed_parts();
-                use crate::helpers::Bits;
-                let shift = Self::MANTISSA_DIGITS - mant.bit_width();
+                let shift = Self::MANTISSA_DIGITS - Bits::bit_width(&mant);
                 if mant == 0 || shift == 0 {
                     (sign, exp, mant)
                 } else {
@@ -125,7 +124,7 @@ macro_rules! impl_convert_float_parts_for_primitive_float {
                 exponent: Self::UnsignedExp,
                 mantissa: Self::Mantissa,
             ) -> Self {
-                debug_assert!(mantissa.bit_width() <= <$float_type>::MANTISSA_DIGITS - 1);
+                debug_assert!(Bits::bit_width(&mantissa) <= <$float_type>::MANTISSA_DIGITS - 1);
 
                 let mut bits =
                     (exponent as $mantissa_type) << (<$float_type>::MANTISSA_DIGITS - 1) | mantissa;
