@@ -55,7 +55,7 @@ type U753p = t!(U753p);
 // 753-bit unsigned integer that panics on arithmetic overflow
 
 let a = p(U24w::MAX); // result wraps around and doesn't panic
-let b = p(I044s::MAX); // result is too large to be represented by the type, so saturates to I044s::MAX
+let b = p(I1044s::MAX); // result is too large to be represented by the type, so saturates to I044s::MAX
 // let c = p(U753p::MAX); // this would result in panic due to overflow
 ```
   
