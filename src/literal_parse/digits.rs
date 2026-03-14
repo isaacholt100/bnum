@@ -11,6 +11,7 @@ pub enum ParseIntLiteralError {
 }
 
 // IMPLICIT = true means that parameters are not specified in the literal, so rely on type inference
+// TODO: for floats, have extra const generic param F (of type bool, indicates whether float or int) on IntLiteralParser, this will allow us to use the n macro to parse both floats and integers, and type inference can work out which one is needed in the case that no suffix is provided
 #[doc(hidden)]
 pub struct IntLiteralParser<const IMPLICIT: bool, const S: bool, const N: usize, const B: usize, const OM: u8>;
 

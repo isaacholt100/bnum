@@ -22,19 +22,9 @@ Rust provides 12 fixed-width integer types out of the box: `uN` and `iN`, for `N
 `bnum` addresses each of these limitations by providing a _single generic integer type_ `Integer`, which has const-generic parameters to specify:
 - The bit width of the integer: any `usize` between `2` and `2**32 - 1`.
 - Whether the integer type is signed or unsigned.
-- The overflow behaviour of the integer: wrapping, saturating, or panicking.
+- The overflow behaviour of the integer: wrap, saturate, or panic.
 
-<!-- More specifically, `Integer<S, N, OM>` specifies an integer type which:
-- Is signed if `S` is `true`, and unsigned if `S` is `false`.
-- Has a width of `N * 8` bits.
-- Has overflow behaviour specified by `OM`:
-  - `OM = 0`: arithmetic operations wrap on overflow.
-  - `OM = 1`: arithmetic operations panic on overflow.
-  - `OM = 2`: arithmetic operations saturate on overflow.
-
-For example, a useful type in cryptography would be `Integer<false, 64, 0>`: an unsigned integer type with a width of `64 * 8 = 512` bits, and which has explicit wrapping arithmetic.  TODO: move to Integer docs-->
-
-`bnum` also provides a macro `n!` for easily creating `bnum` integers from integer literals, and a macro `nt!` for specifying `Integer` types with specific parameters from type descriptors.
+`bnum` also provides a macro `n!` for easily creating `bnum` integers from integer literals, and a macro `t!` for specifying `Integer` types with specific parameters from type descriptors.
 
 To illustrate the power of this generic interface, here is a simple example:
 
@@ -57,19 +47,19 @@ fn p<const S: bool, const N: usize, const B: usize, const OM: u8>(x: Integer<S, 
 assert_eq!(p(n!(10U256)), n!(2357));
 // evaluates p(10) as a 256-bit unsigned integer
 
-type U24w = nt!(U24w);
+type U24w = t!(U24w);
 // 24-bit unsigned integer with wrapping arithmetic
-type I44s = nt!(I44s);
-// 44-bit signed integer with saturating arithmetic
-type U53p = nt!(U53p);
-// 53-bit unsigned integer that panics on arithmetic overflow
+type I1044s = t!(I1044s);
+// 1044-bit signed integer with saturating arithmetic
+type U753p = t!(U753p);
+// 753-bit unsigned integer that panics on arithmetic overflow
 
 let a = p(U24w::MAX); // result wraps around and doesn't panic
-let b = p(I44s::MAX); // result is too large to be represented by the type, so saturates to I44s::MAX
-// let c = p(U53p::MAX); // this would result in panic due to overflow
+let b = p(I044s::MAX); // result is too large to be represented by the type, so saturates to I044s::MAX
+// let c = p(U753p::MAX); // this would result in panic due to overflow
 ```
   
-For more information on the `Integer` type and the `n!` and `nt!` macros, see the item-level documentation of each.
+For more information on the `Integer` type and the `n!` and `t!` macros, see the item-level documentation of each.
 
 ## Key features
 

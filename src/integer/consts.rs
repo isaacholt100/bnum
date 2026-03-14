@@ -7,9 +7,9 @@ use crate::Exponent;
 /// Associated constants.
 impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, B, OM> {
     /// The overflow mode used for this type, determined by the const-generic parameter `OM`:
-    /// - If `OM` is `0`, the overflow mode is [`OverflowMode::Wrapping`].
-    /// - If `OM` is `1`, the overflow mode is [`OverflowMode::Panicking`].
-    /// - If `OM` is `2`, the overflow mode is [`OverflowMode::Saturating`].
+    /// - If `OM` is `0`, the overflow mode is [`OverflowMode::Wrap`].
+    /// - If `OM` is `1`, the overflow mode is [`OverflowMode::Panic`].
+    /// - If `OM` is `2`, the overflow mode is [`OverflowMode::Saturate`].
     /// 
     /// # Examples
     /// 
@@ -17,20 +17,20 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// use bnum::prelude::*;
     /// use bnum::OverflowMode;
     /// 
-    /// type U264w = nt!(U264w);
-    /// type I155p = nt!(I155p);
-    /// type I512s = nt!(I512s);
+    /// type U264w = t!(U264w);
+    /// type I155p = t!(I155p);
+    /// type I512s = t!(I512s);
     /// 
-    /// assert_eq!(U264w::OVERFLOW_MODE, OverflowMode::Wrapping);
-    /// assert_eq!(I155p::OVERFLOW_MODE, OverflowMode::Panicking);
-    /// assert_eq!(I512s::OVERFLOW_MODE, OverflowMode::Saturating);
+    /// assert_eq!(U264w::OVERFLOW_MODE, OverflowMode::Wrap);
+    /// assert_eq!(I155p::OVERFLOW_MODE, OverflowMode::Panic);
+    /// assert_eq!(I512s::OVERFLOW_MODE, OverflowMode::Saturate);
     /// ```
-    pub const OVERFLOW_MODE: OverflowMode = if OM == OverflowMode::Wrapping.to_u8() {
-        OverflowMode::Wrapping
-    } else if OM == OverflowMode::Panicking.to_u8() {
-        OverflowMode::Panicking
-    } else if OM == OverflowMode::Saturating.to_u8() {
-        OverflowMode::Saturating
+    pub const OVERFLOW_MODE: OverflowMode = if OM == OverflowMode::Wrap.to_u8() {
+        OverflowMode::Wrap
+    } else if OM == OverflowMode::Panic.to_u8() {
+        OverflowMode::Panic
+    } else if OM == OverflowMode::Saturate.to_u8() {
+        OverflowMode::Saturate
     } else {
         panic!("invalid overflow mode: `OM` must be `0`, `1`, or `2`")
     };

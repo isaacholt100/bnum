@@ -8,15 +8,15 @@ pub use panic::*;
 
 /// Returns a concrete instantiation of the [`Integer`](crate::Integer) type with the specified const-generic parameters from a type descriptor.
 /// 
-/// The `nt!` macro takes a type descriptor (which is an identifier fragment) and simply outputs [`Integer<S, N, B, OM>`](crate::Integer), where the const-generic parameters `S`, `N`, `B` and `OM` are determined from the type descriptor.
+/// The `t!` macro takes a type descriptor (which is an identifier fragment) and simply outputs [`Integer<S, N, B, OM>`](crate::Integer), where the const-generic parameters `S`, `N`, `B` and `OM` are determined from the type descriptor.
 /// 
 /// A type descriptor has the following format: `<sign><bit_width><overflow_mode>?`:
 /// - `<sign>` is either `I` (specifying a signed integer) or `U` (specifying an unsigned integer).
 /// - `<bit_width>` is a decimal integer specifying the bit width of the integer type. The bit width must be at least `2` and at most `2^32 - 1`.
 /// - `<overflow_mode>` is optional, and if specified must be one of:
-///     - `w` for wrapping overflow mode ([`OverflowMode::Wrapping`](crate::OverflowMode::Wrapping)).
-///     - `p` for panicking overflow mode ([`OverflowMode::Panicking`](crate::OverflowMode::Panicking)).
-///     - `s` for saturating overflow mode ([`OverflowMode::Saturating`](crate::OverflowMode::Saturating)).
+///     - `w` for wrapping overflow mode ([`OverflowMode::Wrap`](crate::OverflowMode::Wrap)).
+///     - `p` for panicking overflow mode ([`OverflowMode::Panic`](crate::OverflowMode::Panic)).
+///     - `s` for saturating overflow mode ([`OverflowMode::Saturate`](crate::OverflowMode::Saturate)).
 ///     
 ///     If `<overflow_mode>` is omitted, the default overflow mode ([`OverflowMode::DEFAULT`](crate::OverflowMode::DEFAULT)) is used.
 /// 
@@ -29,17 +29,17 @@ pub use panic::*;
 /// ```
 /// use bnum::prelude::*;
 /// 
-/// type MyInt = nt!(I259p); // signed 259-bit integer with panicking overflow mode
-/// type MyUint = nt!(U633); // unsigned 633-bit integer with default overflow mode
-/// type MyInt2 = nt!(I538s); // signed 538-bit integer with saturating overflow mode
-/// type MyUint2 = nt!(U24w); // unsigned 24-bit integer with wrapping overflow mode
+/// type MyInt = t!(I259p); // signed 259-bit integer with panicking overflow mode
+/// type MyUint = t!(U633); // unsigned 633-bit integer with default overflow mode
+/// type MyInt2 = t!(I538s); // signed 538-bit integer with saturating overflow mode
+/// type MyUint2 = t!(U24w); // unsigned 24-bit integer with wrapping overflow mode
 /// ```
 /// 
 /// The following examples will fail to compile, since the type descriptor is invalid. Note the type must be used in order to trigger the compile error.
 /// ```compile_fail
 /// use bnum::prelude::*;
 /// 
-/// type InvalidType = nt!(A256); // invalid sign descriptor
+/// type InvalidType = t!(A256); // invalid sign descriptor
 /// 
 /// dbg!(InvalidType::BITS);
 /// ```
@@ -47,7 +47,7 @@ pub use panic::*;
 /// ```compile_fail
 /// use bnum::prelude::*;
 /// 
-/// type InvalidType2 = nt!(I1); // bit width too small
+/// type InvalidType2 = t!(I1); // bit width too small
 /// 
 /// dbg!(InvalidType2::BITS);
 /// ```
@@ -55,12 +55,14 @@ pub use panic::*;
 /// ```compile_fail
 /// use bnum::prelude::*;
 /// 
-/// type InvalidType3 = nt!(U1024x); // invalid overflow mode descriptor
+/// type InvalidType3 = t!(U1024x); // invalid overflow mode descriptor
 /// 
 /// dbg!(InvalidType3::BITS);
 /// ```
 #[macro_export]
-macro_rules! nt {
+// TODO: replace nt with t in docs and reddit post and release notes
+// TODO: idea for floats: have struct FloatOrInteger with const generic param F (type bool, indicates whether float or int), other const generic params correspond to those of Float and Integer, then have a trait OutputType with an associated type Output, Output is Integer if F is false and Float if F is true. then the t macro returns <OutputType<...>::Output>.
+macro_rules! t {
     ($ty: ident) => {
         $crate::Integer::<{
             $crate::literal_parse::get_signedness(stringify!($ty))
@@ -86,30 +88,6 @@ macro_rules! nt {
     };
 }
 
-// inside a macro not a function, so that the panic happens at the call site
-#[doc(hidden)]
-#[macro_export]
-macro_rules! from_literal_str {
-    ($literal_str: expr, $($ty: tt)+) => { // this and not $ty: ty, since for some reason Rust needs to the generic params provided when we wrap in <...>
-        match $($ty)+::from_literal_str_checked($literal_str) {
-            Ok(n) => n,
-            Err(err) => match err {
-                $crate::literal_parse::ParseIntLiteralError::OutOfRange => {
-                    panic!("literal out of range for target type")
-                }
-                $crate::literal_parse::ParseIntLiteralError::NoDigits => {
-                    panic!("no valid digits found for number")
-                }
-                $crate::literal_parse::ParseIntLiteralError::InvalidDigit => {
-                    panic!("integer literal contains invalid digit")
-                }
-                $crate::literal_parse::ParseIntLiteralError::UnsignedNegation => {
-                    panic!("cannot apply unary operator `-` to unsigned integer type")
-                }
-            },
-        }
-    };
-}
 
 /// Create constant [`Integer`](crate::Integer) values from native integer literals.
 /// 
@@ -121,11 +99,11 @@ macro_rules! from_literal_str {
 /// 
 /// `n!` accepts two forms of integer literal as input:
 /// 1. Suffix-free, e.g. `n!(0xABCDEF)`. In this case, the const-generic parameters of the created [`Integer`](crate::Integer) are left unspecified, so this must be used in a context where type inference can determine the parameters. For example: `let a: Integer<false, 16> = n!(0xABCDEF);` would be valid, but `let b = n!(0xABCDEF);` would trigger a compile error (unless `b` was subsequently used in a context which allowed for type inference).
-/// 2. With a suffix, e.g. `n!(0xabcdefU128w)`. The suffix may be any valid argument to the [`nt!`](crate::nt) macro. The suffix is referred to as a _type descriptor_, as it specifies the const-generic parameters of the created [`Integer`](crate::Integer). For more information about valid type descriptors, see the documentation for the [`nt!`](crate::nt) macro.
+/// 2. With a suffix, e.g. `n!(0xabcdefU128w)`. The suffix may be any valid argument to the [`t!`](crate::t) macro. The suffix is referred to as a _type descriptor_, as it specifies the const-generic parameters of the created [`Integer`](crate::Integer). For more information about valid type descriptors, see the documentation for the [`t!`](crate::t) macro.
 /// 
 /// Invoking `n!` with invalid arguments will also trigger a compile error. This can happen if:
 /// - The literal is out of range for the target type (works for inferred types and types specified by a suffix). Note that this will always cause a compile error, regardless of the overflow mode of the type.
-/// - The literal contains an invalid digits.
+/// - The literal contains an invalid digit.
 /// - A `-` sign appears at the start of the literal when the type is unsigned, e.g. `n!(-123U256)`.
 /// - The suffix is an invalid type descriptor.
 /// 
@@ -269,7 +247,7 @@ pub const fn get_negative_radix_digits_type_descriptor(literal_str: &str) -> (bo
 mod tests {
     #[test]
     fn test_n_macro() {
-        type I256 = nt!(I256);
+        type I256 = t!(I256);
         let a: I256 = n!(0x_ABCDEF_);
         assert_eq!(a.to_str_radix(16), "abcdef");
 
@@ -279,7 +257,7 @@ mod tests {
         let c = n!(0o123_45_670U257w);
         assert_eq!(c.to_str_radix(8), "12345670");
 
-        type I24p = nt!(I24p);
+        type I24p = t!(I24p);
         let d: I24p = n!(0b101010111100110111_I24p);
         assert_eq!(d.to_str_radix(2), "101010111100110111");
     }

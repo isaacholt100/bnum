@@ -162,14 +162,14 @@ macro_rules! shift_impl {
                 }
 
                 let rhs: Exponent = match Self::OVERFLOW_MODE {
-                    OverflowMode::Wrapping => {
+                    OverflowMode::Wrap => {
                         let bits: $rhs = Self::BITS.as_(); // need to cast to rhs as Self::BITS may not be power of two, so need to perform modulo in $rhs type
                         let rhs = rhs.rem_euclid(bits); // Euclidean remainder as must always be positive (since we could be using signed types)
 
                         rhs.as_() // now rhs is positive and is less than Self::BITS, so fits in Exponent, so safe to cast
                     },
-                    OverflowMode::Panicking => Exponent::try_from(rhs).expect(crate::errors::err_msg!($err)),
-                    OverflowMode::Saturating => Exponent::try_from(rhs).unwrap_or(Exponent::MAX), // this is fine since we have the assertion in [`Self::from_bytes`] that N < 2^29, so any rhs >= Exponent::MAX will saturate
+                    OverflowMode::Panic => Exponent::try_from(rhs).expect(crate::errors::err_msg!($err)),
+                    OverflowMode::Saturate => Exponent::try_from(rhs).unwrap_or(Exponent::MAX), // this is fine since we have the assertion in [`Self::from_bytes`] that N < 2^29, so any rhs >= Exponent::MAX will saturate
                 };
                 
                 Self::$method(self, rhs)

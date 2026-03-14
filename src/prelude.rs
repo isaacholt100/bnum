@@ -2,4 +2,4 @@
 
 pub use crate::{Int, Uint, Integer};
 pub use crate::cast::As;
-pub use crate::{n, nt};
+pub use crate::{n, t};

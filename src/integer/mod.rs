@@ -50,18 +50,18 @@ use core::default::Default;
 /// - `N`: specifies how many bytes should be used to store the integer. The bytes are stored in little endian order (least significant byte first).
 /// - `B`: specifies the bit width of the integer. If `B = 0` (the default value), then the bit width of the integer is taken to be `N * 8`. Otherwise, the bit width is taken to be `B`, and in this case it is required that `N - 8 < B*8 <= N` (i.e. `N = B.div_ceil(8)`).
 /// - `OM`: specifies the behaviour of the type when arithmetic overflow occurs. There are three valid overflow modes, each corresponding to a variant of the [`OverflowMode`] enum:
-///    - `0` ([`Wrapping`](OverflowMode::Wrapping)): arithmetic operations wrap around on overflow.
-///    - `1` ([`Panicking`](OverflowMode::Panicking)): arithmetic operations panic on overflow.
-///    - `2` ([`Saturating`](OverflowMode::Saturating)): arithmetic operations saturate on overflow.  
-/// By default, `OM` is set to `0` if the [`overflow-checks` flag](https://doc.rust-lang.org/cargo/reference/profiles.html#overflow-checks) is disabled, and `1` if the [`overflow-checks` flag](https://doc.rust-lang.org/cargo/reference/profiles.html#overflow-checks) is enabled.
+///    - `0` ([`Wrap`](OverflowMode::Wrap)): arithmetic operations wrap around on overflow.
+///    - `1` ([`Panic`](OverflowMode::Panic)): arithmetic operations panic on overflow.
+///    - `2` ([`Saturate`](OverflowMode::Saturate)): arithmetic operations saturate on overflow.  
+/// By default, `OM` is set to `0` if the [`overflow-checks` flag](https://doc.rust-lang.org/cargo/reference/profiles.html#overflow-checks) is disabled, and `1` if `overflow-checks` is enabled.
 /// 
 /// `Integer` closely follows the API and behaviour of Rust's primitive integer types: `u8`, `i8`, `u16`, `i16`, `u32`, `i32`, `u64`, `i64`, `u128`, `i128`, `usize` and `isize`. The only differences are:
 /// - The primitive integers are stored in native-endian byte order. `Integer`s are always stored in little-endian byte order.
 /// - Primitive integers are serialised in [`serde`](https://docs.rs/serde/latest/serde/) as decimal strings. `Integer`s are serialised using [`derive(Serialize)`](https://docs.rs/serde/latest/serde/derive.Serialize.html), i.e. as a struct.
-/// - The primitive integers panic on arithmetic overflow if [`overflow-checks`](https://doc.rust-lang.org/cargo/reference/profiles.html#overflow-checks) is enabled, and wrap around on overflow if [`overflow-checks`](https://doc.rust-lang.org/cargo/reference/profiles.html#overflow-checks) is disabled. The overflow behaviour of `Integer` is determined by [`Self::OVERFLOW_MODE`]:
-///    - [`Wrapping`](OverflowMode::Wrapping): arithmetic operations wrap around on overflow, so the behaviour is the same as the [`Wrapping(T)`](core::num::Wrapping) type in the standard library (i.e. the same as the primitive integer type behaviour when `overflow-checks` is disabled).
-///    - [`Panicking`](OverflowMode::Panicking): arithmetic operations panic on overflow, so the behaviour is the same as the primitive integer type behaviour when `overflow-checks` is enabled.
-///    - [`Saturating`](OverflowMode::Saturating): arithmetic operations saturate on overflow, so the behaviour is the same as the [`Saturating(T)`](core::num::Saturating) type in the standard library.
+/// - The primitive integers panic on arithmetic overflow if [`overflow-checks`](https://doc.rust-lang.org/cargo/reference/profiles.html#overflow-checks) is enabled, and wrap around on overflow if `overflow-checks` is disabled. The overflow behaviour of `Integer` is determined by [`Self::OVERFLOW_MODE`]:
+///    - [`Wrap`](OverflowMode::Wrap): arithmetic operations wrap around on overflow, so the behaviour is the same as the [`Wrapping(T)`](core::num::Wrapping) type in the standard library (i.e. the same as the primitive integer type behaviour when `overflow-checks` is disabled).
+///    - [`Panic`](OverflowMode::Panic): arithmetic operations panic on overflow, so the behaviour is the same as the primitive integer type behaviour when `overflow-checks` is enabled.
+///    - [`Saturate`](OverflowMode::Saturate): arithmetic operations saturate on overflow, so the behaviour is the same as the [`Saturating(T)`](core::num::Saturating) type in the standard library.
 ///    - [`OverflowMode::DEFAULT`]: the overflow behaviour is the same as the primitive integer type overflow behaviour.
 #[derive(Clone, Copy, Hash, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]

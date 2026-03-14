@@ -109,18 +109,18 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     #[inline]
     pub const fn add(self, rhs: Self) -> Self {
         match Self::OVERFLOW_MODE {
-            OverflowMode::Wrapping => self.wrapping_add(rhs),
-            OverflowMode::Panicking => self.strict_add(rhs),
-            OverflowMode::Saturating => self.saturating_add(rhs),
+            OverflowMode::Wrap => self.wrapping_add(rhs),
+            OverflowMode::Panic => self.strict_add(rhs),
+            OverflowMode::Saturate => self.saturating_add(rhs),
         }
     }
 
     #[inline]
     pub const fn mul(self, rhs: Self) -> Self {
         match Self::OVERFLOW_MODE {
-            OverflowMode::Wrapping => self.wrapping_mul(rhs),
-            OverflowMode::Panicking => self.strict_mul(rhs),
-            OverflowMode::Saturating => self.saturating_mul(rhs),
+            OverflowMode::Wrap => self.wrapping_mul(rhs),
+            OverflowMode::Panic => self.strict_mul(rhs),
+            OverflowMode::Saturate => self.saturating_mul(rhs),
         }
     }
 
@@ -128,9 +128,9 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     #[inline]
     pub const fn shl(self, rhs: Exponent) -> Self {
         match Self::OVERFLOW_MODE {
-            OverflowMode::Wrapping => self.wrapping_shl(rhs),
-            OverflowMode::Panicking => self.strict_shl(rhs),
-            OverflowMode::Saturating => self.unbounded_shl(rhs),
+            OverflowMode::Wrap => self.wrapping_shl(rhs),
+            OverflowMode::Panic => self.strict_shl(rhs),
+            OverflowMode::Saturate => self.unbounded_shl(rhs),
         }
     }
 
@@ -138,36 +138,36 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     #[inline]
     pub const fn shr(self, rhs: Exponent) -> Self {
         match Self::OVERFLOW_MODE {
-            OverflowMode::Wrapping => self.wrapping_shr(rhs),
-            OverflowMode::Panicking => self.strict_shr(rhs),
-            OverflowMode::Saturating => self.unbounded_shr(rhs),
+            OverflowMode::Wrap => self.wrapping_shr(rhs),
+            OverflowMode::Panic => self.strict_shr(rhs),
+            OverflowMode::Saturate => self.unbounded_shr(rhs),
         }
     }
 
     #[inline]
     pub const fn sub(self, rhs: Self) -> Self {
         match Self::OVERFLOW_MODE {
-            OverflowMode::Wrapping => self.wrapping_sub(rhs),
-            OverflowMode::Panicking => self.strict_sub(rhs),
-            OverflowMode::Saturating => self.saturating_sub(rhs),
+            OverflowMode::Wrap => self.wrapping_sub(rhs),
+            OverflowMode::Panic => self.strict_sub(rhs),
+            OverflowMode::Saturate => self.saturating_sub(rhs),
         }
     }
 
     #[inline]
     pub const fn div(self, rhs: Self) -> Self {
         match Self::OVERFLOW_MODE {
-            OverflowMode::Wrapping => self.wrapping_div(rhs),
-            OverflowMode::Panicking => self.strict_div(rhs),
-            OverflowMode::Saturating => self.saturating_div(rhs),
+            OverflowMode::Wrap => self.wrapping_div(rhs),
+            OverflowMode::Panic => self.strict_div(rhs),
+            OverflowMode::Saturate => self.saturating_div(rhs),
         }
     }
 
     #[inline]
     pub const fn rem(self, rhs: Self) -> Self {
         match Self::OVERFLOW_MODE {
-            OverflowMode::Wrapping => self.wrapping_rem(rhs),
-            OverflowMode::Panicking => self.strict_rem(rhs),
-            OverflowMode::Saturating => self.saturating_rem(rhs),
+            OverflowMode::Wrap => self.wrapping_rem(rhs),
+            OverflowMode::Panic => self.strict_rem(rhs),
+            OverflowMode::Saturate => self.saturating_rem(rhs),
         }
     }
 }
@@ -176,9 +176,9 @@ impl<const N: usize, const B: usize, const OM: u8> Int<N, B, OM> {
     #[inline]
     pub const fn neg(self) -> Self {
         match Self::OVERFLOW_MODE {
-            OverflowMode::Wrapping => self.wrapping_neg(),
-            OverflowMode::Panicking => self.strict_neg(),
-            OverflowMode::Saturating => self.saturating_neg(),
+            OverflowMode::Wrap => self.wrapping_neg(),
+            OverflowMode::Panic => self.strict_neg(),
+            OverflowMode::Saturate => self.saturating_neg(),
         }
     }
 }

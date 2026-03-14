@@ -5,13 +5,13 @@ use crate::doc;
 
 macro_rules! impl_desc {
     () => {
-        "Wrapping arithmetic methods which act on `self`: `self.wrapping_...`. Each method returns of the calculation truncated to the number of bits of `self` (i.e. modulo `Self::MAX + 1`), except for the `wrapping_shl` and `wrapping_shr` methods, which return the value shifted by `rhs % Self::BITS`."
+        "Wrap arithmetic methods which act on `self`: `self.wrapping_...`. Each method returns of the calculation truncated to the number of bits of `self` (i.e. modulo `Self::MAX + 1`), except for the `wrapping_shl` and `wrapping_shr` methods, which return the value shifted by `rhs % Self::BITS`."
     };
 }
 
 #[doc = impl_desc!()]
 impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, B, OM> {
-    /// Wrapping integer addition. Computes `self + rhs` modulo `Self::MAX + 1`.
+    /// Wrap integer addition. Computes `self + rhs` modulo `Self::MAX + 1`.
     /// 
     /// # Examples
     /// 
@@ -33,7 +33,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
         self.overflowing_add(rhs).0
     }
     
-    /// Wrapping integer subtraction. Computes `self - rhs` modulo `Self::MAX + 1`.
+    /// Wrap integer subtraction. Computes `self - rhs` modulo `Self::MAX + 1`.
     /// 
     /// # Examples
     /// 
@@ -55,7 +55,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
         self.overflowing_sub(rhs).0
     }
 
-    /// Wrapping integer multiplication. Computes `self * rhs` modulo `Self::MAX + 1`.
+    /// Wrap integer multiplication. Computes `self * rhs` modulo `Self::MAX + 1`.
     /// 
     /// # Examples
     /// 
@@ -78,7 +78,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
         self.force_sign::<false>().overflowing_mul(rhs.force_sign()).0.force_sign()
     }
 
-    /// Wrapping integer division. Note that wrap around can only occur for signed integers, when `self` is [`Self::MIN`] and `rhs` is `-1`.
+    /// Wrap integer division. Note that wrap around can only occur for signed integers, when `self` is [`Self::MIN`] and `rhs` is `-1`.
     /// 
     /// # Panics
     /// 
@@ -103,7 +103,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
         self.overflowing_div(rhs).0
     }
 
-    /// Wrapping Euclidean division. Note that wrap around can only occur for signed integers, when `self` is [`Self::MIN`] and `rhs` is `-1`. In this case, the function returns [`Self::MIN`].
+    /// Wrap Euclidean division. Note that wrap around can only occur for signed integers, when `self` is [`Self::MIN`] and `rhs` is `-1`. In this case, the function returns [`Self::MIN`].
     /// 
     /// # Panics
     /// 
@@ -128,7 +128,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
         self.overflowing_div_euclid(rhs).0
     }
 
-    /// Wrapping integer remainder. This is equivalent to `self.strict_rem(rhs)`.
+    /// Wrap integer remainder. This is equivalent to `self.strict_rem(rhs)`.
     /// 
     /// # Panics
     /// 
@@ -150,7 +150,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
         self.overflowing_rem(rhs).0
     }
 
-    /// Wrapping Euclidean remainder. This is equivalent to `self.strict_rem_euclid(rhs)`.
+    /// Wrap Euclidean remainder. This is equivalent to `self.strict_rem_euclid(rhs)`.
     /// 
     /// # Panics
     /// 
@@ -173,7 +173,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
         self.overflowing_rem_euclid(rhs).0
     }
 
-    /// Wrapping (modular) negation. Computes `-self` modulo `Self::MAX + 1`.
+    /// Wrap (modular) negation. Computes `-self` modulo `Self::MAX + 1`.
     /// 
     /// # Examples
     /// 
@@ -245,7 +245,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
         self.overflowing_shr(rhs).0
     }
 
-    /// Wrapping exponentiation. Computes `self**exp` modulo `Self::MAX + 1`.
+    /// Wrap exponentiation. Computes `self**exp` modulo `Self::MAX + 1`.
     /// 
     /// # Examples
     /// 
@@ -271,7 +271,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
 
 #[doc = concat!("(Unsigned integers only.) ", impl_desc!())]
 impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
-    /// Wrapping integer addition with a signed integer of the same bit width. Computes `self + rhs` modulo `Self::MAX + 1`.
+    /// Wrap integer addition with a signed integer of the same bit width. Computes `self + rhs` modulo `Self::MAX + 1`.
     ///
     /// # Examples
     /// 
@@ -291,7 +291,7 @@ impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
         self.overflowing_add_signed(rhs).0
     }
 
-    /// Wrapping integer subtraction with a signed integer of the same bit width. Computes `self - rhs` modulo `Self::MAX + 1`.
+    /// Wrap integer subtraction with a signed integer of the same bit width. Computes `self - rhs` modulo `Self::MAX + 1`.
     ///
     /// # Examples
     ///
@@ -337,7 +337,7 @@ impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
 
 #[doc = concat!("(Signed integers only.) ", impl_desc!())]
 impl<const N: usize, const B: usize, const OM: u8> Int<N, B, OM> {
-    /// Wrapping integer addition with an unsigned integer of the same bit width. Computes `self + rhs` modulo `Self::MAX + 1`.
+    /// Wrap integer addition with an unsigned integer of the same bit width. Computes `self + rhs` modulo `Self::MAX + 1`.
     /// 
     /// # Examples
     /// 
@@ -354,7 +354,7 @@ impl<const N: usize, const B: usize, const OM: u8> Int<N, B, OM> {
         self.overflowing_add_unsigned(rhs).0
     }
 
-    /// Wrapping integer subtraction with an unsigned integer of the same bit width. Computes `self - rhs` modulo `Self::MAX + 1`.
+    /// Wrap integer subtraction with an unsigned integer of the same bit width. Computes `self - rhs` modulo `Self::MAX + 1`.
     /// 
     /// # Examples
     /// 
@@ -371,7 +371,7 @@ impl<const N: usize, const B: usize, const OM: u8> Int<N, B, OM> {
         self.overflowing_sub_unsigned(rhs).0
     }
 
-    /// Wrapping absolute value. Computes `self.abs()` modulo `Self::MAX + 1`. Note that overflow can only occur when `self` is [`Self::MIN`], in which case the function returns [`Self::MIN`].
+    /// Wrap absolute value. Computes `self.abs()` modulo `Self::MAX + 1`. Note that overflow can only occur when `self` is [`Self::MIN`], in which case the function returns [`Self::MIN`].
     /// 
     /// # Examples
     /// 

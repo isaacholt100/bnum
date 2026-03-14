@@ -58,9 +58,9 @@ pub const fn get_signedness(suffix: &str) -> bool {
 #[doc(hidden)]
 pub const fn get_overflow_mode(suffix: &str) -> u8 {
     match suffix.as_bytes()[suffix.len() - 1] {
-        b'w' => crate::OverflowMode::Wrapping.to_u8(),
-        b'p' => crate::OverflowMode::Panicking.to_u8(),
-        b's' => crate::OverflowMode::Saturating.to_u8(),
+        b'w' => crate::OverflowMode::Wrap.to_u8(),
+        b'p' => crate::OverflowMode::Panic.to_u8(),
+        b's' => crate::OverflowMode::Saturate.to_u8(),
         _ => crate::OverflowMode::DEFAULT.to_u8(),
     }
 }
@@ -132,9 +132,9 @@ pub const fn get_integer_params(type_descriptor: &str) -> Result<(bool, usize, u
         crate::OverflowMode::DEFAULT.to_u8()
     } else {
         match om_str.as_bytes() {
-            b"w" => OverflowMode::Wrapping.to_u8(),
-            b"p" => OverflowMode::Panicking.to_u8(),
-            b"s" => OverflowMode::Saturating.to_u8(),
+            b"w" => OverflowMode::Wrap.to_u8(),
+            b"p" => OverflowMode::Panic.to_u8(),
+            b"s" => OverflowMode::Saturate.to_u8(),
             _ => return Err((TypeDescriptorError::InvalidOverflowModeDescriptor, om_str)),
         }
     };

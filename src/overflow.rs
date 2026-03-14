@@ -23,26 +23,26 @@ pub(crate) const GLOBAL_OVERFLOW_CHECKS: bool = {
 };
 
 /// An enum that represents the different possible overflow behaviour for [`Integer`](crate::Integer).
-/// * The `Wrapping` variant specifies that arithmetic operations should wrap around on overflow.
-/// * The `Panicking` variant specifies that arithmetic operations should panic on overflow.
-/// * The `Saturating` variant specifies that arithmetic operations should saturate to the integer type's maximum or minimum value on overflow.
+/// * The `Wrap` variant specifies that arithmetic operations should wrap around on overflow.
+/// * The `Panic` variant specifies that arithmetic operations should panic on overflow.
+/// * The `Saturate` variant specifies that arithmetic operations should saturate to the integer type's maximum or minimum value on overflow.
 /// For more details on overflow behaviour, see the [`Integer`](crate::Integer) documentation.
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
 #[repr(u8)]
 pub enum OverflowMode {
-    Wrapping = 0,
-    Panicking = 1,
-    Saturating = 2,
+    Wrap = 0,
+    Panic = 1,
+    Saturate = 2,
 }
 
 impl OverflowMode {
     /// The default overflow mode, which is the mode used for [`Integer`](crate::Integer) types when the const-generic parameter `OM` is not explicitly specified. 
     /// 
-    /// The value of `DEFAULT` is controlled by the [`overflow-checks` flag](https://doc.rust-lang.org/cargo/reference/profiles.html#overflow-checks): if overflow checks are enabled, then `DEFAULT` is `Self::Panicking`; if overflow checks are disabled, then `DEFAULT` is `Self::Wrapping`.
+    /// The value of `DEFAULT` is controlled by the [`overflow-checks` flag](https://doc.rust-lang.org/cargo/reference/profiles.html#overflow-checks): if overflow checks are enabled, then `DEFAULT` is `Self::Panic`; if overflow checks are disabled, then `DEFAULT` is `Self::Wrap`.
     pub const DEFAULT: Self = if GLOBAL_OVERFLOW_CHECKS {
-        OverflowMode::Panicking
+        OverflowMode::Panic
     } else {
-        OverflowMode::Wrapping
+        OverflowMode::Wrap
     };
 
     #[inline]
@@ -68,8 +68,8 @@ mod tests {
 
     #[test]
     fn test_overflow_mode_to_u8() {
-        assert_eq!(OverflowMode::Wrapping.to_u8(), 0);
-        assert_eq!(OverflowMode::Panicking.to_u8(), 1);
-        assert_eq!(OverflowMode::Saturating.to_u8(), 2);
+        assert_eq!(OverflowMode::Wrap.to_u8(), 0);
+        assert_eq!(OverflowMode::Panic.to_u8(), 1);
+        assert_eq!(OverflowMode::Saturate.to_u8(), 2);
     }
 }

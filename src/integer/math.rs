@@ -30,9 +30,9 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     ///
     /// # Overflow behaviour
     ///
-    /// - If [`Self::OVERFLOW_MODE`] is [`Wrapping`](OverflowMode::Wrapping), this method is equivalent to [`wrapping_pow`](Self::wrapping_pow).
-    /// - If [`Self::OVERFLOW_MODE`] is [`Panicking`](OverflowMode::Panicking), this method is equivalent to [`strict_pow`](Self::strict_pow).
-    /// - If [`Self::OVERFLOW_MODE`] is [`Saturating`](OverflowMode::Saturating), this method is equivalent to [`saturating_pow`](Self::saturating_pow).
+    /// - If [`Self::OVERFLOW_MODE`] is [`Wrap`](OverflowMode::Wrap), this method is equivalent to [`wrapping_pow`](Self::wrapping_pow).
+    /// - If [`Self::OVERFLOW_MODE`] is [`Panic`](OverflowMode::Panic), this method is equivalent to [`strict_pow`](Self::strict_pow).
+    /// - If [`Self::OVERFLOW_MODE`] is [`Saturate`](OverflowMode::Saturate), this method is equivalent to [`saturating_pow`](Self::saturating_pow).
     ///
     /// # Examples
     ///
@@ -49,9 +49,9 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     #[inline]
     pub const fn pow(self, exp: Exponent) -> Self {
         match Self::OVERFLOW_MODE {
-            OverflowMode::Wrapping => self.wrapping_pow(exp),
-            OverflowMode::Panicking => self.strict_pow(exp),
-            OverflowMode::Saturating => self.saturating_pow(exp),
+            OverflowMode::Wrap => self.wrapping_pow(exp),
+            OverflowMode::Panic => self.strict_pow(exp),
+            OverflowMode::Saturate => self.saturating_pow(exp),
         }
     }
 
@@ -59,9 +59,9 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     ///
     /// # Overflow behaviour
     ///
-    /// - If [`Self::OVERFLOW_MODE`] is [`Wrapping`](OverflowMode::Wrapping), this method is equivalent to [`wrapping_div_euclid`](Self::wrapping_div_euclid).
-    /// - If [`Self::OVERFLOW_MODE`] is [`Panicking`](OverflowMode::Panicking), this method is equivalent to [`strict_div_euclid`](Self::strict_div_euclid).
-    /// - If [`Self::OVERFLOW_MODE`] is [`Saturating`](OverflowMode::Saturating), this method is equivalent to [`saturating_div_euclid`](Self::saturating_div_euclid).
+    /// - If [`Self::OVERFLOW_MODE`] is [`Wrap`](OverflowMode::Wrap), this method is equivalent to [`wrapping_div_euclid`](Self::wrapping_div_euclid).
+    /// - If [`Self::OVERFLOW_MODE`] is [`Panic`](OverflowMode::Panic), this method is equivalent to [`strict_div_euclid`](Self::strict_div_euclid).
+    /// - If [`Self::OVERFLOW_MODE`] is [`Saturate`](OverflowMode::Saturate), this method is equivalent to [`saturating_div_euclid`](Self::saturating_div_euclid).
     ///
     /// # Examples
     ///
@@ -75,9 +75,9 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     #[inline]
     pub const fn div_euclid(self, rhs: Self) -> Self {
         match Self::OVERFLOW_MODE {
-            OverflowMode::Wrapping => self.wrapping_div_euclid(rhs),
-            OverflowMode::Panicking => self.strict_div_euclid(rhs),
-            OverflowMode::Saturating => self.saturating_div_euclid(rhs),
+            OverflowMode::Wrap => self.wrapping_div_euclid(rhs),
+            OverflowMode::Panic => self.strict_div_euclid(rhs),
+            OverflowMode::Saturate => self.saturating_div_euclid(rhs),
         }
     }
 
@@ -95,9 +95,9 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     #[inline]
     pub const fn rem_euclid(self, rhs: Self) -> Self {
         match Self::OVERFLOW_MODE {
-            OverflowMode::Wrapping => self.wrapping_rem_euclid(rhs),
-            OverflowMode::Panicking => self.strict_rem_euclid(rhs),
-            OverflowMode::Saturating => self.saturating_rem_euclid(rhs),
+            OverflowMode::Wrap => self.wrapping_rem_euclid(rhs),
+            OverflowMode::Panic => self.strict_rem_euclid(rhs),
+            OverflowMode::Saturate => self.saturating_rem_euclid(rhs),
         }
     }
 
@@ -246,7 +246,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     ///
     /// This function will panic if `rhs` is zero.
     ///
-    /// This function will also panic if overflow occurs and [`Self::OVERFLOW_MODE`] is [`Panicking`](OverflowMode::Panicking).
+    /// This function will also panic if overflow occurs and [`Self::OVERFLOW_MODE`] is [`Panic`](OverflowMode::Panic).
     ///
     /// # Examples
     ///
@@ -428,7 +428,7 @@ impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
     ///
     /// # Panics
     ///
-    /// This function will panic if [`Self::OVERFLOW_MODE`] is [`Panicking`](OverflowMode::Panicking) and the result would be too large to be represented by `Self`.
+    /// This function will panic if [`Self::OVERFLOW_MODE`] is [`Panic`](OverflowMode::Panic) and the result would be too large to be represented by `Self`.
     ///
     /// # Examples
     ///
@@ -443,9 +443,9 @@ impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
     #[inline]
     pub const fn next_power_of_two(self) -> Self {
         match Self::OVERFLOW_MODE {
-            OverflowMode::Wrapping => self.wrapping_next_power_of_two(),
-            OverflowMode::Panicking => self.strict_next_power_of_two(),
-            OverflowMode::Saturating => self.saturating_next_power_of_two(),
+            OverflowMode::Wrap => self.wrapping_next_power_of_two(),
+            OverflowMode::Panic => self.strict_next_power_of_two(),
+            OverflowMode::Saturate => self.saturating_next_power_of_two(),
         }
     }
 
@@ -524,9 +524,9 @@ impl<const N: usize, const B: usize, const OM: u8> Int<N, B, OM> {
     ///
     /// # Overflow behaviour
     ///
-    /// - If [`Self::OVERFLOW_MODE`] is [`Wrapping`](OverflowMode::Wrapping), this function will return `Self::MIN` on overflow (i.e. when `self` is `Self::MIN`).
-    /// - If [`Self::OVERFLOW_MODE`] is [`Panicking`](OverflowMode::Panicking), this function will panic on overflow.
-    /// - If [`Self::OVERFLOW_MODE`] is [`Saturating`](OverflowMode::Saturating), this function will return `Self::MAX` on overflow.
+    /// - If [`Self::OVERFLOW_MODE`] is [`Wrap`](OverflowMode::Wrap), this function will return `Self::MIN` on overflow (i.e. when `self` is `Self::MIN`).
+    /// - If [`Self::OVERFLOW_MODE`] is [`Panic`](OverflowMode::Panic), this function will panic on overflow.
+    /// - If [`Self::OVERFLOW_MODE`] is [`Saturate`](OverflowMode::Saturate), this function will return `Self::MAX` on overflow.
     ///
     /// # Examples
     ///
@@ -540,9 +540,9 @@ impl<const N: usize, const B: usize, const OM: u8> Int<N, B, OM> {
     #[inline]
     pub const fn abs(self) -> Self {
         match Self::OVERFLOW_MODE {
-            OverflowMode::Wrapping => self.wrapping_abs(),
-            OverflowMode::Panicking => self.strict_abs(),
-            OverflowMode::Saturating => self.saturating_abs(),
+            OverflowMode::Wrap => self.wrapping_abs(),
+            OverflowMode::Panic => self.strict_abs(),
+            OverflowMode::Saturate => self.saturating_abs(),
         }
     }
 

@@ -101,7 +101,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     /// 
     /// type U24 = Uint<3>;
     /// type I24 = Int<3>;
-    /// type U15 = nt!(U15);
+    /// type U15 = t!(U15);
     /// 
     /// let bytes = [0x56, 0x34, 0x12];
     /// assert_eq!(U24::from_bytes(bytes), n!(0x123456));
