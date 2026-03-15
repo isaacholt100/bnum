@@ -1,18 +1,26 @@
-//! Type aliases for unsigned and signed integers. Each type alias has the same overflow behaviour as that of the primitive integer types, i.e. wrap on overflow if `overflow-checks` are disabled and panic on overflow if `overflow-checks` are enabled.
+//! Type aliases for unsigned and signed integers.
+//! 
+//! Each type alias has the same overflow behaviour as that of the primitive integer types, i.e. wrap on overflow if `overflow-checks` are disabled and panic on overflow if `overflow-checks` are enabled.
 
 macro_rules! int_type_doc {
-    ($bits: literal, $sign: literal) => {
-        concat!($bits, "-bit ", $sign, " integer type, with overflow behaviour controlled by the `overflow-checks` flag.")
+    ($bits: literal, $sign: literal, $aliased: literal) => {
+        concat!(
+            $bits, "-bit ", $sign, " integer type.",
+            "\n\n",
+            "Overflow behaviour is the same as that of the primitive integer types, i.e. wrap on overflow if `overflow-checks` are disabled and panic on overflow if `overflow-checks` are enabled.",
+            "\n\n",
+            "This type is an alias of [`", $aliased, "`](crate::", $aliased, "). See the documentation of [`", $aliased, "`](crate::", $aliased, ") for available methods and behaviour details."
+        )
     };
 }
 
 macro_rules! int_types {
     { $($bits: literal $u: ident $i: ident; ) *}  => {
         $(
-            #[doc = int_type_doc!($bits, "unsigned")]
+            #[doc = int_type_doc!($bits, "unsigned", "Uint")]
             pub type $u = crate::Uint::<{ crate::literal_parse::get_size_params_from_bits($bits).0 }, { crate::literal_parse::get_size_params_from_bits($bits).1 }>;
 
-            #[doc = int_type_doc!($bits, "signed")]
+            #[doc = int_type_doc!($bits, "signed", "Int")]
             pub type $i = crate::Int::<{ crate::literal_parse::get_size_params_from_bits($bits).0 }, { crate::literal_parse::get_size_params_from_bits($bits).1 }>;
         )*
     };

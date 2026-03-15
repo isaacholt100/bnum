@@ -8,7 +8,7 @@ pub use panic::*;
 
 /// Returns a concrete instantiation of the [`Integer`](crate::Integer) type with the specified const-generic parameters from a type descriptor.
 /// 
-/// The `t!` macro takes a type descriptor (which is an identifier fragment) and simply outputs [`Integer<S, N, B, OM>`](crate::Integer), where the const-generic parameters `S`, `N`, `B` and `OM` are determined from the type descriptor.
+/// `t!` takes a type descriptor (which is an identifier fragment) and simply outputs [`Integer<S, N, B, OM>`](crate::Integer), where the values of the const-generic parameters `S`, `N`, `B` and `OM` are determined from the type descriptor.
 /// 
 /// A type descriptor has the following format: `<sign><bit_width><overflow_mode>?`:
 /// - `<sign>` is either `I` (specifying a signed integer) or `U` (specifying an unsigned integer).
@@ -60,7 +60,6 @@ pub use panic::*;
 /// dbg!(InvalidType3::BITS);
 /// ```
 #[macro_export]
-// TODO: replace nt with t in docs and reddit post and release notes
 // TODO: idea for floats: have struct FloatOrInteger with const generic param F (type bool, indicates whether float or int), other const generic params correspond to those of Float and Integer, then have a trait OutputType with an associated type Output, Output is Integer if F is false and Float if F is true. then the t macro returns <OutputType<...>::Output>.
 macro_rules! t {
     ($ty: ident) => {
@@ -91,7 +90,7 @@ macro_rules! t {
 
 /// Create constant [`Integer`](crate::Integer) values from native integer literals.
 /// 
-/// The `n!` macro converts integer literals to [`Integer`](crate::Integer) values at compile time. It supports a similar integer literal syntax as Rust's built-in integer types:
+/// `n!` converts integer literals to [`Integer`](crate::Integer) values at compile time. It supports literals in base 2, 8, 10 and 16:
 /// - The prefix `0b` indicates a binary literal (base 2).
 /// - The prefix `0o` indicates an octal literal (base 8).
 /// - The prefix `0x` indicates a hexadecimal literal (base 16).
@@ -99,7 +98,7 @@ macro_rules! t {
 /// 
 /// `n!` accepts two forms of integer literal as input:
 /// 1. Suffix-free, e.g. `n!(0xABCDEF)`. In this case, the const-generic parameters of the created [`Integer`](crate::Integer) are left unspecified, so this must be used in a context where type inference can determine the parameters. For example: `let a: Integer<false, 16> = n!(0xABCDEF);` would be valid, but `let b = n!(0xABCDEF);` would trigger a compile error (unless `b` was subsequently used in a context which allowed for type inference).
-/// 2. With a suffix, e.g. `n!(0xabcdefU128w)`. The suffix may be any valid argument to the [`t!`](crate::t) macro. The suffix is referred to as a _type descriptor_, as it specifies the const-generic parameters of the created [`Integer`](crate::Integer). For more information about valid type descriptors, see the documentation for the [`t!`](crate::t) macro.
+/// 2. With a suffix, e.g. `n!(0xabcdefU128w)`. The suffix may be any valid argument to the [`t!`](crate::t) macro. The suffix is referred to as a _type descriptor_, as it specifies the values of the const-generic parameters of the created [`Integer`](crate::Integer). For more information about valid type descriptors, see the documentation of the [`t!`](crate::t) macro.
 /// 
 /// Invoking `n!` with invalid arguments will also trigger a compile error. This can happen if:
 /// - The literal is out of range for the target type (works for inferred types and types specified by a suffix). Note that this will always cause a compile error, regardless of the overflow mode of the type.
@@ -111,9 +110,9 @@ macro_rules! t {
 /// # Examples
 /// 
 /// ```
-/// use bnum::prelude::*; // n! is re-exported in the prelude
+/// use bnum::prelude::*; // n! and t! are re-exported in the prelude
 /// 
-/// let a: Integer<false, 16> = n!(0xABCDEF); // type inferred from context
+/// let a: t!(U256) = n!(0xABCDEF); // type inferred from context
 /// ```
 /// 
 /// ```

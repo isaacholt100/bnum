@@ -23,15 +23,16 @@ pub(crate) const GLOBAL_OVERFLOW_CHECKS: bool = {
 };
 
 /// An enum that represents the different possible overflow behaviour for [`Integer`](crate::Integer).
-/// * The `Wrap` variant specifies that arithmetic operations should wrap around on overflow.
-/// * The `Panic` variant specifies that arithmetic operations should panic on overflow.
-/// * The `Saturate` variant specifies that arithmetic operations should saturate to the integer type's maximum or minimum value on overflow.
+/// 
 /// For more details on overflow behaviour, see the [`Integer`](crate::Integer) documentation.
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
 #[repr(u8)]
 pub enum OverflowMode {
+    /// Specifies that arithmetic operations should wrap around on overflow.
     Wrap = 0,
+    /// Specifies that arithmetic operations should panic on overflow.
     Panic = 1,
+    /// Specifies that arithmetic operations should saturate to the integer type's maximum or minimum value on overflow.
     Saturate = 2,
 }
 

@@ -20,7 +20,7 @@ Rust provides 12 fixed-width integer types out of the box: `uN` and `iN`, for `N
 - Each type has the same overflow behaviour, which is globally controlled by the `overflow-checks` flag: either panic on overflow if `overflow-checks` is enabled, or wrap on overflow if not. To specify custom overflow behaviour, the `Wrapping<T>` or `Saturating<T>` wrapper types from the standard library must be used, which are cumbersome.
 
 `bnum` addresses each of these limitations by providing a _single generic integer type_ `Integer`, which has const-generic parameters to specify:
-- The bit width of the integer: any `usize` between `2` and `2**32 - 1`.
+- The bit width of the integer: any `usize` between `2` and `2^32 - 1`.
 - Whether the integer type is signed or unsigned.
 - The overflow behaviour of the integer: wrap, saturate, or panic.
 

@@ -245,7 +245,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
         self.overflowing_shr(rhs).0
     }
 
-    /// Wrap exponentiation. Computes `self**exp` modulo `Self::MAX + 1`.
+    /// Wrap exponentiation. Computes `self.pow(exp)` modulo `Self::MAX + 1`.
     /// 
     /// # Examples
     /// 

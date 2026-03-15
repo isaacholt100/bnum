@@ -1,6 +1,10 @@
 //! Panic-free casting between numeric types.
 
+
+
 /// Backend implementation trait for panic-free casting between numeric types.
+/// 
+/// It is generally recommended to use the [`As`] trait for casting instead of this trait.
 pub trait CastFrom<T> {
     #[must_use = crate::doc::must_use_op!()]
     fn cast_from(value: T) -> Self;
@@ -23,7 +27,7 @@ where
 
 /// Trait which allows panic-free casting between numeric types.
 ///
-/// The behavior matches the behavior of the `as` conversion operator between primitive integers. This trait can be used to convert between bnum's integer types, as well as between bnum's integer types and Rust's primitive integers. Conversions between Rust's primitive integers themselves are also defined for consistency.
+/// The behavior matches the behavior of the `as` conversion operator between primitive types. This trait can be used to convert between [`Integer`](crate::Integer)s, as well as between [`Integer`](crate::Integer) and primitive integers. Conversions between primitive integers themselves are also implemented for completeness.
 pub trait As {
     /// Casts `self` to type `T`. The [semantics of numeric casting](https://doc.rust-lang.org/reference/expressions/operator-expr.html#semantics) with the `as` operator are followed, so `<T as As>::as_::<U>` can be used in the same way as `T as U` for numeric conversions.
     ///

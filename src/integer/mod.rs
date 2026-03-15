@@ -77,10 +77,18 @@ pub struct Integer<const S: bool, const N: usize, const B: usize = 0, const OM: 
     pub(crate) bytes: [Byte; N],
 }
 
-/// Unsigned integer type with const-generic bit width and overflow behaviour. By default, the overflow behaviour is the same as the primitive integer types (i.e. panicking when the `overflow-checks` flag is enabled, and wrapping when `overflow-checks` is disabled). For more details, see the documentation for [`Integer`].
+/// Unsigned integer type with const-generic bit width and overflow behaviour.
+/// 
+/// By default, the overflow behaviour is the same as the primitive integer types (i.e. panicking when the `overflow-checks` flag is enabled, and wrapping when `overflow-checks` is disabled).
+/// 
+/// For more details on how the const-generic parameters are interpreted, see the documentation for [`Integer`].
 pub type Uint<const N: usize, const B: usize = 0, const OM: u8 = {OverflowMode::DEFAULT as u8}> = Integer<false, N, B, OM>;
 
-/// Signed integer type with const-generic bit width and overflow behaviour. By default, the overflow behaviour is the same as the primitive integer types (i.e. panicking when the `overflow-checks` flag is enabled, and wrapping when `overflow-checks` is disabled). For more details, see the documentation for [`Integer`].
+/// Signed integer type with const-generic bit width and overflow behaviour.
+/// 
+/// By default, the overflow behaviour is the same as the primitive integer types (i.e. panicking when the `overflow-checks` flag is enabled, and wrapping when `overflow-checks` is disabled).
+/// 
+/// For more details on how the const-generic parameters are interpreted, see the documentation for [`Integer`].
 pub type Int<const N: usize, const B: usize = 0, const OM: u8 = {OverflowMode::DEFAULT as u8}> = Integer<true, N, B, OM>;
 
 #[cfg(feature = "zeroize")]

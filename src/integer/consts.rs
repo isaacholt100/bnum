@@ -90,7 +90,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
 
     pub(crate) const ALL_ONES: Self = Self::from_bytes([0xFF; N]);
 
-    /// The minimum value that this type can represent. For unsigned integers, this is `0`. For signed integers, this is `-2**(Self::BITS - 1)`.
+    /// The minimum value that this type can represent. For unsigned integers, this is `0`. For signed integers, this is `-2^(Self::BITS - 1)`.
     /// 
     /// # Examples
     /// 
@@ -109,7 +109,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
         Self::ZERO
     };
 
-    /// The maximum value that this type can represent. For unsigned integers, this is `2**Self::BITS - 1`. For signed integers, this is `2**(Self::BITS - 1) - 1`.
+    /// The maximum value that this type can represent. For unsigned integers, this is `2^Self::BITS - 1`. For signed integers, this is `2^(Self::BITS - 1) - 1`.
     /// 
     /// # Examples
     /// 

@@ -534,14 +534,14 @@ mod tests {
         }
     }
 
-    // crate::test::test_all! {
-    //     testing unsigned;
+    crate::test::test_all! {
+        testing unsigned;
 
-    //     #[cfg(nightly)]
-    //     test_bignum! {
-    //         function: <stest>::bit_width(a: stest)
-    //     }
-    // }
+        #[cfg(nightly)]
+        test_bignum! {
+            function: <stest>::bit_width(a: stest)
+        }
+    }
 }
 
 #[cfg(test)]

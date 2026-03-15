@@ -1,7 +1,3 @@
-//! Items relating to the generation of random [`Integer`](crate::Integer) values.
-//!
-//! The `rand` feature must be enabled to use items from this module.
-
 /*
 Most of the code in this file is adapted from code from the Rust `rand` library, https://docs.rs/rand/latest/rand/, modified under the MIT license. The changes are released under either the MIT license or the Apache License 2.0, as described in the README. See LICENSE-MIT or LICENSE-APACHE at the project root.
 The original license file for `rand` can be found in this project's root at licenses/LICENSE-rand.
@@ -241,7 +237,6 @@ crate::test::test_all! {
         #[allow(non_snake_case)]
         fn quickcheck_SmallRng_gen_stest(seed: u64) -> bool {
             use crate::test::convert;
-            use rand::Rng;
 
             let (mut rng, mut rng2) = seeded_rngs::<SmallRng>(seed);
 
@@ -254,7 +249,6 @@ crate::test::test_all! {
         #[allow(non_snake_case)]
         fn quickcheck_SmallRng_fill_stest_slice(seed: u64) -> bool {
             use crate::test::convert;
-            use rand::Fill;
 
             const SLICE_LENGTH: usize = 20;
 
@@ -280,7 +274,6 @@ crate::test::test_all! {
             }
             use crate::test::convert;
             use crate::cast::CastFrom;
-            use rand::Rng;
 
             let mut result = true;
             

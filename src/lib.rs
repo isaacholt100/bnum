@@ -1,5 +1,5 @@
 #![allow(incomplete_features)]
-#![cfg_attr(docsrs, feature(doc_auto_cfg))]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(
     all(test, nightly),
     feature(

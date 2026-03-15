@@ -3,7 +3,7 @@ use core::error::Error;
 
 /// The error type that is returned when a failed conversion from an integer occurs.
 ///
-/// This error will occur for example when using the [`TryFrom`] trait to convert a negative [`i32`] to a [`Uint`](crate::Uint).
+/// This error will occur for example when using the [`TryFrom`] trait to attempt to convert a negative [`i32`] to a [`Uint`](crate::Uint).
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub struct TryFromIntError(pub(crate) ());
 
@@ -21,9 +21,9 @@ impl Display for TryFromIntError {
     }
 }
 
-/// The error type that is returned when a failed conversion from a `char` occurs.
+/// The error type that is returned when a failed conversion from a [`char`] occurs.
 ///
-/// This error will occur when using the [`TryFrom`] trait to convert a ][`char`] to an [`Integer`](crate::Integer).
+/// This error will occur when using the [`TryFrom`] trait to attempt to convert an out of range [`char`] to an [`Integer`](crate::Integer).
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
 pub struct TryFromCharError(pub(crate) ());
 
