@@ -1,21 +1,27 @@
-//! Type aliases for big signed and unsigned integers. Each is an alias for either a [`BUint`] or a [`BInt`].
-
-use crate::{BInt, BUint};
+//! Type aliases for unsigned and signed integers.
+//! 
+//! Each type alias has the same overflow behaviour as that of the primitive integer types, i.e. wrap on overflow if `overflow-checks` are disabled and panic on overflow if `overflow-checks` are enabled.
 
 macro_rules! int_type_doc {
-    ($bits: literal, $sign: literal) => {
-        concat!($bits, "-bit ", $sign, " integer type.")
+    ($bits: literal, $sign: literal, $aliased: literal) => {
+        concat!(
+            $bits, "-bit ", $sign, " integer type.",
+            "\n\n",
+            "Overflow behaviour is the same as that of the primitive integer types, i.e. wrap on overflow if `overflow-checks` are disabled and panic on overflow if `overflow-checks` are enabled.",
+            "\n\n",
+            "This type is an alias of [`", $aliased, "`](crate::", $aliased, "). See the documentation of [`", $aliased, "`](crate::", $aliased, ") for available methods and behaviour details."
+        )
     };
 }
 
 macro_rules! int_types {
     { $($bits: literal $u: ident $i: ident; ) *}  => {
         $(
-            #[doc = int_type_doc!($bits, "unsigned")]
-            pub type $u = BUint::<{$bits / 64}>;
+            #[doc = int_type_doc!($bits, "unsigned", "Uint")]
+            pub type $u = crate::Uint::<{ crate::literal_parse::get_size_params_from_bits($bits).0 }, { crate::literal_parse::get_size_params_from_bits($bits).1 }>;
 
-            #[doc = int_type_doc!($bits, "signed")]
-            pub type $i = BInt::<{$bits / 64}>;
+            #[doc = int_type_doc!($bits, "signed", "Int")]
+            pub type $i = crate::Int::<{ crate::literal_parse::get_size_params_from_bits($bits).0 }, { crate::literal_parse::get_size_params_from_bits($bits).1 }>;
         )*
     };
 }
@@ -35,6 +41,31 @@ macro_rules! call_types_macro {
 }
 
 call_types_macro!(int_types);
+
+// #[cfg(feature = "float")]
+// /// 16-bit floating point type with 10 bits of precision, stored as the binary16 (half precision) format defined in IEEE 754-2019.
+// pub type F16 = crate::Float<2, 10>;
+
+// #[cfg(feature = "float")]
+// /// 32-bit floating point type with 23 bits of precision, stored as the binary32 (single precision) format defined in IEEE 754-2019.
+// pub type F32 = crate::Float<4, 23>;
+
+// #[cfg(feature = "float")]
+// /// 64-bit floating point type with 52 bits of precision, stored as the binary64 (double precision) format defined in IEEE 754-2019.
+// pub type F64 = crate::Float<8, 52>;
+
+// #[cfg(feature = "float")]
+// /// 80-bit floating point type with 64 bits of precision.
+// pub type F80 = crate::Float<10, 64>;
+
+// #[cfg(feature = "float")]
+// /// 128-bit floating point type with 112 bits of precision, stored as the binary128 (quadruple precision) format defined in IEEE 754-2019.
+// pub type F128 = crate::Float<16, 112>;
+
+// #[cfg(feature = "float")]
+// /// 256-bit floating point type with 236 bits of precision, stored as the binary256 (octuple precision) format defined in IEEE 754-2019.
+// pub type F256 = crate::Float<32, 236>;
+
 
 #[cfg(test)]
 mod tests {

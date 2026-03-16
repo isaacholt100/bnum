@@ -1,6 +1,4 @@
-use crate::cast::CastFrom;
-use crate::test::types::*;
-use crate::*;
+use crate::{Int, Uint, Integer};
 
 pub trait TestConvert {
     type Output;
@@ -11,46 +9,69 @@ pub trait TestConvert {
 #[allow(unused)] // since this is only used with certain crate feature but these are likely to change often
 pub fn test_eq<T, U>(t: T, u: U) -> bool
 where
-T: TestConvert,
-U: TestConvert,
-<T as TestConvert>::Output: PartialEq<<U as TestConvert>::Output>
+    T: TestConvert,
+    U: TestConvert,
+    <T as TestConvert>::Output: PartialEq<<U as TestConvert>::Output>,
 {
     t.into() == u.into()
-}
-
-macro_rules! test_convert_big {
-    ($($big: ty), *; $output: ty) => {
-        $(
-            impl TestConvert for $big {
-                type Output = $output;
-
-                #[inline]
-                fn into(self) -> Self::Output {
-                    Self::Output::cast_from(self)
-                }
-            }
-        )*
-    };
 }
 
 macro_rules! test_convert_bigints {
     ($($bits: literal), *) => {
         paste::paste! {
             $(
-                test_convert_big!(BUint<{$bits / 64}>, BUintD32<{$bits / 32}>, BUintD16<{$bits / 16}>, BUintD8<{$bits / 8}>; [<u $bits>]);
+                impl TestConvert for [<u $bits>] {
+                    type Output = Uint<{get_size_params_from_bits($bits).0}, {get_size_params_from_bits($bits).1}>;
 
-                test_convert_big!(BInt<{$bits / 64}>, BIntD32<{$bits / 32}>, BIntD16<{$bits / 16}>, BIntD8<{$bits / 8}>; [<i $bits>]);
+                    #[inline]
+                    fn into(self) -> Self::Output {
+                        Uint::from_le_bytes(self.to_le_bytes())
+                    }
+                }
+
+                impl TestConvert for [<i $bits>] {
+                    type Output = Int<{get_size_params_from_bits($bits).0}, {get_size_params_from_bits($bits).1}>;
+
+                    #[inline]
+                    fn into(self) -> Self::Output {
+                        Int::from_le_bytes(self.to_le_bytes())
+                    }
+                }
             )*
         }
     };
 }
 
-test_convert_bigints!(128, 64);
+test_convert_bigints!(128, 64, 32, 16, 8);
 
-test_convert_big!(BUintD32<{32 / 32}>, BUintD16<{32 / 16}>, BUintD8<{32 / 8}>; u32);
-test_convert_big!(BIntD32<{32 / 32}>, BIntD16<{32 / 16}>, BIntD8<{32 / 8}>; i32);
-test_convert_big!(BUintD16<{16 / 16}>, BUintD8<{16 / 8}>; u16);
-test_convert_big!(BIntD16<{16 / 16}>, BIntD8<{16 / 8}>; i16);
+use crate::literal_parse::get_size_params_from_bits;
+
+impl TestConvert for usize {
+    type Output = Uint<{get_size_params_from_bits(usize::BITS as usize).0}, {get_size_params_from_bits(usize::BITS as usize).1}>;
+
+    #[inline]
+    fn into(self) -> Self::Output {
+        Uint::from_le_bytes(self.to_le_bytes())
+    }
+}
+
+impl TestConvert for isize {
+    type Output = Int<{get_size_params_from_bits(isize::BITS as usize).0}, {get_size_params_from_bits(isize::BITS as usize).1}>;
+
+    #[inline]
+    fn into(self) -> Self::Output {
+        Int::from_le_bytes(self.to_le_bytes())
+    }
+}
+
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> TestConvert for Integer<S, N, B, OM> {
+    type Output = Self;
+
+    #[inline]
+    fn into(self) -> Self::Output {
+        self
+    }
+}
 
 impl<T: TestConvert> TestConvert for Option<T> {
     type Output = Option<<T as TestConvert>::Output>;
@@ -80,7 +101,7 @@ impl TestConvert for f32 {
 }
 
 // #[cfg(feature = "float")]
-// impl TestConvert for crate::float::F64 {
+// impl TestConvert for crate::types::F64 {
 //     type Output = u64;
 
 //     #[inline]
@@ -92,7 +113,7 @@ impl TestConvert for f32 {
 // }
 
 // #[cfg(feature = "float")]
-// impl TestConvert for crate::float::F32 {
+// impl TestConvert for crate::types::F32 {
 //     type Output = u32;
 
 //     #[inline]
@@ -144,9 +165,7 @@ impl<T: TestConvert, E: TestConvert> TestConvert for Result<T, E> {
 
     #[inline]
     fn into(self) -> Self::Output {
-        self
-            .map(TestConvert::into)
-            .map_err(TestConvert::into)
+        self.map(TestConvert::into).map_err(TestConvert::into)
     }
 }
 
@@ -160,6 +179,33 @@ impl TestConvert for core::num::TryFromIntError {
 }
 
 impl TestConvert for crate::errors::TryFromIntError {
+    type Output = ();
+
+    #[inline]
+    fn into(self) -> Self::Output {
+        ()
+    }
+}
+
+// impl<T> TestConvert for Vec<T> {
+//     type Output = Self;
+
+//     #[inline]
+//     fn into(self) -> Self::Output {
+//         self
+//     }
+// }
+
+impl TestConvert for core::char::TryFromCharError {
+    type Output = ();
+
+    #[inline]
+    fn into(self) -> Self::Output {
+        ()
+    }
+}
+
+impl TestConvert for crate::errors::TryFromCharError {
     type Output = ();
 
     #[inline]
@@ -195,18 +241,8 @@ macro_rules! test_convert_to_self {
 test_convert_to_self!(
     core::num::FpCategory,
     core::cmp::Ordering,
-    bool,
-    u8,
-    u16,
-    u32,
-    u64,
-    u128,
-    usize,
-    i8,
-    i16,
-    i32,
-    i64,
-    i128,
-    isize,
-    alloc::string::String
+    bool
 );
+
+#[cfg(feature = "alloc")]
+test_convert_to_self!(alloc::string::String);

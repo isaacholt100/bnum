@@ -2,10 +2,13 @@
 	"rust-analyzer.rustfmt.extraArgs": [
         "+nightly"
 	],
-    "rust-analyzer.cargo.features": "all",
+    "rust-analyzer.cargo.extraArgs": [
+        "+nightly"
+    ],
+    // "lldb.cargo": "cargo +nightly",
+    // "rust-analyzer.cargo.features": "all",
     "rust-analyzer.linkedProjects": [
         "./Cargo.toml",
-        "./bench/Cargo.toml",
-        "./lit-parser/Cargo.toml"
+        "./bench/Cargo.toml"
     ]
 }

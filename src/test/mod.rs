@@ -1,12 +1,17 @@
 pub mod convert;
 pub use convert::TestConvert;
+pub use convert::test_eq;
+mod bitint;
+
+// #[cfg(feature = "float")]
+// mod test_float;
+
+pub use bitint::BitInt;
 
 mod macros;
 
 #[allow(unused_imports)]
 pub use macros::*;
-
-pub mod types;
 
 #[derive(Clone, Copy)]
 pub struct U8ArrayWrapper<const N: usize>(pub [u8; N]);
@@ -37,33 +42,35 @@ impl<const N: usize> Debug for U8ArrayWrapper<N> {
     }
 }
 
-pub mod cast_types {
-    use crate::{BUint, BUintD32, BUintD16, BUintD8, BInt, BIntD32, BIntD16, BIntD8};
+mod cast_signed_types {
+    use crate::Int;
 
-    pub use crate::big_types::u8::{UTEST as UTESTD8, ITEST as ITESTD8};
-    pub use crate::big_types::u16::{UTEST as UTESTD16, ITEST as ITESTD16};
-    pub use crate::big_types::u32::{UTEST as UTESTD32, ITEST as ITESTD32};
-    pub use crate::big_types::u64::{UTEST as UTESTD64, ITEST as ITESTD64};
-
-    pub type TestUint1 = BUint<3>;
-    pub type TestUint2 = BUintD32<5>;
-    pub type TestUint3 = BUintD16<6>;
-    pub type TestUint4 = BUintD8<11>;
-    pub type TestUint5 = BUintD16<3>;
-    pub type TestUint6 = BUintD8<7>;
-    pub type TestUint7 = BUintD8<3>;
-    pub type TestUint8 = BUintD16<1>;
-    pub type TestUint9 = BUintD8<15>;
-    pub type TestUint10 = BUintD8<17>;
-
-    pub type TestInt1 = BInt<3>;
-    pub type TestInt2 = BIntD32<5>;
-    pub type TestInt3 = BIntD16<6>;
-    pub type TestInt4 = BIntD8<11>;
-    pub type TestInt5 = BIntD16<3>;
-    pub type TestInt6 = BIntD8<7>;
-    pub type TestInt7 = BIntD8<3>;
-    pub type TestInt8 = BIntD16<1>;
-    pub type TestInt9 = BIntD8<15>;
-    pub type TestInt10 = BIntD8<17>;
+    pub type TestInt1 = Int<10, 0>;
+    pub type TestInt2 = Int<8, 0>;
+    pub type TestInt3 = Int<6, 0>;
+    pub type TestInt4 = Int<11, 0>;
+    pub type TestInt5 = Int<5, 0>;
+    pub type TestInt6 = Int<7, 0>;
+    pub type TestInt7 = Int<3, 0>;
+    pub type TestInt8 = Int<1, 0>;
+    pub type TestInt9 = Int<15, 0>;
+    pub type TestInt10 = Int<17, 0>;
 }
+
+pub mod cast_types {
+    use crate::Uint;
+
+    pub type TestUint1 = Uint<10, 0>;
+    pub type TestUint2 = Uint<8, 0>;
+    pub type TestUint3 = Uint<6, 0>;
+    pub type TestUint4 = Uint<11, 0>;
+    pub type TestUint5 = Uint<5, 0>;
+    pub type TestUint6 = Uint<7, 0>;
+    pub type TestUint7 = Uint<3, 0>;
+    pub type TestUint8 = Uint<1, 0>;
+    pub type TestUint9 = Uint<15, 0>;
+    pub type TestUint10 = Uint<17, 0>;
+
+    pub use super::cast_signed_types::*;
+}
+

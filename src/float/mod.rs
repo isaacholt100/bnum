@@ -1,19 +1,17 @@
-use crate::{BUintD8, BIntD8, ExpType};
+use crate::Byte;
+#[cfg(test)]
+use crate::cast::As;
 use crate::doc;
-
-type Digit = u8;
-
-#[cfg(test)]
-pub type F64 = Float<8, 52>;
+use crate::{Exponent, Int, Uint};
 
 #[cfg(test)]
-pub type F32 = Float<4, 23>;
+use crate::types::{F32, F64};
 
 #[cfg(test)]
 impl From<f64> for F64 {
     #[inline]
     fn from(f: f64) -> Self {
-        Self::from_bits(f.to_bits().into())
+        Self::from_bits(f.to_bits().as_())
     }
 }
 
@@ -21,7 +19,7 @@ impl From<f64> for F64 {
 impl From<f32> for F32 {
     #[inline]
     fn from(f: f32) -> Self {
-        Self::from_bits(f.to_bits().into())
+        Self::from_bits(f.to_bits().as_())
     }
 }
 
@@ -33,13 +31,13 @@ macro_rules! handle_nan {
     };
 }
 
+mod bytes;
 mod cast;
 mod classify;
 mod cmp;
-mod consts;
 mod const_trait_fillers;
+mod consts;
 mod convert;
-mod endian;
 mod math;
 #[cfg(feature = "numtraits")]
 mod numtraits;
@@ -53,45 +51,43 @@ mod to_str;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-// TODO: THINK ABOUT MAKING FLOAT EXPONENT AT MOST ~128 BITS, THEN COULD USE I128 FOR EXPONENT CALCULATIONS, WOULD BE MUCH FASTER AND USE LESS SPACE
-
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[repr(transparent)]
 pub struct Float<const W: usize, const MB: usize> {
-    bits: BUintD8<W>,
+    bits: Uint<W>,
 }
 
-pub(crate) type FloatExponent = i128;
-pub(crate) type UnsignedFloatExponent = u128;
+pub(crate) type FloatExponent = i32; // TODO: decide whether this should be i128 or i32 (or i64). benefit of i128: more exponents possible. benefit of i32: this is what f32, f64 use, aligns better with u32 exponents used for ints
+pub(crate) type UnsignedFloatExponent = u32; // TODO: change these to just Exponent and SignedExponent
 
 // TODO: implement rand traits
 
 impl<const W: usize, const MB: usize> Float<W, MB> {
-    const MB: ExpType = MB as _;
-    const BITS: ExpType = BUintD8::<W>::BITS;
+    const MB: Exponent = MB as _;
+    const BITS: Exponent = Uint::<W>::BITS;
 
-    const EXPONENT_BITS: ExpType = Self::BITS - Self::MB - 1;
+    const EXPONENT_BITS: Exponent = Self::BITS - Self::MB - 1;
 
-    const MANTISSA_MASK: BUintD8<W> = BUintD8::MAX.wrapping_shr(Self::EXPONENT_BITS + 1);
+    const MANTISSA_MASK: Uint<W> = Uint::MAX.wrapping_shr(Self::EXPONENT_BITS + 1);
 
-    const SIGN_MASK: BUintD8<W> = BIntD8::MAX.to_bits();
+    const SIGN_MASK: Uint<W> = Int::MAX.cast_unsigned();
 
-    const MANTISSA_IMPLICIT_LEADING_ONE_MASK: BUintD8<W> = BUintD8::ONE.shl(Self::MB);
+    const MANTISSA_IMPLICIT_LEADING_ONE_MASK: Uint<W> = Uint::ONE.shl(Self::MB);
 }
 
-impl<const W: usize> BUintD8<W> {
+impl<const W: usize> Uint<W> {
     #[inline]
     pub(crate) const fn cast_from_unsigned_float_exponent(mut exp: UnsignedFloatExponent) -> Self {
         let mut out = Self::MIN;
         let mut i = 0;
         while exp != 0 && i < W {
-            let masked = exp as Digit & Digit::MAX;
-            out.digits[i] = masked;
-            if UnsignedFloatExponent::BITS <= Digit::BITS {
+            let masked = exp as Byte & Byte::MAX;
+            out.bytes[i] = masked;
+            if UnsignedFloatExponent::BITS <= Byte::BITS {
                 exp = 0;
             } else {
-                exp = exp.wrapping_shr(Digit::BITS);
+                exp = exp.wrapping_shr(Byte::BITS);
             }
             i += 1;
         }
@@ -102,8 +98,8 @@ impl<const W: usize> BUintD8<W> {
     pub(crate) const fn cast_to_unsigned_float_exponent(self) -> UnsignedFloatExponent {
         let mut out = 0;
         let mut i = 0;
-        while i << crate::digit::u8::BIT_SHIFT < UnsignedFloatExponent::BITS as usize && i < W {
-            out |= (self.digits[i] as UnsignedFloatExponent) << (i << crate::digit::u8::BIT_SHIFT);
+        while i * (Byte::BITS as usize) < UnsignedFloatExponent::BITS as usize && i < W {
+            out |= (self.bytes[i] as UnsignedFloatExponent) << (i * (Byte::BITS as usize));
             i += 1;
         }
         out
@@ -118,14 +114,14 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         debug_assert!(exponent >= Self::MIN_EXP_MINUS_ONE);
         debug_assert!(exponent < Self::MAX_EXP);
         let biased_exponent = exponent + Self::EXP_BIAS;
-        let exponent_bits = BUintD8::cast_from_unsigned_float_exponent(biased_exponent as UnsignedFloatExponent);
+        let exponent_bits =
+            Uint::cast_from_unsigned_float_exponent(biased_exponent as UnsignedFloatExponent);
         let float_bits = exponent_bits.shl(Self::MB);
         Self::from_bits(float_bits)
     }
 }
 
 impl<const W: usize, const MB: usize> Float<W, MB> {
-    #[doc = doc::signum!(F)]
     #[must_use = doc::must_use_op!(float)]
     #[inline]
     pub const fn signum(self) -> Self {
@@ -133,20 +129,14 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         Self::ONE.copysign(self)
     }
 
-    #[doc = doc::copysign!(F)]
     #[must_use = doc::must_use_op!(float)]
     #[inline]
-    pub const fn copysign(self, sign: Self) -> Self {
-        let mut self_words = *self.words();
-        if sign.is_sign_negative() {
-            self_words[W - 1] |= 1 << (Digit::BITS - 1);
-        } else {
-            self_words[W - 1] &= (!0) >> 1;
-        }
-        Self::from_bits(BUintD8::from_digits(self_words))
+    pub const fn copysign(mut self, sign: Self) -> Self {
+        self.as_bits_mut()
+            .set_bit(Self::BITS - 1, sign.is_sign_negative());
+        self
     }
 
-    #[doc = doc::next_up!(F)]
     #[inline]
     pub const fn next_up(self) -> Self {
         use core::num::FpCategory;
@@ -163,15 +153,14 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             FpCategory::Zero => Self::MIN_POSITIVE_SUBNORMAL,
             _ => {
                 if self.is_sign_negative() {
-                    Self::from_bits(self.to_bits().sub(BUintD8::ONE))
+                    Self::from_bits(self.to_bits().sub(Uint::ONE))
                 } else {
-                    Self::from_bits(self.to_bits().add(BUintD8::ONE))
+                    Self::from_bits(self.to_bits().add(Uint::ONE))
                 }
             }
         }
     }
 
-    #[doc = doc::next_down!(F)]
     #[inline]
     pub const fn next_down(self) -> Self {
         use core::num::FpCategory;
@@ -188,9 +177,9 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             FpCategory::Zero => Self::MAX_NEGATIVE_SUBNORMAL,
             _ => {
                 if self.is_sign_negative() {
-                    Self::from_bits(self.to_bits().add(BUintD8::ONE))
+                    Self::from_bits(self.to_bits().add(Uint::ONE))
                 } else {
-                    Self::from_bits(self.to_bits().sub(BUintD8::ONE))
+                    Self::from_bits(self.to_bits().sub(Uint::ONE))
                 }
             }
         }
@@ -198,6 +187,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 }
 
 impl<const W: usize, const MB: usize> Default for Float<W, MB> {
+    #[doc = doc::default!()]
     #[inline]
     fn default() -> Self {
         Self::ZERO
@@ -207,25 +197,28 @@ impl<const W: usize, const MB: usize> Default for Float<W, MB> {
 #[cfg(any(test, feature = "quickcheck"))]
 impl<const W: usize, const MB: usize> quickcheck::Arbitrary for crate::Float<W, MB> {
     fn arbitrary(g: &mut quickcheck::Gen) -> Self {
-        Self::from_bits(BUintD8::arbitrary(g))
+        Self::from_bits(Uint::arbitrary(g))
     }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::test::test_bignum;
-    use crate::test::types::{ftest, FTEST};
 
-    test_bignum! {
-        function: <ftest>::copysign(a: ftest, b: ftest)
-    }
-    test_bignum! {
-        function: <ftest>::signum(a: ftest)
-    }
-    test_bignum! {
-        function: <ftest>::next_up(a: ftest)
-    }
-    test_bignum! {
-        function: <ftest>::next_down(a: ftest)
+    crate::test::test_all! {
+        testing floats;
+
+        test_bignum! {
+            function: <ftest>::copysign(a: ftest, b: ftest)
+        }
+        test_bignum! {
+            function: <ftest>::signum(a: ftest)
+        }
+        test_bignum! {
+            function: <ftest>::next_up(a: ftest)
+        }
+        test_bignum! {
+            function: <ftest>::next_down(a: ftest)
+        }
     }
 }

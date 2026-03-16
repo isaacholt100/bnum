@@ -1,23 +1,20 @@
-use core::num::FpCategory;
+use super::Float;
+use crate::Exponent;
+use crate::Uint;
+use crate::cast::As;
 use crate::float::FloatExponent;
 use crate::float::UnsignedFloatExponent;
-use crate::ExpType;
-use crate::BUintD8;
-use super::Float;
-use crate::cast::As;
+use core::num::FpCategory;
 
 impl<const W: usize, const MB: usize> Float<W, MB> {
     #[inline]
-    pub(crate) fn div_internal(self, rhs: Self, negative: bool) -> Self
-    where
-        [(); W * 2]:,
-    {
+    pub(crate) fn div_internal(self, rhs: Self, negative: bool) -> Self {
         let (a, b) = (self, rhs);
         let (_, e1, s1) = a.into_biased_parts();
         let (_, e2, s2) = b.into_biased_parts();
 
-        let b1 = s1.bits();
-        let b2 = s2.bits();
+        let b1 = s1.bit_width();
+        let b2 = s2.bit_width();
 
         let mut e =
             (e1 as FloatExponent) - (e2 as FloatExponent) + Self::EXP_BIAS + (b1 as FloatExponent)
@@ -30,57 +27,53 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             e = 1;
         }
 
-        let total_shift = (MB as FloatExponent + 1 + b2 as FloatExponent - b1 as FloatExponent) - (extra_shift as FloatExponent);
+        let total_shift = (MB as FloatExponent + 1 + b2 as FloatExponent - b1 as FloatExponent)
+            - (extra_shift as FloatExponent);
 
         let large = if !total_shift.is_negative() {
-            (s1.as_::<BUintD8<{ W * 2 }>>()) << total_shift
+            (s1.as_::<Uint<{ W * 2 }>>()) << total_shift
         } else {
-            (s1.as_::<BUintD8<{ W * 2 }>>()) >> (-total_shift)
+            (s1.as_::<Uint<{ W * 2 }>>()) >> (-total_shift)
         };
-        let mut division = (large / (s2.as_::<BUintD8<{ W * 2 }>>())).as_::<BUintD8<W>>();
+        let mut division = (large / (s2.as_::<Uint<{ W * 2 }>>())).as_::<Uint<W>>();
 
-        let rem = if division.bits() != Self::MB + 2 {
-            let rem = (large % (s2.as_::<BUintD8<{ W * 2 }>>())).as_::<BUintD8<W>>();
+        let rem = if division.bit_width() != Self::MB + 2 {
+            let rem = (large % (s2.as_::<Uint<{ W * 2 }>>())).as_::<Uint<W>>();
             rem
         } else {
             e += 1;
-            division =
-                ((large >> 1 as ExpType) / (s2.as_::<BUintD8<{ W * 2 }>>())).as_::<BUintD8<W>>();
-            let rem =
-                ((large >> 1 as ExpType) % (s2.as_::<BUintD8<{ W * 2 }>>())).as_::<BUintD8<W>>();
+            division = ((large >> 1 as Exponent) / (s2.as_::<Uint<{ W * 2 }>>())).as_::<Uint<W>>();
+            let rem = ((large >> 1 as Exponent) % (s2.as_::<Uint<{ W * 2 }>>())).as_::<Uint<W>>();
             rem
         };
-        if rem * BUintD8::TWO > s2 {
-            division += BUintD8::ONE;
-        } else if rem * BUintD8::TWO == s2 {
-            if (division & BUintD8::ONE) == BUintD8::ONE {
-                division += BUintD8::ONE;
+        if rem * crate::n!(0b10) > s2 {
+            division += crate::n!(0b1);
+        } else if rem * crate::n!(0b10) == s2 {
+            if division.is_odd() {
+                division += crate::n!(0b1);
             }
         }
-        if division.bits() == Self::MB + 2 {
+        if division.bit_width() == Self::MB + 2 {
             e += 1;
-            division >>= 1 as ExpType;
+            division >>= 1 as Exponent;
         }
 
         if e > Self::MAX_EXP + Self::EXP_BIAS - 1 {
             return Self::INFINITY;
         }
 
-        if e == 1 && division.bits() < Self::MB + 1 {
+        if e == 1 && division.bit_width() < Self::MB + 1 {
             return Self::from_raw_parts(negative, 0, division);
         }
 
-        if division >> Self::MB != BUintD8::ZERO {
-            division ^= BUintD8::ONE << Self::MB;
+        if division >> Self::MB != Uint::ZERO {
+            division ^= Uint::ONE << Self::MB;
         }
         Self::from_raw_parts(negative, e as UnsignedFloatExponent, division)
     }
 
     #[inline]
-    pub(super) fn div(self, rhs: Self) -> Self
-    where
-        [(); W * 2]:,
-    {
+    pub(super) fn div(self, rhs: Self) -> Self {
         let negative = self.is_sign_negative() ^ rhs.is_sign_negative();
         match (self.classify(), rhs.classify()) {
             (FpCategory::Nan, _) | (_, FpCategory::Nan) => Self::NAN,
@@ -106,7 +99,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 }
 
 /*/// Returns tuple of division and whether u is less than v
-pub const fn div_float<const N: usize>(u: BUintD8<N>, v: BUintD8<N>) -> (BUintD8<N>, bool) {
+pub const fn div_float<const N: usize>(u: Uint<N>, v: Uint<N>) -> (Uint<N>, bool) {
     let gt = if let core::cmp::Ordering::Less = u.cmp(&v) {
         0
     } else {
@@ -125,7 +118,7 @@ pub const fn div_float<const N: usize>(u: BUintD8<N>, v: BUintD8<N>) -> (BUintD8
         rest: [Digit; M],
     }
     impl<const M: usize> Remainder<M> {
-        const fn new(uint: BUintD8<M>, shift: ExpType) -> Self {
+        const fn new(uint: Uint<M>, shift: Exponent) -> Self {
             // This shift can be anything from 0 to 64 inclusive.
             // Scenarios:
             // * shift by 0 -> nothing happens, still N trailing zeros.
@@ -167,8 +160,8 @@ pub const fn div_float<const N: usize>(u: BUintD8<N>, v: BUintD8<N>) -> (BUintD8
                 self.rest[index - M - 1] = digit;
             }
         }
-        /*const fn to_uint(self, shift: ExpType) -> BUintD8<M> {
-            let mut out = BUintD8::ZERO;
+        /*const fn to_uint(self, shift: Exponent) -> Uint<M> {
+            let mut out = Uint::ZERO;
             let mut i = 0;
             while i < M {
                 out.digits[i] = self.index(i) >> shift;
@@ -215,7 +208,7 @@ pub const fn div_float<const N: usize>(u: BUintD8<N>, v: BUintD8<N>) -> (BUintD8
         rest: [Digit; M],
     }
     impl<const M: usize> Mul<M> {
-        const fn new(uint: BUintD8<M>, rhs: Digit) -> Self {
+        const fn new(uint: Uint<M>, rhs: Digit) -> Self {
             let mut rest = [0; M];
             let mut carry: Digit = 0;
             let mut i = 0;
@@ -240,7 +233,7 @@ pub const fn div_float<const N: usize>(u: BUintD8<N>, v: BUintD8<N>) -> (BUintD8
     }
 
     let mut u = Remainder::new(u, shift);
-    let mut q = BUintD8::ZERO;
+    let mut q = Uint::ZERO;
     let v_n_1 = v.digits[N - 1];
     let v_n_2 = v.digits[N - 2];
     let gt_half = v_n_1 > digit::HALF;
@@ -251,12 +244,12 @@ pub const fn div_float<const N: usize>(u: BUintD8<N>, v: BUintD8<N>) -> (BUintD8
         let u_jn = u.index(j + N);
         let mut q_hat = if u_jn < v_n_1 {
             let (mut q_hat, mut r_hat) = if gt_half {
-                BUintD8::<N>::div_wide(u_jn, u.index(j + N - 1), v_n_1)
+                Uint::<N>::div_wide(u_jn, u.index(j + N - 1), v_n_1)
             } else {
-                BUintD8::<N>::div_half(u_jn, u.index(j + N - 1), v_n_1)
+                Uint::<N>::div_half(u_jn, u.index(j + N - 1), v_n_1)
             };
             loop {
-                let a = ((r_hat as DoubleDigit) << digit::BITS) | u.index(j + N - 2) as DoubleDigit;
+                let a = ((r_hat as DoubleDigit) << Byte::BITS) | u.index(j + N - 2) as DoubleDigit;
                 let b = q_hat as DoubleDigit * v_n_2 as DoubleDigit;
                 if b <= a {
                     break;

@@ -1,112 +1,56 @@
-#![cfg_attr(feature = "nightly", allow(incomplete_features))]
+#![allow(incomplete_features)]
+#![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(
-    feature = "nightly",
+    all(test, nightly),
     feature(
-        generic_const_exprs,
-        const_trait_impl,
-        const_option,
-    )
-)]
-#![cfg_attr(
-    all(test, feature = "nightly"),
-    feature(
-        bigint_helper_methods,
+        widening_mul,
+        signed_bigint_helpers,
         int_roundings,
-        float_minimum_maximum,
+        uint_bit_width,
         wrapping_next_power_of_two,
-        float_next_up_down,
-        unchecked_shifts,
-        integer_sign_cast,
-        num_midpoint_signed,
-        strict_overflow_ops,
-        unbounded_shifts
+        f16,
+        f128,
+        int_from_ascii
     )
 )]
 #![doc = include_str!("../README.md")]
 #![cfg_attr(not(any(feature = "arbitrary", feature = "quickcheck")), no_std)]
 // TODO: MAKE SURE NO_STD IS ENABLED WHEN PUBLISHING NEW VERSION
 
+// TODO: create issue on gh about v1.0 release. problem is that crates like rand aren't in 1.x yet
+
+#[cfg(feature = "alloc")]
 #[macro_use]
 extern crate alloc;
 
-mod bint;
-mod buint;
+mod integer;
 
 pub mod cast;
-mod digit;
 mod doc;
 pub mod errors;
-mod int;
 mod helpers;
-mod nightly;
+#[doc(hidden)]
+pub mod literal_parse;
 pub mod prelude;
+mod digits;
+mod overflow;
+
+// #[cfg(feature = "float")]
+// mod float;
 
 #[cfg(feature = "rand")]
 pub mod random;
 
 pub mod types;
 
-// #[cfg(feature = "float")]
-// mod float;
-
-// #[cfg(feature = "float")]
-// pub use float::Float;
-
 #[cfg(test)]
 mod test;
 
-#[cfg(test)]
-use test::types::*;
+type Exponent = u32;
+type Byte = u8;
 
-type ExpType = u32;
+pub use integer::{Int, Integer, Uint};
+pub use overflow::OverflowMode;
 
-mod bigints {
-    pub use crate::bint::{BInt, BIntD16, BIntD32, BIntD8};
-    pub use crate::buint::{BUint, BUintD16, BUintD32, BUintD8};
-}
-
-pub use bigints::*;
-
-macro_rules! macro_impl {
-    ($name: ident) => {
-        #[allow(unused_imports)]
-        use crate::bigints::*;
-
-        crate::main_impl!($name);
-    };
-}
-
-pub(crate) use macro_impl;
-
-macro_rules! main_impl {
-    ($name: ident) => {
-        $name!(BUint, BInt, u64);
-        $name!(BUintD32, BIntD32, u32);
-        $name!(BUintD16, BIntD16, u16);
-        $name!(BUintD8, BIntD8, u8);
-    };
-}
-
-use crate::buint::cast::buint_as_different_digit_bigint;
-use crate::bint::cast::bint_as_different_digit_bigint;
-
-buint_as_different_digit_bigint!(BUint, BInt, u64; (BUintD32, u32), (BUintD16, u16), (BUintD8, u8));
-buint_as_different_digit_bigint!(BUintD32, BIntD32, u32; (BUint, u64), (BUintD16, u16), (BUintD8, u8));
-buint_as_different_digit_bigint!(BUintD16, BIntD16, u16; (BUint, u64), (BUintD32, u32), (BUintD8, u8));
-buint_as_different_digit_bigint!(BUintD8, BIntD8, u8; (BUint, u64), (BUintD32, u32), (BUintD16, u16));
-
-bint_as_different_digit_bigint!(BUint, BInt, u64; (BIntD32, u32), (BIntD16, u16), (BIntD8, u8));
-bint_as_different_digit_bigint!(BUintD32, BIntD32, u32; (BInt, u64), (BIntD16, u16), (BIntD8, u8));
-bint_as_different_digit_bigint!(BUintD16, BIntD16, u16; (BInt, u64), (BIntD32, u32), (BIntD8, u8));
-bint_as_different_digit_bigint!(BUintD8, BIntD8, u8; (BInt, u64), (BIntD32, u32), (BIntD16, u16));
-
-pub(crate) use main_impl;
-
-/// Trait for fallible conversions between `bnum` integer types.
-/// 
-/// Unfortunately, [`TryFrom`] cannot currently be used for conversions between `bnum` integers, since [`TryFrom<T> for T`](https://doc.rust-lang.org/std/convert/trait.TryFrom.html#impl-TryFrom%3CU%3E-for-T) is already implemented by the standard library (and so it is not possible to implement `TryFrom<BUint<M>> for BUint<N>`). When the [`generic_const_exprs`](https://github.com/rust-lang/rust/issues/76560) feature becomes stabilised, it may be possible to use [`TryFrom`] instead of `BTryFrom`. `BTryFrom` is designed to have the same behaviour as [`TryFrom`] for conversions between two primitive types, and conversions between a primitive type and a bnum type. `BTryFrom` is a workaround for the issue described above, and so you should not implement it yourself. It should only be used for conversions between `bnum` integers.
-pub trait BTryFrom<T>: Sized {
-    type Error;
-
-    fn try_from(from: T) -> Result<Self, Self::Error>;
-}
+// #[cfg(feature = "float")]
+// pub use float::Float;

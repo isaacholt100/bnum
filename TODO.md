@@ -63,39 +63,34 @@
 	- TAU
 - FloatToInt trait
 - From/TryFrom trait for ints, other floats
-- Float type aliases from IEEE standard: f16, f32, f64, f80, f128. (Include f32 and f64 as allows const methods which aren't available on the primitives)
 - Rand:
     - gen_range stuff
 - num_traits::{Bounded, Float, FloatConst, FloatCore, AsPrimitive, FromPrimitive, ToPrimitive, FromBytes, ToBytes, Inv, MulAdd, MulAddAssign, Pow, Signed, Euclid, Num}
 - Division algorithm which doesn't need where clause
+- TestFloat struct for testing that uses rug under the hood. Then can test using test_bignum!, with TestFloat as the base type.
 
 ## Ints
 
-- big idea: could only use u8 digits, but for calculations (would need to do this as BUintD8 is noticeably slower than BUint), use u64s or u128s, e.g. when iterating, iterate in batches of 8, use u64::from_ne_bytes/u64::from_le_bytes - this is a transmute so should be very small overhead (this might sacrifice some code readability)
-- unsigned_signed_diff methods
-- isqrt methods
-- unbounded shr, shl methods
-- Use new Rust const capabilities to write more idiomatic code (e.g. we don't need the option_expect! macro anymore). Note though that maybe we should wait a bit to keep the MSRV not too recent
 - Faster mulitplication algorithm for larger integers
 - Faster division algorithms for larger integers
 - Update serde to use decimal string instead of struct debug - but CHECK that all serde options serialise primitive ints as decimal strings
-- FromBytes and ToBytes num_traits traits - only when can implement without "unconstrained generic constant" error
-- do we need the from_be_slice and from_le_slice methods? (think we can just call from_radix_{b, l}e with radix 256)
 - create more efficient implementation of ilog10 (see e.g. Hacker's Delight book)
+- modpow
+- isolate_most_least_significant_one for uints, ints (but wait til the name is stabilised)
+- faster algorithms for parsing and printing larger integers
+- think about whether you could make to_str_radix and the functions it uses into generic functions which take an argument which "pushes" the next character to the existing string (so either pushing to a vector or calling write!(f, ...))
+- unchecked_disjoint_bitor for uint (can do by iterating unchecked_disjoint bitor on u8s/u128 digits, can only add this once it is stablised for primitives though, not much point adding on nightly only)
 
-Other stuff:
-- Think about removing BTryFrom and just implementing TryFrom (no From for now), then can use CastFrom/As trait for Result-less conversions
+## Crates to support
+
+- Proptest
+
+
+## Other things
+
 - Replace bitors, bitands, shifts, masks etc. with more efficient implementations (e.g. using set_bit, flip_bit, one-less-than-power-of-two methods, methods for efficiently generating masks/getting certain range of bits of integer)
-- Consider putting floats and signed integers behind optional features (which are enabled by default)
-- Add 16 bit and 32 bit width types to the test widths, so test u16, u32, f16, f32 as well (just make the digit sizes that are too wide not do anything for those tests)
-- Consider removing implementation of AsPrimitive<BUint> for primitive ints
-- Consider removing Add<Digit> and Div<Digit> impls
-- Rewrite README
-- consider removing parse_str_radix method, not really necessary now Option::expect and unwrap are const
 - consider raising issue in num_traits crate about PrimInt dependency on NumCast
-- consider using Rust's ParseIntError and TryFromIntError instead of own types, would have to do this by deliberating doing a calculation resulting in error (e.g. u8::from_str_radix(" ", 10)). this might be not be very good practice though, and would have to do for ParseFloatError eventually as well, which could be trickier to do this way
-- consider splitting off allow-based methods into gated "alloc" feature
-- work out and add assertions about sizes of e.g. int widths (should be <= u32::MAX), and float mantissa and exponent widths, etc.
-- include list of difference with primitives in README, e.g. overflow_checks not detected yet, serde implementation different, memory layout different (always little endian - although maybe this could be changed? probably not a good idea though)
-- test using stable, only use nightly when need to test be_bytes methods
+- work out and add assertions about sizes of float mantissa and exponent widths, etc.
+- maybe mention that serde impl is different from primitives
 - check you're happy with the layout of the random crate-level module
+- maybe rewrite code using while let Some(x) = iter.next() (using const iterator like methods), this will mean easier to migrate to iterators when they are const

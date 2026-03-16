@@ -1,31 +1,14 @@
 use super::Float;
+use crate::helpers::full_op_impl;
 use core::iter::{Iterator, Product, Sum};
-use core::ops::{Add, Div, Mul, Neg, Rem, Sub, AddAssign, SubAssign, MulAssign, RemAssign};
+use core::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Rem, RemAssign, Sub, SubAssign};
 
 mod add;
-mod sub;
-mod mul;
-#[cfg(feature = "nightly")]
+#[cfg(nightly)]
 mod div;
+mod mul;
 mod rem;
-
-macro_rules! impl_assign_op {
-    ($AssignTrait: ident, $assign_fn: ident, $op_fn: ident) => {
-        impl<const W: usize, const MB: usize> $AssignTrait<Self> for Float<W, MB> {
-            #[inline]
-            fn $assign_fn(&mut self, rhs: Self) {
-                *self = self.$op_fn(rhs);
-            }
-        }
-
-        impl<const W: usize, const MB: usize> $AssignTrait<&Self> for Float<W, MB> {
-            #[inline]
-            fn $assign_fn(&mut self, rhs: &Self) {
-                *self = self.$op_fn(*rhs);
-            }
-        }
-    };
-}
+mod sub;
 
 impl<const W: usize, const MB: usize> Add for Float<W, MB> {
     type Output = Self;
@@ -36,8 +19,7 @@ impl<const W: usize, const MB: usize> Add for Float<W, MB> {
     }
 }
 
-crate::int::ops::op_ref_impl!(Add<Float<N, MB>> for Float<N, MB>, add);
-impl_assign_op!(AddAssign, add_assign, add);
+full_op_impl!(<const W: usize, const MB: usize> Add, AddAssign, Float<W, MB>, add, add_assign for Float<W, MB>);
 
 impl<const W: usize, const MB: usize> Sum for Float<W, MB> {
     #[inline]
@@ -62,8 +44,7 @@ impl<const W: usize, const MB: usize> Sub for Float<W, MB> {
     }
 }
 
-crate::int::ops::op_ref_impl!(Sub<Float<N, MB>> for Float<N, MB>, sub);
-impl_assign_op!(SubAssign, sub_assign, sub);
+full_op_impl!(<const W: usize, const MB: usize> Sub, SubAssign, Float<W, MB>, sub, sub_assign for Float<W, MB>);
 
 impl<const W: usize, const MB: usize> Mul for Float<W, MB> {
     type Output = Self;
@@ -74,7 +55,7 @@ impl<const W: usize, const MB: usize> Mul for Float<W, MB> {
     }
 }
 
-crate::int::ops::op_ref_impl!(Mul<Float<N, MB>> for Float<N, MB>, mul);
+full_op_impl!(<const W: usize, const MB: usize> Mul, MulAssign, Float<W, MB>, mul, mul_assign for Float<W, MB>);
 
 impl<const W: usize, const MB: usize> Product for Float<W, MB> {
     #[inline]
@@ -90,11 +71,7 @@ impl<'a, const W: usize, const MB: usize> Product<&'a Self> for Float<W, MB> {
     }
 }
 
-#[cfg(feature = "nightly")]
-impl<const W: usize, const MB: usize> Div for Float<W, MB>
-where
-    [(); W * 2]:,
-{
+impl<const W: usize, const MB: usize> Div for Float<W, MB> {
     type Output = Self;
 
     #[inline]
@@ -103,8 +80,7 @@ where
     }
 }
 
-// crate::int::ops::op_ref_impl!(Div<Float<N, MB>> for Float<N, MB>, div);
-// impl_assign_op!(DivAssign, div_assign, div);
+// full_op_impl!(<const W: usize, const MB: usize> Div, DivAssign, Float<W, MB>, div, div_assign for Float<W, MB>);
 
 impl<const W: usize, const MB: usize> Rem for Float<W, MB> {
     type Output = Self;
@@ -115,8 +91,7 @@ impl<const W: usize, const MB: usize> Rem for Float<W, MB> {
     }
 }
 
-crate::int::ops::op_ref_impl!(Rem<Float<N, MB>> for Float<N, MB>, rem);
-impl_assign_op!(RemAssign, rem_assign, rem);
+full_op_impl!(<const W: usize, const MB: usize> Rem, RemAssign, Float<W, MB>, rem, rem_assign for Float<W, MB>);
 
 impl<const W: usize, const MB: usize> Neg for Float<W, MB> {
     type Output = Self;
@@ -138,31 +113,38 @@ impl<const W: usize, const MB: usize> Neg for &Float<W, MB> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use crate::test::test_bignum;
-    use crate::test::types::{ftest, FTEST};
+    use super::*;
 
-    test_bignum! {
-        function: <ftest as Add>::add(a: ftest, b: ftest),
-        skip: a.is_sign_negative() != b.is_sign_negative(),
-        cases: [(1.3952888382785755e33, 1.466527384898436e33)]
-    }
-    test_bignum! {
-        function: <ftest as Sub>::sub(a: ftest, b: ftest)
-    }
-    test_bignum! {
-        function: <ftest as Mul>::mul(a: ftest, b: ftest),
-        cases: [
-            (5.6143642e23f64 as ftest, 35279.223f64 as ftest)
-        ]
-    }
-    test_bignum! {
-        function: <ftest as Div>::div(a: ftest, b: ftest)
-    }
-    test_bignum! {
-        function: <ftest as Rem>::rem(a: ftest, b: ftest)
-    }
-    test_bignum! {
-        function: <ftest as Neg>::neg(f: ftest)
+    crate::test::test_all! {
+        testing floats;
+
+        test_bignum! {
+            function: <ftest as Add>::add(a: ftest, b: ftest),
+            cases: [(1.3952888382785755e33, 1.466527384898436e33)]
+        }
+        test_bignum! {
+            function: <ftest as Sub>::sub(a: ftest, b: ftest),
+            cases: [
+                (-0.0, 0.0),
+                (74482736000000.0, 11088044000000.0),
+                (-128.0, -115.12566)
+            ]
+        }
+        test_bignum! {
+            function: <ftest as Mul>::mul(a: ftest, b: ftest),
+            cases: [
+                (5.6143642e23f64 as ftest, 35279.223f64 as ftest)
+            ]
+        }
+        // test_bignum! {
+        //     function: <ftest as Div>::div(a: ftest, b: ftest)
+        // }
+        test_bignum! {
+            function: <ftest as Rem>::rem(a: ftest, b: ftest)
+        }
+        test_bignum! {
+            function: <ftest as Neg>::neg(f: ftest)
+        }
     }
 }

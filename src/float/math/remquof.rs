@@ -1,6 +1,6 @@
 
 
-    /*pub fn remquof(mut self, mut y: Self) -> /*(Self, BIntD8<W>)*/(Self, Self) {
+    /*pub fn remquof(mut self, mut y: Self) -> /*(Self, Int<W>)*/(Self, Self) {
         handle_nan!(self; self);
         handle_nan!(y; y);
         if self.is_infinite() || y.is_infinite() {
@@ -25,76 +25,76 @@
         let mut i;
         if ex.is_zero() {
             i = uxi << (Self::BITS - Self::MB);
-            while !BIntD8::from_bits(i).is_negative() {
-                ex -= BIntD8::ONE;
+            while !Int::from_bits(i).is_negative() {
+                ex -= Int::ONE;
                 i <<= 1u8;
             }
-            uxi <<= -ex + BIntD8::ONE;
+            uxi <<= -ex + Int::ONE;
         } else {
-            uxi &= BUintD8::MAX >> (Self::BITS - Self::MB);
-            uxi |= BUintD8::ONE << Self::MB;
+            uxi &= Uint::MAX >> (Self::BITS - Self::MB);
+            uxi |= Uint::ONE << Self::MB;
         }
         if ey.is_zero() {
             i = uy << (Self::BITS - Self::MB);
-            while !BIntD8::from_bits(i).is_negative() {
-                ey -= BIntD8::ONE;
+            while !Int::from_bits(i).is_negative() {
+                ey -= Int::ONE;
                 i <<= 1u8;
             }
-            uy <<= -ey + BIntD8::ONE;
+            uy <<= -ey + Int::ONE;
         } else {
-            uy &= BUintD8::MAX >> (Self::BITS - Self::MB);
-            uy |= BUintD8::ONE << Self::MB;
+            uy &= Uint::MAX >> (Self::BITS - Self::MB);
+            uy |= Uint::ONE << Self::MB;
         }
 
-        let mut q = BUintD8::<W>::ZERO;
-        if ex + BIntD8::ONE != ey {
+        let mut q = Uint::<W>::ZERO;
+        if ex + Int::ONE != ey {
             if ex < ey {
                 return (self, 0);
             }
             /* x mod y */
             while ex > ey {
                 i = uxi.wrapping_sub(uy);
-                if !BIntD8::from_bits(i).is_negative() {
+                if !Int::from_bits(i).is_negative() {
                     uxi = i;
-                    q += BUintD8::ONE;
+                    q += Uint::ONE;
                 }
                 uxi <<= 1u8;
                 q <<= 1u8;
-                ex -= BIntD8::ONE;
+                ex -= Int::ONE;
             }
             i = uxi.wrapping_sub(uy);
-            if !BIntD8::from_bits(i).is_negative() {
+            if !Int::from_bits(i).is_negative() {
                 uxi = i;
-                q += BUintD8::ONE;
+                q += Uint::ONE;
             }
             if uxi.is_zero() {
-                //ex = BIntD8::TWO - BIntD8::from(Self::BITS);
-                ex = BIntD8::from(-60i8);
+                //ex = Int::TWO - Int::from(Self::BITS);
+                ex = Int::from(-60i8);
             } else {
                 while (uxi >> Self::MB).is_zero() {
                     uxi <<= 1u8;
-                    ex -= BIntD8::ONE;
+                    ex -= Int::ONE;
                 }
             }
         }
 
         /* scale result and decide between |x| and |x|-|y| */
         if ex.is_positive() {
-            uxi -= BUintD8::ONE << Self::MB;
+            uxi -= Uint::ONE << Self::MB;
             uxi |= ex.to_bits() << Self::MB;
         } else {
-            uxi >>= -ex + BIntD8::ONE;
+            uxi >>= -ex + Int::ONE;
         }
         self = Self::from_bits(uxi);
         if sy {
             y = -y;
         }
-        if ex == ey || (ex + BIntD8::ONE == ey && (Self::TWO * self > y || (Self::TWO * self == y && !(q % BUintD8::TWO).is_zero()))) {
+        if ex == ey || (ex + Int::ONE == ey && (Self::TWO * self > y || (Self::TWO * self == y && !(q % Uint::TWO).is_zero()))) {
             self = self - y;
-            q += BUintD8::ONE;
+            q += Uint::ONE;
         }
-        q &= BUintD8::MAX >> 1u8;
-        let quo = if sx ^ sy { -BIntD8::from_bits(q) } else { BIntD8::from_bits(q) };
+        q &= Uint::MAX >> 1u8;
+        let quo = if sx ^ sy { -Int::from_bits(q) } else { Int::from_bits(q) };
         if sx {
             (-self, quo)
         } else {

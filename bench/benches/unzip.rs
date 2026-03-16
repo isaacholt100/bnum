@@ -19,5 +19,5 @@ macro_rules! unzip {
     };
 }
 
-// unzip!(fn unzip3<T1, T2, T3>);
+unzip!(fn unzip3<T1, T2, T3>);
 unzip!(fn unzip2<T1, T2>);

@@ -1,14 +1,14 @@
-use crate::doc;
-use crate::BUintD8;
 use super::Float;
+use crate::Byte;
+use crate::Uint;
 use core::cmp::Ordering;
 
-#[doc = doc::const_trait_fillers::impl_desc!()]
+/// Provides `const` function alternatives to methods of common traits, such as `PartialEq` and `PartialCmp`. These functions will be removed once `const` traits are stabilized.
 impl<const W: usize, const MB: usize> Float<W, MB> {
     #[inline]
     pub const fn eq(&self, other: &Self) -> bool {
         handle_nan!(false; self, other);
-        (self.is_zero() && other.is_zero()) || BUintD8::eq(&self.to_bits(), &other.to_bits())
+        (self.is_zero() && other.is_zero()) || Uint::eq(&self.to_bits(), &other.to_bits())
     }
 
     #[inline]
@@ -32,7 +32,10 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
     #[inline]
     pub const fn le(&self, other: &Self) -> bool {
-        matches!(self.partial_cmp(&other), Some(Ordering::Less | Ordering::Equal))
+        matches!(
+            self.partial_cmp(&other),
+            Some(Ordering::Less | Ordering::Equal)
+        )
     }
 
     #[inline]
@@ -42,14 +45,15 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
     #[inline]
     pub const fn ge(&self, other: &Self) -> bool {
-        matches!(self.partial_cmp(&other), Some(Ordering::Greater | Ordering::Equal))
+        matches!(
+            self.partial_cmp(&other),
+            Some(Ordering::Greater | Ordering::Equal)
+        )
     }
 
     #[inline]
     pub(crate) const fn neg(mut self) -> Self {
-        type Digit = u8;
-
-        self.bits.digits[W - 1] ^= 1 << (Digit::BITS - 1);
+        self.bits.bytes[W - 1] ^= 1 << (Byte::BITS - 1); // invert sign bit
         self
     }
 }

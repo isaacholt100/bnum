@@ -10,8 +10,7 @@ export QUICKCHECK_TESTS=10000
 run_test () {
     echo "using ${QUICKCHECK_TESTS} quickcheck tests per test"
     
-    test_integer_info "$1"
-    RUSTFLAGS="--cfg test_int_bits=\"$1\"" cargo test int --lib --quiet $2
+    cargo test int --lib --quiet $2
     if [ $? -ne 0 ]
     then
         exit 1

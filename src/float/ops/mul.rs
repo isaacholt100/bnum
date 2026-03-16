@@ -1,12 +1,13 @@
 use super::Float;
+use crate::Exponent;
+use crate::Int;
+use crate::Uint;
 use crate::float::FloatExponent;
 use crate::float::UnsignedFloatExponent;
-use crate::BIntD8;
-use crate::BUintD8;
-use crate::ExpType;
 use core::num::FpCategory;
 
 impl<const W: usize, const MB: usize> Float<W, MB> {
+    // TODO: use algorithm on Uint with twice as many bits, compare performance with this one
     #[inline]
     pub(crate) fn mul_internal(self, rhs: Self, negative: bool) -> Self {
         let (a, b) = (self, rhs);
@@ -16,10 +17,10 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         // TODO: make so as_ can infer type so can switch trait definition if needed
         let mut mant_prod = mant_a.widening_mul(mant_b);
 
-        let prod_bits = if mant_prod.1.bits() == 0 {
-            mant_prod.0.bits()
+        let prod_bits = if mant_prod.1.bit_width() == 0 {
+            mant_prod.0.bit_width()
         } else {
-            mant_prod.1.bits() + Self::BITS
+            mant_prod.1.bit_width() + Self::BITS
         };
 
         if prod_bits == 0 {
@@ -32,9 +33,10 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             0
         };
 
-        let mut exp =
-            (exp_a as FloatExponent) - Self::EXP_BIAS + (exp_b as FloatExponent) + (extra_bits as FloatExponent)
-                - (MB as FloatExponent);
+        let mut exp = (exp_a as FloatExponent) - Self::EXP_BIAS
+            + (exp_b as FloatExponent)
+            + (extra_bits as FloatExponent)
+            - (MB as FloatExponent);
 
         if exp > Self::MAX_EXP + Self::EXP_BIAS - 1 {
             return if negative {
@@ -59,51 +61,51 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         };
 
         let sticky_bit = (tz as UnsignedFloatExponent + 1) < total_shift;
-        let mut mant = match ExpType::try_from(total_shift - 1) {
+        let mut mant = match Exponent::try_from(total_shift - 1) {
             Ok(sub) => {
                 if sub > Self::BITS * 2 {
-                    (BUintD8::ZERO, BUintD8::ZERO)
+                    (Uint::ZERO, Uint::ZERO)
                 } else if sub >= Self::BITS {
-                    (mant_prod.1 >> (sub - Self::BITS), BUintD8::ZERO)
+                    (mant_prod.1 >> (sub - Self::BITS), Uint::ZERO)
                 } else {
-                    let mask = BUintD8::MAX >> (Self::BITS - sub);
+                    let mask = Uint::MAX >> (Self::BITS - sub);
                     let carry = mant_prod.1 & mask;
                     mant_prod.1 >>= sub;
                     mant_prod.0 = (mant_prod.0 >> sub) | (carry << (Self::BITS - sub));
                     mant_prod
                 }
             }
-            Err(_) => (BUintD8::ZERO, BUintD8::ZERO),
+            Err(_) => (Uint::ZERO, Uint::ZERO),
         };
         if mant.0.bit(0) {
             if sticky_bit || mant.0.bit(1) {
                 // Round up
-                let (sum, carry) = mant.0.overflowing_add(BUintD8::ONE);
+                let (sum, carry) = mant.0.overflowing_add(Uint::ONE);
                 mant.0 = sum;
                 if carry {
-                    mant.1 += BUintD8::ONE;
+                    mant.1 += Uint::ONE;
                 }
             }
         }
         {
             let carry = mant.1.bit(0);
-            //mant.1 >>= 1 as ExpType;
-            mant.0 >>= 1 as ExpType;
+            //mant.1 >>= 1 as Exponent;
+            mant.0 >>= 1 as Exponent;
             if carry {
-                mant.0 |= BIntD8::MIN.to_bits();
+                mant.0 |= Int::MIN.cast_unsigned();
             }
         }
 
-        let mut m1b = mant.1.bits();
+        let mut m1b = mant.1.bit_width();
         if m1b != 0 {
             m1b -= 1;
         }
         /*let bits = if m1b == 0 {
-            mant.0.bits()
+            mant.0.bit_width()
         } else {
             m1b + Self::BITS
         };*/
-        let m0b = mant.0.bits();
+        let m0b = mant.0.bit_width();
         if m0b > Self::MB + 1 {
             // it's possible that the mantissa has too many bits, so shift it right and increase the exponent until it has the correct number of bits
             let inc = m0b - (Self::MB + 1);
@@ -122,8 +124,8 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         if exp == 1 && m1b < Self::MB + 1 {
             return Self::from_raw_parts(negative, 0, mant.0);
         }
-        //if mant >> Self::MB != BUintD8::ZERO {
-        mant.0 ^= BUintD8::ONE << Self::MB;
+        //if mant >> Self::MB != Uint::ZERO {
+        mant.0 ^= Uint::ONE << Self::MB;
         //}
         Self::from_raw_parts(negative, exp as UnsignedFloatExponent, mant.0)
     }
