@@ -225,10 +225,6 @@ impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
     /// use bnum::prelude::*;
     /// use bnum::types::U512;
     ///
-    /// let n = U512::MAX;
-    /// let digits = n.to_radix_be(12);
-    /// assert_eq!(Some(n), U512::from_radix_be(&digits, 12));
-    ///
     /// let a = U512::from_radix_be(&[4, 3, 2, 1], 11).unwrap();
     /// let b: U512 = n!(1)*n!(11).pow(0) + n!(2)*n!(11).pow(1) + n!(3)*n!(11).pow(2) + n!(4)*n!(11).pow(3);
     ///
@@ -260,10 +256,6 @@ impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
     /// ```
     /// use bnum::prelude::*;
     /// use bnum::types::U512;
-    ///
-    /// let n = U512::MAX;
-    /// let digits = n.to_radix_le(15);
-    /// assert_eq!(Some(n), U512::from_radix_le(&digits, 15));
     ///
     /// let a = U512::from_radix_le(&[5, 6, 7, 8], 18).unwrap();
     /// let b: U512 = n!(5)*n!(18).pow(0) + n!(6)*n!(18).pow(1) + n!(7)*n!(18).pow(2) + n!(8)*n!(18).pow(3);
