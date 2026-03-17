@@ -366,8 +366,8 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     #[must_use]
     #[inline]
     pub const fn bit(&self, index: Exponent) -> bool {
-        let digit = self.bytes[index as usize / Byte::BITS as usize];
-        digit & (1 << (index % Byte::BITS)) != 0
+        let byte = self.bytes[index as usize / Byte::BITS as usize];
+        byte & (1 << (index % Byte::BITS)) != 0
     }
 
     /// Sets/unsets the bit in the given position (i.e. to `1` if `value` is `true`). The least significant bit is at index `0`, the most significant bit is at index `Self::BITS - 1`.

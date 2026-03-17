@@ -6,6 +6,7 @@
         widening_mul,
         signed_bigint_helpers,
         int_roundings,
+        float_minimum_maximum,
         uint_bit_width,
         wrapping_next_power_of_two,
         f16,
@@ -35,8 +36,8 @@ pub mod prelude;
 mod digits;
 mod overflow;
 
-// #[cfg(feature = "float")]
-// mod float;
+#[cfg(feature = "float")]
+mod float;
 
 #[cfg(feature = "rand")]
 pub mod random;
@@ -52,5 +53,5 @@ type Byte = u8;
 pub use integer::{Int, Integer, Uint};
 pub use overflow::OverflowMode;
 
-// #[cfg(feature = "float")]
-// pub use float::Float;
+#[cfg(feature = "float")]
+pub use float::Float;

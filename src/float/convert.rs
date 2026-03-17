@@ -1,5 +1,4 @@
 use super::{Float, FloatExponent, UnsignedFloatExponent};
-use crate::cast::float::ConvertFloatParts;
 use crate::{Exponent, Int, Uint};
 
 impl<const W: usize> Uint<W> {
@@ -33,83 +32,6 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     #[inline(always)]
     pub(crate) const fn to_signed_bits(self) -> Int<W> {
         self.to_bits().cast_signed()
-    }
-}
-
-impl<const W: usize, const MB: usize> ConvertFloatParts for Float<W, MB> {
-    type Mantissa = Uint<W>;
-    type SignedExp = FloatExponent;
-    type UnsignedExp = UnsignedFloatExponent;
-
-    #[inline]
-    fn into_raw_parts(self) -> (bool, Self::UnsignedExp, Self::Mantissa) {
-        Self::into_raw_parts(self)
-    }
-
-    #[inline]
-    fn into_biased_parts(self) -> (bool, Self::UnsignedExp, Self::Mantissa) {
-        Self::into_biased_parts(self)
-    }
-
-    #[inline]
-    fn into_signed_biased_parts(self) -> (bool, Self::SignedExp, Self::Mantissa) {
-        Self::into_signed_biased_parts(self)
-    }
-
-    #[inline]
-    fn into_signed_parts(self) -> (bool, Self::SignedExp, Self::Mantissa) {
-        Self::into_signed_parts(self)
-    }
-
-    #[inline]
-    fn into_normalised_signed_parts(self) -> (bool, Self::SignedExp, Self::Mantissa) {
-        Self::into_normalised_signed_parts(self)
-    }
-
-    #[inline]
-    fn from_raw_parts(sign: bool, exponent: Self::UnsignedExp, mantissa: Self::Mantissa) -> Self {
-        Self::from_raw_parts(sign, exponent, mantissa)
-    }
-
-    #[inline]
-    fn from_biased_parts(
-        sign: bool,
-        exponent: Self::UnsignedExp,
-        mantissa: Self::Mantissa,
-    ) -> Self {
-        Self::from_biased_parts(sign, exponent, mantissa)
-    }
-
-    #[inline]
-    fn from_signed_biased_parts(
-        sign: bool,
-        exponent: Self::SignedExp,
-        mantissa: Self::Mantissa,
-    ) -> Self {
-        Self::from_signed_biased_parts(sign, exponent, mantissa)
-    }
-
-    #[inline]
-    fn from_signed_parts(sign: bool, exponent: Self::SignedExp, mantissa: Self::Mantissa) -> Self {
-        Self::from_signed_parts(sign, exponent, mantissa)
-    }
-
-    #[inline]
-    fn round_exponent_mantissa<const TIES_EVEN: bool>(
-        exponent: Self::SignedExp,
-        mantissa: Self::Mantissa,
-        shift: Exponent,
-    ) -> (Self::SignedExp, Self::Mantissa) {
-        Self::round_exponent_mantissa::<TIES_EVEN>(exponent, mantissa, shift)
-    }
-
-    #[inline]
-    fn from_normalised_signed_parts(
-        sign: bool,
-        exponent: Self::SignedExp,
-        mantissa: Self::Mantissa,
-    ) -> Self {
-        Self::from_normalised_signed_parts(sign, exponent, mantissa)
     }
 }
 

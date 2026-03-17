@@ -1,10 +1,17 @@
-use crate::cast::float::FloatCastHelper;
-use crate::helpers::Zero;
+use crate::cast::float::{FloatCastHelper, FloatMantissa, ConvertFloatParts};
+use crate::helpers::{Zero, Bits};
 
-use super::{Float, FloatExponent};
+use super::{Float, FloatExponent, UnsignedFloatExponent};
 use crate::Exponent;
 use crate::cast::CastFrom;
 use crate::{Int, Integer, Uint};
+
+impl<const N: usize, const B: usize> FloatMantissa for Uint<N, B> {
+    #[inline]
+    fn is_power_of_two(self) -> bool {
+        Self::is_power_of_two(self)
+    }
+}
 
 macro_rules! uint_as_float {
     ($($uint: ident), *) => {
@@ -45,7 +52,7 @@ impl<const W: usize, const MB: usize, const S: bool, const N: usize, const B: us
 {
     fn cast_from(value: Integer<S, N, B, OM>) -> Self {
         if !S {
-            return crate::cast::float::cast_float_from_uint(value.force::<_, B, _>());
+            return crate::cast::float::cast_float_from_uint(value.force::<false, B, _>());
         }
         let f = Self::cast_from(value.unsigned_abs_internal());
         if value.is_negative_internal() { -f } else { f }
@@ -103,11 +110,68 @@ macro_rules! float_as_uint {
 
 float_as_uint!(Uint<N>, u8, u16, u32, u64, u128, usize);
 
+impl<const W: usize, const MB: usize> ConvertFloatParts for Float<W, MB> {
+    type Mantissa = Uint<W>;
+    type SignedExp = FloatExponent;
+    type UnsignedExp = UnsignedFloatExponent;
+
+    #[inline]
+    fn into_raw_parts(self) -> (bool, Self::UnsignedExp, Self::Mantissa) {
+        Self::into_raw_parts(self)
+    }
+
+    #[inline]
+    fn into_biased_parts(self) -> (bool, Self::UnsignedExp, Self::Mantissa) {
+        Self::into_biased_parts(self)
+    }
+
+    #[inline]
+    fn into_signed_biased_parts(self) -> (bool, Self::SignedExp, Self::Mantissa) {
+        Self::into_signed_biased_parts(self)
+    }
+
+    #[inline]
+    fn into_signed_parts(self) -> (bool, Self::SignedExp, Self::Mantissa) {
+        Self::into_signed_parts(self)
+    }
+
+    #[inline]
+    fn into_normalised_signed_parts(self) -> (bool, Self::SignedExp, Self::Mantissa) {
+        Self::into_normalised_signed_parts(self)
+    }
+
+    #[inline]
+    fn from_raw_parts(sign: bool, exponent: Self::UnsignedExp, mantissa: Self::Mantissa) -> Self {
+        Self::from_raw_parts(sign, exponent, mantissa)
+    }
+
+    #[inline]
+    fn from_biased_parts(
+        sign: bool,
+        exponent: Self::UnsignedExp,
+        mantissa: Self::Mantissa,
+    ) -> Self {
+        Self::from_biased_parts(sign, exponent, mantissa)
+    }
+
+    #[inline]
+    fn from_signed_biased_parts(
+        sign: bool,
+        exponent: Self::SignedExp,
+        mantissa: Self::Mantissa,
+    ) -> Self {
+        Self::from_signed_biased_parts(sign, exponent, mantissa)
+    }
+
+    #[inline]
+    fn from_signed_parts(sign: bool, exponent: Self::SignedExp, mantissa: Self::Mantissa) -> Self {
+        Self::from_signed_parts(sign, exponent, mantissa)
+    }
+}
+
 impl<const W: usize, const MB: usize> FloatCastHelper for Float<W, MB> {
-    const BITS: Exponent = Self::BITS;
     const MANTISSA_DIGITS: Exponent = Self::MANTISSA_DIGITS as Exponent;
     const MAX_EXP: FloatExponent = Self::MAX_EXP;
-    const MIN_SUBNORMAL_EXP: FloatExponent = Self::MIN_SUBNORMAL_EXP;
     const INFINITY: Self = Self::INFINITY;
     const ZERO: Self = Self::ZERO;
 
@@ -124,7 +188,8 @@ impl<const W: usize, const MB: usize> FloatCastHelper for Float<W, MB> {
 
 trait FloatCastFromFloatHelper: FloatCastHelper {
     const NEG_ZERO: Self;
-    const MIN_SUBNORMAL_EXP: FloatExponent;
+    const MIN_SUBNORMAL_EXP: <Self as ConvertFloatParts>::SignedExp;
+    const EXPONENT_BITS: Exponent;
 
     fn round_exponent_mantissa<const TIES_EVEN: bool>(
         exponent: Self::SignedExp,
@@ -138,12 +203,37 @@ trait FloatCastFromFloatHelper: FloatCastHelper {
     ) -> Self;
 }
 
+impl<const W: usize, const MB: usize> FloatCastFromFloatHelper for Float<W, MB> {
+    const NEG_ZERO: Self = Self::NEG_ZERO;
+    const MIN_SUBNORMAL_EXP: FloatExponent = Self::MIN_SUBNORMAL_EXP;
+    const EXPONENT_BITS: Exponent = Self::EXPONENT_BITS;
+
+    #[inline]
+    fn round_exponent_mantissa<const TIES_EVEN: bool>(
+        exponent: Self::SignedExp,
+        mantissa: Self::Mantissa,
+        shift: Exponent,
+    ) -> (Self::SignedExp, Self::Mantissa) {
+        Self::round_exponent_mantissa::<TIES_EVEN>(exponent, mantissa, shift)
+    }
+
+    #[inline]
+    fn from_normalised_signed_parts(
+        sign: bool,
+        exponent: Self::SignedExp,
+        mantissa: Self::Mantissa,
+    ) -> Self {
+        Self::from_normalised_signed_parts(sign, exponent, mantissa)
+    }
+}
+
 macro_rules! impl_float_cast_from_float_helper_for_primitive_float {
-    ($($float_type: ty), *) => {
-        $(
+    ($float_type: ty, $mantissa_type: ty, $float_bit_width: expr) => {
+        // $(
             impl FloatCastFromFloatHelper for $float_type {
                 const NEG_ZERO: Self = -0.0;
                 const MIN_SUBNORMAL_EXP: <Self as ConvertFloatParts>::SignedExp = Self::MIN_EXP + 1 - Self::MANTISSA_DIGITS as <Self as ConvertFloatParts>::SignedExp;
+                const EXPONENT_BITS: Exponent = $float_bit_width - Self::MANTISSA_DIGITS as Exponent;
 
                 #[inline]
                 fn round_exponent_mantissa<const TIES_EVEN: bool>(
@@ -157,12 +247,12 @@ macro_rules! impl_float_cast_from_float_helper_for_primitive_float {
                     }
                     let discarded_shifted_bits =
                         mantissa & (<$mantissa_type>::MAX >> ($float_bit_width - shift));
-                    if discarded_shifted_bits.bit(shift - 1) {
+                    if Bits::bit(&discarded_shifted_bits, shift - 1) {
                         // in this case, the discarded portion is at least a half
                         if shifted_mantissa % 2 == 1 || !discarded_shifted_bits.is_power_of_two() {
                             // in this case, ties to even says we round up. checking if not a power of two tells us that there is at least one bit set to 1 (after the most significant bit set to 1). we check in this order as is_odd is O(1) whereas is_power_of_two is O(N)
                             shifted_mantissa = shifted_mantissa + 1;
-                            if shifted_mantissa.bit(shift) {
+                            if Bits::bit(&shifted_mantissa, shift) {
                                 // check for overflow (with respect to the mantissa bit width)
                                 exponent += 1;
                                 shifted_mantissa = shifted_mantissa >> 1;
@@ -178,9 +268,7 @@ macro_rules! impl_float_cast_from_float_helper_for_primitive_float {
                     exponent: Self::SignedExp,
                     mantissa: Self::Mantissa,
                 ) -> Self {
-                    use crate::helpers::Bits;
-
-                    debug_assert!(mantissa == 0 || mantissa.bit_width() == Self::MANTISSA_DIGITS);
+                    debug_assert!(mantissa == 0 || Bits::bit_width(&mantissa) == Self::MANTISSA_DIGITS);
                     if exponent < Self::MIN_EXP - 1 {
                         let shift = (Self::MIN_EXP - 1 - exponent) as Exponent;
                         let (out_exponent, out_mantissa) =
@@ -192,16 +280,17 @@ macro_rules! impl_float_cast_from_float_helper_for_primitive_float {
                     }
                 }
             }
-        )*
+        // )*
     };
 }
 
-impl_float_cast_from_float_helper_for_primitive_float!(f32, f64);
+impl_float_cast_from_float_helper_for_primitive_float!(f32, u32, 32);
+impl_float_cast_from_float_helper_for_primitive_float!(f64, u64, 64);
 
 fn cast_float_from_float<T, U>(f: T) -> U
 where
-    T: FloatCastHelper,
-    U: FloatCastHelper,
+    T: FloatCastFromFloatHelper,
+    U: FloatCastFromFloatHelper,
     U::Mantissa: CastFrom<T::Mantissa>,
     U::SignedExp: CastFrom<T::SignedExp>,
     T::SignedExp: CastFrom<U::SignedExp>,
@@ -298,18 +387,6 @@ mod tests {
         test_into! {
             function: <ftest as CastTo>::cast_to,
             into_types: (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64)
-        }
-
-        #[test]
-        fn test_cast_float() {
-            use crate::cast::As;
-            let f1 = FTEST::from_bits(3472883712u32.as_());
-            let f2 = f32::from_bits(3472883712u32);
-            // dbg!(f2);
-            let u1 = u32::cast_from(f1);
-            let u2 = u32::cast_from(f2);
-            // println!("{:?}", u1);
-            // println!("{:?}", u2);
         }
 
         // crate::ints::cast::test_cast_to_bigint!(ftest; UTESTD8, UTESTD16, UTESTD32, UTESTD64, TestUint1, TestUint2, TestUint3, TestUint4, TestUint5, TestUint6, TestUint7, TestUint8, ITESTD8, ITESTD16, ITESTD32, ITESTD64, TestInt1, TestInt2, TestInt3, TestInt4, TestInt5, TestInt6, TestInt7, TestInt8);

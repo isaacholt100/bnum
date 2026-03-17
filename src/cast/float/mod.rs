@@ -182,7 +182,6 @@ impl_convert_float_parts_for_primitive_float!(f64, u32, i32, u64, 64);
 
 pub trait FloatCastHelper: Neg<Output = Self> + ConvertFloatParts + PartialEq {
     const MANTISSA_DIGITS: Exponent;
-    // const EXPONENT_BITS: Exponent = Self::BITS - Self::MANTISSA_DIGITS;
     const MAX_EXP: <Self as ConvertFloatParts>::SignedExp;
     const INFINITY: Self;
     const ZERO: Self;

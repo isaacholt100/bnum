@@ -4,7 +4,6 @@ use core::iter::{Iterator, Product, Sum};
 use core::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Rem, RemAssign, Sub, SubAssign};
 
 mod add;
-#[cfg(nightly)]
 mod div;
 mod mul;
 mod rem;
@@ -137,9 +136,9 @@ mod tests {
                 (5.6143642e23f64 as ftest, 35279.223f64 as ftest)
             ]
         }
-        // test_bignum! {
-        //     function: <ftest as Div>::div(a: ftest, b: ftest)
-        // }
+        test_bignum! {
+            function: <ftest as Div>::div(a: ftest, b: ftest)
+        }
         test_bignum! {
             function: <ftest as Rem>::rem(a: ftest, b: ftest)
         }

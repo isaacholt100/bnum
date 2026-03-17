@@ -76,21 +76,17 @@
 - Update serde to use decimal string instead of struct debug - but CHECK that all serde options serialise primitive ints as decimal strings
 - create more efficient implementation of ilog10 (see e.g. Hacker's Delight book)
 - modpow
-- isolate_most_least_significant_one for uints, ints (but wait til the name is stabilised)
 - faster algorithms for parsing and printing larger integers
 - think about whether you could make to_str_radix and the functions it uses into generic functions which take an argument which "pushes" the next character to the existing string (so either pushing to a vector or calling write!(f, ...))
-- unchecked_disjoint_bitor for uint (can do by iterating unchecked_disjoint bitor on u8s/u128 digits, can only add this once it is stablised for primitives though, not much point adding on nightly only)
 
 ## Crates to support
 
+- az
 - Proptest
-
 
 ## Other things
 
 - Replace bitors, bitands, shifts, masks etc. with more efficient implementations (e.g. using set_bit, flip_bit, one-less-than-power-of-two methods, methods for efficiently generating masks/getting certain range of bits of integer)
 - consider raising issue in num_traits crate about PrimInt dependency on NumCast
 - work out and add assertions about sizes of float mantissa and exponent widths, etc.
-- maybe mention that serde impl is different from primitives
-- check you're happy with the layout of the random crate-level module
 - maybe rewrite code using while let Some(x) = iter.next() (using const iterator like methods), this will mean easier to migrate to iterators when they are const

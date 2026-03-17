@@ -94,6 +94,42 @@ fn from_be_bytes2(mut bytes: [u8; 16]) -> u128 {
     u128::from_le_bytes(bytes)
 }
 
+fn bench_mul(c: &mut Criterion) {
+    let mut group = c.benchmark_group("mul");
+    let mut rng = rand::rngs::StdRng::seed_from_u64(0);
+    let big_inputs = (0..SAMPLE_SIZE)
+        .map(|_| rng.random::<(Uint<4>, Uint<4>, u32)>())
+        .map(|(a, b, c)| (
+            (
+                (a, b, c),
+                (a.as_::<u32>(), b.as_::<u32>(), c)
+            )
+            // ((a.to_str_radix(16), b), (a.to_str_radix(16), b))
+        ));
+    let (inputs1, inputs2) = unzip::unzip2(big_inputs);
+
+    let mut i = 0;
+
+    use core::ops::BitAnd;
+
+    group.bench_with_input(BenchmarkId::new("Iterative", "bnum"), "bnum", |b, _| b.iter_batched(|| {
+        i += 1;
+        inputs1[i % SAMPLE_SIZE]
+    }, |(a, b, c)| {
+        black_box(black_box(a) & black_box(b))
+    }, criterion::BatchSize::SmallInput));
+
+    i = 0;
+    group.bench_with_input(BenchmarkId::new("Iterative", "u32"), "u32", |b, _| b.iter_batched(|| {
+        i += 1;
+        inputs2[i % SAMPLE_SIZE]
+    }, |(a, b, c)| {
+        black_box(black_box(a) & black_box(b))
+    }, criterion::BatchSize::SmallInput));
+
+    group.finish();
+}
+
 fn bench_add(c: &mut Criterion) {
     let mut group = c.benchmark_group("round");
     let mut rng = rand::rngs::StdRng::seed_from_u64(0);
@@ -166,5 +202,5 @@ fn bench_add(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(benches, bench_add);
+criterion_group!(benches, bench_mul);
 criterion_main!(benches);

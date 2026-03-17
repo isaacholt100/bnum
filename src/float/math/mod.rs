@@ -26,13 +26,9 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         self.sqrt_internal()
     }
 
-    #[cfg(nightly)]
     #[must_use = doc::must_use_op!(float)]
     #[inline]
-    pub fn div_euclid(self, rhs: Self) -> Self
-    where
-        [(); W * 2]:,
-    {
+    pub fn div_euclid(self, rhs: Self) -> Self {
         let div = (self / rhs).trunc();
         if self % rhs < Self::ZERO {
             return if rhs > Self::ZERO {
@@ -55,13 +51,9 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         }
     }
 
-    #[cfg(nightly)]
     #[must_use = doc::must_use_op!(float)]
     #[inline]
-    pub fn powi(mut self, n: i32) -> Self
-    where
-        [(); W * 2]:,
-    {
+    pub fn powi(mut self, n: i32) -> Self {
         if n == 0 {
             return Self::ONE;
         }

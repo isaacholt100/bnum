@@ -171,6 +171,11 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     pub(crate) const fn to_digits<D>(self) -> Digits<D, N> {
         Digits::from_integer(self)
     }
+
+    #[inline]
+    pub(crate) const fn from_digits<D>(digits: Digits<D, N>) -> Self {
+        digits.to_integer()
+    }
 }
 
 impl<const N: usize, const B: usize, const OM: u8> Int<N, B, OM> {
