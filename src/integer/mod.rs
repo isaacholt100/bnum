@@ -39,7 +39,10 @@ use ::{
 };
 
 #[cfg(feature = "borsh")]
-use borsh::{BorshDeserialize, BorshSchema, BorshSerialize};
+use ::{
+    alloc::string::ToString,
+    borsh::{BorshDeserialize, BorshSchema, BorshSerialize},
+};
 
 use core::default::Default;
 
