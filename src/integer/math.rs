@@ -669,6 +669,7 @@ mod tests {
             assert!(!b.is_one());
         }
 
+        #[cfg(feature = "alloc")]
         #[test]
         fn sum() {
             let v = vec![
@@ -683,6 +684,7 @@ mod tests {
             assert_eq!(UTEST::from_byte(10), v.into_iter().sum());
         }
 
+        #[cfg(feature = "alloc")]
         #[test]
         fn product() {
             let v = vec![UTEST::ONE, UTEST::from_byte(2), UTEST::from_byte(3)];

@@ -201,7 +201,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> quickcheck::Ar
 impl<const S: bool, const N: usize, const B: usize, const OM: u8> core::fmt::Debug for Integer<S, N, B, OM> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         for bytes in self.bytes.iter().rev() {
-            write!(f, "{:02x}", byte)?;
+            write!(f, "{:02x}", bytes)?;
         }
         Ok(())
     }

@@ -242,7 +242,7 @@ pub const fn get_negative_radix_digits_type_descriptor(literal_str: &str) -> (bo
     (negative, radix, digit_bytes, type_descriptor)
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "alloc"))]
 mod tests {
     #[test]
     fn test_n_macro() {
