@@ -6,7 +6,7 @@
         "+nightly"
     ],
     // "lldb.cargo": "cargo +nightly",
-    // "rust-analyzer.cargo.features": "all",
+    "rust-analyzer.cargo.features": "all",
     "rust-analyzer.linkedProjects": [
         "./Cargo.toml",
         "./bench/Cargo.toml"
