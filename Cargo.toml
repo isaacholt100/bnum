@@ -21,6 +21,7 @@ default = ["alloc"]
 alloc = []
 serde = ["dep:serde", "serde-big-array"]
 numtraits = ["num-integer", "num-traits"]
+borsh = ["dep:borsh", "alloc"]
 
 [dependencies]
 num-integer = { version = "0.1", optional = true, default-features = false }
