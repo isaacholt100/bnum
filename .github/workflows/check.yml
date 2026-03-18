@@ -1,0 +1,25 @@
+name: cargo check
+
+on:
+  pull_request:
+    branches:
+      - master
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install latest stable Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Install cargo-hack
+        uses: taiki-e/install-action@cargo-hack
+      - name: Deny warnings from the compiler
+        run: export RUSTFLAGS="-D warnings"
+      - name: Run `cargo check` with all features, no features, default features, and each individual feature
+        run: cargo hack check --each-feature --optional-deps
+      - name: Run `cargo check --tests` with all features, no features, default features, and each individual feature
+        run: cargo hack check --tests --each-feature --optional-deps

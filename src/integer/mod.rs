@@ -61,6 +61,7 @@ use core::default::Default;
 /// `Integer` closely follows the API and behaviour of Rust's primitive integer types: `u8`, `i8`, `u16`, `i16`, `u32`, `i32`, `u64`, `i64`, `u128`, `i128`, `usize` and `isize`. The only differences are:
 /// - The primitive integers are stored in native-endian byte order. `Integer`s are always stored in little-endian byte order.
 /// - Primitive integers are serialised in [`serde`](https://docs.rs/serde/latest/serde/) as decimal strings. `Integer`s are serialised using [`derive(Serialize)`](https://docs.rs/serde/latest/serde/derive.Serialize.html), i.e. as a struct.
+/// - In `no-alloc` environments, primitive integers are formatted as decimal strings by the [`Debug`] trait, whereas `Integer`s are formatted as padded hexadecimal strings.
 /// - The primitive integers panic on arithmetic overflow if [`overflow-checks`](https://doc.rust-lang.org/cargo/reference/profiles.html#overflow-checks) is enabled, and wrap around on overflow if `overflow-checks` is disabled. The overflow behaviour of `Integer` is determined by [`Self::OVERFLOW_MODE`]:
 ///    - [`Wrap`](OverflowMode::Wrap): arithmetic operations wrap around on overflow, so the behaviour is the same as the [`Wrapping(T)`](core::num::Wrapping) type in the standard library (i.e. the same as the primitive integer type behaviour when `overflow-checks` is disabled).
 ///    - [`Panic`](OverflowMode::Panic): arithmetic operations panic on overflow, so the behaviour is the same as the primitive integer type behaviour when `overflow-checks` is enabled.
@@ -200,10 +201,11 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> quickcheck::Ar
 }
 
 // implementation if we don't have alloc, as otherwise can't call assert_eq! (since this requires Debug)
-#[cfg(all(test, not(feature = "alloc")))]
+// here, not in the fmt module, since that is enabled by the `alloc` feature
+#[cfg(not(feature = "alloc"))]
 impl<const S: bool, const N: usize, const B: usize, const OM: u8> core::fmt::Debug for Integer<S, N, B, OM> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        for bytes in self.bytes.iter().rev() {
+        for byte in self.bytes.iter().rev() {
             write!(f, "{:02x}", byte)?;
         }
         Ok(())
