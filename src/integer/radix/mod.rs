@@ -18,6 +18,7 @@ macro_rules! assert_range {
 pub(crate) use assert_range;
 
 /// Returns the maximum power of `radix` that fits in a `u64`, together with the associated exponent
+#[cfg(feature = "alloc")]
 #[inline]
 const fn max_radix_power(radix: u32) -> (u64, usize) {
     let mut power: u64 = radix as u64;
@@ -35,6 +36,7 @@ const fn max_radix_power(radix: u32) -> (u64, usize) {
 
 // we index using the radix itself
 // creating a compile time constant will boost performance
+#[cfg(feature = "alloc")]
 const MAX_RADIX_POWERS: [(u64, usize); 257] = {
     let mut arr = [(0, 0); 257];
     let mut i = 2;
