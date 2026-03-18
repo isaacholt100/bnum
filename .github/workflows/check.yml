@@ -1,12 +1,9 @@
 name: cargo check
 
 on:
-  push:
-    branches-ignore:
-      - master # master is a protected branch so tests will be run when we create a PR
   pull_request:
-    branches-ignore:
-      - master # master is a protected branch so tests will be run when we create a PR
+    branches:
+      - master
 
 env:
   CARGO_TERM_COLOR: always
@@ -20,5 +17,9 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
       - name: Install cargo-hack
         uses: taiki-e/install-action@cargo-hack
-      - name: Run cargo check with all features, no features, default features, and each individual feature
+      - name: Deny warnings from the compiler
+        run: export RUSTFLAGS="-D warnings"
+      - name: Run `cargo check` with all features, no features, default features, and each individual feature
         run: cargo hack check --each-feature --optional-deps
+      - name: Run `cargo check --tests` with all features, no features, default features, and each individual feature
+        run: cargo hack check --tests --each-feature --optional-deps
