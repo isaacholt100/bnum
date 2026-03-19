@@ -79,23 +79,18 @@ For more information on the `Integer` type and the `n!` and `t!` macros, see the
 
 ```rust
 // Parsing a string in a given radix into an integer at compile time
-# #[cfg(feature = "alloc")]
-# { use bnum::types::U256;
+use bnum::types::U256;
 use bnum::errors::ParseIntError;
 
 const UINT_FROM_DECIMAL_STR: U256 = match U256::from_str_radix("12345678901234567890", 10) {
     Ok(val) => val,
     Err(e) => panic!("Failed to parse integer"),
 };
-
-assert_eq!(format!("{}", UINT_FROM_DECIMAL_STR), "12345678901234567890");
-# }
 ```
 
 ```rust
 // Calculate the `n`th Fibonacci number, using the type alias `U512`.
-# #[cfg(feature = "alloc")]
-# { use bnum::prelude::*;
+use bnum::prelude::*;
 use bnum::types::U512; // `U512` is a type alias for a `Uint` which contains 64 `u8` digits
 
 // Calculate the nth Fibonacci number
@@ -115,12 +110,7 @@ fn fibonacci(n: usize) -> U512 {
 let n = 100;
 let f_n = fibonacci(n);
 
-println!("The {}th Fibonacci number is {}", n, f_n);
-// Prints "The 100th Fibonacci number is 354224848179261915075".
-// This example uses formatting, so requires the "alloc" feature
-
 assert_eq!(f_n, n!(354224848179261915075));
-# }
 ```
 
 ## Crate features
