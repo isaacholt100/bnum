@@ -2,9 +2,11 @@ name: Verify MSRV
 
 on:
   push:
-    branches: "**"
+    branches-ignore:
+      - master # master is a protected branch so tests will be run when we create a PR
   pull_request:
-    branches: "**"
+    branches-ignore:
+      - master # master is a protected branch so tests will be run when we create a PR
 
 env:
   CARGO_TERM_COLOR: always

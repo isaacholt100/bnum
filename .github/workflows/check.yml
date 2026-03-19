@@ -5,6 +5,8 @@ on:
     branches:
       - master
 
+# only on pull requests to master, since we deny warnings, so only use when code is production-ready
+
 env:
   CARGO_TERM_COLOR: always
 
