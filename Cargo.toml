@@ -1,10 +1,10 @@
 [package]
 name = "bnum"
-version = "0.14.2"
+version = "0.14.3"
 authors = ["isaac-holt <isaac_holt@icloud.com>"]
 edition = "2024"
 license = "MIT OR Apache-2.0"
-description = "Arbitrary, fixed size numeric types that extend the functionality of primitive numeric types."
+description = "Fixed-size integer types with generic signedness, bit width and overflow behaviour."
 homepage = "https://github.com/isaacholt100/bnum"
 documentation = "https://docs.rs/bnum/latest/bnum"
 repository = "https://github.com/isaacholt100/bnum"
