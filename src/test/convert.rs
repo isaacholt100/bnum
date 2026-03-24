@@ -1,4 +1,5 @@
 use crate::{Int, Uint, Integer};
+use core::num::{Wrapping, Saturating};
 
 pub trait TestConvert {
     type Output;
@@ -35,6 +36,42 @@ macro_rules! test_convert_bigints {
                     #[inline]
                     fn into(self) -> Self::Output {
                         Int::from_le_bytes(self.to_le_bytes())
+                    }
+                }
+
+                impl TestConvert for Wrapping<[<u $bits>]> {
+                    type Output = <[<u $bits>] as TestConvert>::Output;
+
+                    #[inline]
+                    fn into(self) -> Self::Output {
+                        TestConvert::into(self.0)
+                    }
+                }
+
+                impl TestConvert for Wrapping<[<i $bits>]> {
+                    type Output = <[<i $bits>] as TestConvert>::Output;
+
+                    #[inline]
+                    fn into(self) -> Self::Output {
+                        TestConvert::into(self.0)
+                    }
+                }
+
+                impl TestConvert for Saturating<[<u $bits>]> {
+                    type Output = <[<u $bits>] as TestConvert>::Output;
+
+                    #[inline]
+                    fn into(self) -> Self::Output {
+                        TestConvert::into(self.0)
+                    }
+                }
+
+                impl TestConvert for Saturating<[<i $bits>]> {
+                    type Output = <[<i $bits>] as TestConvert>::Output;
+
+                    #[inline]
+                    fn into(self) -> Self::Output {
+                        TestConvert::into(self.0)
                     }
                 }
             )*

@@ -295,4 +295,48 @@ mod tests {
             skip: debug_skip!(a == itest::MIN)
         }
     }
+
+    // crate::test::test_all! {
+    //     testing integers wrapping;
+
+    //     test_bignum! {
+    //         function: <stest as Add>::add(a: stest, b: stest)
+    //     }
+    //     test_bignum! {
+    //         function: <stest as Sub>::sub(a: stest, b: stest)
+    //     }
+    //     test_bignum! {
+    //         function: <stest as Mul>::mul(a: stest, b: stest)
+    //     }
+    //     test_bignum! {
+    //         function: <stest as Div>::div(a: stest, b: stest),
+    //         skip: b.0 == 0
+    //     }
+    //     test_bignum! {
+    //         function: <stest as Rem>::rem(a: stest, b: stest),
+    //         skip: b.0 == 0
+    //     }
+    // }
+
+    // crate::test::test_all! {
+    //     testing integers saturating;
+
+    //     test_bignum! {
+    //         function: <stest as Add>::add(a: stest, b: stest)
+    //     }
+    //     test_bignum! {
+    //         function: <stest as Sub>::sub(a: stest, b: stest)
+    //     }
+    //     test_bignum! {
+    //         function: <stest as Mul>::mul(a: stest, b: stest)
+    //     }
+    //     test_bignum! {
+    //         function: <stest as Div>::div(a: stest, b: stest),
+    //         skip: b.0 == 0
+    //     }
+    //     test_bignum! {
+    //         function: <stest as Rem>::rem(a: stest, b: stest),
+    //         skip: b.0 == 0
+    //     }
+    // }
 }

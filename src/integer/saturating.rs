@@ -156,13 +156,13 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub(crate) const fn saturating_rem(self, rhs: Self) -> Self {
-        self.rem(rhs)
+        self.wrapping_rem(rhs) // not self.rem(rhs) as this would cause an infinite loop
     }
 
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub(crate) const fn saturating_rem_euclid(self, rhs: Self) -> Self {
-        self.rem_euclid(rhs)
+        self.wrapping_rem_euclid(rhs) // not self.rem_euclid(rhs) as this would cause an infinite loop
     }
 
     /// Saturating exponentiation. Computes `self.pow(exp)`, returning `Self::MAX` if the result is too large to be represented by `Self`, or `Self::MIN` if the result is too small to be represented by `Self`.

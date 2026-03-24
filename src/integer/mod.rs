@@ -68,6 +68,7 @@ use core::default::Default;
 ///    - [`Saturate`](OverflowMode::Saturate): arithmetic operations saturate on overflow, so the behaviour is the same as the [`Saturating(T)`](core::num::Saturating) type in the standard library.
 ///    - [`OverflowMode::DEFAULT`]: the overflow behaviour is the same as the primitive integer type overflow behaviour.
 #[derive(Clone, Copy, Hash, PartialEq, Eq)]
+// in benchmarks, derive(PartialEq) impl is no slower than manual impl using the const eq method
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "borsh",
@@ -196,7 +197,9 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Default for In
 impl<const S: bool, const N: usize, const B: usize, const OM: u8> quickcheck::Arbitrary for Integer<S, N, B, OM> {
     #[inline]
     fn arbitrary(g: &mut quickcheck::Gen) -> Self {
-        <Digits<u128, N> as quickcheck::Arbitrary>::arbitrary(g).to_integer()
+        let mut out = <Digits<u128, N> as quickcheck::Arbitrary>::arbitrary(g).to_integer();
+        out.set_sign_bits();
+        out
     }
 }
 
