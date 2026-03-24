@@ -1,15 +1,6 @@
 use crate::Integer;
 use core::cmp::{Ord, Ordering, PartialOrd, PartialEq};
 
-impl<const S: bool, const N: usize, const B: usize, const OM: u8> PartialEq for Integer<S, N, B, OM> {
-    #[inline]
-    fn eq(&self, other: &Self) -> bool {
-        Self::eq(self, other)
-    }
-}
-
-impl<const S: bool, const N: usize, const B: usize, const OM: u8> Eq for Integer<S, N, B, OM> {}
-
 impl<const S: bool, const N: usize, const B: usize, const OM: u8> PartialOrd for Integer<S, N, B, OM> {
     #[inline]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
