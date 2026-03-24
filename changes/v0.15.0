@@ -1,0 +1,8 @@
+- add rug conversion feature
+- add num_bigint conversion feature
+- fix quickcheck::Arbitrary and rand:StandardUniform and rand::Fill implementation: now correctly set sign bits
+- TODO: write tests for untested parts to improve codecov
+
+TODO:
+- features to add:
+    - bytemuck

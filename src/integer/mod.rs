@@ -16,6 +16,7 @@ mod numtraits;
 mod ops;
 mod overflowing;
 mod radix;
+mod features;
 
 #[cfg(feature = "rand")]
 mod random;
@@ -67,7 +68,7 @@ use core::default::Default;
 ///    - [`Panic`](OverflowMode::Panic): arithmetic operations panic on overflow, so the behaviour is the same as the primitive integer type behaviour when `overflow-checks` is enabled.
 ///    - [`Saturate`](OverflowMode::Saturate): arithmetic operations saturate on overflow, so the behaviour is the same as the [`Saturating(T)`](core::num::Saturating) type in the standard library.
 ///    - [`OverflowMode::DEFAULT`]: the overflow behaviour is the same as the primitive integer type overflow behaviour.
-#[derive(Clone, Copy, Hash, PartialEq, Eq)]
+#[derive(Clone, Copy, Hash/*, PartialEq, Eq*/)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "borsh",
@@ -113,7 +114,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     }
 
     #[inline(always)]
-    const fn set_sign_bits(&mut self) {
+    pub(crate) const fn set_sign_bits(&mut self) {
         self.set_pad_bits(self.is_negative_internal());
     }
 
@@ -201,7 +202,9 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Default for In
 impl<const S: bool, const N: usize, const B: usize, const OM: u8> quickcheck::Arbitrary for Integer<S, N, B, OM> {
     #[inline]
     fn arbitrary(g: &mut quickcheck::Gen) -> Self {
-        <Digits<u128, N> as quickcheck::Arbitrary>::arbitrary(g).to_integer()
+        let mut out = <Digits<u128, N> as quickcheck::Arbitrary>::arbitrary(g).to_integer();
+        out.set_sign_bits();
+        out
     }
 }
 

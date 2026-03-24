@@ -1,5 +1,14 @@
 use crate::Integer;
-use core::cmp::{Ord, Ordering, PartialOrd};
+use core::cmp::{Ord, Ordering, PartialOrd, PartialEq};
+
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> PartialEq for Integer<S, N, B, OM> {
+    #[inline]
+    fn eq(&self, other: &Self) -> bool {
+        Self::eq(self, other)
+    }
+}
+
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> Eq for Integer<S, N, B, OM> {}
 
 impl<const S: bool, const N: usize, const B: usize, const OM: u8> PartialOrd for Integer<S, N, B, OM> {
     #[inline]
@@ -39,13 +48,10 @@ mod tests {
         testing integers;
         
         test_bignum! {
-            function: <stest>::eq(a: ref &stest, b: ref &stest)
-        }
-        test_bignum! {
             function: <stest as PartialEq>::eq(a: ref &stest, b: ref &stest)
         }
         test_bignum! {
-            function: <stest>::partial_cmp(a: ref &stest, b: ref &stest)
+            function: <stest as PartialOrd>::partial_cmp(a: ref &stest, b: ref &stest)
         }
         test_bignum! {
             function: <stest as PartialOrd>::lt(a: ref &stest, b: ref &stest)
