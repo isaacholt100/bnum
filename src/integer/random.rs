@@ -25,6 +25,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Distribution<I
         }
         let mut out = Integer::ZERO;
         rng.fill_bytes(out.as_bytes_mut());
+        out.set_sign_bits();
         out
     }
 }
@@ -39,6 +40,9 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Fill for Integ
                     this.len() * core::mem::size_of::<Integer<S, N, B, OM>>(),
                 )
             });
+            for int in this {
+                int.set_sign_bits();
+            }
         }
     }
 }

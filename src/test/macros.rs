@@ -269,30 +269,73 @@ macro_rules! is_prefix_signed {
 
 pub(crate) use is_prefix_signed;
 
+macro_rules! primitive_with_overflow_behaviour {
+    ($primitive: ident) => {
+        $primitive
+    };
+    ($primitive: ident, wrapping) => {
+        core::num::Wrapping<$primitive>
+    };
+    ($primitive: ident, saturating) => {
+        core::num::Saturating<$primitive>
+    };
+}
+
+pub(crate) use primitive_with_overflow_behaviour;
+
+macro_rules! overflow_mode_int {
+    (wrapping) => {
+        crate::integer::OverflowMode::Wrap as u8
+    };
+    (saturating) => {
+        crate::integer::OverflowMode::Saturate as u8
+    };
+    () => {
+        crate::integer::OverflowMode::DEFAULT as u8
+    };
+}
+
+pub(crate) use overflow_mode_int;
+
 macro_rules! test_width_and_sign {
-    ($bits: expr, $prefix: ident $(, $float: literal)?; $($s: tt) * ) => {
+    ($bits: expr, $prefix: ident $($overflow_mode: ident)? $(, $float: literal)?; $($s: tt) * ) => {
         paste::paste! {
             mod [<$prefix $bits>] {
                 #[allow(unused_imports)]
                 use super::*;
 
-                #[allow(non_camel_case_types, unused)]
-                pub type utest = [<u $bits>];
+                use crate::test::primitive_with_overflow_behaviour;
 
                 #[allow(non_camel_case_types, unused)]
-                pub type itest = [<i $bits>];
+                pub type utest = primitive_with_overflow_behaviour!( [<u $bits>] $(, $overflow_mode)? );
 
                 #[allow(non_camel_case_types, unused)]
-                pub type UTEST = crate::Uint<{ crate::literal_parse::get_size_params_from_bits($bits).0 }, { crate::literal_parse::get_size_params_from_bits($bits).1 }>;
+                pub type itest = primitive_with_overflow_behaviour!( [<i $bits>] $(, $overflow_mode)? );
 
                 #[allow(non_camel_case_types, unused)]
-                pub type ITEST = crate::Int<{ crate::literal_parse::get_size_params_from_bits($bits).0 }, { crate::literal_parse::get_size_params_from_bits($bits).1 }>;
+                pub type UTEST = crate::Uint<
+                    { crate::literal_parse::get_size_params_from_bits($bits).0 },
+                    { crate::literal_parse::get_size_params_from_bits($bits).1 },
+                    { crate::test::overflow_mode_int!($($overflow_mode)?) }
+                >;
 
                 #[allow(non_camel_case_types, unused)]
-                pub type stest = [<$prefix $bits>];
+                pub type ITEST = crate::Int<
+                    { crate::literal_parse::get_size_params_from_bits($bits).0 },
+                    { crate::literal_parse::get_size_params_from_bits($bits).1 },
+                    { crate::test::overflow_mode_int!($($overflow_mode)?) }
+                >;
 
                 #[allow(non_camel_case_types, unused)]
-                pub type STEST = crate::Integer<{ crate::test::is_prefix_signed!($prefix) }, { crate::literal_parse::get_size_params_from_bits($bits).0 }, { crate::literal_parse::get_size_params_from_bits($bits).1 }>;
+                pub type stest = primitive_with_overflow_behaviour!( [< $prefix $bits>] $(,$overflow_mode)? );
+
+                #[allow(non_camel_case_types, unused)]
+                pub type STEST = crate::Integer<
+                    { crate::test::is_prefix_signed!($prefix) },
+                    { crate::literal_parse::get_size_params_from_bits($bits).0 },
+                    { crate::literal_parse::get_size_params_from_bits($bits).1 },
+                    { crate::test::overflow_mode_int!($($overflow_mode)?) }
+                >;
 
                 $(
                     #[allow(non_camel_case_types)]
@@ -362,41 +405,52 @@ macro_rules! test_all_custom_bit_widths {
 pub(crate) use test_all_custom_bit_widths;
 
 macro_rules! test_all {
-    { testing unsigned; $($s: tt) * } => {
+    { testing unsigned $($overflow_mode: ident)?; $($s: tt) * } => {
         // for unsigned specific tests
-        mod unsigned_only {
-            #[allow(unused_imports)]
-            use super::*;
+        paste::paste! {
+            mod [<$($overflow_mode _)? unsigned_only>] {
+                #[allow(unused_imports)]
+                use super::*;
 
-            crate::test::test_width_and_sign!(16, u; $($s)*);
-            crate::test::test_width_and_sign!(32, u; $($s)*);
-            crate::test::test_width_and_sign!(64, u; $($s)*);
-            crate::test::test_width_and_sign!(128, u; $($s)*);
+                crate::test::test_width_and_sign!(16, u $($overflow_mode)?; $($s)*);
+                crate::test::test_width_and_sign!(32, u $($overflow_mode)?; $($s)*);
+                crate::test::test_width_and_sign!(64, u $($overflow_mode)?; $($s)*);
+                crate::test::test_width_and_sign!(128, u $($overflow_mode)?; $($s)*);
+            }
         }
     };
-    { testing signed; $($s: tt) * } => {
+    { testing signed $($overflow_mode: ident)?; $($s: tt) * } => {
         // for signed specific tests
-        mod signed_only {
-            #[allow(unused_imports)]
-            use super::*;
+        paste::paste! {
+            mod [<$($overflow_mode _)? signed_only>] {
+                #[allow(unused_imports)]
+                use super::*;
 
-            crate::test::test_width_and_sign!(16, i; $($s)*);
-            crate::test::test_width_and_sign!(32, i; $($s)*);
-            crate::test::test_width_and_sign!(64, i; $($s)*);
-            crate::test::test_width_and_sign!(128, i; $($s)*);
+                crate::test::test_width_and_sign!(16, i $($overflow_mode)?; $($s)*);
+                crate::test::test_width_and_sign!(32, i $($overflow_mode)?; $($s)*);
+                crate::test::test_width_and_sign!(64, i $($overflow_mode)?; $($s)*);
+                crate::test::test_width_and_sign!(128, i $($overflow_mode)?; $($s)*);
+            }
         }
     };
-    { testing integers; $($s: tt) * } => {
-        // for unsigned and signed tests
-        crate::test::test_width_and_sign!(16, u; $($s)*);
-        crate::test::test_width_and_sign!(32, u; $($s)*);
-        crate::test::test_width_and_sign!(64, u; $($s)*);
-        crate::test::test_width_and_sign!(128, u; $($s)*);
+    { testing integers $($overflow_mode: ident)?; $($s: tt) * } => {
+        paste::paste! {
+            mod [<$($overflow_mode _)? integers>] {
+                #[allow(unused_imports)]
+                use super::*;
 
-        crate::test::test_width_and_sign!(16, i; $($s)*);
-        crate::test::test_width_and_sign!(32, i; $($s)*);
-        crate::test::test_width_and_sign!(64, i; $($s)*);
-        crate::test::test_width_and_sign!(128, i; $($s)*);
+                // for unsigned and signed tests
+                crate::test::test_width_and_sign!(16, u $($overflow_mode)?; $($s)*);
+                crate::test::test_width_and_sign!(32, u $($overflow_mode)?; $($s)*);
+                crate::test::test_width_and_sign!(64, u $($overflow_mode)?; $($s)*);
+                crate::test::test_width_and_sign!(128, u $($overflow_mode)?; $($s)*);
+
+                crate::test::test_width_and_sign!(16, i $($overflow_mode)?; $($s)*);
+                crate::test::test_width_and_sign!(32, i $($overflow_mode)?; $($s)*);
+                crate::test::test_width_and_sign!(64, i $($overflow_mode)?; $($s)*);
+                crate::test::test_width_and_sign!(128, i $($overflow_mode)?; $($s)*);
+            }
+        }
     };
     { testing floats; $($s: tt) * } => {
         // #[cfg(nightly)]
