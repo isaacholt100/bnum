@@ -116,11 +116,38 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     }
 
     #[inline]
+    pub const fn sub(self, rhs: Self) -> Self {
+        match Self::OVERFLOW_MODE {
+            OverflowMode::Wrap => self.wrapping_sub(rhs),
+            OverflowMode::Panic => self.strict_sub(rhs),
+            OverflowMode::Saturate => self.saturating_sub(rhs),
+        }
+    }
+
+    #[inline]
     pub const fn mul(self, rhs: Self) -> Self {
         match Self::OVERFLOW_MODE {
             OverflowMode::Wrap => self.wrapping_mul(rhs),
             OverflowMode::Panic => self.strict_mul(rhs),
             OverflowMode::Saturate => self.saturating_mul(rhs),
+        }
+    }
+
+    #[inline]
+    pub const fn div(self, rhs: Self) -> Self {
+        match Self::OVERFLOW_MODE {
+            OverflowMode::Wrap => self.wrapping_div(rhs),
+            OverflowMode::Panic => self.strict_div(rhs),
+            OverflowMode::Saturate => self.saturating_div(rhs),
+        }
+    }
+
+    #[inline]
+    pub const fn rem(self, rhs: Self) -> Self {
+        match Self::OVERFLOW_MODE {
+            OverflowMode::Wrap => self.wrapping_rem(rhs),
+            OverflowMode::Panic => self.strict_rem(rhs),
+            OverflowMode::Saturate => self.saturating_rem(rhs),
         }
     }
 
@@ -141,33 +168,6 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
             OverflowMode::Wrap => self.wrapping_shr(rhs),
             OverflowMode::Panic => self.strict_shr(rhs),
             OverflowMode::Saturate => self.unbounded_shr(rhs),
-        }
-    }
-
-    #[inline]
-    pub const fn sub(self, rhs: Self) -> Self {
-        match Self::OVERFLOW_MODE {
-            OverflowMode::Wrap => self.wrapping_sub(rhs),
-            OverflowMode::Panic => self.strict_sub(rhs),
-            OverflowMode::Saturate => self.saturating_sub(rhs),
-        }
-    }
-
-    #[inline]
-    pub const fn div(self, rhs: Self) -> Self {
-        match Self::OVERFLOW_MODE {
-            OverflowMode::Wrap => self.wrapping_div(rhs),
-            OverflowMode::Panic => self.strict_div(rhs),
-            OverflowMode::Saturate => self.saturating_div(rhs),
-        }
-    }
-
-    #[inline]
-    pub const fn rem(self, rhs: Self) -> Self {
-        match Self::OVERFLOW_MODE {
-            OverflowMode::Wrap => self.wrapping_rem(rhs),
-            OverflowMode::Panic => self.strict_rem(rhs),
-            OverflowMode::Saturate => self.saturating_rem(rhs),
         }
     }
 }

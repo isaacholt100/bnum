@@ -68,7 +68,8 @@ use core::default::Default;
 ///    - [`Panic`](OverflowMode::Panic): arithmetic operations panic on overflow, so the behaviour is the same as the primitive integer type behaviour when `overflow-checks` is enabled.
 ///    - [`Saturate`](OverflowMode::Saturate): arithmetic operations saturate on overflow, so the behaviour is the same as the [`Saturating(T)`](core::num::Saturating) type in the standard library.
 ///    - [`OverflowMode::DEFAULT`]: the overflow behaviour is the same as the primitive integer type overflow behaviour.
-#[derive(Clone, Copy, Hash/*, PartialEq, Eq*/)]
+#[derive(Clone, Copy, Hash, PartialEq, Eq)]
+// in benchmarks, derive(PartialEq) impl is no slower than manual impl using the const eq method
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(
     feature = "borsh",
