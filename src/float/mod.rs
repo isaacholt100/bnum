@@ -47,6 +47,7 @@ mod ops;
 mod random;
 mod rounding;
 mod to_str;
+mod radix;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};

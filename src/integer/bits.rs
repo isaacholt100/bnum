@@ -199,7 +199,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
             let o = a.bitor(b);
             let mut out = Self { bytes: o.bytes };
             out.set_sign_bits();
-            return out;
+            out
         } else {
             // u32 is fastest
             unsafe { self.to_digits::<u32>().unchecked_rotate_left(n % Self::BITS).to_integer() }

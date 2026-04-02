@@ -147,6 +147,18 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         }
     }
 
+    // return a sign s, an exponent e and an integer mantissa m such that self = s * m * 2^e, where m is an integer with at most MB + 1 bits. so treat mantissa as an integer, not as a fixed point number.
+    #[inline]
+    pub(crate) const fn into_integral_signed_parts(self) -> (bool, FloatExponent, Uint<W>) {
+        let (sign, exp, mant) = self.into_signed_parts();
+        let diff = if mant.is_zero() {
+            0
+        } else {
+            mant.bit_width() as FloatExponent - 1
+        };
+        (sign, exp - diff, mant)
+    }
+
     #[inline]
     pub(crate) const fn round_exponent_mantissa<const TIES_EVEN: bool>(
         mut exponent: FloatExponent,

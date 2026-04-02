@@ -20,7 +20,7 @@
 
 // TODO: create issue on gh about v1.0 release. problem is that crates like rand aren't in 1.x yet
 
-#[cfg(feature = "alloc")]
+#[cfg(any(feature = "alloc", test))]
 #[macro_use]
 extern crate alloc;
 

@@ -154,7 +154,7 @@ pub struct Radix<const MAX: u32>(pub u32);
 #[cfg(feature = "alloc")]
 impl<const MAX: u32> quickcheck::Arbitrary for Radix<MAX> {
     fn arbitrary(g: &mut quickcheck::Gen) -> Self {
-        let radix = (u32::arbitrary(g) % (MAX - 2)) + 2;
+        let radix = (u32::arbitrary(g) % (MAX - 1)) + 2;
         Self(radix)
     }
 }
@@ -285,13 +285,13 @@ pub(crate) use primitive_with_overflow_behaviour;
 
 macro_rules! overflow_mode_int {
     (wrapping) => {
-        crate::integer::OverflowMode::Wrap as u8
+        crate::OverflowMode::Wrap as u8
     };
     (saturating) => {
-        crate::integer::OverflowMode::Saturate as u8
+        crate::OverflowMode::Saturate as u8
     };
     () => {
-        crate::integer::OverflowMode::DEFAULT as u8
+        crate::OverflowMode::DEFAULT as u8
     };
 }
 

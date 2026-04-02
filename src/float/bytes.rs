@@ -31,7 +31,6 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
 #[cfg(test)]
 mod tests {
-    use crate::test::U8ArrayWrapper;
     use crate::test::test_bignum;
 
     crate::test::test_all! {
@@ -44,10 +43,10 @@ mod tests {
             function: <ftest>::to_le_bytes(a: ftest)
         }
         test_bignum! {
-            function: <ftest>::from_be_bytes(a: U8ArrayWrapper<{FTEST::BITS as usize / 8}>)
+            function: <ftest>::from_be_bytes(a: [u8; FTEST::BITS as usize / 8])
         }
         test_bignum! {
-            function: <ftest>::from_le_bytes(a: U8ArrayWrapper<{FTEST::BITS as usize / 8}>)
+            function: <ftest>::from_le_bytes(a: [u8; FTEST::BITS as usize / 8])
         }
     }
 }

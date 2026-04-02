@@ -1,6 +1,8 @@
 use num_bigint::{BigUint, BigInt, Sign};
 
 use crate::digits::Digits;
+use crate::Integer;
+use crate::errors::TryFromIntError;
 
 impl<const S: bool, const N: usize, const B: usize, const OM: u8> From<Integer<S, N, B, OM>> for BigInt {
     #[inline]
@@ -26,15 +28,15 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> TryFrom<&BigUi
 
     #[inline]
     fn try_from(value: &BigUint) -> Result<Self, Self::Error> {
-        if !S && value.bits() > Self::BITS {
+        if !S && value.bits() > Self::BITS as u64 {
             return Err(TryFromIntError(()));
         }
-        if S && value.bits() > Self::BITS - 1 {
+        if S && value.bits() > Self::BITS as u64 - 1 {
             return Err(TryFromIntError(()));
         }
         // now guaranteed to succeed
-        let digits = Digits::<u64, N>::ALL_ZEROS;
-        for (i, u64_digit) in value.to_u64_digits().enumerate() {
+        let mut digits = Digits::<u64, N>::ALL_ZEROS;
+        for (i, u64_digit) in value.iter_u64_digits().enumerate() {
             digits.set(i, u64_digit);
         }
         Ok(digits.to_integer())

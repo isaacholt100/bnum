@@ -187,7 +187,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
         match self.checked_pow(exp) {
             Some(pow) => pow,
             None => {
-                if self.is_negative_internal() && exp % 2 != 0 {
+                if self.is_negative_internal() && !exp.is_multiple_of(2) {
                     Self::MIN
                 } else {
                     Self::MAX

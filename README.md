@@ -143,6 +143,7 @@ The short list of bugs in previous versions can be found at [`changes/prior-bugs
 
 - Faster algorithms for certain operations on large integers, such as multiplication and division.
 - Implement a generic floating point type `Float`, with const-generic parameters to specify the bit width and number of mantissa bits. This will have the same API and behaviour as `f32` and `f64`.
+<!-- TODO: mention niche optimisation of non-multiple-of-8 bit widths -->
 
 ## License
 

@@ -480,7 +480,6 @@ mod tests {
         )
     }
 
-    use crate::test::U8ArrayWrapper;
     use crate::test::test_bignum;
 
     crate::test::test_all! {
@@ -516,10 +515,10 @@ mod tests {
             function: <stest>::to_le_bytes(a: stest)
         }
         test_bignum! {
-            function: <stest>::from_be_bytes(a: U8ArrayWrapper<{<stest>::BITS as usize / 8}>)
+            function: <stest>::from_be_bytes(a: [u8; STEST::BYTES as usize])
         }
         test_bignum! {
-            function: <stest>::from_le_bytes(a: U8ArrayWrapper<{<stest>::BITS as usize / 8}>)
+            function: <stest>::from_le_bytes(a: [u8; STEST::BYTES as usize])
         }
 
         #[cfg(feature = "alloc")]
@@ -527,5 +526,12 @@ mod tests {
 
         #[cfg(feature = "alloc")]
         test_from_endian_slice!(stest, le);
+
+        use crate::n;
+
+        #[test]
+        fn cases_from_be_slice() {
+            assert_eq!(STEST::from_be_slice(&[]), Some(n!(0)));
+        }
     }
 }

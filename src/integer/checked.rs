@@ -296,7 +296,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
                 Some(u) => {
                     let out = u.force_sign();
                     let neg = self.is_negative_internal();
-                    if !neg || exp % 2 == 0 {
+                    if !neg || exp.is_multiple_of(2) {
                         if out.is_negative_internal() { None } else { Some(out) }
                     } else {
                         let out = out.wrapping_neg();
@@ -457,7 +457,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn checked_ilog(self, base: Self) -> Option<Exponent> {
-        if S && Self::BITS <= 2 {
+        if S && Self::BITS <= 2 || Self::BITS <= 1 {
             // in this case, can't represent two by the type, so log is undefined
             return None;
         }
@@ -659,6 +659,25 @@ impl<const N: usize, const B: usize, const OM: u8> Int<N, B, OM> {
 #[cfg(test)]
 mod tests {
     use crate::test::test_bignum;
+    use crate::n;
+
+    #[test]
+    fn test_narrow_widths_ilog10_is_zero() {
+        let a = n!(7U3);
+        assert_eq!(a.checked_ilog10(), Some(0));
+
+        let b = n!(3U2);
+        assert_eq!(b.checked_ilog10(), Some(0));
+
+        let c = n!(6I4);
+        assert_eq!(c.checked_ilog10(), Some(0));
+    }
+
+    #[test]
+    fn test_narrow_width_checked_ilog_is_none() {
+        let a = n!(1I2);
+        assert_eq!(a.checked_ilog(a), None);
+    }
 
     crate::test::test_all! {
         testing integers;

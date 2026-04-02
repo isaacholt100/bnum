@@ -25,3 +25,5 @@ jobs:
         run: cargo hack check --each-feature --optional-deps
       - name: Run `cargo check --tests` with all features, no features, default features, and each individual feature
         run: cargo hack check --tests --each-feature --optional-deps
+
+# TODO: add check in release mode and testing in release mode

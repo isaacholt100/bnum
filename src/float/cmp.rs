@@ -123,10 +123,10 @@ mod tests {
             function: <ftest>::total_cmp(a: ref &ftest, b: ref &ftest)
         }
         test_bignum! {
-            function: <ftest>::partial_cmp(a: ref &ftest, b: ref &ftest)
+            function: <ftest as PartialOrd>::partial_cmp(a: ref &ftest, b: ref &ftest)
         }
         test_bignum! {
-            function: <ftest>::eq(a: ref &ftest, b: ref &ftest)
+            function: <ftest as PartialEq>::eq(a: ref &ftest, b: ref &ftest)
         }
     }
 }

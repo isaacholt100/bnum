@@ -1,5 +1,5 @@
 use crate::Integer;
-use core::cmp::{Ord, Ordering, PartialOrd, PartialEq};
+use core::cmp::{Ord, Ordering, PartialOrd};
 
 impl<const S: bool, const N: usize, const B: usize, const OM: u8> PartialOrd for Integer<S, N, B, OM> {
     #[inline]
@@ -40,6 +40,12 @@ mod tests {
         
         test_bignum! {
             function: <stest as PartialEq>::eq(a: ref &stest, b: ref &stest)
+        }
+        test_bignum! {
+            function: <itest>::eq(a: ref &itest, b: ref &itest)
+        }
+        test_bignum! {
+            function: <stest>::ne(a: ref &stest, b: ref &stest)
         }
         test_bignum! {
             function: <stest as PartialOrd>::partial_cmp(a: ref &stest, b: ref &stest)

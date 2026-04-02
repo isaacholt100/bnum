@@ -38,7 +38,7 @@ impl<const N: usize, const B: usize, const OM: u8> Bits for Uint<N, B, OM> {
 
     #[inline]
     fn bit(&self, index: Exponent) -> bool {
-        Self::bit(&self, index)
+        Self::bit(self, index)
     }
 }
 

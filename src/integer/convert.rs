@@ -20,12 +20,12 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> IntegerConvert
 
     #[inline]
     fn leading_zeros_at_least_threshold(&self, threshold: Exponent) -> bool {
-        Self::leading_zeros_at_least_threshold(&self, threshold)
+        Self::leading_zeros_at_least_threshold(self, threshold)
     }
 
     #[inline]
     fn leading_ones_at_least_threshold(&self, threshold: Exponent) -> bool {
-        Self::leading_ones_at_least_threshold(&self, threshold)
+        Self::leading_ones_at_least_threshold(self, threshold)
     }
 
     #[inline]
@@ -246,6 +246,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> From<bool>
 
 impl<const N: usize, const B: usize, const OM: u8> TryFrom<char> for Uint<N, B, OM> {
     type Error = TryFromCharError;
+
     #[inline]
     fn try_from(c: char) -> Result<Self, Self::Error> {
         <Self as TryFrom<u32>>::try_from(u32::from(c)).map_err(|_| TryFromCharError(()))
@@ -264,6 +265,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> FromStr for In
 mod tests {
     use crate::test;
     use crate::test::cast_types::*;
+    use alloc::string::ToString;
 
     crate::test::test_all! {
         testing unsigned;
@@ -278,6 +280,26 @@ mod tests {
             function: <utest as TryInto>::try_into,
             into_types: (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, TestInt1, TestInt2, TestInt3, TestInt4, TestInt5, TestInt6, TestInt7, TestInt8, TestInt9, TestInt10)
         }
+
+        #[test]
+        fn out_of_range_conversion_error() {
+            let invalid = -1i32;
+
+            let test_msg = UTEST::try_from(invalid).unwrap_err().to_string();
+
+            assert!(test_msg.contains("out of range integral type conversion attempted"));
+        }
+    }
+
+    #[test]
+    fn invalid_char_conversion_error() {
+        type U13s = crate::t!(U13s);
+
+        let invalid_char = char::from_u32(0x2764).unwrap();
+
+        let test_msg = U13s::try_from(invalid_char).unwrap_err().to_string();
+
+        assert!(test_msg.contains("unicode code point out of range"));
     }
 
     crate::test::test_all! {

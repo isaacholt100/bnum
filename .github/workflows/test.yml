@@ -1,5 +1,7 @@
 name: cargo test
 
+# TODO: add cargo semver-checks and cargo clippy to workflows
+
 on:
   push:
     branches-ignore:

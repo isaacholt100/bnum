@@ -116,7 +116,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         let mut a_exp = a_exp as FloatExponent;
 
         let sticky_bit2 = exp_diff != 0
-            && exp_diff < Uint::<W>::BITS.into()
+            && exp_diff < Uint::<W>::BITS
             && b_mant.bit(exp_diff.as_::<Exponent>() - 1);
         let all_zeros = exp_diff != 0 && b_mant.trailing_zeros() + 1 == exp_diff.as_::<Exponent>();
 
@@ -124,7 +124,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         a_mant = a_mant << 1 as Exponent;
         b_mant = b_mant << 1 as Exponent;
 
-        let sticky_bit = b_mant.trailing_zeros() < exp_diff.as_();
+        let sticky_bit = b_mant.trailing_zeros() < exp_diff;
 
         // If the shift causes an overflow, the b_mant is too small so is set to 0
         let shifted_b_mant = match exp_diff.try_into().ok() {
@@ -151,7 +151,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             a_mant <<= 1 as Exponent;
             b_mant <<= 1 as Exponent;
 
-            let sticky_bit = b_mant.trailing_zeros() < exp_diff.as_();
+            let sticky_bit = b_mant.trailing_zeros() < exp_diff;
 
             // If the shift causes an overflow, the b_mant is too small so is set to 0
             let shifted_b_mant = match exp_diff.try_into().ok() {

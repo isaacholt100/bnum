@@ -33,9 +33,9 @@ impl<D, const N: usize> Digits<D, N, 1, 0> {
     }
 
     #[inline(always)]
-    pub const fn from_integer_ref<'a, const S: bool, const B: usize, const OM: u8>(
-        int: &'a Integer<S, N, B, OM>,
-    ) -> &'a Self {
+    pub const fn from_integer_ref<const S: bool, const B: usize, const OM: u8>(
+        int: &Integer<S, N, B, OM>,
+    ) -> &Self {
         debug_assert!(
             Self::DIGIT_BYTES == 1
                 || Self::DIGIT_BYTES == 2

@@ -20,7 +20,7 @@ pub(crate) use assert_range;
 /// Returns the maximum power of `radix` that fits in a `u64`, together with the associated exponent
 #[cfg(feature = "alloc")]
 #[inline]
-const fn max_radix_power(radix: u32) -> (u64, usize) {
+const fn max_radix_power(radix: u32) -> (u64, u32) {
     let mut power: u64 = radix as u64;
     let mut exponent = 1;
     loop {
@@ -37,7 +37,7 @@ const fn max_radix_power(radix: u32) -> (u64, usize) {
 // we index using the radix itself
 // creating a compile time constant will boost performance
 #[cfg(feature = "alloc")]
-const MAX_RADIX_POWERS: [(u64, usize); 257] = {
+const MAX_RADIX_POWERS: [(u64, u32); 257] = {
     let mut arr = [(0, 0); 257];
     let mut i = 2;
     while i <= 256 {
@@ -47,3 +47,19 @@ const MAX_RADIX_POWERS: [(u64, usize); 257] = {
     arr
 };
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    quickcheck::quickcheck! {
+        fn quickcheck_max_radix_power(radix: u8) -> quickcheck::TestResult {
+            if radix < 2 {
+                return quickcheck::TestResult::discard();
+            }
+            let (power, exponent) = max_radix_power(radix as u32);
+            let correct_exponent = u64::MAX.ilog(radix as u64);
+            let correct_power = (radix as u64).pow(correct_exponent);
+            quickcheck::TestResult::from_bool(power == correct_power && exponent == correct_exponent)
+        }
+    }
+}

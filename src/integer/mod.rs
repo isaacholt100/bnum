@@ -75,6 +75,7 @@ use core::default::Default;
     feature = "borsh",
     derive(BorshSerialize, BorshDeserialize, BorshSchema)
 )]
+// TODO: need to manually implement arbitrary::Arbitrary, since need to call set_sign_bits
 #[cfg_attr(feature = "arbitrary", derive(arbitrary::Arbitrary))]
 #[cfg_attr(feature = "valuable", derive(valuable::Valuable))]
 #[repr(transparent)]
@@ -170,7 +171,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
 
     #[inline]
     pub(crate) const fn as_digits<D>(&self) -> &Digits<D, N> {
-        Digits::from_integer_ref(&self)
+        Digits::from_integer_ref(self)
     }
 
     #[inline]

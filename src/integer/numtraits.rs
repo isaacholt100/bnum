@@ -456,11 +456,6 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> IntegerTrait f
     }
 
     #[inline]
-    fn divides(&self, other: &Self) -> bool {
-        self.is_multiple_of(other)
-    }
-
-    #[inline]
     fn is_multiple_of(&self, other: &Self) -> bool {
         if other.is_zero() {
             return self.is_zero();
@@ -870,7 +865,8 @@ mod tests {
                 #[allow(unused_comparisons)]
                 let cond = <stest>::MIN < 0 && (a == <stest>::MIN && (b == <stest>::MIN || b == 0)) || (b == <stest>::MIN && (a == <stest>::MIN || a == 0));
                 cond
-            }
+            },
+            cases: [(ref &stest::MIN, ref &stest::MIN)]
         }
         test_bignum! {
             function: <stest as IntegerTrait>::is_multiple_of(a: ref &stest, b: ref &stest)
@@ -901,6 +897,53 @@ mod tests {
         test_bignum! {
             function: <stest as PrimInt>::signed_shr(a: stest, n: u8),
             skip: n >= <stest>::BITS as u8
+        }
+        test_bignum! {
+            function: <stest as PrimInt>::count_ones(a: ref &stest)
+        }
+        test_bignum! {
+            function: <stest as PrimInt>::count_zeros(a: ref &stest)
+        }
+        test_bignum! {
+            function: <stest as PrimInt>::leading_zeros(a: ref &stest)
+        }
+        test_bignum! {
+            function: <stest as PrimInt>::trailing_zeros(a: ref &stest)
+        }
+        test_bignum! {
+            function: <stest as PrimInt>::leading_ones(a: ref &stest)
+        }
+        test_bignum! {
+            function: <stest as PrimInt>::trailing_ones(a: ref &stest)
+        }
+        test_bignum! {
+            function: <stest as PrimInt>::rotate_left(a: ref &stest, n: u32)
+        }
+        test_bignum! {
+            function: <stest as PrimInt>::rotate_right(a: ref &stest, n: u32)
+        }
+        test_bignum! {
+            function: <stest as PrimInt>::swap_bytes(a: ref &stest)
+        }
+        test_bignum! {
+            function: <stest as PrimInt>::reverse_bits(a: ref &stest)
+        }
+        test_bignum! {
+            function: <stest as PrimInt>::pow(a: ref &stest, n: u32),
+            skip: a.checked_pow(n).is_none()
+        }
+        
+        test_bignum! {
+            function: <stest as FromBytes>::from_be_bytes(bytes: ref &[u8; STEST::BYTES as usize])
+        }
+        test_bignum! {
+            function: <stest as FromBytes>::from_le_bytes(bytes: ref &[u8; STEST::BYTES as usize])
+        }
+        test_bignum! {
+            function: <stest as ToBytes>::to_be_bytes(a: ref &stest)
+        }
+        test_bignum! {
+            function: <stest as ToBytes>::to_le_bytes(a: ref &stest)
         }
     }
 

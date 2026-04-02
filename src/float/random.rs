@@ -1,6 +1,6 @@
 use rand::distr::uniform::{SampleBorrow, SampleUniform, UniformSampler};
 use rand::distr::{Distribution, Open01, OpenClosed01, StandardUniform};
-use rand::{Fill, Rng, SeedableRng};
+use rand::{Fill, Rng, SeedableRng, RngExt};
 
 use super::{Float, FloatExponent};
 use crate::Uint;
@@ -65,9 +65,10 @@ impl<const W: usize, const MB: usize> Distribution<Float<W, MB>> for Open01 {
 mod tests {
     use crate::test::convert;
     use rand::distr::OpenClosed01;
-    use rand::rngs::StdRng;
+    use rand::rngs::SmallRng; // use SmallRng as doesn't require an extra crate feature
     use rand::{Rng, SeedableRng};
-    use rand::{distr::Open01, rngs::SmallRng};
+    use rand::{distr::Open01};
+    use rand::RngExt;
     use super::*;
 
     fn seeded_rngs<R: SeedableRng + Clone>(seed: u64) -> (R, R) {
@@ -81,7 +82,7 @@ mod tests {
 
         #[test]
         fn test_random() {
-            let mut r = StdRng::seed_from_u64(0);
+            let mut r = SmallRng::seed_from_u64(0);
             let seed = r.random();
             let (mut r1, mut r2) = seeded_rngs::<SmallRng>(seed);
             let big: FTEST = r1.random();

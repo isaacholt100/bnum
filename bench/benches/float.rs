@@ -2,6 +2,7 @@ use bnum_old::cast::CastFrom as CastFromOld;
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use rand::prelude::*;
 use bnum::cast::CastFrom;
+use bnum::prelude::*;
 
 use core::hint::black_box;
 
@@ -130,7 +131,57 @@ fn bench_mul(c: &mut Criterion) {
     group.finish();
 }
 
-fn bench_add(c: &mut Criterion) {
+const INPUTS_SEED: u64 = 0;
+
+macro_rules! bench_against {
+    { group: $group_name: ident; inputs: ($($input_type: ty), *); $(<$bench_type: ty $(as $Trait: ident $(<$($gen: ty), +>)?)?> :: $method: ident ($($param: ident), *);) * } => {
+        paste::paste! {
+            fn [<bench_ $group_name>](c: &mut Criterion) {
+                let mut group = c.benchmark_group(stringify!($group_name));
+                let mut rng = rand::rngs::SmallRng::seed_from_u64(INPUTS_SEED);
+                let random_inputs: Vec<_> = (0..SAMPLE_SIZE).map(|_| rng.random::<($($input_type), *)>()).collect();
+
+                $(
+                    group.bench_function(stringify!([<$bench_type $(_ $Trait _ $($($gen _) +)?)?>]), |b| b.iter_batched(|| {
+                        random_inputs.iter().copied().map(|($($param), *)| (
+                            $(black_box(TryInto::try_into($param).expect(stringify!($method)))), *
+                        ))
+                    }, |inputs| {
+                        for ($($param), *) in inputs {
+                            let _ = black_box(<$bench_type $(as $Trait $(<$($gen), *>)?)?>::$method($($param), *));
+                        }
+                    }, criterion::BatchSize::SmallInput));
+                )*
+            }
+        }
+    }
+}
+
+type U128 = t!(U128);
+type I128 = t!(I128);
+
+use num_bigint::{BigUint, BigInt};
+use rug::Integer as RugInteger;
+use core::ops::Add;
+
+bench_against! {
+    group: checked_add;
+    inputs: (u128, u128);
+    <U128>::add(a, b);
+    <u128 as Add>::add(a, b);
+    <BigUint as Add>::add(a, b);
+}
+
+bench_against! {
+    group: add;
+    inputs: (i128, i128);
+    <I128>::add(a, b);
+    <i128 as Add>::add(a, b);
+    <BigInt as Add>::add(a, b);
+    <RugInteger as Add>::add(a, b);
+}
+
+fn bench_add_old(c: &mut Criterion) {
     let mut group = c.benchmark_group("round");
     let mut rng = rand::rngs::StdRng::seed_from_u64(0);
     let big_inputs = (0..SAMPLE_SIZE)
@@ -202,5 +253,5 @@ fn bench_add(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(benches, bench_mul);
+criterion_group!(benches, bench_add);
 criterion_main!(benches);

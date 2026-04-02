@@ -128,7 +128,7 @@ pub const fn get_integer_params(type_descriptor: &str) -> Result<(bool, usize, u
             };
         }
     };
-    let overflow_mode = if om_str.len() == 0 {
+    let overflow_mode = if om_str.is_empty() {
         crate::OverflowMode::DEFAULT.to_u8()
     } else {
         match om_str.as_bytes() {
@@ -158,7 +158,7 @@ pub const fn get_integer_params_fallback(type_descriptor: &str) -> (bool, Result
 #[doc(hidden)]
 pub const fn get_size_params_from_bits(bits: usize) -> (usize, usize) {
     let bytes = bits.div_ceil(crate::Byte::BITS as usize);
-    let b = if bits % (crate::Byte::BITS as usize) == 0 {
+    let b = if bits.is_multiple_of(crate::Byte::BITS as usize) {
         0
     } else {
         bits

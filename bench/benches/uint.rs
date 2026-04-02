@@ -33,32 +33,23 @@ macro_rules! bench_against_primitive {
                         )));
                     let big_inputs = inputs.0;
                     let prim_inputs = inputs.1;
-                    // let ruint_inputs = inputs.2;
 
                     const SIZE_ID: &'static str = stringify!([<$primitive:upper>]);
 
                     group.bench_with_input(BenchmarkId::new("bnum", SIZE_ID), &big_inputs, |b, inputs| {
-                        b.iter(|| {
-                            for ($($param), *, ()) in inputs.iter().cloned() {
+                        b.iter_batched(|| inputs.iter().cloned(), |inputs| {
+                            for ($($param), *, ()) in inputs {
                                 let _ = black_box([<$primitive:upper>]::$method($($($re)? $param), *));
                             }
-                        })
+                        }, criterion::BatchSize::SmallInput)
                     });
                     group.bench_with_input(BenchmarkId::new("core", SIZE_ID), &prim_inputs, |b, inputs| {
-                        b.iter(|| {
-                            for ($($param), *, ()) in inputs.iter().cloned() {
+                        b.iter_batched(|| inputs.iter().cloned(), |inputs| {
+                            for ($($param), *, ()) in inputs {
                                 let _ = black_box([<$primitive>]::$method($($($re)? $param), *));
                             }
-                        })
+                        }, criterion::BatchSize::SmallInput)
                     });
-                    // group.bench_with_input(BenchmarkId::new("ruint", "rand"), &ruint_inputs, |b, inputs| {
-                    //     b.iter(|| {
-                    //         #[allow(unused_parens)]
-                    //         for ($($param), *, ()) in inputs.iter().cloned() {
-                    //             let _ = [<R $primitive:upper>]::$method($($($re)? black_box($param)), *);
-                    //         }
-                    //     })
-                    // });
                     group.finish();
                 }
             )*
@@ -137,10 +128,10 @@ bench_against_primitive! {
     checked_ilog(a: u128, b: u128);
     checked_next_power_of_two(a: u128);
 
-    from_be(a: u128);
-    from_le(a: u128);
-    to_be(a: u128);
-    to_le(a: u128);
+    // from_be(a: u128);
+    // from_le(a: u128);
+    // to_be(a: u128);
+    // to_le(a: u128);
     // to_be_bytes(a: u128);
     // to_le_bytes(a: u128);
     // to_ne_bytes(a: u128);

@@ -11,7 +11,7 @@ macro_rules! concat_panic {
 }
 
 #[doc(hidden)]
-pub const fn concat_strs<'a, const LEN: usize>(msgs: &[&'a str]) -> [u8; LEN] {
+pub const fn concat_strs<const LEN: usize>(msgs: &[&str]) -> [u8; LEN] {
     let mut i = 0;
     let mut write_index = 0;
     let mut buf: [u8; LEN] = [0; LEN];

@@ -354,7 +354,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
     #[must_use]
     #[inline]
     pub const fn is_zero(&self) -> bool {
-        self.as_digits::<u64>().eq(&Self::ZERO.as_digits()) // u8 is as fast for random inputs but much slower when input is zero
+        self.as_digits::<u64>().eq(Self::ZERO.as_digits()) // u8 is as fast for random inputs but much slower when input is zero
     }
 
     /// Returns whether or not `self` equals one.
@@ -376,7 +376,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
         if S && Self::BITS == 1 {
             return false;
         }
-        self.as_digits::<u64>().eq(&Self::ONE.as_digits())
+        self.as_digits::<u64>().eq(Self::ONE.as_digits())
     }
 
     #[inline]
@@ -607,24 +607,6 @@ impl<const N: usize, const B: usize, const OM: u8> Int<N, B, OM> {
 
 use core::iter::{Iterator, Product, Sum};
 
-impl<const S: bool, const N: usize, const B: usize, const OM: u8> Product<Self>
-    for Integer<S, N, B, OM>
-{
-    #[inline]
-    fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
-        iter.fold(Self::ONE, |a, b| a * b)
-    }
-}
-
-impl<'a, const S: bool, const N: usize, const B: usize, const OM: u8> Product<&'a Self>
-    for Integer<S, N, B, OM>
-{
-    #[inline]
-    fn product<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
-        iter.fold(Self::ONE, |a, b| a * b)
-    }
-}
-
 impl<const S: bool, const N: usize, const B: usize, const OM: u8> Sum<Self>
     for Integer<S, N, B, OM>
 {
@@ -643,10 +625,29 @@ impl<'a, const S: bool, const N: usize, const B: usize, const OM: u8> Sum<&'a Se
     }
 }
 
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> Product<Self>
+    for Integer<S, N, B, OM>
+{
+    #[inline]
+    fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
+        iter.fold(Self::ONE, |a, b| a * b)
+    }
+}
+
+impl<'a, const S: bool, const N: usize, const B: usize, const OM: u8> Product<&'a Self>
+    for Integer<S, N, B, OM>
+{
+    #[inline]
+    fn product<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
+        iter.fold(Self::ONE, |a, b| a * b)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::cast::CastFrom;
     use crate::test::{debug_skip, test_bignum};
+    use crate::n;
 
     crate::test::test_all! {
         testing integers;
@@ -672,25 +673,25 @@ mod tests {
         #[cfg(feature = "alloc")]
         #[test]
         fn sum() {
-            let v = vec![
-                UTEST::ZERO,
-                UTEST::ONE,
-                UTEST::from_byte(2),
-                UTEST::from_byte(3),
-                UTEST::from_byte(4),
+            let v: alloc::vec::Vec<UTEST> = vec![
+                n!(0),
+                n!(1),
+                n!(2),
+                n!(3),
+                n!(4),
             ];
 
-            assert_eq!(UTEST::from_byte(10), v.iter().sum());
-            assert_eq!(UTEST::from_byte(10), v.into_iter().sum());
+            assert_eq!(n!(10), v.iter().sum());
+            assert_eq!(n!(10), v.into_iter().sum());
         }
 
         #[cfg(feature = "alloc")]
         #[test]
         fn product() {
-            let v = vec![UTEST::ONE, UTEST::from_byte(2), UTEST::from_byte(3)];
+            let v: alloc::vec::Vec<UTEST> = vec![n!(1), n!(2), n!(3)];
 
-            assert_eq!(UTEST::from_byte(6), v.iter().sum());
-            assert_eq!(UTEST::from_byte(6), v.into_iter().sum());
+            assert_eq!(n!(6), v.iter().product());
+            assert_eq!(n!(6), v.into_iter().product());
         }
 
         test_bignum! {

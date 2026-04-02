@@ -76,34 +76,22 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
 
     #[inline]
     pub const fn lt(&self, other: &Self) -> bool {
-        match self.cmp(&other) {
-            Ordering::Less => true,
-            _ => false,
-        }
+        matches!(self.cmp(other), Ordering::Less)
     }
 
     #[inline]
     pub const fn le(&self, other: &Self) -> bool {
-        match self.cmp(&other) {
-            Ordering::Less | Ordering::Equal => true,
-            _ => false,
-        }
+        matches!(self.cmp(other), Ordering::Less | Ordering::Equal)
     }
 
     #[inline]
     pub const fn gt(&self, other: &Self) -> bool {
-        match self.cmp(&other) {
-            Ordering::Greater => true,
-            _ => false,
-        }
+        matches!(self.cmp(other), Ordering::Greater)
     }
 
     #[inline]
     pub const fn ge(&self, other: &Self) -> bool {
-        match self.cmp(&other) {
-            Ordering::Greater | Ordering::Equal => true,
-            _ => false,
-        }
+        matches!(self.cmp(other), Ordering::Greater | Ordering::Equal)
     }
 
     #[inline]

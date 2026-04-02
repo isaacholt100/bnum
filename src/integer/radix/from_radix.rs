@@ -412,6 +412,7 @@ mod tests {
     use crate::test::test_bignum;
     use core::num::IntErrorKind;
     use core::str::FromStr;
+    use alloc::string::ToString;
 
     crate::test::test_all! {
         testing integers;
@@ -511,6 +512,8 @@ mod tests {
                 ("+945hhdgi73945hjdfj", 32u32),
                 ("+3436847561345343455", 9u32),
                 ("+affe758457bc345540ac399", 16u32),
+                ("+", 10u32),
+                ("-", 10u32),
                 ("+affe758457bc345540ac39929334534ee34579234795", 17u32),
                 ("+3777777777777777777777777777777777777777777", 8u32),
                 ("+37777777777777777777777777777777777777777761", 8u32),
@@ -555,18 +558,45 @@ mod tests {
 
         #[test]
         fn from_str_radix_empty() {
-            let _ = STEST::from_str_radix("", 10).unwrap_err().kind() == &IntErrorKind::Empty;
+            assert_eq!(STEST::from_str_radix("", 10).unwrap_err().kind(), &IntErrorKind::Empty);
+
+            let test_msg = STEST::from_str_radix("", 10).unwrap_err().to_string();
+            assert!(test_msg.contains("attempt to parse integer from empty string"));
         }
 
         #[test]
-        fn from_str_radix_invalid_char() {
-            let _ = STEST::from_str_radix("a", 10).unwrap_err().kind() == &IntErrorKind::InvalidDigit;
+        fn from_str_radix_invalid_digit() {
+            assert_eq!(STEST::from_str_radix("a", 10).unwrap_err().kind(), &IntErrorKind::InvalidDigit);
+
+            let test_msg = STEST::from_str_radix("a", 10).unwrap_err().to_string();
+            assert!(test_msg.contains("attempt to parse integer from string containing invalid digit"));
         }
 
         #[test]
         #[should_panic(expected = "Radix must be in range [2, 36]")]
-        fn from_str_radix_invalid_radix() {
+        fn from_str_radix_invalid_radix_37() {
             let _ = STEST::from_str_radix("1234", 37).unwrap();
+        }
+
+        #[test]
+        #[should_panic(expected = "Radix must be in range [2, 36]")]
+        fn from_str_radix_invalid_radix_0() {
+            let _ = STEST::from_str_radix("1234", 0).unwrap();
+        }
+
+        #[test]
+        #[should_panic(expected = "Radix must be in range [2, 36]")]
+        fn from_str_radix_invalid_radix_1() {
+            let _ = STEST::from_str_radix("1234", 1).unwrap();
+        }
+
+        #[test]
+        fn from_str_radix_pos_overflow() {
+            let large_literal = format!("{}0", STEST::MAX); // this is 10x the max value so should overflow
+            assert_eq!(STEST::from_str_radix(&large_literal, 10).unwrap_err().kind(), &IntErrorKind::PosOverflow);
+
+            let test_msg = STEST::from_str_radix(&large_literal, 10).unwrap_err().to_string();
+            assert!(test_msg.contains("attempt to parse integer too large to be represented by the target type"));
         }
     }
 
@@ -597,6 +627,16 @@ mod tests {
 
     crate::test::test_all! {
         testing signed;
+
+        #[test]
+        fn from_str_radix_neg_overflow() {
+            let large_literal = format!("-{}0", STEST::MAX); // this is -10x the max value so should have negative overflow
+            assert_eq!(STEST::from_str_radix(&large_literal, 10).unwrap_err().kind(), &IntErrorKind::NegOverflow);
+
+            let test_msg = STEST::from_str_radix(&large_literal, 10).unwrap_err().to_string();
+
+            assert!(test_msg.contains("attempt to parse integer too small to be represented by the target type"));
+        }
 
         #[cfg(feature = "alloc")]
         crate::test::quickcheck_from_str_radix!(itest, "+" | "-");

@@ -1,8 +1,10 @@
 - add rug conversion feature
 - add num_bigint conversion feature
 - fix quickcheck::Arbitrary and rand:StandardUniform and rand::Fill implementation: now correctly set sign bits
-- TODO: write tests for untested parts to improve codecov
 
 TODO:
+- write tests for untested parts to improve codecov
+- allow padding bits to be anything for non multiple of 8 bit width
 - features to add:
     - bytemuck
+- add num_traits::Pow impl with multiple different primitive types exponents (and possibly Integer exponent as well)
