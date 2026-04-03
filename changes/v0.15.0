@@ -8,3 +8,4 @@ TODO:
 - features to add:
     - bytemuck
 - add num_traits::Pow impl with multiple different primitive types exponents (and possibly Integer exponent as well)
+- bug fix: to_radix_{be,le} panicked incorrectly in debug for radix 256

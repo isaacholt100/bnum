@@ -262,6 +262,11 @@ impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
 
     #[inline]
     fn to_exact_bitwise_digits_le(self, radix: u32) -> Vec<u8> {
+        if radix == 256 {
+            let last_non_zero_byte_index = self.bytes.iter().rposition(|&b| b != 0).unwrap_or(0);
+            return self.bytes[..=last_non_zero_byte_index].to_vec();
+        }
+
         let radix_log2 = radix.ilog2();
         let mask = u8::MAX >> (u8::BITS - radix_log2);
         let mut digits = Vec::with_capacity(Self::BITS.div_ceil(radix_log2) as usize);
@@ -275,7 +280,7 @@ impl<const N: usize, const B: usize, const OM: u8> Uint<N, B, OM> {
             for _ in 0..digits_per_big_digit {
                 let digit = d & mask; // can truncate to u32 as this is equivalent to bitand-ing with zeros
                 digits.push(digit);
-                d >>= radix_log2;
+                d >>= radix_log2; // this would panic if radix_log2 is 8, so we have separate case for radix 256
             }
         }
         let mut d = self.bytes[num_non_zero_digits - 1];
@@ -378,16 +383,46 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
 
 #[cfg(test)]
 mod tests {
+    macro_rules! quickcheck_from_to_radix {
+        ($primitive: ty, $name: ident, $max: expr) => {
+            paste::paste! {
+                quickcheck::quickcheck! {
+                    fn [<quickcheck_from_to_ $name>](u: $primitive, radix: crate::test::Radix<$max>) -> quickcheck::TestResult {
+                        use crate::cast::CastFrom;
+                        // dbg!(u, radix);
+                        // println!("{:064x}", u);
+                        let radix = radix.0;
+                        let u = <[<$primitive:upper>]>::cast_from(u);
+                        let v = u.[<to_ $name>](radix as u32);
+                        let u1 = <[<$primitive:upper>]>::[<from_ $name>](&v, radix as u32).unwrap();
+                        // assert_eq!(u, u1);
+                        // dbg!(u, u1);
+                        // if u != u1 {
+                        //     panic!("{} {}", u, u1);
+                        // }
+                        quickcheck::TestResult::from_bool(u == u1)
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn aaa() {
+        let a = crate::n!(0xd73104da53b99783U64);
+        dbg!(a.to_radix_le(256));
+    }
+
     crate::test::test_all! {
         testing integers;
         
-        crate::test::quickcheck_from_to_radix!(stest, str_radix, 36);
+        quickcheck_from_to_radix!(stest, str_radix, 36);
     }
 
     crate::test::test_all! {
         testing unsigned;
 
-        crate::test::quickcheck_from_to_radix!(stest, radix_be, 256);
-        crate::test::quickcheck_from_to_radix!(stest, radix_le, 256);
+        quickcheck_from_to_radix!(utest, radix_be, 256);
+        quickcheck_from_to_radix!(utest, radix_le, 256);
     }
 }

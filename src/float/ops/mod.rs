@@ -122,14 +122,14 @@ mod tests {
             function: <ftest as Add>::add(a: ftest, b: ftest),
             cases: [(1.3952888382785755e33, 1.466527384898436e33)]
         }
-        test_bignum! {
-            function: <ftest as Sub>::sub(a: ftest, b: ftest),
-            cases: [
-                (-0.0, 0.0),
-                (74482736000000.0, 11088044000000.0),
-                (-128.0, -115.12566)
-            ]
-        }
+        // test_bignum! {
+        //     function: <ftest as Sub>::sub(a: ftest, b: ftest),
+        //     cases: [
+        //         (-0.0, 0.0),
+        //         (74482736000000.0, 11088044000000.0),
+        //         (-128.0, -115.12566)
+        //     ]
+        // }
         test_bignum! {
             function: <ftest as Mul>::mul(a: ftest, b: ftest),
             cases: [

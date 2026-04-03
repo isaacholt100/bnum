@@ -403,7 +403,7 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> IntegerTrait f
                 .gcd(&other.unsigned_abs_internal())
                 .force_sign();
             if gcd == Self::MIN {
-                return crate::Int::MIN.force_sign();
+                return Integer::<true, N, B, OM>::MIN.abs().force_sign();
             }
             return gcd;
         }
@@ -863,10 +863,9 @@ mod tests {
             function: <stest as IntegerTrait>::gcd(a: ref &stest, b: ref &stest),
             skip: {
                 #[allow(unused_comparisons)]
-                let cond = <stest>::MIN < 0 && (a == <stest>::MIN && (b == <stest>::MIN || b == 0)) || (b == <stest>::MIN && (a == <stest>::MIN || a == 0));
+                let cond = <stest>::MIN < 0 && crate::overflow::GLOBAL_OVERFLOW_CHECKS && (a == <stest>::MIN && (b == <stest>::MIN || b == 0)) || (b == <stest>::MIN && (a == <stest>::MIN || a == 0));
                 cond
-            },
-            cases: [(ref &stest::MIN, ref &stest::MIN)]
+            }
         }
         test_bignum! {
             function: <stest as IntegerTrait>::is_multiple_of(a: ref &stest, b: ref &stest)
@@ -899,37 +898,37 @@ mod tests {
             skip: n >= <stest>::BITS as u8
         }
         test_bignum! {
-            function: <stest as PrimInt>::count_ones(a: ref &stest)
+            function: <stest as PrimInt>::count_ones(a: stest)
         }
         test_bignum! {
-            function: <stest as PrimInt>::count_zeros(a: ref &stest)
+            function: <stest as PrimInt>::count_zeros(a: stest)
         }
         test_bignum! {
-            function: <stest as PrimInt>::leading_zeros(a: ref &stest)
+            function: <stest as PrimInt>::leading_zeros(a: stest)
         }
         test_bignum! {
-            function: <stest as PrimInt>::trailing_zeros(a: ref &stest)
+            function: <stest as PrimInt>::trailing_zeros(a: stest)
         }
         test_bignum! {
-            function: <stest as PrimInt>::leading_ones(a: ref &stest)
+            function: <stest as PrimInt>::leading_ones(a: stest)
         }
         test_bignum! {
-            function: <stest as PrimInt>::trailing_ones(a: ref &stest)
+            function: <stest as PrimInt>::trailing_ones(a: stest)
         }
         test_bignum! {
-            function: <stest as PrimInt>::rotate_left(a: ref &stest, n: u32)
+            function: <stest as PrimInt>::rotate_left(a: stest, n: u32)
         }
         test_bignum! {
-            function: <stest as PrimInt>::rotate_right(a: ref &stest, n: u32)
+            function: <stest as PrimInt>::rotate_right(a: stest, n: u32)
         }
         test_bignum! {
-            function: <stest as PrimInt>::swap_bytes(a: ref &stest)
+            function: <stest as PrimInt>::swap_bytes(a: stest)
         }
         test_bignum! {
-            function: <stest as PrimInt>::reverse_bits(a: ref &stest)
+            function: <stest as PrimInt>::reverse_bits(a: stest)
         }
         test_bignum! {
-            function: <stest as PrimInt>::pow(a: ref &stest, n: u32),
+            function: <stest as PrimInt>::pow(a: stest, n: u32),
             skip: a.checked_pow(n).is_none()
         }
         

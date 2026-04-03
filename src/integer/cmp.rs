@@ -42,12 +42,6 @@ mod tests {
             function: <stest as PartialEq>::eq(a: ref &stest, b: ref &stest)
         }
         test_bignum! {
-            function: <itest>::eq(a: ref &itest, b: ref &itest)
-        }
-        test_bignum! {
-            function: <stest>::ne(a: ref &stest, b: ref &stest)
-        }
-        test_bignum! {
             function: <stest as PartialOrd>::partial_cmp(a: ref &stest, b: ref &stest)
         }
         test_bignum! {

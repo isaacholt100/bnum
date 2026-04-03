@@ -166,28 +166,6 @@ impl<const MAX: u32> From<Radix<MAX>> for u32 {
     }
 }
 
-#[cfg(feature = "alloc")]
-macro_rules! quickcheck_from_to_radix {
-    ($primitive: ty, $name: ident, $max: expr) => {
-        paste::paste! {
-            quickcheck::quickcheck! {
-                fn [<quickcheck_from_to_ $name>](u: $primitive, radix: crate::test::Radix<$max>) -> quickcheck::TestResult {
-                    use crate::cast::CastFrom;
-
-                    let radix = radix.0;
-                    let u = <[<$primitive:upper>]>::cast_from(u);
-                    let v = u.[<to_ $name>](radix as u32);
-                    let u1 = <[<$primitive:upper>]>::[<from_ $name>](&v, radix as u32).unwrap_or(!u);
-                    quickcheck::TestResult::from_bool(u == u1)
-                }
-            }
-        }
-    }
-}
-
-#[cfg(feature = "alloc")]
-pub(crate) use quickcheck_from_to_radix;
-
 macro_rules! debug_skip {
     ($skip: expr) => {
         crate::overflow::GLOBAL_OVERFLOW_CHECKS && $skip
