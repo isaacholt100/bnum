@@ -384,22 +384,16 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
 #[cfg(test)]
 mod tests {
     macro_rules! quickcheck_from_to_radix {
-        ($primitive: ty, $name: ident, $max: expr) => {
+        ($TestType: ty, $name: ident, $max: expr) => {
             paste::paste! {
                 quickcheck::quickcheck! {
-                    fn [<quickcheck_from_to_ $name>](u: $primitive, radix: crate::test::Radix<$max>) -> quickcheck::TestResult {
+                    fn [<quickcheck_from_to_ $name>](u: $TestType, radix: crate::test::Radix<$max>) -> quickcheck::TestResult {
                         use crate::cast::CastFrom;
-                        // dbg!(u, radix);
-                        // println!("{:064x}", u);
+
                         let radix = radix.0;
-                        let u = <[<$primitive:upper>]>::cast_from(u);
                         let v = u.[<to_ $name>](radix as u32);
-                        let u1 = <[<$primitive:upper>]>::[<from_ $name>](&v, radix as u32).unwrap();
-                        // assert_eq!(u, u1);
-                        // dbg!(u, u1);
-                        // if u != u1 {
-                        //     panic!("{} {}", u, u1);
-                        // }
+                        let u1 = <$TestType>::[<from_ $name>](&v, radix as u32).unwrap();
+                        
                         quickcheck::TestResult::from_bool(u == u1)
                     }
                 }
@@ -416,13 +410,13 @@ mod tests {
     crate::test::test_all! {
         testing integers;
         
-        quickcheck_from_to_radix!(stest, str_radix, 36);
+        quickcheck_from_to_radix!(STest, str_radix, 36);
     }
 
     crate::test::test_all! {
         testing unsigned;
 
-        quickcheck_from_to_radix!(utest, radix_be, 256);
-        quickcheck_from_to_radix!(utest, radix_le, 256);
+        quickcheck_from_to_radix!(UTest, radix_be, 256);
+        quickcheck_from_to_radix!(UTest, radix_le, 256);
     }
 }

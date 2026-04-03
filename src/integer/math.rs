@@ -646,7 +646,7 @@ impl<'a, const S: bool, const N: usize, const B: usize, const OM: u8> Product<&'
 #[cfg(test)]
 mod tests {
     use crate::cast::CastFrom;
-    use crate::test::{debug_skip, test_bignum};
+    use crate::test::test_bignum;
     use crate::n;
 
     crate::test::test_all! {
@@ -654,16 +654,16 @@ mod tests {
 
         #[test]
         fn is_zero() {
-            assert!(UTEST::MIN.is_zero());
-            assert!(!UTEST::MAX.is_zero());
-            assert!(!UTEST::ONE.is_zero());
+            assert!(UTest::MIN.is_zero());
+            assert!(!UTest::MAX.is_zero());
+            assert!(!UTest::ONE.is_zero());
         }
 
         #[test]
         fn is_one() {
-            assert!(UTEST::ONE.is_one());
-            assert!(!UTEST::MAX.is_one());
-            assert!(!UTEST::ZERO.is_one());
+            assert!(UTest::ONE.is_one());
+            assert!(!UTest::MAX.is_one());
+            assert!(!UTest::ZERO.is_one());
             let mut digits = *crate::Uint::<2, 0>::MAX.as_bytes();
             digits[0] = 1;
             let b = crate::Uint::<2, 0>::from_bytes(digits);
@@ -673,7 +673,7 @@ mod tests {
         #[cfg(feature = "alloc")]
         #[test]
         fn sum() {
-            let v: alloc::vec::Vec<UTEST> = vec![
+            let v: alloc::vec::Vec<UTest> = vec![
                 n!(0),
                 n!(1),
                 n!(2),
@@ -688,55 +688,55 @@ mod tests {
         #[cfg(feature = "alloc")]
         #[test]
         fn product() {
-            let v: alloc::vec::Vec<UTEST> = vec![n!(1), n!(2), n!(3)];
+            let v: alloc::vec::Vec<UTest> = vec![n!(1), n!(2), n!(3)];
 
             assert_eq!(n!(6), v.iter().product());
             assert_eq!(n!(6), v.into_iter().product());
         }
 
         test_bignum! {
-            function: <stest>::pow(a: stest, b: u16),
-            skip: crate::test::debug_skip!(a.checked_pow(b as u32).is_none())
+            function: <STest>::pow(a: STest, b: u16),
+            skip: crate::overflow::GLOBAL_OVERFLOW_CHECKS && a.checked_pow(b as u32).is_none()
         }
         test_bignum! {
-            function: <stest>::div_euclid(a: stest, b: stest),
+            function: <STest>::div_euclid(a: STest, b: STest),
             skip: a.checked_div_euclid(b).is_none()
         }
         test_bignum! {
-            function: <stest>::rem_euclid(a: stest, b: stest),
+            function: <STest>::rem_euclid(a: STest, b: STest),
             skip: a.checked_rem_euclid(b).is_none()
         }
         test_bignum! {
-            function: <stest>::abs_diff(a: stest, b: stest)
+            function: <STest>::abs_diff(a: STest, b: STest)
         }
         test_bignum! {
-            function: <stest>::midpoint(a: stest, b: stest)
+            function: <STest>::midpoint(a: STest, b: STest)
         }
         test_bignum! {
-            function: <stest>::ilog(a: stest, base: stest),
+            function: <STest>::ilog(a: STestBase, base: STestBase),
             skip: a <= 0 || base <= 1
         }
         test_bignum! {
-            function: <stest>::ilog2(a: stest),
+            function: <STest>::ilog2(a: STestBase),
             skip: a <= 0
         }
         test_bignum! {
-            function: <stest>::ilog10(a: stest),
+            function: <STest>::ilog10(a: STestBase),
             skip: a <= 0
         }
         #[cfg(nightly)] // since int_roundings are not stable yet
         test_bignum! {
-            function: <stest>::next_multiple_of(a: stest, b: stest),
-            skip: crate::test::debug_skip!(a.checked_next_multiple_of(b).is_none()) || b == 0
+            function: <STest>::next_multiple_of(a: STestBase, b: STestBase),
+            skip: crate::overflow::GLOBAL_OVERFLOW_CHECKS && (a.checked_next_multiple_of(b).is_none() || b == 0)
         }
         #[cfg(nightly)] // since int_roundings are not stable yet
         test_bignum! {
-            function: <stest>::div_floor(a: stest, b: stest),
+            function: <STest>::div_floor(a: STest, b: STest),
             skip: a.checked_div(b).is_none()
         }
         #[cfg(nightly)] // since int_roundings are not stable yet
         test_bignum! {
-            function: <stest>::div_ceil(a: stest, b: stest),
+            function: <STest>::div_ceil(a: STest, b: STest),
             skip: a.checked_div(b).is_none()
         }
     }
@@ -744,17 +744,17 @@ mod tests {
         testing unsigned;
 
         test_bignum! {
-            function: <utest>::is_power_of_two(a: utest)
+            function: <UTest>::is_power_of_two(a: UTest)
         }
         test_bignum! {
-            function: <utest>::next_power_of_two(a: utest),
-            skip: debug_skip!(a.checked_next_power_of_two().is_none())
+            function: <UTest>::next_power_of_two(a: UTest),
+            skip: crate::overflow::GLOBAL_OVERFLOW_CHECKS && a.checked_next_power_of_two().is_none()
         }
         test_bignum! {
-            function: <utest>::cast_signed(a: utest)
+            function: <UTest>::cast_signed(a: UTest)
         }
         test_bignum! {
-            function: <utest>::isqrt(a: utest)
+            function: <UTest>::isqrt(a: UTest)
         }
     }
     crate::test::test_all! {
@@ -762,36 +762,36 @@ mod tests {
 
         #[test]
         fn is_power_of_two() {
-            assert!(!ITEST::cast_from(-1273i16).is_power_of_two());
-            assert!(!ITEST::cast_from(8945i16).is_power_of_two());
-            assert!(ITEST::cast_from(1i16 << 14).is_power_of_two());
+            assert!(!ITest::cast_from(-1273i16).is_power_of_two());
+            assert!(!ITest::cast_from(8945i16).is_power_of_two());
+            assert!(ITest::cast_from(1i16 << 14).is_power_of_two());
         }
 
         test_bignum! {
-            function: <itest>::unsigned_abs(a: itest),
+            function: <ITest>::unsigned_abs(a: ITest),
             cases: [
-                (itest::MIN)
+                (ITest::MIN)
             ]
         }
         test_bignum! {
-            function: <itest>::abs(a: itest),
-            skip: debug_skip!(a == itest::MIN)
+            function: <ITest>::abs(a: ITest),
+            skip: crate::overflow::GLOBAL_OVERFLOW_CHECKS && a == ITest::MIN
         }
         test_bignum! {
-            function: <itest>::signum(a: itest)
+            function: <ITest>::signum(a: ITest)
         }
         test_bignum! {
-            function: <itest>::is_positive(a: itest)
+            function: <ITest>::is_positive(a: ITest)
         }
         test_bignum! {
-            function: <itest>::is_negative(a: itest)
+            function: <ITest>::is_negative(a: ITest)
         }
         test_bignum! {
-            function: <itest>::cast_unsigned(a: itest)
+            function: <ITest>::cast_unsigned(a: ITest)
         }
         test_bignum! {
-            function: <itest>::isqrt(a: itest),
-            skip: a < 0
+            function: <ITest>::isqrt(a: ITest),
+            skip: a.is_negative()
         }
     }
 }
@@ -801,6 +801,6 @@ crate::test::test_all_custom_bit_widths! {
     use crate::test::test_bignum;
 
     test_bignum! {
-        function: <utest>::is_power_of_two(a: utest)
+        function: <UTest>::is_power_of_two(a: UTest)
     }
 }

@@ -244,10 +244,10 @@ crate::test::test_all! {
 
             let (mut rng, mut rng2) = seeded_rngs::<SmallRng>(seed);
 
-            let big = rng.random::<STEST>();
-            let primitive = rng2.random::<stest>();
+            let actual = rng.random::<STest>();
+            let expected = rng2.random::<STestBase>();
 
-            convert::test_eq(big, primitive)
+            convert::test_eq(actual, expected)
         }
 
         #[allow(non_snake_case)]
@@ -258,21 +258,21 @@ crate::test::test_all! {
 
             let (mut rng, mut rng2) = seeded_rngs::<SmallRng>(seed);
 
-            let mut big_array = [STEST::MIN; SLICE_LENGTH];
-            let mut primitive_array = [stest::MIN; SLICE_LENGTH];
+            let mut actual_array = [STest::MIN; SLICE_LENGTH];
+            let mut expected_array = [STestBase::MIN; SLICE_LENGTH];
 
-            Fill::fill_slice(&mut big_array, &mut rng);
+            Fill::fill_slice(&mut actual_array, &mut rng);
 
-            Fill::fill_slice(&mut primitive_array, &mut rng2);
+            Fill::fill_slice(&mut expected_array, &mut rng2);
 
-            big_array
+            actual_array
                 .into_iter()
-                .zip(primitive_array.into_iter())
-                .all(|(big, primitive)| convert::test_eq(big, primitive))
+                .zip(expected_array.into_iter())
+                .all(|(actual, expected)| convert::test_eq(actual, expected))
         }
 
         #[allow(non_snake_case)]
-        fn quickcheck_SmallRng_gen_range_stest(seed: u64, min: stest, max: stest) -> quickcheck::TestResult {
+        fn quickcheck_SmallRng_gen_range_stest(seed: u64, min: STest, max: STest) -> quickcheck::TestResult {
             if min >= max {
                 return quickcheck::TestResult::discard();
             }
@@ -283,31 +283,31 @@ crate::test::test_all! {
             
             let (mut rng, mut rng2) = seeded_rngs::<SmallRng>(seed);
 
-            let min_big = STEST::cast_from(min);
-            let max_big = STEST::cast_from(max);
+            let min_actual = STest::cast_from(min);
+            let max_actual = STest::cast_from(max);
 
-            let big = rng.random_range(min_big..max_big);
-            let primitive = rng2.random_range(min..max);  // calls sample_single from UniformSampler
+            let actual = rng.random_range(min_actual..max_actual);
+            let expected = rng2.random_range(min..max);  // calls sample_single from UniformSampler
 
 
-            result &= convert::test_eq(big, primitive);
+            result &= convert::test_eq(actual, expected);
 
-            let big = rng.random_range(min_big..=max_big);
-            let primitive = rng2.random_range(min..=max); // calls sample_single_inclusive from UniformSampler
+            let actual = rng.random_range(min_actual..=max_actual);
+            let expected = rng2.random_range(min..=max); // calls sample_single_inclusive from UniformSampler
 
-            result &= convert::test_eq(big, primitive);
+            result &= convert::test_eq(actual, expected);
 
             use rand::distr::Uniform;
 
-            let big = Uniform::new(min_big, max_big)
+            let actual = Uniform::new(min_actual, max_actual)
                 .unwrap()
                 .sample(&mut rng); // calls sample from UniformSampler
 
-            let primitive = Uniform::new(min, max)
+            let expected = Uniform::new(min, max)
                 .unwrap()
                 .sample(&mut rng2); // calls sample from UniformSampler
 
-            result &= convert::test_eq(big, primitive);
+            result &= convert::test_eq(actual, expected);
 
             quickcheck::TestResult::from_bool(result)
         }

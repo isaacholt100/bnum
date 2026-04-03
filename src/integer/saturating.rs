@@ -372,31 +372,31 @@ mod tests {
         testing unsigned;
 
         test_bignum! {
-            function: <utest>::saturating_add_signed(a: utest, b: itest)
+            function: <UTest>::saturating_add_signed(a: UTest, b: ITest)
         }
         test_bignum! {
-            function: <utest>::saturating_sub_signed(a: utest, b: itest)
+            function: <UTest>::saturating_sub_signed(a: UTest, b: ITest)
         }
     }
     crate::test::test_all! {
         testing signed;
 
         test_bignum! {
-            function: <itest>::saturating_add_unsigned(a: itest, b: utest)
+            function: <ITest>::saturating_add_unsigned(a: ITest, b: UTest)
         }
         test_bignum! {
-            function: <itest>::saturating_sub_unsigned(a: itest, b: utest)
+            function: <ITest>::saturating_sub_unsigned(a: ITest, b: UTest)
         }
         test_bignum! {
-            function: <itest>::saturating_neg(a: itest),
+            function: <ITest>::saturating_neg(a: ITest),
             cases: [
-                (itest::MIN)
+                (ITest::MIN)
             ]
         }
         test_bignum! {
-            function: <itest>::saturating_abs(a: itest),
+            function: <ITest>::saturating_abs(a: ITest),
             cases: [
-                (itest::MIN)
+                (ITest::MIN)
             ]
         }
     }
@@ -404,20 +404,20 @@ mod tests {
         testing integers;
 
         test_bignum! {
-            function: <stest>::saturating_add(a: stest, b: stest)
+            function: <STest>::saturating_add(a: STest, b: STest)
         }
         test_bignum! {
-            function: <stest>::saturating_sub(a: stest, b: stest)
+            function: <STest>::saturating_sub(a: STest, b: STest)
         }
         test_bignum! {
-            function: <stest>::saturating_mul(a: stest, b: stest)
+            function: <STest>::saturating_mul(a: STest, b: STest)
         }
         test_bignum! {
-            function: <stest>::saturating_div(a: stest, b: stest),
-            skip: b == 0
+            function: <STest>::saturating_div(a: STest, b: STest),
+            skip: b.is_zero()
         }
         test_bignum! {
-            function: <stest>::saturating_pow(a: stest, b: u16)
+            function: <STest>::saturating_pow(a: STest, b: u16)
         }
     }
 }

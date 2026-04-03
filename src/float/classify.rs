@@ -91,37 +91,37 @@ mod tests {
         testing floats;
 
         test_bignum! {
-            function: <ftest>::is_sign_positive(a: ftest)
+            function: <FTest>::is_sign_positive(a: FTestBase)
         }
         test_bignum! {
-            function: <ftest>::is_sign_negative(a: ftest)
+            function: <FTest>::is_sign_negative(a: FTestBase)
         }
         test_bignum! {
-            function: <ftest>::is_finite(a: ftest)
+            function: <FTest>::is_finite(a: FTestBase)
         }
         test_bignum! {
-            function: <ftest>::is_infinite(a: ftest)
+            function: <FTest>::is_infinite(a: FTestBase)
         }
         test_bignum! {
-            function: <ftest>::is_nan(a: ftest)
+            function: <FTest>::is_nan(a: FTestBase)
         }
         test_bignum! {
-            function: <ftest>::is_subnormal(a: ftest)
+            function: <FTest>::is_subnormal(a: FTestBase)
         }
         test_bignum! {
-            function: <ftest>::is_normal(a: ftest)
+            function: <FTest>::is_normal(a: FTestBase)
         }
         test_bignum! {
-            function: <ftest>::classify(a: ftest)
+            function: <FTest>::classify(a: FTestBase)
         }
 
         #[test]
         fn is_zero() {
-            let z1 = FTEST::ZERO;
-            let z2 = FTEST::NEG_ZERO;
+            let z1 = FTest::ZERO;
+            let z2 = FTest::NEG_ZERO;
             assert!(z1.is_zero());
             assert!(z2.is_zero());
-            assert!(!FTEST::ONE.is_zero());
+            assert!(!FTest::ONE.is_zero());
         }
     }
 }

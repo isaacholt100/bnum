@@ -666,7 +666,7 @@ mod tests {
             paste::paste! {
                 $(
                     test_bignum! {
-                        function: <stest>::[<to_ $prim>](u: ref &stest)
+                        function: <STest>::[<to_ $prim>](u: ref &STest)
                     }
                 )*
             }
@@ -678,9 +678,9 @@ mod tests {
             paste::paste! {
                 $(
                     test_bignum! {
-                        function: <stest>::[<from_ $prim>](u: $prim),
+                        function: <STest>::[<from_ $prim>](u: $prim),
                         cases: [
-                            (stest::MIN as $prim)
+                            (STestBase::MIN as $prim)
                         ]
                     }
                 )*
@@ -689,152 +689,146 @@ mod tests {
     }
 
     use super::*;
-    use crate::test::{TestConvert, test_bignum, debug_skip};
+    use crate::test::{TestConvert, test_bignum};
 
     crate::test::test_all! {
         testing integers;
 
         crate::test::test_into! {
-            function: <stest as AsPrimitive>::as_,
+            function: <STest as AsPrimitive>::as_,
             into_types: (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64)
         }
 
         test_bignum! {
-            function: <stest as CheckedAdd>::checked_add(a: ref &stest, b: ref &stest)
+            function: <STest as CheckedAdd>::checked_add(a: ref &STest, b: ref &STest)
         }
         test_bignum! {
-            function: <stest as CheckedSub>::checked_sub(a: ref &stest, b: ref &stest)
+            function: <STest as CheckedSub>::checked_sub(a: ref &STest, b: ref &STest)
         }
         test_bignum! {
-            function: <stest as CheckedMul>::checked_mul(a: ref &stest, b: ref &stest)
+            function: <STest as CheckedMul>::checked_mul(a: ref &STest, b: ref &STest)
         }
         test_bignum! {
-            function: <stest as CheckedDiv>::checked_div(a: ref &stest, b: ref &stest)
+            function: <STest as CheckedDiv>::checked_div(a: ref &STest, b: ref &STest)
         }
         test_bignum! {
-            function: <stest as CheckedRem>::checked_rem(a: ref &stest, b: ref &stest)
+            function: <STest as CheckedRem>::checked_rem(a: ref &STest, b: ref &STest)
         }
         test_bignum! {
-            function: <stest as CheckedNeg>::checked_neg(a: ref &stest)
+            function: <STest as CheckedNeg>::checked_neg(a: ref &STest)
         }
         test_bignum! {
-            function: <stest as CheckedShl>::checked_shl(a: ref &stest, b: u8)
+            function: <STest as CheckedShl>::checked_shl(a: ref &STest, b: u8)
         }
         test_bignum! {
-            function: <stest as CheckedShr>::checked_shr(a: ref &stest, b: u8)
+            function: <STest as CheckedShr>::checked_shr(a: ref &STest, b: u8)
         }
         test_bignum! {
-            function: <stest as CheckedEuclid>::checked_div_euclid(a: ref &stest, b: ref &stest)
+            function: <STest as CheckedEuclid>::checked_div_euclid(a: ref &STest, b: ref &STest)
         }
         test_bignum! {
-            function: <stest as CheckedEuclid>::checked_rem_euclid(a: ref &stest, b: ref &stest)
+            function: <STest as CheckedEuclid>::checked_rem_euclid(a: ref &STest, b: ref &STest)
         }
 
         test_bignum! {
-            function: <stest as Euclid>::div_euclid(a: ref &stest, b: ref &stest),
+            function: <STest as Euclid>::div_euclid(a: ref &STest, b: ref &STest),
             skip: a.checked_div_euclid(b).is_none()
         }
         test_bignum! {
-            function: <stest as Euclid>::rem_euclid(a: ref &stest, b: ref &stest),
+            function: <STest as Euclid>::rem_euclid(a: ref &STest, b: ref &STest),
             skip: a.checked_rem_euclid(b).is_none()
         }
 
         test_bignum! {
-            function: <stest as SaturatingAdd>::saturating_add(a: ref &stest, b: ref &stest)
+            function: <STest as SaturatingAdd>::saturating_add(a: ref &STest, b: ref &STest)
         }
         test_bignum! {
-            function: <stest as SaturatingSub>::saturating_sub(a: ref &stest, b: ref &stest)
+            function: <STest as SaturatingSub>::saturating_sub(a: ref &STest, b: ref &STest)
         }
         test_bignum! {
-            function: <stest as SaturatingMul>::saturating_mul(a: ref &stest, b: ref &stest)
-        }
-
-        test_bignum! {
-            function: <stest as Saturating>::saturating_add(a: stest, b: stest)
-        }
-        test_bignum! {
-            function: <stest as Saturating>::saturating_sub(a: stest, b: stest)
+            function: <STest as SaturatingMul>::saturating_mul(a: ref &STest, b: ref &STest)
         }
 
         test_bignum! {
-            function: <stest as WrappingAdd>::wrapping_add(a: ref &stest, b: ref &stest)
+            function: <STest as Saturating>::saturating_add(a: STest, b: STest)
         }
         test_bignum! {
-            function: <stest as OverflowingAdd>::overflowing_add(a: ref &stest, b: ref &stest)
-        }
-        test_bignum! {
-            function: <stest as WrappingSub>::wrapping_sub(a: ref &stest, b: ref &stest)
-        }
-        test_bignum! {
-            function: <stest as OverflowingSub>::overflowing_sub(a: ref &stest, b: ref &stest)
-        }
-        test_bignum! {
-            function: <stest as WrappingMul>::wrapping_mul(a: ref &stest, b: ref &stest)
-        }
-        test_bignum! {
-            function: <stest as OverflowingMul>::overflowing_mul(a: ref &stest, b: ref &stest)
-        }
-        test_bignum! {
-            function: <stest as WrappingNeg>::wrapping_neg(a: ref &stest)
-        }
-        test_bignum! {
-            function: <stest as WrappingShl>::wrapping_shl(a: ref &stest, b: u16)
-        }
-        test_bignum! {
-            function: <stest as WrappingShr>::wrapping_shr(a: ref &stest, b: u16)
+            function: <STest as Saturating>::saturating_sub(a: STest, b: STest)
         }
 
         test_bignum! {
-            function: <stest as One>::is_one(a: ref &stest)
+            function: <STest as WrappingAdd>::wrapping_add(a: ref &STest, b: ref &STest)
         }
         test_bignum! {
-            function: <stest as Zero>::is_zero(a: ref &stest)
+            function: <STest as OverflowingAdd>::overflowing_add(a: ref &STest, b: ref &STest)
+        }
+        test_bignum! {
+            function: <STest as WrappingSub>::wrapping_sub(a: ref &STest, b: ref &STest)
+        }
+        test_bignum! {
+            function: <STest as OverflowingSub>::overflowing_sub(a: ref &STest, b: ref &STest)
+        }
+        test_bignum! {
+            function: <STest as WrappingMul>::wrapping_mul(a: ref &STest, b: ref &STest)
+        }
+        test_bignum! {
+            function: <STest as OverflowingMul>::overflowing_mul(a: ref &STest, b: ref &STest)
+        }
+        test_bignum! {
+            function: <STest as WrappingNeg>::wrapping_neg(a: ref &STest)
+        }
+        test_bignum! {
+            function: <STest as WrappingShl>::wrapping_shl(a: ref &STest, b: u16)
+        }
+        test_bignum! {
+            function: <STest as WrappingShr>::wrapping_shr(a: ref &STest, b: u16)
+        }
+
+        test_bignum! {
+            function: <STest as One>::is_one(a: ref &STest)
+        }
+        test_bignum! {
+            function: <STest as Zero>::is_zero(a: ref &STest)
         }
 
         #[test]
         fn one() {
-            assert_eq!(STEST::one(), TestConvert::into(stest::one()));
+            assert_eq!(STest::one(), TestConvert::into(STestBase::one()));
         }
 
         #[test]
         fn zero() {
-            assert_eq!(STEST::zero(), TestConvert::into(stest::zero()));
+            assert_eq!(STest::zero(), TestConvert::into(STestBase::zero()));
         }
 
         #[test]
         fn min_value() {
-            assert_eq!(STEST::min_value(), TestConvert::into(stest::min_value()));
+            assert_eq!(STest::min_value(), TestConvert::into(STestBase::min_value()));
         }
 
         #[test]
         fn max_value() {
-            assert_eq!(STEST::max_value(), TestConvert::into(stest::max_value()));
+            assert_eq!(STest::max_value(), TestConvert::into(STestBase::max_value()));
         }
 
         test_bignum! {
-            function: <stest as MulAdd>::mul_add(a: stest, b: stest, c: stest),
+            function: <STest as MulAdd>::mul_add(a: STest, b: STest, c: STest),
             skip: a.checked_mul(b).map(|d| d.checked_add(c)).flatten().is_none()
         }
 
         test_bignum! {
-            function: <stest as Roots>::sqrt(a: ref &stest),
-            skip: {
-                #[allow(unused_comparisons)]
-                let cond = a < 0;
-
-                cond
-            }
+            function: <STest as Roots>::sqrt(a: ref &STest),
+            skip: a.is_negative_internal()
         }
         test_bignum! {
-            function: <stest as Roots>::cbrt(a: ref &stest)
+            function: <STest as Roots>::cbrt(a: ref &STest)
         }
         test_bignum! {
-            function: <stest as Roots>::nth_root(a: ref &stest, n: u32),
+            function: <STest as Roots>::nth_root(a: ref &STest, n: u32),
             skip: n == 0 || {
-                #[allow(unused_comparisons)]
-                let cond = a < 0;
+                let cond = a.is_negative_internal();
 
-                n % 2 == 0 && cond || (n == 1 && cond && a == <stest>::MIN) // second condition is due to an error in the num_integer crate, which incorrectly panics when calculating the first root of i128::MIN
+                n % 2 == 0 && cond || (n == 1 && cond && a == <STest>::MIN) // second condition is due to an error in the num_integer crate, which incorrectly panics when calculating the first root of i128::MIN
             }
         }
 
@@ -843,106 +837,108 @@ mod tests {
         test_from_primitive!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64);
 
         test_bignum! {
-            function: <stest as IntegerTrait>::div_floor(a: ref &stest, b: ref &stest),
+            function: <STest as IntegerTrait>::div_floor(a: ref &STest, b: ref &STest),
             skip: b.is_zero()
         }
         test_bignum! {
-            function: <stest as IntegerTrait>::mod_floor(a: ref &stest, b: ref &stest),
+            function: <STest as IntegerTrait>::mod_floor(a: ref &STest, b: ref &STest),
             skip: b.is_zero()
         }
         test_bignum! {
-            function: <stest as IntegerTrait>::lcm(a: ref &stest, b: ref &stest),
+            function: <STest as IntegerTrait>::lcm(a: ref &STest, b: ref &STest),
             skip: {
-                #[allow(unused_comparisons)]
-                let cond = a.checked_mul(b).is_none() || (a < 0 && a == <stest>::MIN) || (b < 0 && b == <stest>::MIN); // lcm(a, b) <= a * b
+                let cond = a.checked_mul(b).is_none() || (a.is_negative_internal() && a == <STest>::MIN) || (b.is_negative_internal() && b == <STest>::MIN); // lcm(a, b) <= a * b
                 cond
             },
-            cases: [(ref &(1 as stest), ref &(-1i8 as stest))]
+            cases: [(ref &(1i32 as STestBase), ref &(-1i32 as STestBase))]
         }
+
+        use crate::n;
+
         test_bignum! {
-            function: <stest as IntegerTrait>::gcd(a: ref &stest, b: ref &stest),
+            function: <STest as IntegerTrait>::gcd(a: ref &STest, b: ref &STest),
             skip: {
                 #[allow(unused_comparisons)]
-                let cond = <stest>::MIN < 0 && crate::overflow::GLOBAL_OVERFLOW_CHECKS && (a == <stest>::MIN && (b == <stest>::MIN || b == 0)) || (b == <stest>::MIN && (a == <stest>::MIN || a == 0));
+                let cond = STestBase::MIN < 0 && crate::overflow::GLOBAL_OVERFLOW_CHECKS && (a == <STest>::MIN && (b == <STest>::MIN || b == n!(0))) || (b == <STest>::MIN && (a == <STest>::MIN || a == n!(0)));
                 cond
             }
         }
         test_bignum! {
-            function: <stest as IntegerTrait>::is_multiple_of(a: ref &stest, b: ref &stest)
+            function: <STest as IntegerTrait>::is_multiple_of(a: ref &STest, b: ref &STest)
         }
         test_bignum! {
-            function: <stest as IntegerTrait>::is_even(a: ref &stest)
+            function: <STest as IntegerTrait>::is_even(a: ref &STest)
         }
         test_bignum! {
-            function: <stest as IntegerTrait>::is_odd(a: ref &stest)
+            function: <STest as IntegerTrait>::is_odd(a: ref &STest)
         }
         test_bignum! {
-            function: <stest as IntegerTrait>::div_rem(a: ref &stest, b: ref &stest),
+            function: <STest as IntegerTrait>::div_rem(a: ref &STest, b: ref &STest),
             skip: b.is_zero()
         }
 
         test_bignum! {
-            function: <stest as PrimInt>::unsigned_shl(a: stest, n: u8),
-            skip: n >= <stest>::BITS as u8
+            function: <STest as PrimInt>::unsigned_shl(a: STest, n: u8),
+            skip: n >= <STest>::BITS as u8
         }
         test_bignum! {
-            function: <stest as PrimInt>::unsigned_shr(a: stest, n: u8),
-            skip: n >= <stest>::BITS as u8
+            function: <STest as PrimInt>::unsigned_shr(a: STest, n: u8),
+            skip: n >= <STest>::BITS as u8
         }
         test_bignum! {
-            function: <stest as PrimInt>::signed_shl(a: stest, n: u8),
-            skip: n >= <stest>::BITS as u8
+            function: <STest as PrimInt>::signed_shl(a: STest, n: u8),
+            skip: n >= <STest>::BITS as u8
         }
         test_bignum! {
-            function: <stest as PrimInt>::signed_shr(a: stest, n: u8),
-            skip: n >= <stest>::BITS as u8
+            function: <STest as PrimInt>::signed_shr(a: STest, n: u8),
+            skip: n >= <STest>::BITS as u8
         }
         test_bignum! {
-            function: <stest as PrimInt>::count_ones(a: stest)
+            function: <STest as PrimInt>::count_ones(a: STest)
         }
         test_bignum! {
-            function: <stest as PrimInt>::count_zeros(a: stest)
+            function: <STest as PrimInt>::count_zeros(a: STest)
         }
         test_bignum! {
-            function: <stest as PrimInt>::leading_zeros(a: stest)
+            function: <STest as PrimInt>::leading_zeros(a: STest)
         }
         test_bignum! {
-            function: <stest as PrimInt>::trailing_zeros(a: stest)
+            function: <STest as PrimInt>::trailing_zeros(a: STest)
         }
         test_bignum! {
-            function: <stest as PrimInt>::leading_ones(a: stest)
+            function: <STest as PrimInt>::leading_ones(a: STest)
         }
         test_bignum! {
-            function: <stest as PrimInt>::trailing_ones(a: stest)
+            function: <STest as PrimInt>::trailing_ones(a: STest)
         }
         test_bignum! {
-            function: <stest as PrimInt>::rotate_left(a: stest, n: u32)
+            function: <STest as PrimInt>::rotate_left(a: STest, n: u32)
         }
         test_bignum! {
-            function: <stest as PrimInt>::rotate_right(a: stest, n: u32)
+            function: <STest as PrimInt>::rotate_right(a: STest, n: u32)
         }
         test_bignum! {
-            function: <stest as PrimInt>::swap_bytes(a: stest)
+            function: <STest as PrimInt>::swap_bytes(a: STest)
         }
         test_bignum! {
-            function: <stest as PrimInt>::reverse_bits(a: stest)
+            function: <STest as PrimInt>::reverse_bits(a: STest)
         }
         test_bignum! {
-            function: <stest as PrimInt>::pow(a: stest, n: u32),
+            function: <STest as PrimInt>::pow(a: STest, n: u32),
             skip: a.checked_pow(n).is_none()
         }
         
         test_bignum! {
-            function: <stest as FromBytes>::from_be_bytes(bytes: ref &[u8; STEST::BYTES as usize])
+            function: <STest as FromBytes>::from_be_bytes(bytes: ref &[u8; STest::BYTES as usize])
         }
         test_bignum! {
-            function: <stest as FromBytes>::from_le_bytes(bytes: ref &[u8; STEST::BYTES as usize])
+            function: <STest as FromBytes>::from_le_bytes(bytes: ref &[u8; STest::BYTES as usize])
         }
         test_bignum! {
-            function: <stest as ToBytes>::to_be_bytes(a: ref &stest)
+            function: <STest as ToBytes>::to_be_bytes(a: ref &STest)
         }
         test_bignum! {
-            function: <stest as ToBytes>::to_le_bytes(a: ref &stest)
+            function: <STest as ToBytes>::to_le_bytes(a: ref &STest)
         }
     }
 
@@ -950,21 +946,21 @@ mod tests {
         testing signed;
 
         test_bignum! {
-            function: <stest as Signed>::abs(a: ref &stest),
-            skip: debug_skip!(a == <stest>::MIN)
+            function: <STest as Signed>::abs(a: ref &STest),
+            skip: crate::overflow::GLOBAL_OVERFLOW_CHECKS && a == <STest>::MIN
         }
         test_bignum! {
-            function: <stest as Signed>::abs_sub(a: ref &stest, b: ref &stest),
-            skip: debug_skip!(a > b && a.checked_sub(b).is_none())
+            function: <STest as Signed>::abs_sub(a: ref &STest, b: ref &STest),
+            skip: crate::overflow::GLOBAL_OVERFLOW_CHECKS && (a > b && a.checked_sub(b).is_none())
         }
         test_bignum! {
-            function: <stest as Signed>::signum(a: ref &stest)
+            function: <STest as Signed>::signum(a: ref &STest)
         }
         test_bignum! {
-            function: <stest as Signed>::is_positive(a: ref &stest)
+            function: <STest as Signed>::is_positive(a: ref &STest)
         }
         test_bignum! {
-            function: <stest as Signed>::is_negative(a: ref &stest)
+            function: <STest as Signed>::is_negative(a: ref &STest)
         }
     }
 }

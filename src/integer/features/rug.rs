@@ -54,22 +54,22 @@ crate::test::test_all_custom_bit_widths! {
     use crate::test::test_bignum;
 
     quickcheck::quickcheck! {
-        fn rug_integer_convert_unsigned_invertible(value: UTEST) -> bool {
+        fn rug_integer_convert_unsigned_invertible(value: UTest) -> bool {
             let rug_int: RugInteger = value.into();
-            let converted_back: UTEST = rug_int.try_into().unwrap();
+            let converted_back: UTest = rug_int.try_into().unwrap();
             
             converted_back == value
         }
 
-        fn rug_integer_convert_signed_invertible(value: ITEST) -> bool {
+        fn rug_integer_convert_signed_invertible(value: ITest) -> bool {
             let rug_int: RugInteger = value.into();
-            let converted_back: ITEST = rug_int.try_into().unwrap();
+            let converted_back: ITest = rug_int.try_into().unwrap();
             
             converted_back == value
         }
 
         #[cfg(feature = "alloc")]
-        fn rug_integer_convert_unsigned(value: UTEST) -> bool {
+        fn rug_integer_convert_unsigned(value: UTest) -> bool {
             use alloc::string::ToString;
             let rug_int: RugInteger = value.into();
             
@@ -77,7 +77,7 @@ crate::test::test_all_custom_bit_widths! {
         }
 
         #[cfg(feature = "alloc")]
-        fn rug_integer_convert_signed(value: ITEST) -> bool {
+        fn rug_integer_convert_signed(value: ITest) -> bool {
             use alloc::string::ToString;
             let rug_int: RugInteger = value.into();
             

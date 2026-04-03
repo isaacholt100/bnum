@@ -145,13 +145,13 @@ mod tests {
         testing floats;
 
         test_bignum! {
-            function: <ftest as Zero>::is_zero(a: ref &ftest)
+            function: <FTest as Zero>::is_zero(a: ref &FTestBase)
         }
         test_bignum! {
-            function: <ftest as One>::is_one(a: ref &ftest)
+            function: <FTest as One>::is_one(a: ref &FTestBase)
         }
         test_bignum! {
-            function: <ftest as TotalOrder>::total_cmp(a: ref &ftest, b: ref &ftest)
+            function: <FTest as TotalOrder>::total_cmp(a: ref &FTestBase, b: ref &FTestBase)
         }
     }
 }

@@ -202,30 +202,30 @@ mod tests {
         testing integers;
 
         test_bignum! {
-            function: <stest>::carrying_add(a: stest, b: stest, carry: bool),
+            function: <STest>::carrying_add(a: STest, b: STest, carry: bool),
             cases: [
-                (<stest>::MAX, 1u8, true),
-                (<stest>::MAX, 1u8, false)
+                (<STest>::MAX, 1u8, true),
+                (<STest>::MAX, 1u8, false)
             ]
         }
         test_bignum! {
-            function: <stest>::borrowing_sub(a: stest, b: stest, borrow: bool),
+            function: <STest>::borrowing_sub(a: STest, b: STest, borrow: bool),
             cases: [
-                (<stest>::MIN, 1u8, false),
-                (<stest>::MIN, 1u8, true)
+                (<STest>::MIN, 1u8, false),
+                (<STest>::MIN, 1u8, true)
             ]
         }
         test_bignum! {
-            function: <stest>::widening_mul(a: stest, b: stest),
+            function: <STest>::widening_mul(a: STest, b: STest),
             cases: [
-                (<stest>::MAX, 2u8)
+                (<STest>::MAX, 2u8)
             ]
         }
         test_bignum! {
-            function: <stest>::carrying_mul(a: stest, b: stest, c: stest)
+            function: <STest>::carrying_mul(a: STest, b: STest, c: STest)
         }
         test_bignum! {
-            function: <stest>::carrying_mul_add(a: stest, b: stest, c: stest, d: stest)
+            function: <STest>::carrying_mul_add(a: STest, b: STest, c: STest, d: STest)
         }
     }
 }
@@ -235,6 +235,6 @@ crate::test::test_all_custom_bit_widths! {
     use crate::test::test_bignum;
 
     test_bignum! {
-        function: <utest>::widening_mul(a: utest, b: utest)
+        function: <UTest>::widening_mul(a: UTest, b: UTest)
     }
 }

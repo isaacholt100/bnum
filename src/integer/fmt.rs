@@ -155,33 +155,33 @@ mod tests {
     crate::test::test_all! {
         testing integers;
 
-        impl_format!(stest);
-        impl_format!(STEST);
+        impl_format!(STest);
+        impl_format!(STestBase);
 
 
         test_bignum! {
-            function: <stest as Format>::binary(a: ref &stest, width: Option<u8>, extra: bool)
+            function: <STest as Format>::binary(a: ref &STest, width: Option<u8>, extra: bool)
         }
         test_bignum! {
-            function: <stest as Format>::lower_hex(a: ref &stest, width: Option<u8>, extra: bool)
+            function: <STest as Format>::lower_hex(a: ref &STest, width: Option<u8>, extra: bool)
         }
         test_bignum! {
-            function: <stest as Format>::upper_hex(a: ref &stest, width: Option<u8>, extra: bool)
+            function: <STest as Format>::upper_hex(a: ref &STest, width: Option<u8>, extra: bool)
         }
         test_bignum! {
-            function: <stest as Format>::octal(a: ref &stest, width: Option<u8>, extra: bool)
+            function: <STest as Format>::octal(a: ref &STest, width: Option<u8>, extra: bool)
         }
         test_bignum! {
-            function: <stest as Format>::display(a: ref &stest, width: Option<u8>, extra: bool)
+            function: <STest as Format>::display(a: ref &STest, width: Option<u8>, extra: bool)
         }
         test_bignum! {
-            function: <stest as Format>::debug(a: ref &stest, width: Option<u8>, extra: bool)
+            function: <STest as Format>::debug(a: ref &STest, width: Option<u8>, extra: bool)
         }
         test_bignum! {
-            function: <stest as Format>::lower_exp(a: ref &stest, width: Option<u8>, extra: bool)
+            function: <STest as Format>::lower_exp(a: ref &STest, width: Option<u8>, extra: bool)
         }
         test_bignum! {
-            function: <stest as Format>::upper_exp(a: ref &stest, width: Option<u8>, extra: bool)
+            function: <STest as Format>::upper_exp(a: ref &STest, width: Option<u8>, extra: bool)
         }
     }
 }

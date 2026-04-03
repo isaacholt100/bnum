@@ -314,23 +314,22 @@ crate::test::test_all! {
     testing floats;
     
     use crate::test::test_bignum;
-    use crate::test::types::{ftest, FTEST};
 
     test_bignum! {
-        function: <ftest>::ceil(f: ftest)
+        function: <FTest>::ceil(f: FTestBase)
     }
     test_bignum! {
-        function: <ftest>::floor(f: ftest)
+        function: <FTest>::floor(f: FTestBase)
     }
     test_bignum! {
-        function: <ftest>::round(f: ftest),
+        function: <FTest>::round(f: FTestBase),
         cases: [(-4376634.5), (8388609.0)]
     }
     test_bignum! {
-        function: <ftest>::trunc(f: ftest)
+        function: <FTest>::trunc(f: FTestBase)
     }
     test_bignum! {
-        function: <ftest>::fract(f: ftest),
+        function: <FTest>::fract(f: FTestBase),
         cases: [(1.5), (4.5), (16434.5)]
     }
 }

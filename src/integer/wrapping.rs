@@ -397,16 +397,16 @@ mod tests {
         testing unsigned;
 
         test_bignum! {
-            function: <utest>::wrapping_add_signed(a: utest, b: itest)
+            function: <UTest>::wrapping_add_signed(a: UTest, b: ITest)
         }
         test_bignum! {
-            function: <utest>::wrapping_sub_signed(a: utest, b: itest)
+            function: <UTest>::wrapping_sub_signed(a: UTest, b: ITest)
         }
         #[cfg(nightly)] // since wrapping_next_power_of_two is not stabilised yet
         test_bignum! {
-            function: <utest>::wrapping_next_power_of_two(a: utest),
+            function: <UTest>::wrapping_next_power_of_two(a: UTest),
             cases: [
-                (utest::MAX)
+                (UTest::MAX)
             ]
         }
     }
@@ -414,13 +414,13 @@ mod tests {
         testing signed;
 
         test_bignum! {
-            function: <itest>::wrapping_add_unsigned(a: itest, b: utest)
+            function: <ITest>::wrapping_add_unsigned(a: ITest, b: UTest)
         }
         test_bignum! {
-            function: <itest>::wrapping_sub_unsigned(a: itest, b: utest)
+            function: <ITest>::wrapping_sub_unsigned(a: ITest, b: UTest)
         }
         test_bignum! {
-            function: <itest>::wrapping_abs(a: itest)
+            function: <ITest>::wrapping_abs(a: ITest)
         }
     }
     crate::test::test_all! {
@@ -429,55 +429,55 @@ mod tests {
         #[test]
         #[should_panic(expected = "attempt to divide by zero")]
         fn div_by_zero_panic() {
-            let a = STEST::MAX;
-            let b = STEST::ZERO;
+            let a = STest::MAX;
+            let b = STest::ZERO;
             let _ = a.wrapping_div(b);
         }
 
         #[test]
         #[should_panic(expected = "attempt to calculate the remainder with a divisor of zero")]
         fn rem_by_zero_panic() {
-            let a = STEST::MAX;
-            let b = STEST::ZERO;
+            let a = STest::MAX;
+            let b = STest::ZERO;
             let _ = a.wrapping_rem(b);
         }
 
         test_bignum! {
-            function: <stest>::wrapping_add(a: stest, b: stest)
+            function: <STest>::wrapping_add(a: STest, b: STest)
         }
         test_bignum! {
-            function: <stest>::wrapping_sub(a: stest, b: stest)
+            function: <STest>::wrapping_sub(a: STest, b: STest)
         }
         test_bignum! {
-            function: <stest>::wrapping_mul(a: stest, b: stest)
+            function: <STest>::wrapping_mul(a: STest, b: STest)
         }
         test_bignum! {
-            function: <stest>::wrapping_div(a: stest, b: stest),
-            skip: b == 0
+            function: <STest>::wrapping_div(a: STest, b: STest),
+            skip: b.is_zero()
         }
         test_bignum! {
-            function: <stest>::wrapping_div_euclid(a: stest, b: stest),
-            skip: b == 0
+            function: <STest>::wrapping_div_euclid(a: STest, b: STest),
+            skip: b.is_zero()
         }
         test_bignum! {
-            function: <stest>::wrapping_rem(a: stest, b: stest),
-            skip: b == 0
+            function: <STest>::wrapping_rem(a: STest, b: STest),
+            skip: b.is_zero()
         }
         test_bignum! {
-            function: <stest>::wrapping_rem_euclid(a: stest, b: stest),
-            skip: b == 0
+            function: <STest>::wrapping_rem_euclid(a: STest, b: STest),
+            skip: b.is_zero()
         }
         test_bignum! {
-            function: <stest>::wrapping_neg(a: stest)
+            function: <STest>::wrapping_neg(a: STest)
         }
         test_bignum! {
-            function: <stest>::wrapping_shl(a: stest, b: u16)
+            function: <STest>::wrapping_shl(a: STest, b: u16)
         }
         test_bignum! {
-            function: <stest>::wrapping_shr(a: stest, b: u16)
+            function: <STest>::wrapping_shr(a: STest, b: u16)
         }
         test_bignum! {
-            function: <stest>::wrapping_pow(a: stest, b: u16)
+            function: <STest>::wrapping_pow(a: STest, b: u16)
         }
     }
 }

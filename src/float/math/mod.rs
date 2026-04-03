@@ -83,19 +83,19 @@ mod tests {
         testing floats;
 
         test_bignum! {
-            function: <ftest>::abs(f: ftest)
+            function: <FTest>::abs(f: FTestBase)
         }
         test_bignum! {
-            function: <ftest>::sqrt(f: ftest)
+            function: <FTest>::sqrt(f: FTestBase)
         }
         // test_bignum! {
-        //     function: <ftest>::div_euclid(f1: ftest, f2: ftest)
+        //     function: <FTest>::div_euclid(f1: FTestBase, f2: FTestBase)
         // }
         test_bignum! {
-            function: <ftest>::rem_euclid(f1: ftest, f2: ftest)
+            function: <FTest>::rem_euclid(f1: FTestBase, f2: FTestBase)
         }
         // test_bignum! {
-        //     function: <ftest>::powi(f: ftest, n: i32)
+        //     function: <FTest>::powi(f: FTestBase, n: i32)
         // }
     }
 }

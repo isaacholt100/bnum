@@ -524,10 +524,10 @@ mod tests {
         testing unsigned;
 
         test_bignum! {
-            function: <utest>::overflowing_add_signed(a: utest, b: itest)
+            function: <UTest>::overflowing_add_signed(a: UTest, b: ITest)
         }
         test_bignum! {
-            function: <utest>::overflowing_sub_signed(a: utest, b: itest)
+            function: <UTest>::overflowing_sub_signed(a: UTest, b: ITest)
         }
     }
 
@@ -535,16 +535,16 @@ mod tests {
         testing signed;
 
         test_bignum! {
-            function: <itest>::overflowing_add_unsigned(a: itest, b: utest)
+            function: <ITest>::overflowing_add_unsigned(a: ITest, b: UTest)
         }
         test_bignum! {
-            function: <itest>::overflowing_sub_unsigned(a: itest, b: utest)
+            function: <ITest>::overflowing_sub_unsigned(a: ITest, b: UTest)
         }
         test_bignum! {
-            function: <itest>::overflowing_abs(a: itest),
+            function: <ITest>::overflowing_abs(a: ITest),
             cases: [
                 (0i8),
-                (itest::MIN)
+                (ITest::MIN)
             ]
         }
     }
@@ -553,42 +553,42 @@ mod tests {
         testing integers;
 
         test_bignum! {
-            function: <stest>::overflowing_add(a: stest, b: stest)
+            function: <STest>::overflowing_add(a: STest, b: STest)
         }
         test_bignum! {
-            function: <stest>::overflowing_sub(a: stest, b: stest)
+            function: <STest>::overflowing_sub(a: STest, b: STest)
         }
         test_bignum! {
-            function: <stest>::overflowing_mul(a: stest, b: stest),
+            function: <STest>::overflowing_mul(a: STest, b: STest),
             cases: [(256u16, 1u16)]
         }
         test_bignum! {
-            function: <stest>::overflowing_div(a: stest, b: stest),
-            skip: b == 0
+            function: <STest>::overflowing_div(a: STest, b: STest),
+            skip: b.is_zero()
         }
         test_bignum! {
-            function: <stest>::overflowing_div_euclid(a: stest, b: stest),
-            skip: b == 0
+            function: <STest>::overflowing_div_euclid(a: STest, b: STest),
+            skip: b.is_zero()
         }
         test_bignum! {
-            function: <stest>::overflowing_rem(a: stest, b: stest),
-            skip: b == 0
+            function: <STest>::overflowing_rem(a: STest, b: STest),
+            skip: b.is_zero()
         }
         test_bignum! {
-            function: <stest>::overflowing_rem_euclid(a: stest, b: stest),
-            skip: b == 0
+            function: <STest>::overflowing_rem_euclid(a: STest, b: STest),
+            skip: b.is_zero()
         }
         test_bignum! {
-            function: <stest>::overflowing_neg(a: stest)
+            function: <STest>::overflowing_neg(a: STest)
         }
         test_bignum! {
-            function: <stest>::overflowing_shl(a: stest, b: u16)
+            function: <STest>::overflowing_shl(a: STest, b: u16)
         }
         test_bignum! {
-            function: <stest>::overflowing_shr(a: stest, b: u16)
+            function: <STest>::overflowing_shr(a: STest, b: u16)
         }
         test_bignum! {
-            function: <stest>::overflowing_pow(a: stest, b: u16),
+            function: <STest>::overflowing_pow(a: STest, b: u16),
             cases: [(2, 512)]
         }
     }
@@ -599,21 +599,21 @@ crate::test::test_all_custom_bit_widths! {
     use crate::test::test_bignum;
 
     test_bignum! {
-        function: <utest>::overflowing_add(a: utest, b: utest)
+        function: <UTest>::overflowing_add(a: UTest, b: UTest)
     }
     test_bignum! {
-        function: <utest>::overflowing_sub(a: utest, b: utest)
+        function: <UTest>::overflowing_sub(a: UTest, b: UTest)
     }
     test_bignum! {
-        function: <utest>::overflowing_mul(a: utest, b: utest)
+        function: <UTest>::overflowing_mul(a: UTest, b: UTest)
     }
     test_bignum! {
-        function: <utest>::overflowing_shr(a: utest, b: u16)
+        function: <UTest>::overflowing_shr(a: UTest, b: u16)
     }
     test_bignum! {
-        function: <utest>::overflowing_shl(a: utest, b: u16)
+        function: <UTest>::overflowing_shl(a: UTest, b: u16)
     }
     test_bignum! {
-        function: <itest>::overflowing_shr(a: itest, b: u16)
+        function: <ITest>::overflowing_shr(a: ITest, b: u16)
     }
 }

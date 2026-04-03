@@ -531,11 +531,11 @@ mod tests {
         testing unsigned;
 
         test_bignum! {
-            function: <utest>::strict_add_signed(a: utest, b: itest),
+            function: <UTest>::strict_add_signed(a: UTest, b: ITest),
             skip: a.checked_add_signed(b).is_none()
         }
         test_bignum! {
-            function: <utest>::strict_sub_signed(a: utest, b: itest),
+            function: <UTest>::strict_sub_signed(a: UTest, b: ITest),
             skip: a.checked_sub_signed(b).is_none()
         }
     }
@@ -543,15 +543,15 @@ mod tests {
         testing signed;
 
         test_bignum! {
-            function: <itest>::strict_abs(a: itest),
+            function: <ITest>::strict_abs(a: ITest),
             skip: a.checked_abs().is_none()
         }
         test_bignum! {
-            function: <itest>::strict_add_unsigned(a: itest, b: utest),
+            function: <ITest>::strict_add_unsigned(a: ITest, b: UTest),
             skip: a.checked_add_unsigned(b).is_none()
         }
         test_bignum! {
-            function: <itest>::strict_sub_unsigned(a: itest, b: utest),
+            function: <ITest>::strict_sub_unsigned(a: ITest, b: UTest),
             skip: a.checked_sub_unsigned(b).is_none()
         }
     }
@@ -559,47 +559,47 @@ mod tests {
         testing integers;
         
         test_bignum! {
-            function: <stest>::strict_add(a: stest, b: stest),
+            function: <STest>::strict_add(a: STest, b: STest),
             skip: a.checked_add(b).is_none()
         }
         test_bignum! {
-            function: <stest>::strict_sub(a: stest, b: stest),
+            function: <STest>::strict_sub(a: STest, b: STest),
             skip: a.checked_sub(b).is_none()
         }
         test_bignum! {
-            function: <stest>::strict_mul(a: stest, b: stest),
+            function: <STest>::strict_mul(a: STest, b: STest),
             skip: a.checked_mul(b).is_none()
         }
         test_bignum! {
-            function: <stest>::strict_div(a: stest, b: stest),
+            function: <STest>::strict_div(a: STest, b: STest),
             skip: a.checked_div(b).is_none()
         }
         test_bignum! {
-            function: <stest>::strict_div_euclid(a: stest, b: stest),
+            function: <STest>::strict_div_euclid(a: STest, b: STest),
             skip: a.checked_div_euclid(b).is_none()
         }
         test_bignum! {
-            function: <stest>::strict_rem(a: stest, b: stest),
+            function: <STest>::strict_rem(a: STest, b: STest),
             skip: a.checked_rem(b).is_none()
         }
         test_bignum! {
-            function: <stest>::strict_rem_euclid(a: stest, b: stest),
+            function: <STest>::strict_rem_euclid(a: STest, b: STest),
             skip: a.checked_rem_euclid(b).is_none()
         }
         test_bignum! {
-            function: <stest>::strict_neg(a: stest),
+            function: <STest>::strict_neg(a: STest),
             skip: a.checked_neg().is_none()
         }
         test_bignum! {
-            function: <stest>::strict_shl(a: stest, b: u8),
+            function: <STest>::strict_shl(a: STest, b: u8),
             skip: a.checked_shl(b as u32).is_none()
         }
         test_bignum! {
-            function: <stest>::strict_shr(a: stest, b: u8),
+            function: <STest>::strict_shr(a: STest, b: u8),
             skip: a.checked_shr(b as u32).is_none()
         }
         test_bignum! {
-            function: <stest>::strict_pow(a: stest, b: u8),
+            function: <STest>::strict_pow(a: STest, b: u8),
             skip: a.checked_pow(b as u32).is_none()
         }
     }

@@ -683,71 +683,71 @@ mod tests {
         testing integers;
 
         test_bignum! {
-            function: <stest>::checked_add(a: stest, b: stest),
+            function: <STest>::checked_add(a: STest, b: STest),
             cases: [
-                (stest::MAX, 1u8)
+                (STest::MAX, 1u8)
             ]
         }
         test_bignum! {
-            function: <stest>::checked_sub(a: stest, b: stest)
+            function: <STest>::checked_sub(a: STest, b: STest)
         }
         test_bignum! {
-            function: <stest>::checked_mul(a: stest, b: stest)
+            function: <STest>::checked_mul(a: STest, b: STest)
         }
         test_bignum! {
-            function: <stest>::checked_div(a: stest, b: stest),
+            function: <STest>::checked_div(a: STest, b: STest),
             cases: [
-                (16777217u32 as stest, 16777216u32 as stest),
-                (65536u32 as stest, 256u32 as stest),
-                // (65792u32 as stest, 257u32 as stest),
-                (328622u32 as stest, 10000u32 as stest), // tests the unlikely condition in the division algorithm at step D5
-                (2074086u32 as stest, 76819u32 as stest) // tests the unlikely condition in the division algorithm at step D5,
+                (16777217u32 as STestBase, 16777216u32 as STestBase),
+                (65536u32 as STestBase, 256u32 as STestBase),
+                (65792u32 as STestBase, 257u32 as STestBase),
+                (328622u32 as STestBase, 10000u32 as STestBase), // tests the unlikely condition in the division algorithm at step D5
+                (2074086u32 as STestBase, 76819u32 as STestBase) // tests the unlikely condition in the division algorithm at step D5,
             ]
         }
         test_bignum! {
-            function: <stest>::checked_div_euclid(a: stest, b: stest)
+            function: <STest>::checked_div_euclid(a: STest, b: STest)
         }
         test_bignum! {
-            function: <stest>::checked_rem(a: stest, b: stest),
+            function: <STest>::checked_rem(a: STest, b: STest),
             cases: [
-                (65536u32 as stest, 256u32 as stest)
+                (65536u32 as STestBase, 256u32 as STestBase)
             ]
         }
         test_bignum! {
-            function: <stest>::checked_rem_euclid(a: stest, b: stest)
+            function: <STest>::checked_rem_euclid(a: STest, b: STest)
         }
         test_bignum! {
-            function: <stest>::checked_neg(a: stest)
+            function: <STest>::checked_neg(a: STest)
         }
         test_bignum! {
-            function: <stest>::checked_shl(a: stest, b: u16)
+            function: <STest>::checked_shl(a: STest, b: u16)
         }
         test_bignum! {
-            function: <stest>::checked_shr(a: stest, b: u16),
+            function: <STest>::checked_shr(a: STest, b: u16),
             cases: [
-                (stest::MIN, stest::BITS as u16 - 1)
+                (STest::MIN, STest::BITS as u16 - 1)
             ]
         }
         test_bignum! {
-            function: <stest>::checked_pow(a: stest, b: u16),
+            function: <STest>::checked_pow(a: STest, b: u16),
             cases: [(2, 512)]
         }
         #[cfg(nightly)] // since int_roundings are not stable yet
         test_bignum! {
-            function: <stest>::checked_next_multiple_of(a: stest, b: stest)
+            function: <STest>::checked_next_multiple_of(a: STest, b: STest)
         }
         test_bignum! {
-            function: <stest>::checked_ilog(a: stest, b: stest),
+            function: <STest>::checked_ilog(a: STest, b: STest),
             cases: [
                 (2u8, 60u8),
-                (stest::MAX, 2u8)
+                (STest::MAX, 2u8)
             ]
         }
         test_bignum! {
-            function: <stest>::checked_ilog2(a: stest)
+            function: <STest>::checked_ilog2(a: STest)
         }
         test_bignum! {
-            function: <stest>::checked_ilog10(a: stest)
+            function: <STest>::checked_ilog10(a: STest)
         }
     }
 
@@ -755,18 +755,18 @@ mod tests {
         testing unsigned;
 
         test_bignum! {
-            function: <utest>::checked_add_signed(a: utest, b: itest)
+            function: <UTest>::checked_add_signed(a: UTest, b: ITest)
         }
         test_bignum! {
-            function: <utest>::checked_sub_signed(a: utest, b: itest)
+            function: <UTest>::checked_sub_signed(a: UTest, b: ITest)
         }
         test_bignum! {
-            function: <utest>::checked_signed_diff(a: utest, b: utest)
+            function: <UTest>::checked_signed_diff(a: UTest, b: UTest)
         }
         test_bignum! {
-            function: <stest>::checked_next_power_of_two(a: stest),
+            function: <STest>::checked_next_power_of_two(a: STest),
             cases: [
-                (stest::MAX)
+                (STest::MAX)
             ]
         }
     }
@@ -775,10 +775,10 @@ mod tests {
         testing signed;
         
         test_bignum! {
-            function: <itest>::checked_add_unsigned(a: itest, b: utest)
+            function: <ITest>::checked_add_unsigned(a: ITest, b: UTest)
         }
         test_bignum! {
-            function: <itest>::checked_sub_unsigned(a: itest, b: utest)
+            function: <ITest>::checked_sub_unsigned(a: ITest, b: UTest)
         }
     }
 }
@@ -788,9 +788,9 @@ crate::test::test_all_custom_bit_widths! {
     use crate::test::test_bignum;
 
     test_bignum! {
-        function: <utest>::checked_div(a: utest, b: utest)
+        function: <UTest>::checked_div(a: UTest, b: UTest)
     }
     test_bignum! {
-        function: <utest>::checked_rem(a: utest, b: utest)
+        function: <UTest>::checked_rem(a: UTest, b: UTest)
     }
 }

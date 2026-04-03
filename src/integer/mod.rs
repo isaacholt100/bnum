@@ -231,7 +231,7 @@ mod tests {
 
         #[test]
         fn default() {
-            assert_eq!(UTEST::default(), utest::default().as_());
+            assert_eq!(UTest::default(), UTestBase::default().as_());
         }
     }
 }

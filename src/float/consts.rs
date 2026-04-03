@@ -111,11 +111,11 @@ mod tests {
     use crate::types::{F32, F64};
 
     macro_rules! test_constant {
-        ($big: ident :: $constant: ident == $primitive: expr) => {
+        ($BaseType: ident :: $constant: ident == $value: expr) => {
             paste::paste! {
                 #[test]
-                fn [<test_ $big:lower _constant_ $constant:lower>]() {
-                    assert_eq!(TestConvert::into($big::$constant), TestConvert::into($primitive), "constant `{}` not equal to the primitive equivalent", stringify!($constant));
+                fn [<test_ $BaseType:lower _constant_ $constant:lower>]() {
+                    assert_eq!(TestConvert::into($BaseType::$constant), TestConvert::into($value), "constant `{}` not equal to the primitive equivalent", stringify!($constant));
                 }
             }
         }
@@ -124,7 +124,7 @@ mod tests {
     macro_rules! test_constants {
         {$($constant: ident), *} => {
             $(
-                test_constant!(FTEST::$constant == ftest::$constant);
+                test_constant!(FTest::$constant == FTestBase::$constant);
             )*
         };
     }
@@ -133,7 +133,7 @@ mod tests {
         [$(($constant: ident, $value: expr)), *] => {
             $(
                 paste::paste! {
-                    test_constant!(FTEST::$constant == $value as ftest);
+                    test_constant!(FTest::$constant == $value as FTestBase);
                 }
             )*
         };
@@ -149,8 +149,8 @@ mod tests {
 
         // #[test]
         // fn nan_consts_is_nan() {
-        //     assert!(FTEST::NAN.is_nan());
-        //     assert!(FTEST::QNAN.is_nan());
+        //     assert!(FTest::NAN.is_nan());
+        //     assert!(FTest::QNAN.is_nan());
         // }
 
         test_numeric_constants![

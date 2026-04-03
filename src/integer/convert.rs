@@ -270,14 +270,14 @@ mod tests {
     crate::test::test_all! {
         testing unsigned;
 
-        test::test_tryfrom_same_sign!(utest; TestUint1, TestUint2, TestUint3, TestUint4, TestUint5, TestUint6, TestUint7, TestUint8, TestUint9, TestUint10);
+        test::test_tryfrom_same_sign!(UTest; TestUint1, TestUint2, TestUint3, TestUint4, TestUint5, TestUint6, TestUint7, TestUint8, TestUint9, TestUint10);
 
         test::test_from! {
-            function: <utest as TryFrom>::try_from,
+            function: <UTest as TryFrom>::try_from,
             from_types: (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, char, TestInt1, TestInt2, TestInt3, TestInt4, TestInt5, TestInt6, TestInt7, TestInt8, TestInt9, TestInt10) // TODO: when we can use TryFrom for conversions between bnum ints, we can just add the list of test types here, same as in the casting tests
         }
         test::test_into! {
-            function: <utest as TryInto>::try_into,
+            function: <UTest as TryInto>::try_into,
             into_types: (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, TestInt1, TestInt2, TestInt3, TestInt4, TestInt5, TestInt6, TestInt7, TestInt8, TestInt9, TestInt10)
         }
 
@@ -285,7 +285,7 @@ mod tests {
         fn out_of_range_conversion_error() {
             let invalid = -1i32;
 
-            let test_msg = UTEST::try_from(invalid).unwrap_err().to_string();
+            let test_msg = UTest::try_from(invalid).unwrap_err().to_string();
 
             assert!(test_msg.contains("out of range integral type conversion attempted"));
         }
@@ -305,14 +305,14 @@ mod tests {
     crate::test::test_all! {
         testing signed;
 
-        test::test_tryfrom_same_sign!(itest; TestInt1, TestInt2, TestInt3, TestInt4, TestInt5, TestInt6, TestInt7, TestInt8, TestInt9, TestInt10);
+        test::test_tryfrom_same_sign!(ITest; TestInt1, TestInt2, TestInt3, TestInt4, TestInt5, TestInt6, TestInt7, TestInt8, TestInt9, TestInt10);
 
         test::test_from! {
-            function: <itest as TryFrom>::try_from,
+            function: <ITest as TryFrom>::try_from,
             from_types: (i8, i16, i32, i64, i128, isize, u8, u16, u32, u64, u128, usize, bool, TestUint1, TestUint2, TestUint3, TestUint4, TestUint5, TestUint6, TestUint7, TestUint8, TestUint9, TestUint10)
         }
         test::test_into! {
-            function: <itest as TryInto>::try_into,
+            function: <ITest as TryInto>::try_into,
             into_types: (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, TestUint1, TestUint2, TestUint3, TestUint4, TestUint5, TestUint6, TestUint7, TestUint8, TestUint9, TestUint10)
         }
     }

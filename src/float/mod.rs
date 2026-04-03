@@ -23,6 +23,22 @@ impl From<f32> for F32 {
     }
 }
 
+// #[cfg(test)]
+// impl From<F64> for f64 {
+//     #[inline]
+//     fn from(f: F64) -> Self {
+//         Self::from_bits(f.to_bits().as_())
+//     }
+// }
+
+// #[cfg(test)]
+// impl From<F32> for f32 {
+//     #[inline]
+//     fn from(f: F32) -> Self {
+//         Self::from_bits(f.to_bits().as_())
+//     }
+// }
+
 macro_rules! handle_nan {
     ($ret: expr; $($n: expr), +) => {
         if $($n.is_nan()) || + {
@@ -210,16 +226,16 @@ mod tests {
         testing floats;
 
         test_bignum! {
-            function: <ftest>::copysign(a: ftest, b: ftest)
+            function: <FTest>::copysign(a: FTestBase, b: FTestBase)
         }
         test_bignum! {
-            function: <ftest>::signum(a: ftest)
+            function: <FTest>::signum(a: FTestBase)
         }
         test_bignum! {
-            function: <ftest>::next_up(a: ftest)
+            function: <FTest>::next_up(a: FTestBase)
         }
         test_bignum! {
-            function: <ftest>::next_down(a: ftest)
+            function: <FTest>::next_down(a: FTestBase)
         }
     }
 }

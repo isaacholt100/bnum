@@ -239,19 +239,16 @@ mod tests {
         testing floats;
 
         test_bignum! {
-            function: <ftest>::to_bits(a: ftest)
+            function: <FTest>::to_bits(a: FTestBase)
         }
         test_bignum! {
-            function: <f64>::from_bits(a: u64)
-        }
-        test_bignum! {
-            function: <f32>::from_bits(a: u32)
+            function: <FTest>::from_bits(a: UTest)
         }
 
-        test_reversible_conversion!(into_raw_parts, from_raw_parts(a, b, c) -> FTEST, FTEST::to_bits);
-        test_reversible_conversion!(into_biased_parts, from_biased_parts(a, b, c) -> FTEST, FTEST::to_bits);
-        test_reversible_conversion!(into_signed_biased_parts, from_signed_biased_parts(a, b, c) -> FTEST, FTEST::to_bits);
-        test_reversible_conversion!(into_signed_parts, from_signed_parts(a, b, c) -> FTEST, FTEST::to_bits);
-        test_reversible_conversion!(into_normalised_signed_parts, from_normalised_signed_parts(a, b, c) -> FTEST, FTEST::to_bits);
+        test_reversible_conversion!(into_raw_parts, from_raw_parts(a, b, c) -> FTest, FTest::to_bits);
+        test_reversible_conversion!(into_biased_parts, from_biased_parts(a, b, c) -> FTest, FTest::to_bits);
+        test_reversible_conversion!(into_signed_biased_parts, from_signed_biased_parts(a, b, c) -> FTest, FTest::to_bits);
+        test_reversible_conversion!(into_signed_parts, from_signed_parts(a, b, c) -> FTest, FTest::to_bits);
+        test_reversible_conversion!(into_normalised_signed_parts, from_normalised_signed_parts(a, b, c) -> FTest, FTest::to_bits);
     }
 }

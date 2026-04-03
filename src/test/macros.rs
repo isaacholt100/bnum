@@ -1,43 +1,27 @@
 macro_rules! test_bignum {
     {
-        function: $($unsafe: ident)? <$primitive: ty $(as $Trait: ident $(<$($gen: ty), +>)?)?> :: $function: ident ($($param: ident : $(ref $re: tt)? $ty: ty), *)
+        function: $($unsafe: ident)? <$TestType: ty $(as $Trait: ident $(<$($gen: ty), +>)?)?> :: $function: ident ($($param: ident : $(ref $re: tt)? $ty: ty), *)
         $(, skip: $skip: expr)?
     } => {
         paste::paste! {
             quickcheck::quickcheck! {
                 #[allow(non_snake_case)]
-                fn [<quickcheck_ $primitive _ $($Trait _ $($($gen _) +)?)? $function>]($($param : $ty), *) -> quickcheck::TestResult {
+                fn [<quickcheck_ $TestType _ $($Trait _ $($($gen _) +)?)? $function>]($($param : $ty), *) -> quickcheck::TestResult {
                     $(if $skip {
                         return quickcheck::TestResult::discard();
                     })?
 
-                    let (big, primitive) = $($unsafe)? {
-                        crate::test::results!(<$primitive $(as $Trait $(<$($gen), *>)?)?>::$function ($($($re)? TryInto::try_into($param).expect("test argument conversion failed")), *))
+                    let (actual, expected) = $($unsafe)? {
+                        crate::test::results!(<$TestType $(as $Trait $(<$($gen), *>)?)?>::$function ($($($re)? TryInto::try_into($param).expect("test argument conversion failed")), *))
                     };
 
-                    quickcheck::TestResult::from_bool(big == primitive)
+                    quickcheck::TestResult::from_bool(actual == expected)
                 }
             }
         }
     };
     {
-        function: <$primitive: ty> :: $function: ident, // need to handle the case with and without trait separately due to repetition of the cases arguments
-        cases: [
-            $(($($(ref $re2: tt)? $arg: expr), *)), *
-        ]
-    } => {
-        paste::paste! {
-            #[test]
-            fn [<cases_ $primitive _ $function>]() {
-                $(
-                    let (big, primitive) = crate::test::results!(<$primitive> :: $function ($($($re2)? TryInto::try_into($arg).expect("test argument conversion failed")), *));
-                    assert_eq!(big, primitive, "failed cases assertion with inputs {:?}", ($($arg), *));
-                )*
-            }
-        }
-    };
-    {
-        function: <$primitive: ty as $Trait: ident> :: $function: ident,
+        function: <$TestType: ty> :: $function: ident, // need to handle the case with and without trait separately due to repetition of the cases arguments
         cases: [
             $(($($(ref $re2: tt)? $arg: expr), *)), *
         ]
@@ -45,29 +29,48 @@ macro_rules! test_bignum {
         paste::paste! {
             #[allow(non_snake_case)]
             #[test]
-            fn [<cases_ $primitive _ $Trait _ $function>]() {
+            fn [<cases_ $TestType _ $function>]() {
                 $(
-                    let (big, primitive) = crate::test::results!(<$primitive as $Trait> :: $function ($($($re2)? TryInto::try_into($arg).expect("test argument conversion failed")), *));
-                    assert_eq!(big, primitive, "failed cases assertion with inputs {:?}", ($($arg), *));
+                    let (actual, expected) = crate::test::results!(<$TestType> :: $function ($($($re2)? TryInto::try_into($arg).expect("test argument conversion failed")), *));
+
+                    assert_eq!(actual, expected, "failed cases assertion with inputs {:?}", ($($arg), *));
                 )*
             }
         }
     };
     {
-        function: <$primitive: ty $(as $Trait: ident)?> :: $function: ident ($($param: ident : $(ref $re: tt)? $ty: ty), *)
+        function: <$TestType: ty as $Trait: ident> :: $function: ident,
+        cases: [
+            $(($($(ref $re2: tt)? $arg: expr), *)), *
+        ]
+    } => {
+        paste::paste! {
+            #[allow(non_snake_case)]
+            #[test]
+            fn [<cases_ $TestType _ $Trait _ $function>]() {
+                $(
+                    let (actual, expected) = crate::test::results!(<$TestType as $Trait> :: $function ($($($re2)? TryInto::try_into($arg).expect("test argument conversion failed")), *));
+
+                    assert_eq!(actual, expected, "failed cases assertion with inputs {:?}", ($($arg), *));
+                )*
+            }
+        }
+    };
+    {
+        function: <$TestType: ty $(as $Trait: ident)?> :: $function: ident ($($param: ident : $(ref $re: tt)? $ty: ty), *)
         $(, skip: $skip: expr)?
         , cases: [
             $(($($(ref $re2: tt)? $arg: expr), *)), *
         ]
     } => {
         crate::test::test_bignum! {
-            function: <$primitive $(as $Trait)?> :: $function,
+            function: <$TestType $(as $Trait)?> :: $function,
             cases: [
                 $(($($(ref $re2)? $arg), *)), *
             ]
         }
         crate::test::test_bignum! {
-            function: <$primitive $(as $Trait)?> :: $function ($($param : $(ref $re)? $ty), *)
+            function: <$TestType $(as $Trait)?> :: $function ($($param : $(ref $re)? $ty), *)
             $(, skip: $skip)?
         }
     };
@@ -76,18 +79,18 @@ macro_rules! test_bignum {
 pub(crate) use test_bignum;
 
 macro_rules! results {
-    (<$primitive: ty $(as $Trait: ty)?> :: $function: ident ($($arg: expr), *)) => {
+    (<$TestType: ty $(as $Trait: ty)?> :: $function: ident ($($arg: expr), *)) => {
         paste::paste! {
             {
-                let big_result = <[<$primitive:upper>] $(as $Trait)?>::$function(
+                let actual = <$TestType $(as $Trait)?>::$function(
                     $($arg), *
                 );
-                let prim_result = <$primitive $(as $Trait)?>::$function(
+                let expected = <[<$TestType Base>] $(as $Trait)?>::$function(
                     $($arg), *
                 );
 
                 use crate::test::TestConvert;
-                (TestConvert::into(big_result), TestConvert::into(prim_result))
+                (TestConvert::into(actual), TestConvert::into(expected))
             }
         }
     };
@@ -96,16 +99,16 @@ macro_rules! results {
 pub(crate) use results;
 
 macro_rules! test_tryfrom_same_sign {
-    ($primitive: ty; $($From: ty), *) => {
+    ($TestType: ty; $($From: ty), *) => {
         paste::paste! {
             $(
                 quickcheck::quickcheck! {
                     #[allow(non_snake_case)]
-                    fn [<quickcheck_ $primitive _TryFrom_ $From _try_from>](from: $From) -> bool {
-                        let big: Result<[<$primitive:upper>], _> = <[<$primitive:upper>] as TryFrom<_>>::try_from(&from);
-                        let primitive: Result<$primitive, _> = <$primitive>::try_from(from);
+                    fn [<quickcheck_ $TestType _TryFrom_ $From _try_from>](from: $From) -> bool {
+                        let actual: Result<$TestType, _> = <$TestType as TryFrom<_>>::try_from(&from);
+                        let expected: Result<[<$TestType Base>], _> = <[<$TestType Base>] as TryFrom<_>>::try_from(from);
 
-                        test::convert::test_eq(big, primitive)
+                        test::convert::test_eq(actual, expected)
                     }
                 }
             )*
@@ -117,12 +120,12 @@ pub(crate) use test_tryfrom_same_sign;
 
 macro_rules! test_from {
     {
-        function: <$primitive: ty as $Trait: ident>:: $name: ident,
+        function: <$TestType: ty as $Trait: ident>:: $name: ident,
         from_types: ($($from_type: ty), *)
     } => {
         $(
             crate::test::test_bignum! {
-                function: < $primitive as $Trait<$from_type> >::$name(from: $from_type)
+                function: < $TestType as $Trait<$from_type> >::$name(from: $from_type)
             }
         )*
     }
@@ -132,13 +135,13 @@ pub(crate) use test_from;
 
 macro_rules! test_into {
     {
-        function: <$primitive: ty as $Trait: ident>:: $name: ident,
+        function: <$TestType: ty as $Trait: ident>:: $name: ident,
         into_types: ($($into_type: ty), *)
     } => {
         paste::paste! {
             $(
                 crate::test::test_bignum! {
-                    function: < $primitive as $Trait<$into_type> >::$name(from: $primitive)
+                    function: < $TestType as $Trait<$into_type> >::$name(from: [<$TestType Base>])
                 }
             )*
         }
@@ -166,19 +169,11 @@ impl<const MAX: u32> From<Radix<MAX>> for u32 {
     }
 }
 
-macro_rules! debug_skip {
-    ($skip: expr) => {
-        crate::overflow::GLOBAL_OVERFLOW_CHECKS && $skip
-    };
-}
-
-pub(crate) use debug_skip;
-
 #[cfg(feature = "alloc")]
 macro_rules! quickcheck_from_str_radix {
-    { $primitive: ident, $sign1: literal | $sign2: literal } => {
+    { $TestType: ty, $sign1: literal | $sign2: literal } => {
         quickcheck::quickcheck! {
-            fn quickcheck_from_str_radix(buf: crate::test::U8ArrayWrapper<{<$primitive>::BITS as usize / 4}>, radix: crate::test::Radix<36>, leading_sign: bool) -> quickcheck::TestResult {
+            fn quickcheck_from_str_radix(buf: crate::test::U8ArrayWrapper<{<$TestType>::BITS as usize / 4}>, radix: crate::test::Radix<36>, leading_sign: bool) -> quickcheck::TestResult {
                 use alloc::string::String;
 
                 let radix = radix.0;
@@ -200,11 +195,9 @@ macro_rules! quickcheck_from_str_radix {
                 let mut s2 = buf.0.into_iter().map(|b| byte_to_char(b % radix as u8)).collect::<String>();
                 s2.insert_str(0, leading_sign);
 
-                let (big, primitive) = crate::test::results!(<$primitive>::from_str_radix(&s2, radix as u32));
+                let (actual, expected) = crate::test::results!(<$TestType>::from_str_radix(&s2, radix as u32));
 
-                // let parsed =
-
-                quickcheck::TestResult::from_bool(big == primitive)
+                quickcheck::TestResult::from_bool(actual == expected)
             }
         }
     }
@@ -215,16 +208,16 @@ pub(crate) use quickcheck_from_str_radix;
 
 #[cfg(feature = "alloc")]
 macro_rules! quickcheck_from_str {
-    ($primitive: ty) => {
+    ($TestType: ty) => {
         quickcheck::quickcheck! {
-            fn quickcheck_from_str(n: $primitive) -> bool {
+            fn quickcheck_from_str(n: $TestType) -> bool {
                 use crate::alloc::string::ToString;
                 use core::str::FromStr;
 
                 let s = n.to_string();
-                let (big, primitive) = crate::test::results!(<$primitive>::from_str(&s));
+                let (actual, expected) = crate::test::results!(<$TestType>::from_str(&s));
 
-                big == primitive
+                actual == expected
             }
         }
     };
@@ -233,47 +226,30 @@ macro_rules! quickcheck_from_str {
 #[cfg(feature = "alloc")]
 pub(crate) use quickcheck_from_str;
 
-macro_rules! is_prefix_signed {
-    (i) => {
-        true
-    };
-    (u) => {
-        false
-    };
-    (f) => {
-        true
-    }
-}
-
-pub(crate) use is_prefix_signed;
-
 macro_rules! primitive_with_overflow_behaviour {
     ($primitive: ident) => {
         $primitive
     };
-    ($primitive: ident, wrapping) => {
+    ($primitive: ident, w) => {
         core::num::Wrapping<$primitive>
     };
-    ($primitive: ident, saturating) => {
+    ($primitive: ident, s) => {
         core::num::Saturating<$primitive>
     };
 }
 
 pub(crate) use primitive_with_overflow_behaviour;
 
-macro_rules! overflow_mode_int {
+macro_rules! overflow_mode_suffix {
     (wrapping) => {
-        crate::OverflowMode::Wrap as u8
+        w
     };
     (saturating) => {
-        crate::OverflowMode::Saturate as u8
-    };
-    () => {
-        crate::OverflowMode::DEFAULT as u8
+        s
     };
 }
 
-pub(crate) use overflow_mode_int;
+pub(crate) use overflow_mode_suffix;
 
 macro_rules! test_width_and_sign {
     ($bits: expr, $prefix: ident $($overflow_mode: ident)? $(, $float: literal)?; $($s: tt) * ) => {
@@ -282,47 +258,34 @@ macro_rules! test_width_and_sign {
                 #[allow(unused_imports)]
                 use super::*;
 
+                use crate::t;
+
                 use crate::test::primitive_with_overflow_behaviour;
 
-                #[allow(non_camel_case_types, unused)]
-                pub type utest = primitive_with_overflow_behaviour!( [<u $bits>] $(, $overflow_mode)? );
+                #[allow(unused)]
+                pub type UTestBase = primitive_with_overflow_behaviour!( [<u $bits>] $(, $overflow_mode)? );
 
-                #[allow(non_camel_case_types, unused)]
-                pub type itest = primitive_with_overflow_behaviour!( [<i $bits>] $(, $overflow_mode)? );
+                #[allow(unused)]
+                pub type ITestBase = primitive_with_overflow_behaviour!( [<i $bits>] $(, $overflow_mode)? );
 
-                #[allow(non_camel_case_types, unused)]
-                pub type UTEST = crate::Uint<
-                    { crate::literal_parse::get_size_params_from_bits($bits).0 },
-                    { crate::literal_parse::get_size_params_from_bits($bits).1 },
-                    { crate::test::overflow_mode_int!($($overflow_mode)?) }
-                >;
+                #[allow(unused)]
+                pub type STestBase = primitive_with_overflow_behaviour!( [< $prefix $bits>] $(,$overflow_mode)? );
 
-                #[allow(non_camel_case_types, unused)]
-                pub type ITEST = crate::Int<
-                    { crate::literal_parse::get_size_params_from_bits($bits).0 },
-                    { crate::literal_parse::get_size_params_from_bits($bits).1 },
-                    { crate::test::overflow_mode_int!($($overflow_mode)?) }
-                >;
+                #[allow(unused)]
+                pub type UTest = t!([<U $bits $($overflow_mode)?>]);
 
-                #[allow(non_camel_case_types, unused)]
-                pub type stest = primitive_with_overflow_behaviour!( [< $prefix $bits>] $(,$overflow_mode)? );
+                #[allow(unused)]
+                pub type ITest = t!([<I $bits $($overflow_mode)?>]);
 
-                #[allow(non_camel_case_types, unused)]
-                pub type STEST = crate::Integer<
-                    { crate::test::is_prefix_signed!($prefix) },
-                    { crate::literal_parse::get_size_params_from_bits($bits).0 },
-                    { crate::literal_parse::get_size_params_from_bits($bits).1 },
-                    { crate::test::overflow_mode_int!($($overflow_mode)?) }
-                >;
+                #[allow(unused)]
+                pub type STest = t!([<$prefix:upper $bits $($overflow_mode)?>]);
 
                 $(
-                    #[allow(non_camel_case_types)]
                     #[cfg(feature = $float)]
-                    pub type ftest = [<f $bits>];
+                    pub type FTestBase = [<f $bits>];
 
                     #[cfg(feature = $float)]
-                    #[allow(non_camel_case_types)]
-                    pub type FTEST = crate::float::Float<{core::mem::size_of::<ftest>()}, {ftest::MANTISSA_DIGITS as usize - 1}>;
+                    pub type FTest = crate::float::Float<{core::mem::size_of::<FTestBase>()}, {FTestBase::MANTISSA_DIGITS as usize - 1}>;
                 )?
 
                 $($s)*
@@ -340,18 +303,20 @@ macro_rules! test_custom_bit_widths {
                 mod [<bits $bits>] {
                     #[allow(unused_imports)]
                     use super::*;
+
+                    use crate::t;
                     
-                    #[allow(non_camel_case_types, unused)]
-                    pub type utest = crate::test::BitInt<false, $bits>;
+                    #[allow(unused)]
+                    pub type UTestBase = crate::test::BitInt<false, $bits>;
 
-                    #[allow(non_camel_case_types, unused)]
-                    pub type itest = crate::test::BitInt<true, $bits>;
+                    #[allow(unused)]
+                    pub type ITestBase = crate::test::BitInt<true, $bits>;
 
-                    #[allow(non_camel_case_types, unused)]
-                    pub type UTEST = crate::Uint<{ crate::literal_parse::get_size_params_from_bits($bits).0 }, { crate::literal_parse::get_size_params_from_bits($bits).1 }>;
+                    #[allow(unused)]
+                    pub type UTest = t!([<U $bits>]);
 
-                    #[allow(non_camel_case_types, unused)]
-                    pub type ITEST = crate::Int<{ crate::literal_parse::get_size_params_from_bits($bits).0 }, { crate::literal_parse::get_size_params_from_bits($bits).1 }>;
+                    #[allow(unused)]
+                    pub type ITest = t!([<I $bits>]);
 
                     $tests
                 }
@@ -390,10 +355,12 @@ macro_rules! test_all {
                 #[allow(unused_imports)]
                 use super::*;
 
-                crate::test::test_width_and_sign!(16, u $($overflow_mode)?; $($s)*);
-                crate::test::test_width_and_sign!(32, u $($overflow_mode)?; $($s)*);
-                crate::test::test_width_and_sign!(64, u $($overflow_mode)?; $($s)*);
-                crate::test::test_width_and_sign!(128, u $($overflow_mode)?; $($s)*);
+                use crate::test::overflow_mode_suffix;
+
+                crate::test::test_width_and_sign!(16, u $(overflow_mode_suffix!($overflow_mode))?; $($s)*);
+                crate::test::test_width_and_sign!(32, u $(overflow_mode_suffix!($overflow_mode))?; $($s)*);
+                crate::test::test_width_and_sign!(64, u $(overflow_mode_suffix!($overflow_mode))?; $($s)*);
+                crate::test::test_width_and_sign!(128, u $(overflow_mode_suffix!($overflow_mode))?; $($s)*);
             }
         }
     };
@@ -404,10 +371,10 @@ macro_rules! test_all {
                 #[allow(unused_imports)]
                 use super::*;
 
-                crate::test::test_width_and_sign!(16, i $($overflow_mode)?; $($s)*);
-                crate::test::test_width_and_sign!(32, i $($overflow_mode)?; $($s)*);
-                crate::test::test_width_and_sign!(64, i $($overflow_mode)?; $($s)*);
-                crate::test::test_width_and_sign!(128, i $($overflow_mode)?; $($s)*);
+                crate::test::test_width_and_sign!(16, i $(overflow_mode_suffix!($overflow_mode))?; $($s)*);
+                crate::test::test_width_and_sign!(32, i $(overflow_mode_suffix!($overflow_mode))?; $($s)*);
+                crate::test::test_width_and_sign!(64, i $(overflow_mode_suffix!($overflow_mode))?; $($s)*);
+                crate::test::test_width_and_sign!(128, i $(overflow_mode_suffix!($overflow_mode))?; $($s)*);
             }
         }
     };
@@ -418,15 +385,15 @@ macro_rules! test_all {
                 use super::*;
 
                 // for unsigned and signed tests
-                crate::test::test_width_and_sign!(16, u $($overflow_mode)?; $($s)*);
-                crate::test::test_width_and_sign!(32, u $($overflow_mode)?; $($s)*);
-                crate::test::test_width_and_sign!(64, u $($overflow_mode)?; $($s)*);
-                crate::test::test_width_and_sign!(128, u $($overflow_mode)?; $($s)*);
+                crate::test::test_width_and_sign!(16, u $(overflow_mode_suffix!($overflow_mode))?; $($s)*);
+                crate::test::test_width_and_sign!(32, u $(overflow_mode_suffix!($overflow_mode))?; $($s)*);
+                crate::test::test_width_and_sign!(64, u $(overflow_mode_suffix!($overflow_mode))?; $($s)*);
+                crate::test::test_width_and_sign!(128, u $(overflow_mode_suffix!($overflow_mode))?; $($s)*);
 
-                crate::test::test_width_and_sign!(16, i $($overflow_mode)?; $($s)*);
-                crate::test::test_width_and_sign!(32, i $($overflow_mode)?; $($s)*);
-                crate::test::test_width_and_sign!(64, i $($overflow_mode)?; $($s)*);
-                crate::test::test_width_and_sign!(128, i $($overflow_mode)?; $($s)*);
+                crate::test::test_width_and_sign!(16, i $(overflow_mode_suffix!($overflow_mode))?; $($s)*);
+                crate::test::test_width_and_sign!(32, i $(overflow_mode_suffix!($overflow_mode))?; $($s)*);
+                crate::test::test_width_and_sign!(64, i $(overflow_mode_suffix!($overflow_mode))?; $($s)*);
+                crate::test::test_width_and_sign!(128, i $(overflow_mode_suffix!($overflow_mode))?; $($s)*);
             }
         }
     };
@@ -434,8 +401,8 @@ macro_rules! test_all {
         // #[cfg(nightly)]
         // crate::test::test_width_and_sign!(16, f, "float"; $($s)*);
 
-        crate::test::test_width_and_sign!(32, f, "float"; $($s)*);
-        crate::test::test_width_and_sign!(64, f, "float"; $($s)*);
+        crate::test::test_width_and_sign!(32, i, "float"; $($s)*);
+        crate::test::test_width_and_sign!(64, i, "float"; $($s)*);
 
         // #[cfg(nightly)]
         // crate::test::test_width_and_sign!(128, f, "float"; $($s)*);

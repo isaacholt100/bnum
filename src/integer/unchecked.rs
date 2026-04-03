@@ -98,25 +98,25 @@ mod tests {
         testing integers;
 
         test_bignum! {
-            function: unsafe <stest>::unchecked_add(a: stest, b: stest),
+            function: unsafe <STest>::unchecked_add(a: STest, b: STest),
             skip: a.checked_add(b).is_none()
         }
         test_bignum! {
-            function: unsafe <stest>::unchecked_sub(a: stest, b: stest),
+            function: unsafe <STest>::unchecked_sub(a: STest, b: STest),
             skip: a.checked_sub(b).is_none()
         }
         test_bignum! {
-            function: unsafe <stest>::unchecked_mul(a: stest, b: stest),
+            function: unsafe <STest>::unchecked_mul(a: STest, b: STest),
             skip: a.checked_mul(b).is_none()
         }
         #[cfg(nightly)] // since unchecked_shifts are not stable yet
         test_bignum! {
-            function: unsafe <stest>::unchecked_shl(a: stest, b: u8),
+            function: unsafe <STest>::unchecked_shl(a: STest, b: u8),
             skip: a.checked_shl(b as u32).is_none()
         }
         #[cfg(nightly)] // since unchecked_shifts are not stable yet
         test_bignum! {
-            function: unsafe <stest>::unchecked_shr(a: stest, b: u8),
+            function: unsafe <STest>::unchecked_shr(a: STest, b: u8),
             skip: a.checked_shr(b as u32).is_none()
         }
     }
@@ -125,7 +125,7 @@ mod tests {
 
         #[cfg(nightly)] // since unchecked_neg is not stable yet
         test_bignum! {
-            function: unsafe <itest>::unchecked_neg(a: itest),
+            function: unsafe <ITest>::unchecked_neg(a: ITest),
             skip: a.checked_neg().is_none()
         }
     }

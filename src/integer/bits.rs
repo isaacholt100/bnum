@@ -472,7 +472,7 @@ mod tests {
 
         #[test]
         fn bit() {
-            let u = STEST::cast_from(0b001010100101010101u64);
+            let u = STest::cast_from(0b001010100101010101u64);
             assert!(u.bit(0));
             assert!(!u.bit(1));
             // assert!(!u.bit(17));
@@ -482,7 +482,7 @@ mod tests {
 
         #[test]
         fn set_bit() {
-            let mut u = STEST::cast_from(0b001010100101010101u64);
+            let mut u = STest::cast_from(0b001010100101010101u64);
             u.set_bit(1, true);
             assert!(u.bit(1));
             u.set_bit(1, false);
@@ -494,43 +494,43 @@ mod tests {
         }
 
         test_bignum! {
-            function: <stest>::count_ones(a: stest)
+            function: <STest>::count_ones(a: STest)
         }
         test_bignum! {
-            function: <stest>::count_zeros(a: stest)
+            function: <STest>::count_zeros(a: STest)
         }
         test_bignum! {
-            function: <stest>::leading_zeros(a: stest)
+            function: <STest>::leading_zeros(a: STest)
         }
         test_bignum! {
-            function: <stest>::trailing_zeros(a: stest)
+            function: <STest>::trailing_zeros(a: STest)
         }
         test_bignum! {
-            function: <stest>::leading_ones(a: stest)
+            function: <STest>::leading_ones(a: STest)
         }
         test_bignum! {
-            function: <stest>::trailing_ones(a: stest)
+            function: <STest>::trailing_ones(a: STest)
         }
         test_bignum! {
-            function: <stest>::rotate_left(a: stest, b: u8)
+            function: <STest>::rotate_left(a: STest, b: u8)
         }
         test_bignum! {
-            function: <stest>::rotate_right(a: stest, b: u8)
+            function: <STest>::rotate_right(a: STest, b: u8)
         }
         test_bignum! {
-            function: <stest>::unbounded_shl(a: stest, b: u16)
+            function: <STest>::unbounded_shl(a: STest, b: u16)
         }
         test_bignum! {
-            function: <stest>::unbounded_shr(a: stest, b: u16),
+            function: <STest>::unbounded_shr(a: STest, b: u16),
             cases: [
-                (stest::MIN, stest::BITS as u16 - 1)
+                (STest::MIN, STest::BITS as u16 - 1)
             ]
         }
         test_bignum! {
-            function: <stest>::swap_bytes(a: stest)
+            function: <STest>::swap_bytes(a: STest)
         }
         test_bignum! {
-            function: <stest>::reverse_bits(a: stest)
+            function: <STest>::reverse_bits(a: STest)
         }
     }
 
@@ -539,7 +539,7 @@ mod tests {
 
         #[cfg(nightly)]
         test_bignum! {
-            function: <stest>::bit_width(a: stest)
+            function: <STest>::bit_width(a: STest)
         }
     }
 }
@@ -549,58 +549,58 @@ crate::test::test_all_custom_bit_widths! {
     use crate::test::test_bignum;
 
     test_bignum! {
-        function: <utest>::trailing_zeros(a: utest)
+        function: <UTest>::trailing_zeros(a: UTest)
     }
     test_bignum! {
-        function: <itest>::trailing_zeros(a: itest)
+        function: <ITest>::trailing_zeros(a: ITest)
     }
     test_bignum! {
-        function: <utest>::trailing_ones(a: utest)
+        function: <UTest>::trailing_ones(a: UTest)
     }
     test_bignum! {
-        function: <itest>::trailing_ones(a: itest)
+        function: <ITest>::trailing_ones(a: ITest)
     }
     test_bignum! {
-        function: <utest>::leading_zeros(a: utest)
+        function: <UTest>::leading_zeros(a: UTest)
     }
     test_bignum! {
-        function: <itest>::leading_zeros(a: itest)
+        function: <ITest>::leading_zeros(a: ITest)
     }
     test_bignum! {
-        function: <utest>::leading_ones(a: utest)
+        function: <UTest>::leading_ones(a: UTest)
     }
     test_bignum! {
-        function: <itest>::leading_ones(a: itest)
+        function: <ITest>::leading_ones(a: ITest)
     }
     test_bignum! {
-        function: <utest>::count_ones(a: utest)
+        function: <UTest>::count_ones(a: UTest)
     }
     test_bignum! {
-        function: <itest>::count_ones(a: itest)
+        function: <ITest>::count_ones(a: ITest)
     }
     test_bignum! {
-        function: <utest>::count_zeros(a: utest)
+        function: <UTest>::count_zeros(a: UTest)
     }
     test_bignum! {
-        function: <itest>::count_zeros(a: itest)
+        function: <ITest>::count_zeros(a: ITest)
     }
     test_bignum! {
-        function: <utest>::rotate_left(a: utest, b: u32)
+        function: <UTest>::rotate_left(a: UTest, b: u32)
     }
     test_bignum! {
-        function: <itest>::rotate_left(a: itest, b: u32)
+        function: <ITest>::rotate_left(a: ITest, b: u32)
     }
     test_bignum! {
-        function: <utest>::rotate_right(a: utest, b: u32)
+        function: <UTest>::rotate_right(a: UTest, b: u32)
     }
     test_bignum! {
-        function: <itest>::rotate_right(a: itest, b: u32)
+        function: <ITest>::rotate_right(a: ITest, b: u32)
     }
     test_bignum! {
-        function: <utest>::reverse_bits(a: utest)
+        function: <UTest>::reverse_bits(a: UTest)
     }
     test_bignum! {
-        function: <itest>::reverse_bits(a: itest)
+        function: <ITest>::reverse_bits(a: ITest)
     }
 }
 

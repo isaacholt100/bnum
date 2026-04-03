@@ -102,31 +102,31 @@ mod tests {
         testing floats;
 
         test_bignum! {
-            function: <ftest>::max(a: ftest, b: ftest)
+            function: <FTest>::max(a: FTestBase, b: FTestBase)
         }
         test_bignum! {
-            function: <ftest>::min(a: ftest, b: ftest)
+            function: <FTest>::min(a: FTestBase, b: FTestBase)
         }
         // #[cfg(nightly)]
         // test_bignum! {
-        //     function: <ftest>::maximum(a: ftest, b: ftest)
+        //     function: <FTest>::maximum(a: FTestBase, b: FTestBase)
         // }
         // #[cfg(nightly)]
         // test_bignum! {
-        //     function: <ftest>::minimum(a: ftest, b: ftest)
+        //     function: <FTest>::minimum(a: FTestBase, b: FTestBase)
         // }
         test_bignum! {
-            function: <ftest>::clamp(a: ftest, b: ftest, c: ftest),
+            function: <FTest>::clamp(a: FTestBase, b: FTestBase, c: FTestBase),
             skip: !(b <= c)
         }
         test_bignum! {
-            function: <ftest>::total_cmp(a: ref &ftest, b: ref &ftest)
+            function: <FTest>::total_cmp(a: ref &FTestBase, b: ref &FTestBase)
         }
         test_bignum! {
-            function: <ftest as PartialOrd>::partial_cmp(a: ref &ftest, b: ref &ftest)
+            function: <FTest as PartialOrd>::partial_cmp(a: ref &FTestBase, b: ref &FTestBase)
         }
         test_bignum! {
-            function: <ftest as PartialEq>::eq(a: ref &ftest, b: ref &ftest)
+            function: <FTest as PartialEq>::eq(a: ref &FTestBase, b: ref &FTestBase)
         }
     }
 }

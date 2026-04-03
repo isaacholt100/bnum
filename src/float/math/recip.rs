@@ -131,7 +131,7 @@ crate::test::test_all! {
 
     #[test]
     fn recip2() {
-        assert!((0.0 as ftest).to_bits().count_zeros() == 32);
+        assert!((0.0 as FTest).to_bits().count_zeros() == 32);
         use super::super::F32;
 
         let f1 = 1.7517333f32; //f32::from_bits(0b0_01111110_01001000000000000000000u32);
@@ -143,7 +143,7 @@ crate::test::test_all! {
     }
 
     test_bignum! {
-        function: <ftest>::recip(f: ftest),
+        function: <FTest>::recip(f: FTestBase),
         skip: !f.is_finite() || f == 0.0 || f >= 2.0 || f <= 1.0
     }
 

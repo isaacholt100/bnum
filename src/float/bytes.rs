@@ -37,16 +37,16 @@ mod tests {
         testing floats;
 
         test_bignum! {
-            function: <ftest>::to_be_bytes(a: ftest)
+            function: <FTest>::to_be_bytes(a: FTestBase)
         }
         test_bignum! {
-            function: <ftest>::to_le_bytes(a: ftest)
+            function: <FTest>::to_le_bytes(a: FTestBase)
         }
         test_bignum! {
-            function: <ftest>::from_be_bytes(a: [u8; FTEST::BITS as usize / 8])
+            function: <FTest>::from_be_bytes(a: [u8; FTest::BITS as usize / 8])
         }
         test_bignum! {
-            function: <ftest>::from_le_bytes(a: [u8; FTEST::BITS as usize / 8])
+            function: <FTest>::from_le_bytes(a: [u8; FTest::BITS as usize / 8])
         }
     }
 }

@@ -85,15 +85,15 @@ mod tests {
             let mut r = SmallRng::seed_from_u64(0);
             let seed = r.random();
             let (mut r1, mut r2) = seeded_rngs::<SmallRng>(seed);
-            let big: FTEST = r1.random();
-            let prim: ftest = r2.random();
+            let actual: FTest = r1.random();
+            let expected: FTestBase = r2.random();
 
-            assert!(convert::test_eq(big, prim));
+            assert!(convert::test_eq(actual, expected));
 
-            let big: FTEST = r1.sample(OpenClosed01);
-            let prim: ftest = r2.sample(OpenClosed01);
+            let actual: FTest = r1.sample(OpenClosed01);
+            let expected: FTestBase = r2.sample(OpenClosed01);
 
-            assert!(convert::test_eq(big, prim));
+            assert!(convert::test_eq(actual, expected));
         }
     }
 }

@@ -208,16 +208,16 @@ crate::test::test_all_custom_bit_widths! {
     use core::ops::{BitAnd, BitOr, BitXor, Not};
 
     test_bignum! {
-        function: <utest as BitAnd>::bitand(a: utest, b: utest)
+        function: <UTest as BitAnd>::bitand(a: UTest, b: UTest)
     }
     test_bignum! {
-        function: <utest as BitOr>::bitor(a: utest, b: utest)
+        function: <UTest as BitOr>::bitor(a: UTest, b: UTest)
     }
     test_bignum! {
-        function: <utest as BitXor>::bitxor(a: utest, b: utest)
+        function: <UTest as BitXor>::bitxor(a: UTest, b: UTest)
     }
     test_bignum! {
-        function: <utest as Not>::not(a: utest)
+        function: <UTest as Not>::not(a: UTest)
     }
 }
 
@@ -225,24 +225,24 @@ crate::test::test_all_custom_bit_widths! {
 mod tests {
     use super::*;
     use crate::Exponent;
-    use crate::test::{test_bignum, debug_skip};
+    use crate::test::test_bignum;
 
     macro_rules! test_shifts {
         ($($rhs: ty), *) => {
             $(
                 crate::test::test_bignum! {
-                    function: <stest as Shl<$rhs> >::shl(a: stest, b: $rhs),
-                    skip: debug_skip!(match Exponent::try_from(b) {
-                        Ok(b) => b >= stest::BITS,
+                    function: <STest as Shl<$rhs> >::shl(a: STest, b: $rhs),
+                    skip: crate::overflow::GLOBAL_OVERFLOW_CHECKS && match Exponent::try_from(b) {
+                        Ok(b) => b >= STest::BITS,
                         Err(_) => true,
-                    })
+                    }
                 }
                 crate::test::test_bignum! {
-                    function: <stest as Shr<$rhs> >::shr(a: stest, b: $rhs),
-                    skip: debug_skip!(match Exponent::try_from(b) {
-                        Ok(b) => b >= <stest>::BITS,
+                    function: <STest as Shr<$rhs> >::shr(a: STest, b: $rhs),
+                    skip: crate::overflow::GLOBAL_OVERFLOW_CHECKS && match Exponent::try_from(b) {
+                        Ok(b) => b >= <STest>::BITS,
                         Err(_) => true,
-                    })
+                    }
                 }
             )*
         }
@@ -252,35 +252,35 @@ mod tests {
         testing integers;
 
         test_bignum! {
-            function: <stest as Add>::add(a: stest, b: stest),
+            function: <STest as Add>::add(a: STest, b: STest),
             skip: a.checked_add(b).is_none()
         }
         test_bignum! {
-            function: <stest as BitAnd>::bitand(a: stest, b: stest)
+            function: <STest as BitAnd>::bitand(a: STest, b: STest)
         }
         test_bignum! {
-            function: <stest as BitOr>::bitor(a: stest, b: stest)
+            function: <STest as BitOr>::bitor(a: STest, b: STest)
         }
         test_bignum! {
-            function: <stest as BitXor>::bitxor(a: stest, b: stest)
+            function: <STest as BitXor>::bitxor(a: STest, b: STest)
         }
         test_bignum! {
-            function: <stest as Div>::div(a: stest, b: stest),
+            function: <STest as Div>::div(a: STest, b: STest),
             skip: a.checked_div(b).is_none()
         }
         test_bignum! {
-            function: <stest as Rem>::rem(a: stest, b: stest),
+            function: <STest as Rem>::rem(a: STest, b: STest),
             skip: a.checked_rem(b).is_none()
         }
         test_bignum! {
-            function: <stest as Not>::not(a: stest)
+            function: <STest as Not>::not(a: STest)
         }
         test_bignum! {
-            function: <stest as Sub>::sub(a: stest, b: stest),
+            function: <STest as Sub>::sub(a: STest, b: STest),
             skip: a.checked_sub(b).is_none()
         }
         test_bignum! {
-            function: <stest as Mul>::mul(a: stest, b: stest),
+            function: <STest as Mul>::mul(a: STest, b: STest),
             skip: a.checked_mul(b).is_none()
         }
 
@@ -291,8 +291,8 @@ mod tests {
         testing signed;
 
         test_bignum! {
-            function: <itest>::neg(a: itest),
-            skip: debug_skip!(a == itest::MIN)
+            function: <ITest>::neg(a: ITest),
+            skip: crate::overflow::GLOBAL_OVERFLOW_CHECKS && a == ITest::MIN
         }
     }
 
@@ -300,21 +300,21 @@ mod tests {
     //     testing integers wrapping;
 
     //     test_bignum! {
-    //         function: <stest as Add>::add(a: stest, b: stest)
+    //         function: <STest as Add>::add(a: STest, b: STest)
     //     }
     //     test_bignum! {
-    //         function: <stest as Sub>::sub(a: stest, b: stest)
+    //         function: <STest as Sub>::sub(a: STest, b: STest)§
     //     }
     //     test_bignum! {
-    //         function: <stest as Mul>::mul(a: stest, b: stest)
+    //         function: <STest as Mul>::mul(a: STest, b: STest)
     //     }
     //     test_bignum! {
-    //         function: <stest as Div>::div(a: stest, b: stest),
-    //         skip: b.0 == 0
+    //         function: <STest as Div>::div(a: STest, b: STest),
+    //         skip: b.is_zero()
     //     }
     //     test_bignum! {
-    //         function: <stest as Rem>::rem(a: stest, b: stest),
-    //         skip: b.0 == 0
+    //         function: <STest as Rem>::rem(a: STest, b: STest),
+    //         skip: b.is_zero()
     //     }
     // }
 
@@ -322,21 +322,21 @@ mod tests {
     //     testing integers saturating;
 
     //     test_bignum! {
-    //         function: <stest as Add>::add(a: stest, b: stest)
+    //         function: <STest as Add>::add(a: STest, b: STest)
     //     }
     //     test_bignum! {
-    //         function: <stest as Sub>::sub(a: stest, b: stest)
+    //         function: <STest as Sub>::sub(a: STest, b: STest)
     //     }
     //     test_bignum! {
-    //         function: <stest as Mul>::mul(a: stest, b: stest)
+    //         function: <STest as Mul>::mul(a: STest, b: STest)
     //     }
     //     test_bignum! {
-    //         function: <stest as Div>::div(a: stest, b: stest),
-    //         skip: b.0 == 0
+    //         function: <STest as Div>::div(a: STest, b: STest),
+    //         skip: b.is_zero()
     //     }
     //     test_bignum! {
-    //         function: <stest as Rem>::rem(a: stest, b: stest),
-    //         skip: b.0 == 0
+    //         function: <STest as Rem>::rem(a: STest, b: STest),
+    //         skip: b.is_zero()
     //     }
     // }
 }

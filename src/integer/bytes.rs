@@ -386,19 +386,18 @@ mod tests {
             paste::paste! {
                 quickcheck::quickcheck! {
                     fn [<quickcheck_ $int _from_ $endian _slice>](int: $int, pad_length: u8) -> quickcheck::TestResult {
-                        type Big = [<$int:upper>];
-                        type Primitive = $int;
+                        type TestType = $int;
+                        type BaseType = [<$int Base>];
 
                         use crate::test::convert;
 
                         // pad_length is greater than the size of the integer in bytes
-                        if pad_length >= Primitive::BITS as u8 / 8 {
+                        if pad_length >= BaseType::BITS as u8 / 8 {
                             return quickcheck::TestResult::discard();
                         }
                         let pad_length = pad_length as usize;
 
-                        #[allow(unused_comparisons)]
-                        let mut pad_bits = if int < 0 {
+                        let mut pad_bits = if int.is_negative_internal() {
                             u8::MAX // 1111...
                         } else {
                             u8::MIN // 0000...
@@ -407,19 +406,19 @@ mod tests {
                         let mut bytes = int.[<to_ $endian _bytes>](); // random input bytes
 
                         // first, test that the original bytes as slice is converted back to the same integer
-                        let mut passed = convert::test_eq(Big::[<from_ $endian _slice>](&bytes[..]), Some(int));
+                        let mut passed = convert::test_eq(TestType::[<from_ $endian _slice>](&bytes[..]), Some(int));
                         
                         let bytes_vec = [<$endian _bytes_vec>](&bytes[..], pad_bits, pad_length); // random vector padded with a random amount of bytes
                         // test that the padded bytes are still converted back to the same integer
-                        passed &= convert::test_eq(Big::[<from_ $endian _slice>](&bytes_vec[..]), Some(int));
+                        passed &= convert::test_eq(TestType::[<from_ $endian _slice>](&bytes_vec[..]), Some(int));
 
                         
                         // most significant byte position, range of bytes indices to change to padding bits, range of bytes indices that will result in the same integer without the padding bits
-                        let (msb, pad_range, slice_range) = [<$endian _pad>](pad_length, Primitive::BITS);
+                        let (msb, pad_range, slice_range) = [<$endian _pad>](pad_length, BaseType::BITS);
 
                         pad_bits = {
                             #[allow(unused_comparisons)]
-                            if Primitive::MIN < 0 && (bytes[msb] as i8).is_negative() {
+                            if BaseType::MIN < 0 && (bytes[msb] as i8).is_negative() {
                                 u8::MAX
                             } else {
                                 u8::MIN
@@ -429,12 +428,12 @@ mod tests {
                         for item in &mut bytes[pad_range] {
                             *item = pad_bits;
                         }
-                        let correct = Some(Big::[<from_ $endian _bytes>](bytes));
+                        let correct = Some(TestType::[<from_ $endian _bytes>](bytes));
                         // test that a shortened slice of bytes is converted to the same integer as the shortened slice that is padded to be the same number of bytes as the size of the integer
-                        passed &= Big::[<from_ $endian _slice>](&bytes[slice_range]) == correct;
+                        passed &= TestType::[<from_ $endian _slice>](&bytes[slice_range]) == correct;
 
                         let bytes_vec = [<$endian _bytes_vec>](&bytes[..], pad_bits, pad_length);
-                        passed &= Big::[<from_ $endian _slice>](&bytes_vec[..]) == correct;
+                        passed &= TestType::[<from_ $endian _slice>](&bytes_vec[..]) == correct;
 
                         quickcheck::TestResult::from_bool(passed)
                     }
@@ -487,20 +486,20 @@ mod tests {
 
         #[test]
         fn as_bytes() {
-            let a = STEST::ZERO;
+            let a = STest::ZERO;
             let digits = *a.as_bytes();
-            assert_eq!(a, STEST::from_bytes(digits));
+            assert_eq!(a, STest::from_bytes(digits));
         }
 
         #[test]
         fn to_bytes() {
-            let a = STEST::ZERO;
+            let a = STest::ZERO;
             assert_eq!(a.to_bytes(), [0; _]);
         }
 
         quickcheck::quickcheck! {
-            fn as_bytes_mut(a: stest) -> bool {
-                let a = STEST::from_bytes(a.to_le_bytes());
+            fn as_bytes_mut(a: STest) -> bool {
+                let a = STest::from_bytes(a.to_le_bytes());
                 let mut b = a;
                 b.as_bytes_mut().reverse();
                 
@@ -509,29 +508,29 @@ mod tests {
         }
 
         test_bignum! {
-            function: <stest>::to_be_bytes(a: stest)
+            function: <STest>::to_be_bytes(a: STest)
         }
         test_bignum! {
-            function: <stest>::to_le_bytes(a: stest)
+            function: <STest>::to_le_bytes(a: STest)
         }
         test_bignum! {
-            function: <stest>::from_be_bytes(a: [u8; STEST::BYTES as usize])
+            function: <STest>::from_be_bytes(a: [u8; STest::BYTES as usize])
         }
         test_bignum! {
-            function: <stest>::from_le_bytes(a: [u8; STEST::BYTES as usize])
+            function: <STest>::from_le_bytes(a: [u8; STest::BYTES as usize])
         }
 
         #[cfg(feature = "alloc")]
-        test_from_endian_slice!(stest, be);
+        test_from_endian_slice!(STest, be);
 
         #[cfg(feature = "alloc")]
-        test_from_endian_slice!(stest, le);
+        test_from_endian_slice!(STest, le);
 
         use crate::n;
 
         #[test]
         fn cases_from_be_slice() {
-            assert_eq!(STEST::from_be_slice(&[]), Some(n!(0)));
+            assert_eq!(STest::from_be_slice(&[]), Some(n!(0)));
         }
     }
 }

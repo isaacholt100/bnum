@@ -39,49 +39,49 @@ mod tests {
         testing integers;
         
         test_bignum! {
-            function: <stest as PartialEq>::eq(a: ref &stest, b: ref &stest)
+            function: <STest as PartialEq>::eq(a: ref &STest, b: ref &STest)
         }
         test_bignum! {
-            function: <stest as PartialOrd>::partial_cmp(a: ref &stest, b: ref &stest)
+            function: <STest as PartialOrd>::partial_cmp(a: ref &STest, b: ref &STest)
         }
         test_bignum! {
-            function: <stest as PartialOrd>::lt(a: ref &stest, b: ref &stest)
+            function: <STest as PartialOrd>::lt(a: ref &STest, b: ref &STest)
         }
         test_bignum! {
-            function: <stest as PartialOrd>::le(a: ref &stest, b: ref &stest)
+            function: <STest as PartialOrd>::le(a: ref &STest, b: ref &STest)
         }
         test_bignum! {
-            function: <stest as PartialOrd>::gt(a: ref &stest, b: ref &stest)
+            function: <STest as PartialOrd>::gt(a: ref &STest, b: ref &STest)
         }
         test_bignum! {
-            function: <stest as PartialOrd>::ge(a: ref &stest, b: ref &stest)
+            function: <STest as PartialOrd>::ge(a: ref &STest, b: ref &STest)
         }
 
         test_bignum! {
-            function: <stest>::cmp(a: ref &stest, b: ref &stest)
+            function: <STest>::cmp(a: ref &STest, b: ref &STest)
         }
         test_bignum! {
-            function: <stest>::max(a: stest, b: stest)
+            function: <STest>::max(a: STest, b: STest)
         }
         test_bignum! {
-            function: <stest>::min(a: stest, b: stest)
+            function: <STest>::min(a: STest, b: STest)
         }
         test_bignum! {
-            function: <stest>::clamp(a: stest, min: stest, max: stest),
+            function: <STest>::clamp(a: STest, min: STest, max: STest),
             skip: min > max
         }
 
         test_bignum! {
-            function: <stest as Ord>::cmp(a: ref &stest, b: ref &stest)
+            function: <STest as Ord>::cmp(a: ref &STest, b: ref &STest)
         }
         test_bignum! {
-            function: <stest as Ord>::max(a: stest, b: stest)
+            function: <STest as Ord>::max(a: STest, b: STest)
         }
         test_bignum! {
-            function: <stest as Ord>::min(a: stest, b: stest)
+            function: <STest as Ord>::min(a: STest, b: STest)
         }
         test_bignum! {
-            function: <stest as Ord>::clamp(a: stest, min: stest, max: stest),
+            function: <STest as Ord>::clamp(a: STest, min: STest, max: STest),
             skip: min > max
         }
     }
@@ -92,12 +92,12 @@ crate::test::test_all_custom_bit_widths! {
     use crate::test::test_bignum;
 
     test_bignum! {
-        function: <utest>::eq(a: ref &utest, b: ref &utest)
+        function: <UTest>::eq(a: ref &UTest, b: ref &UTest)
     }
     test_bignum! {
-        function: <itest>::eq(a: ref &itest, b: ref &itest)
+        function: <ITest>::eq(a: ref &ITest, b: ref &ITest)
     }
     test_bignum! {
-        function: <utest>::cmp(a: ref &utest, b: ref &utest)
+        function: <UTest>::cmp(a: ref &UTest, b: ref &UTest)
     }
 }

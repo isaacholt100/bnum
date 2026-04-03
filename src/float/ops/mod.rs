@@ -119,31 +119,31 @@ mod tests {
         testing floats;
 
         test_bignum! {
-            function: <ftest as Add>::add(a: ftest, b: ftest),
+            function: <FTest as Add>::add(a: FTestBase, b: FTestBase),
             cases: [(1.3952888382785755e33, 1.466527384898436e33)]
         }
         // test_bignum! {
-        //     function: <ftest as Sub>::sub(a: ftest, b: ftest),
+        //     function: <FTest as Sub>::sub(a: FTestBase, b: FTestBase),
         //     cases: [
         //         (-0.0, 0.0),
         //         (74482736000000.0, 11088044000000.0),
         //         (-128.0, -115.12566)
         //     ]
         // }
+        // test_bignum! {
+        //     function: <FTest as Mul>::mul(a: FTestBase, b: FTestBase),
+        //     cases: [
+        //         (5.6143642e23f64 as FTestBase, 35279.223f64 as FTestBase)
+        //     ]
+        // }
         test_bignum! {
-            function: <ftest as Mul>::mul(a: ftest, b: ftest),
-            cases: [
-                (5.6143642e23f64 as ftest, 35279.223f64 as ftest)
-            ]
+            function: <FTest as Div>::div(a: FTestBase, b: FTestBase)
         }
         test_bignum! {
-            function: <ftest as Div>::div(a: ftest, b: ftest)
+            function: <FTest as Rem>::rem(a: FTestBase, b: FTestBase)
         }
         test_bignum! {
-            function: <ftest as Rem>::rem(a: ftest, b: ftest)
-        }
-        test_bignum! {
-            function: <ftest as Neg>::neg(f: ftest)
+            function: <FTest as Neg>::neg(f: FTestBase)
         }
     }
 }

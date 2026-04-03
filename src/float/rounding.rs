@@ -208,22 +208,22 @@ mod tests {
         testing floats;
 
         test_bignum! {
-            function: <ftest>::floor(f: ftest)
+            function: <FTest>::floor(f: FTestBase)
         }
         test_bignum! {
-            function: <ftest>::ceil(f: ftest)
+            function: <FTest>::ceil(f: FTestBase)
         }
         test_bignum! {
-            function: <ftest>::round(f: ftest)
+            function: <FTest>::round(f: FTestBase)
         }
         test_bignum! {
-            function: <ftest>::round_ties_even(f: ftest)
+            function: <FTest>::round_ties_even(f: FTestBase)
         }
         test_bignum! {
-            function: <ftest>::trunc(f: ftest)
+            function: <FTest>::trunc(f: FTestBase)
         }
         test_bignum! {
-            function: <ftest>::fract(f: ftest)
+            function: <FTest>::fract(f: FTestBase)
         }
     }
 }

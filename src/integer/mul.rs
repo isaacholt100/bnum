@@ -54,8 +54,8 @@ mod tests {
         testing unsigned;
 
         quickcheck::quickcheck! {
-            fn quickcheck_mul_u128(a: UTEST, b: u128) -> quickcheck::TestResult {
-                let c = match UTEST::try_from(b) {
+            fn quickcheck_mul_u128(a: UTest, b: u128) -> quickcheck::TestResult {
+                let c = match UTest::try_from(b) {
                     Ok(v) => v,
                     Err(_) => return quickcheck::TestResult::discard(),
                 };
@@ -65,7 +65,7 @@ mod tests {
 
         #[test]
         fn cases_mul_u128() {
-            assert_eq!(UTEST::from_byte(27).pow(3).overflowing_mul(UTEST::from_byte(8)), UTEST::from_byte(27).pow(3).mul_u128_digit(8));
+            assert_eq!(UTest::from_byte(27).pow(3).overflowing_mul(UTest::from_byte(8)), UTest::from_byte(27).pow(3).mul_u128_digit(8));
         }
     }
 }
