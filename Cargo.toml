@@ -18,7 +18,7 @@ exclude = ["src/float/*", "src/tests", "TODO.txt"] # TODO: make sure to include 
 [features]
 default = ["alloc"]
 rug = ["dep:rug"]
-float = ["rug?/float"]
+# float = ["rug?/float"]
 alloc = []
 serde = ["dep:serde", "serde-big-array"]
 numtraits = ["num-integer", "num-traits"]

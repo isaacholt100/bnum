@@ -42,29 +42,29 @@ macro_rules! call_types_macro {
 
 call_types_macro!(int_types);
 
-#[cfg(feature = "float")]
-/// 16-bit floating point type with 10 bits of precision, stored as the binary16 (half precision) format defined in IEEE 754-2019.
-pub type F16 = crate::Float<2, 10>;
+// #[cfg(feature = "float")]
+// /// 16-bit floating point type with 10 bits of precision, stored as the binary16 (half precision) format defined in IEEE 754-2019.
+// pub type F16 = crate::Float<2, 10>;
 
-#[cfg(feature = "float")]
-/// 32-bit floating point type with 23 bits of precision, stored as the binary32 (single precision) format defined in IEEE 754-2019.
-pub type F32 = crate::Float<4, 23>;
+// #[cfg(feature = "float")]
+// /// 32-bit floating point type with 23 bits of precision, stored as the binary32 (single precision) format defined in IEEE 754-2019.
+// pub type F32 = crate::Float<4, 23>;
 
-#[cfg(feature = "float")]
-/// 64-bit floating point type with 52 bits of precision, stored as the binary64 (double precision) format defined in IEEE 754-2019.
-pub type F64 = crate::Float<8, 52>;
+// #[cfg(feature = "float")]
+// /// 64-bit floating point type with 52 bits of precision, stored as the binary64 (double precision) format defined in IEEE 754-2019.
+// pub type F64 = crate::Float<8, 52>;
 
-#[cfg(feature = "float")]
-/// 80-bit floating point type with 64 bits of precision.
-pub type F80 = crate::Float<10, 64>;
+// #[cfg(feature = "float")]
+// /// 80-bit floating point type with 64 bits of precision.
+// pub type F80 = crate::Float<10, 64>;
 
-#[cfg(feature = "float")]
-/// 128-bit floating point type with 112 bits of precision, stored as the binary128 (quadruple precision) format defined in IEEE 754-2019.
-pub type F128 = crate::Float<16, 112>;
+// #[cfg(feature = "float")]
+// /// 128-bit floating point type with 112 bits of precision, stored as the binary128 (quadruple precision) format defined in IEEE 754-2019.
+// pub type F128 = crate::Float<16, 112>;
 
-#[cfg(feature = "float")]
-/// 256-bit floating point type with 236 bits of precision, stored as the binary256 (octuple precision) format defined in IEEE 754-2019.
-pub type F256 = crate::Float<32, 236>;
+// #[cfg(feature = "float")]
+// /// 256-bit floating point type with 236 bits of precision, stored as the binary256 (octuple precision) format defined in IEEE 754-2019.
+// pub type F256 = crate::Float<32, 236>;
 
 
 #[cfg(test)]

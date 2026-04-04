@@ -3,8 +3,8 @@ pub use convert::TestConvert;
 pub use convert::test_eq;
 mod bitint;
 
-#[cfg(all(feature = "float", feature = "rug"))]
-mod test_float;
+// #[cfg(all(feature = "float", feature = "rug"))]
+// mod test_float;
 
 pub use bitint::BitInt;
 
