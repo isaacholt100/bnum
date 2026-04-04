@@ -414,6 +414,23 @@ mod tests {
     use core::str::FromStr;
     use alloc::string::ToString;
 
+    #[cfg(feature = "alloc")]
+    macro_rules! quickcheck_from_str {
+        ($TestType: ty) => {
+            quickcheck::quickcheck! {
+                fn quickcheck_from_str(n: $TestType) -> bool {
+                    use crate::alloc::string::ToString;
+                    use core::str::FromStr;
+
+                    let s = n.to_string();
+                    let (actual, expected) = crate::test::results!(<$TestType>::from_str(&s));
+
+                    actual == expected
+                }
+            }
+        };
+    }
+
     crate::test::test_all! {
         testing integers;
 
@@ -554,7 +571,7 @@ mod tests {
         }
 
         #[cfg(feature = "alloc")]
-        crate::test::quickcheck_from_str!(STest);
+        quickcheck_from_str!(STest);
 
         #[test]
         fn from_str_radix_empty() {
@@ -600,11 +617,45 @@ mod tests {
         }
     }
 
+    #[cfg(feature = "alloc")]
+    macro_rules! quickcheck_from_str_radix {
+        { $TestType: ty, $sign1: literal | $sign2: literal } => {
+            quickcheck::quickcheck! {
+                fn quickcheck_from_str_radix(buf: [u8; <$TestType>::BITS as usize / 4], radix: crate::test::Radix<36>, leading_sign: bool) -> quickcheck::TestResult {
+                    use alloc::string::String;
+
+                    let radix = radix.0;
+
+                    fn byte_to_char(b: u8) -> char {
+                        if b < 10 {
+                            (b + 48) as char
+                        } else {
+                            (b + 87) as char
+                        }
+                    }
+
+                    let leading_sign = if leading_sign {
+                        $sign1
+                    } else {
+                        $sign2
+                    };
+
+                    let mut s2 = buf.into_iter().map(|b| byte_to_char(b % radix as u8)).collect::<String>();
+                    s2.insert_str(0, leading_sign);
+
+                    let (actual, expected) = crate::test::results!(<$TestType>::from_str_radix(&s2, radix as u32));
+
+                    quickcheck::TestResult::from_bool(actual == expected)
+                }
+            }
+        }
+    }
+
     crate::test::test_all! {
         testing unsigned;
 
         #[cfg(feature = "alloc")]
-        crate::test::quickcheck_from_str_radix!(UTest, "+" | "");
+        quickcheck_from_str_radix!(UTest, "+" | "");
 
         #[test]
         #[should_panic(expected = "Radix must be in range [2, 256]")]
@@ -639,7 +690,7 @@ mod tests {
         }
 
         #[cfg(feature = "alloc")]
-        crate::test::quickcheck_from_str_radix!(ITest, "+" | "-");
+        quickcheck_from_str_radix!(ITest, "+" | "-");
     }
 
     // TODO: custom bit width tests for from_str_radix

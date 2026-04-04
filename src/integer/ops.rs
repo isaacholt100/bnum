@@ -296,47 +296,65 @@ mod tests {
         }
     }
 
-    // crate::test::test_all! {
-    //     testing integers wrapping;
+    crate::test::test_all! {
+        testing signed s;
 
-    //     test_bignum! {
-    //         function: <STest as Add>::add(a: STest, b: STest)
-    //     }
-    //     test_bignum! {
-    //         function: <STest as Sub>::sub(a: STest, b: STest)§
-    //     }
-    //     test_bignum! {
-    //         function: <STest as Mul>::mul(a: STest, b: STest)
-    //     }
-    //     test_bignum! {
-    //         function: <STest as Div>::div(a: STest, b: STest),
-    //         skip: b.is_zero()
-    //     }
-    //     test_bignum! {
-    //         function: <STest as Rem>::rem(a: STest, b: STest),
-    //         skip: b.is_zero()
-    //     }
-    // }
+        test_bignum! {
+            function: <ITest>::neg(a: ITest)
+        }
+    }
 
-    // crate::test::test_all! {
-    //     testing integers saturating;
+    crate::test::test_all! {
+        testing signed w;
 
-    //     test_bignum! {
-    //         function: <STest as Add>::add(a: STest, b: STest)
-    //     }
-    //     test_bignum! {
-    //         function: <STest as Sub>::sub(a: STest, b: STest)
-    //     }
-    //     test_bignum! {
-    //         function: <STest as Mul>::mul(a: STest, b: STest)
-    //     }
-    //     test_bignum! {
-    //         function: <STest as Div>::div(a: STest, b: STest),
-    //         skip: b.is_zero()
-    //     }
-    //     test_bignum! {
-    //         function: <STest as Rem>::rem(a: STest, b: STest),
-    //         skip: b.is_zero()
-    //     }
-    // }
+        test_bignum! {
+            function: <ITest>::neg(a: ITest)
+        }
+    }
+
+    crate::test::test_all! {
+        testing integers w; // saturating
+
+        test_bignum! {
+            function: <STest as Add>::add(a: STest, b: STest)
+        }
+        test_bignum! {
+            function: <STest as Sub>::sub(a: STest, b: STest)
+        }
+        test_bignum! {
+            function: <STest as Mul>::mul(a: STest, b: STest)
+        }
+        test_bignum! {
+            function: <STest as Div>::div(a: STest, b: STest),
+            skip: b.is_zero()
+        }
+        test_bignum! {
+            function: <STest as Rem>::rem(a: STest, b: STest),
+            skip: b.is_zero()
+        }
+        // TODO: test shifts
+    }
+
+    crate::test::test_all! {
+        testing integers s; // saturating
+
+        test_bignum! {
+            function: <STest as Add>::add(a: STest, b: STest)
+        }
+        test_bignum! {
+            function: <STest as Sub>::sub(a: STest, b: STest)
+        }
+        test_bignum! {
+            function: <STest as Mul>::mul(a: STest, b: STest)
+        }
+        test_bignum! {
+            function: <STest as Div>::div(a: STest, b: STest),
+            skip: b.is_zero()
+        }
+        test_bignum! {
+            function: <STest as Rem>::rem(a: STest, b: STest),
+            skip: b.is_zero()
+        }
+        // TODO: test shifts
+    }
 }

@@ -150,82 +150,6 @@ macro_rules! test_into {
 
 pub(crate) use test_into;
 
-#[cfg(feature = "alloc")]
-#[derive(Clone, Copy, Debug)]
-pub struct Radix<const MAX: u32>(pub u32);
-
-#[cfg(feature = "alloc")]
-impl<const MAX: u32> quickcheck::Arbitrary for Radix<MAX> {
-    fn arbitrary(g: &mut quickcheck::Gen) -> Self {
-        let radix = (u32::arbitrary(g) % (MAX - 1)) + 2;
-        Self(radix)
-    }
-}
-
-#[cfg(feature = "alloc")]
-impl<const MAX: u32> From<Radix<MAX>> for u32 {
-    fn from(r: Radix<MAX>) -> Self {
-        r.0
-    }
-}
-
-#[cfg(feature = "alloc")]
-macro_rules! quickcheck_from_str_radix {
-    { $TestType: ty, $sign1: literal | $sign2: literal } => {
-        quickcheck::quickcheck! {
-            fn quickcheck_from_str_radix(buf: crate::test::U8ArrayWrapper<{<$TestType>::BITS as usize / 4}>, radix: crate::test::Radix<36>, leading_sign: bool) -> quickcheck::TestResult {
-                use alloc::string::String;
-
-                let radix = radix.0;
-
-                fn byte_to_char(b: u8) -> char {
-                    if b < 10 {
-                        (b + 48) as char
-                    } else {
-                        (b + 87) as char
-                    }
-                }
-
-                let leading_sign = if leading_sign {
-                    $sign1
-                } else {
-                    $sign2
-                };
-
-                let mut s2 = buf.0.into_iter().map(|b| byte_to_char(b % radix as u8)).collect::<String>();
-                s2.insert_str(0, leading_sign);
-
-                let (actual, expected) = crate::test::results!(<$TestType>::from_str_radix(&s2, radix as u32));
-
-                quickcheck::TestResult::from_bool(actual == expected)
-            }
-        }
-    }
-}
-
-#[cfg(feature = "alloc")]
-pub(crate) use quickcheck_from_str_radix;
-
-#[cfg(feature = "alloc")]
-macro_rules! quickcheck_from_str {
-    ($TestType: ty) => {
-        quickcheck::quickcheck! {
-            fn quickcheck_from_str(n: $TestType) -> bool {
-                use crate::alloc::string::ToString;
-                use core::str::FromStr;
-
-                let s = n.to_string();
-                let (actual, expected) = crate::test::results!(<$TestType>::from_str(&s));
-
-                actual == expected
-            }
-        }
-    };
-}
-
-#[cfg(feature = "alloc")]
-pub(crate) use quickcheck_from_str;
-
 macro_rules! primitive_with_overflow_behaviour {
     ($primitive: ident) => {
         $primitive
@@ -239,17 +163,6 @@ macro_rules! primitive_with_overflow_behaviour {
 }
 
 pub(crate) use primitive_with_overflow_behaviour;
-
-macro_rules! overflow_mode_suffix {
-    (wrapping) => {
-        w
-    };
-    (saturating) => {
-        s
-    };
-}
-
-pub(crate) use overflow_mode_suffix;
 
 macro_rules! test_width_and_sign {
     ($bits: expr, $prefix: ident $($overflow_mode: ident)? $(, $float: literal)?; $($s: tt) * ) => {
@@ -355,12 +268,10 @@ macro_rules! test_all {
                 #[allow(unused_imports)]
                 use super::*;
 
-                use crate::test::overflow_mode_suffix;
-
-                crate::test::test_width_and_sign!(16, u $(overflow_mode_suffix!($overflow_mode))?; $($s)*);
-                crate::test::test_width_and_sign!(32, u $(overflow_mode_suffix!($overflow_mode))?; $($s)*);
-                crate::test::test_width_and_sign!(64, u $(overflow_mode_suffix!($overflow_mode))?; $($s)*);
-                crate::test::test_width_and_sign!(128, u $(overflow_mode_suffix!($overflow_mode))?; $($s)*);
+                crate::test::test_width_and_sign!(16, u $($overflow_mode)?; $($s)*);
+                crate::test::test_width_and_sign!(32, u $($overflow_mode)?; $($s)*);
+                crate::test::test_width_and_sign!(64, u $($overflow_mode)?; $($s)*);
+                crate::test::test_width_and_sign!(128, u $($overflow_mode)?; $($s)*);
             }
         }
     };
@@ -371,10 +282,10 @@ macro_rules! test_all {
                 #[allow(unused_imports)]
                 use super::*;
 
-                crate::test::test_width_and_sign!(16, i $(overflow_mode_suffix!($overflow_mode))?; $($s)*);
-                crate::test::test_width_and_sign!(32, i $(overflow_mode_suffix!($overflow_mode))?; $($s)*);
-                crate::test::test_width_and_sign!(64, i $(overflow_mode_suffix!($overflow_mode))?; $($s)*);
-                crate::test::test_width_and_sign!(128, i $(overflow_mode_suffix!($overflow_mode))?; $($s)*);
+                crate::test::test_width_and_sign!(16, i $($overflow_mode)?; $($s)*);
+                crate::test::test_width_and_sign!(32, i $($overflow_mode)?; $($s)*);
+                crate::test::test_width_and_sign!(64, i $($overflow_mode)?; $($s)*);
+                crate::test::test_width_and_sign!(128, i $($overflow_mode)?; $($s)*);
             }
         }
     };
@@ -385,15 +296,15 @@ macro_rules! test_all {
                 use super::*;
 
                 // for unsigned and signed tests
-                crate::test::test_width_and_sign!(16, u $(overflow_mode_suffix!($overflow_mode))?; $($s)*);
-                crate::test::test_width_and_sign!(32, u $(overflow_mode_suffix!($overflow_mode))?; $($s)*);
-                crate::test::test_width_and_sign!(64, u $(overflow_mode_suffix!($overflow_mode))?; $($s)*);
-                crate::test::test_width_and_sign!(128, u $(overflow_mode_suffix!($overflow_mode))?; $($s)*);
+                crate::test::test_width_and_sign!(16, u $($overflow_mode)?; $($s)*);
+                crate::test::test_width_and_sign!(32, u $($overflow_mode)?; $($s)*);
+                crate::test::test_width_and_sign!(64, u $($overflow_mode)?; $($s)*);
+                crate::test::test_width_and_sign!(128, u $($overflow_mode)?; $($s)*);
 
-                crate::test::test_width_and_sign!(16, i $(overflow_mode_suffix!($overflow_mode))?; $($s)*);
-                crate::test::test_width_and_sign!(32, i $(overflow_mode_suffix!($overflow_mode))?; $($s)*);
-                crate::test::test_width_and_sign!(64, i $(overflow_mode_suffix!($overflow_mode))?; $($s)*);
-                crate::test::test_width_and_sign!(128, i $(overflow_mode_suffix!($overflow_mode))?; $($s)*);
+                crate::test::test_width_and_sign!(16, i $($overflow_mode)?; $($s)*);
+                crate::test::test_width_and_sign!(32, i $($overflow_mode)?; $($s)*);
+                crate::test::test_width_and_sign!(64, i $($overflow_mode)?; $($s)*);
+                crate::test::test_width_and_sign!(128, i $($overflow_mode)?; $($s)*);
             }
         }
     };

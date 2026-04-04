@@ -6,6 +6,7 @@
         widening_mul,
         signed_bigint_helpers,
         int_roundings,
+        wrapping_int_impl,
         float_minimum_maximum,
         uint_bit_width,
         wrapping_next_power_of_two,

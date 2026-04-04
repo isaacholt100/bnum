@@ -13,32 +13,22 @@ mod macros;
 #[allow(unused_imports)]
 pub use macros::*;
 
-#[derive(Clone, Copy)]
-pub struct U8ArrayWrapper<const N: usize>(pub [u8; N]);
+#[cfg(feature = "alloc")]
+#[derive(Clone, Copy, Debug)]
+pub struct Radix<const MAX: u32>(pub u32);
 
-impl<const N: usize> From<U8ArrayWrapper<N>> for [u8; N] {
-    fn from(a: U8ArrayWrapper<N>) -> Self {
-        a.0
+#[cfg(feature = "alloc")]
+impl<const MAX: u32> quickcheck::Arbitrary for Radix<MAX> {
+    fn arbitrary(g: &mut quickcheck::Gen) -> Self {
+        let radix = (u32::arbitrary(g) % (MAX - 1)) + 2;
+        Self(radix)
     }
 }
 
-use quickcheck::{Arbitrary, Gen};
-
-impl<const N: usize> Arbitrary for U8ArrayWrapper<N> {
-    fn arbitrary(g: &mut Gen) -> Self {
-        let mut arr = [0u8; N];
-        for x in arr.iter_mut() {
-            *x = u8::arbitrary(g);
-        }
-        Self(arr)
-    }
-}
-
-use core::fmt::{self, Debug, Formatter};
-
-impl<const N: usize> Debug for U8ArrayWrapper<N> {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        self.0.fmt(f)
+#[cfg(feature = "alloc")]
+impl<const MAX: u32> From<Radix<MAX>> for u32 {
+    fn from(r: Radix<MAX>) -> Self {
+        r.0
     }
 }
 

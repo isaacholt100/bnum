@@ -181,6 +181,27 @@ integer_try_from_into_primitive_integer!(
     u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize
 );
 
+// just for testing, we want to compare Integer's with wrapping behaviour and Wrapping(prim_int), and with saturating behaviour and Saturating(prim_int), so need to be able to convert
+#[cfg(test)]
+impl<const S: bool, const N: usize, const B: usize, const OM: u8, T> TryFrom<Integer<S, N, B, OM>> for core::num::Wrapping<T> where T: TryFrom<Integer<S, N, B, OM>> {
+    type Error = <T as TryFrom<Integer<S, N, B, OM>>>::Error;
+
+    #[inline]
+    fn try_from(value: Integer<S, N, B, OM>) -> Result<Self, Self::Error> {
+        Ok(core::num::Wrapping(value.try_into()?))
+    }
+}
+
+#[cfg(test)]
+impl<const S: bool, const N: usize, const B: usize, const OM: u8, T> TryFrom<Integer<S, N, B, OM>> for core::num::Saturating<T> where T: TryFrom<Integer<S, N, B, OM>> {
+    type Error = <T as TryFrom<Integer<S, N, B, OM>>>::Error;
+
+    #[inline]
+    fn try_from(value: Integer<S, N, B, OM>) -> Result<Self, Self::Error> {
+        Ok(core::num::Saturating(value.try_into()?))
+    }
+}
+
 // impl<
 //     const S: bool,
 //     const N: usize,

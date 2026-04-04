@@ -382,12 +382,13 @@ impl<const S: bool, const N: usize, const OM: u8> Integer<S, N, 0, OM> {
 mod tests {
     #[cfg(feature = "alloc")]
     macro_rules! test_from_endian_slice {
-        ($int: ty, $endian: ident) => {
+        ($TestType: ty, $endian: ident) => {
             paste::paste! {
                 quickcheck::quickcheck! {
-                    fn [<quickcheck_ $int _from_ $endian _slice>](int: $int, pad_length: u8) -> quickcheck::TestResult {
-                        type TestType = $int;
-                        type BaseType = [<$int Base>];
+                    #[allow(non_snake_case)]
+                    fn [<quickcheck_ $TestType _from_ $endian _slice>](int: $TestType, pad_length: u8) -> quickcheck::TestResult {
+                        type TestType = $TestType;
+                        type BaseType = [<$TestType Base>];
 
                         use crate::test::convert;
 

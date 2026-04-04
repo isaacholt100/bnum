@@ -1,6 +1,7 @@
 - add rug conversion feature
 - add num_bigint conversion feature
 - fix quickcheck::Arbitrary and rand:StandardUniform and rand::Fill implementation: now correctly set sign bits
+- bug fix: to_radix_{be,le} panicked incorrectly in debug for radix 256
 
 TODO:
 - write tests for untested parts to improve codecov
@@ -8,4 +9,6 @@ TODO:
 - features to add:
     - bytemuck
 - add num_traits::Pow impl with multiple different primitive types exponents (and possibly Integer exponent as well)
-- bug fix: to_radix_{be,le} panicked incorrectly in debug for radix 256
+- add type aliases for Wrapping{Integer,Uint,Int}, Saturating{Integer,Uint,Int}, Strict{Integer,Uint,Int}
+
+TODO: seems that many issues like https://github.com/rust-lang/rust/issues/32463 lack basic wrapping int behaviour, could comment on some of these with link to bnum.

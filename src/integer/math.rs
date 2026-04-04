@@ -740,6 +740,57 @@ mod tests {
             skip: a.checked_div(b).is_none()
         }
     }
+
+    crate::test::test_all! {
+        testing integers w;
+
+        #[cfg(nightly)] // since wrapping_int_impl is not stable yet
+        test_bignum! {
+            function: <STest>::pow(a: STest, b: u16)
+        }
+        // test_bignum! {
+        //     function: <STest>::div_euclid(a: STest, b: STest),
+        //     skip: b.is_zero()
+        // }
+        // test_bignum! {
+        //     function: <STest>::rem_euclid(a: STest, b: STest),
+        //     skip: b.is_zero()
+        // }
+    }
+
+    crate::test::test_all! {
+        testing signed w;
+
+        #[cfg(nightly)] // since wrapping_int_impl is not stable yet
+        test_bignum! {
+            function: <ITest>::abs(a: ITest)
+        }
+    }
+
+    crate::test::test_all! {
+        testing integers s;
+
+        test_bignum! {
+            function: <STest>::pow(a: STest, b: u16)
+        }
+        // test_bignum! {
+        //     function: <STest>::div_euclid(a: STest, b: STest),
+        //     skip: b.is_zero()
+        // }
+        // test_bignum! {
+        //     function: <STest>::rem_euclid(a: STest, b: STest),
+        //     skip: b.is_zero()
+        // }
+    }
+
+    crate::test::test_all! {
+        testing signed s;
+
+        test_bignum! {
+            function: <ITest>::abs(a: ITest)
+        }
+    }
+
     crate::test::test_all! {
         testing unsigned;
 

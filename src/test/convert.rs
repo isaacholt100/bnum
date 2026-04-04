@@ -41,38 +41,38 @@ macro_rules! test_convert_bigints {
                 }
 
                 impl TestConvert for Wrapping<[<u $bits>]> {
-                    type Output = <[<u $bits>] as TestConvert>::Output;
+                    type Output = t!([<U $bits w>]);
 
                     #[inline]
                     fn into(self) -> Self::Output {
-                        TestConvert::into(self.0)
+                        TestConvert::into(self.0).force()
                     }
                 }
 
                 impl TestConvert for Wrapping<[<i $bits>]> {
-                    type Output = <[<i $bits>] as TestConvert>::Output;
+                    type Output = t!([<I $bits w>]);
 
                     #[inline]
                     fn into(self) -> Self::Output {
-                        TestConvert::into(self.0)
+                        TestConvert::into(self.0).force()
                     }
                 }
 
                 impl TestConvert for Saturating<[<u $bits>]> {
-                    type Output = <[<u $bits>] as TestConvert>::Output;
+                    type Output = t!([<U $bits s>]);
 
                     #[inline]
                     fn into(self) -> Self::Output {
-                        TestConvert::into(self.0)
+                        TestConvert::into(self.0).force()
                     }
                 }
 
                 impl TestConvert for Saturating<[<i $bits>]> {
-                    type Output = <[<i $bits>] as TestConvert>::Output;
+                    type Output = t!([<I $bits s>]);
 
                     #[inline]
                     fn into(self) -> Self::Output {
-                        TestConvert::into(self.0)
+                        TestConvert::into(self.0).force()
                     }
                 }
             )*
