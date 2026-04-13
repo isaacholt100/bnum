@@ -388,8 +388,6 @@ mod tests {
             paste::paste! {
                 quickcheck::quickcheck! {
                     fn [<quickcheck_from_to_ $name>](u: $TestType, radix: crate::test::Radix<$max>) -> quickcheck::TestResult {
-                        use crate::cast::CastFrom;
-
                         let radix = radix.0;
                         let v = u.[<to_ $name>](radix as u32);
                         let u1 = <$TestType>::[<from_ $name>](&v, radix as u32).unwrap();
@@ -399,12 +397,6 @@ mod tests {
                 }
             }
         }
-    }
-
-    #[test]
-    fn aaa() {
-        let a = crate::n!(0xd73104da53b99783U64);
-        dbg!(a.to_radix_le(256));
     }
 
     crate::test::test_all! {

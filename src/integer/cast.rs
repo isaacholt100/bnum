@@ -212,7 +212,7 @@ mod double_custom_bit_width_cast_tests {
     use crate::test::BitInt;
     use crate::cast::CastFrom;
     use crate::Integer;
-    use crate::literal_parse::get_size_params_from_bits;
+    use crate::macros::get_size_params_from_bits;
 
     macro_rules! test_double_custom_bit_width_cast {
         ($($from: literal => $to: literal), *) => {

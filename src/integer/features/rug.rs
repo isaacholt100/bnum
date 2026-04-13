@@ -1,6 +1,7 @@
 use rug::Integer as RugInteger;
 use rug::integer::Order;
-use crate::{Int, Integer, Uint, errors::TryFromIntError};
+use crate::{Int, Integer, Uint};
+use crate::errors::TryFromIntError;
 
 impl<const S: bool, const N: usize, const B: usize, const OM: u8> From<Integer<S, N, B, OM>> for RugInteger {
     #[inline]

@@ -343,7 +343,7 @@ mod tests {
 mod double_custom_bit_width_convert_tests {
     use crate::Integer;
     use crate::test::BitInt;
-    use crate::literal_parse::get_size_params_from_bits;
+    use crate::macros::get_size_params_from_bits;
 
     macro_rules! test_double_custom_bit_width_convert {
         ($($from: literal => $to: literal), *) => {

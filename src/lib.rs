@@ -29,13 +29,17 @@ mod integer;
 
 pub mod cast;
 mod doc;
+pub(crate) mod macros;
 pub mod errors;
 mod helpers;
-#[doc(hidden)]
-pub mod literal_parse;
 pub mod prelude;
 mod digits;
 mod overflow;
+
+#[doc(hidden)]
+pub mod __internal {
+    pub use super::macros::*;
+}
 
 // #[cfg(feature = "float")]
 // mod float;

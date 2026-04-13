@@ -3,7 +3,7 @@
 macro_rules! concat_panic {
     ($($msg: expr),+ $(,)?) => {
         {
-            let buf = $crate::literal_parse::concat_strs::<{ 0 $(+ $msg.as_bytes().len())+ }>(&[$($msg),+]);
+            let buf = $crate::macros::concat_strs::<{ 0 $(+ $msg.as_bytes().len())+ }>(&[$($msg),+]);
             let msg = unsafe { core::str::from_utf8_unchecked(&buf) }; // SAFETY: in concat_strs, we concatenated the strings byte slices directly, so the result is valid UTF-8
             panic!("{}", msg);
         }

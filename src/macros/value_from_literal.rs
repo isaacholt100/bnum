@@ -1,93 +1,3 @@
-mod digits;
-mod type_descriptor;
-mod panic;
-
-pub use digits::*;
-pub use type_descriptor::*;
-pub use panic::*;
-
-/// Returns a concrete instantiation of the [`Integer`](crate::Integer) type with the specified const-generic parameters from a type descriptor.
-/// 
-/// `t!` takes a type descriptor (which is an identifier fragment) and simply outputs [`Integer<S, N, B, OM>`](crate::Integer), where the values of the const-generic parameters `S`, `N`, `B` and `OM` are determined from the type descriptor.
-/// 
-/// A type descriptor has the following format: `<sign><bit_width><overflow_mode>?`:
-/// - `<sign>` is either `I` (specifying a signed integer) or `U` (specifying an unsigned integer).
-/// - `<bit_width>` is a decimal integer specifying the bit width of the integer type. The bit width must be at least `2` and at most `2^32 - 1`.
-/// - `<overflow_mode>` is optional, and if specified must be one of:
-///     - `w` for wrapping overflow mode ([`OverflowMode::Wrap`](crate::OverflowMode::Wrap)).
-///     - `p` for panicking overflow mode ([`OverflowMode::Panic`](crate::OverflowMode::Panic)).
-///     - `s` for saturating overflow mode ([`OverflowMode::Saturate`](crate::OverflowMode::Saturate)).
-///     
-///     If `<overflow_mode>` is omitted, the default overflow mode ([`OverflowMode::DEFAULT`](crate::OverflowMode::DEFAULT)) is used.
-/// 
-/// If the given type descriptor is not in this format, a compile error will be triggered when the type is used (when the type is unused, no compile-error will be triggered).
-/// 
-/// If you want to create [`Integer`](crate::Integer) values rather than types, use the [`n!`](crate::n) macro.
-/// 
-/// # Examples
-/// 
-/// ```
-/// use bnum::prelude::*;
-/// 
-/// type MyInt = t!(I259p); // signed 259-bit integer with panicking overflow mode
-/// type MyUint = t!(U633); // unsigned 633-bit integer with default overflow mode
-/// type MyInt2 = t!(I538s); // signed 538-bit integer with saturating overflow mode
-/// type MyUint2 = t!(U24w); // unsigned 24-bit integer with wrapping overflow mode
-/// ```
-/// 
-/// The following examples will fail to compile, since the type descriptor is invalid. Note the type must be used in order to trigger the compile error.
-/// ```compile_fail
-/// use bnum::prelude::*;
-/// 
-/// type InvalidType = t!(A256); // invalid sign descriptor
-/// 
-/// dbg!(InvalidType::BITS);
-/// ```
-/// 
-/// ```compile_fail
-/// use bnum::prelude::*;
-/// 
-/// type InvalidType2 = t!(I1); // bit width too small
-/// 
-/// dbg!(InvalidType2::BITS);
-/// ```
-/// 
-/// ```compile_fail
-/// use bnum::prelude::*;
-/// 
-/// type InvalidType3 = t!(U1024x); // invalid overflow mode descriptor
-/// 
-/// dbg!(InvalidType3::BITS);
-/// ```
-#[macro_export]
-// TODO: idea for floats: have struct FloatOrInteger with const generic param F (type bool, indicates whether float or int), other const generic params correspond to those of Float and Integer, then have a trait OutputType with an associated type Output, Output is Integer if F is false and Float if F is true. then the t macro returns <OutputType<...>::Output>.
-macro_rules! t {
-    ($ty: ident) => {
-        $crate::Integer::<{
-            $crate::literal_parse::get_signedness(stringify!($ty))
-        }, {
-            // we do the error handling here, as the processing of the bit width is the most computationally intensive (need to parse a string to an int, more cases to handle). it's very easy and fast to come up with a sign and overflow mode descriptors that are valid when the type descriptor is valid (the sign and overflow mode descriptors may be incorrect for an invalid type descriptor, but this does not matter as the error handling here will cause a panic anyway)
-            const PARAMS_RESULT: Result<(bool, usize, u8), ($crate::literal_parse::TypeDescriptorError, &'static str)> = $crate::literal_parse::get_integer_params(stringify!($ty));
-            // compiler doesn't say which const-generic parameter caused the error, so we can put all the error handling in one place, this means we won't forget to cover any of the possible errors
-            match PARAMS_RESULT {
-                Ok((_, bw, _)) => $crate::literal_parse::get_size_params_from_bits(bw).0,
-                Err(_) => $crate::panic_type_descriptor_error!(PARAMS_RESULT),
-            }
-        }, {
-            match $crate::literal_parse::get_integer_params(stringify!($ty)) {
-                Ok((_, bw, _)) => $crate::literal_parse::get_size_params_from_bits(bw).1,
-                _ => 0,
-            }
-        }, {
-            $crate::literal_parse::get_overflow_mode(stringify!($ty))
-        }>
-    };
-    ($($_: tt)*) => {
-        compile_error!("expected integer type descriptor, e.g. `I256` or `U512w`");
-    };
-}
-
-
 /// Create constant [`Integer`](crate::Integer) values from native integer literals.
 /// 
 /// `n!` converts integer literals to [`Integer`](crate::Integer) values at compile time. It supports literals in base 2, 8, 10 and 16:
@@ -151,25 +61,25 @@ macro_rules! t {
 /// 
 /// let e = n!(12345U1024x);
 /// ```
-// TODO: support other prefixes, e.g. 0t for base 3, 0q for base 4, 0z for base 36, etc.
+// TODO: support other prefixes, e.g. 0t for base 3, 0q for base 4
 #[macro_export]
 macro_rules! n {
     ($literal_str: literal) => {
         const {
-            const PARTS: (bool, u32, &[u8], &str) = $crate::literal_parse::get_negative_radix_digits_type_descriptor(stringify!($literal_str));
+            const PARTS: (bool, u32, &[u8], &str) = $crate::__internal::get_negative_radix_digits_type_descriptor(stringify!($literal_str));
             let (negative, radix, digit_bytes, _) = PARTS;
             const TYPE_DESCRIPTOR_BYTES: &str = PARTS.3;
-            const PARAMS: (bool, Result<bool, ($crate::literal_parse::TypeDescriptorError, &str)>, usize, usize, u8) = $crate::literal_parse::get_integer_params_fallback(TYPE_DESCRIPTOR_BYTES);
+            const PARAMS: (bool, Result<bool, ($crate::__internal::TypeDescriptorError, &str)>, usize, usize, u8) = $crate::__internal::get_integer_params_fallback(TYPE_DESCRIPTOR_BYTES);
 
             const IMPLICIT: bool = PARAMS.0;
             const N: usize = PARAMS.2;
             const B: usize = PARAMS.3;
             const OM: u8 = PARAMS.4;
-            const S: Result<bool, ($crate::literal_parse::TypeDescriptorError, &str)> = PARAMS.1;
+            const S: Result<bool, ($crate::__internal::TypeDescriptorError, &str)> = PARAMS.1;
 
-            type Parser = $crate::literal_parse::IntLiteralParser<{ IMPLICIT }, { match S {
+            type Parser = $crate::__internal::IntLiteralParser<{ IMPLICIT }, { match S {
                 Ok(s) => s,
-                Err(_) => $crate::panic_type_descriptor_error!(S),
+                Err(_) => $crate::__internal_panic_type_descriptor_error!(S),
             } }, { N }, { B }, { OM }>; // surround the constants in curly braces as compiler gets confused if there is a type defined elsewhere with the same name (e.g. N, B)
 
             Parser::parse(negative, radix, digit_bytes)
@@ -177,27 +87,123 @@ macro_rules! n {
     };
     ($ty: ident) => {
         $crate::Integer::<{
-            $crate::literal_parse::get_signedness(stringify!($ty))
+            $crate::__internal::get_signedness(stringify!($ty))
         }, {
             // we do the error handling here, as the processing of the bit width is the most computationally intensive (need to parse a string to an int, more cases to handle). it's very easy and fast to come up with a sign and overflow mode descriptors that are valid when the type descriptor is valid (the sign and overflow mode descriptors may be incorrect for an invalid type descriptor, but this does not matter as the error handling here will cause a panic anyway)
-            const PARAMS_RESULT: Result<(bool, usize, u8), ($crate::literal_parse::TypeDescriptorError, &'static str)> = $crate::literal_parse::get_integer_params(stringify!($ty));
+            const PARAMS_RESULT: Result<(bool, usize, u8), ($crate::__internal::TypeDescriptorError, &'static str)> = $crate::__internal::get_integer_params(stringify!($ty));
             // compiler doesn't say which const-generic parameter caused the error, so we can put all the error handling in one place, this means we won't forget to cover any of the possible errors
             match PARAMS_RESULT {
-                Ok((_, bw, _)) => $crate::literal_parse::get_size_params_from_bits(bw).0,
-                Err(_) => $crate::panic_type_descriptor_error!(PARAMS_RESULT),
+                Ok((_, bw, _)) => $crate::__internal::get_size_params_from_bits(bw).0,
+                Err(_) => $crate::__internal_panic_type_descriptor_error!(PARAMS_RESULT),
             }
         }, {
-            match $crate::literal_parse::get_integer_params(stringify!($ty)) {
-                Ok((_, bw, _)) => $crate::literal_parse::get_size_params_from_bits(bw).1,
+            match $crate::__internal::get_integer_params(stringify!($ty)) {
+                Ok((_, bw, _)) => $crate::__internal::get_size_params_from_bits(bw).1,
                 _ => 0,
             }
         }, {
-            $crate::literal_parse::get_overflow_mode(stringify!($ty))
+            $crate::__internal::get_overflow_mode(stringify!($ty))
         }>
     };
     ($($_: tt)*) => {
         compile_error!("expected integer literal or integer type descriptor, e.g. `0xFFFF`, `123456U1024s`, `I256` or `U512w`");
     };
+}
+
+use crate::{Integer, Uint};
+use core::num::IntErrorKind;
+
+#[doc(hidden)]
+#[derive(Debug)]
+pub enum ParseIntLiteralError {
+    OutOfRange,
+    NoDigits,
+    InvalidDigit,
+    UnsignedNegation,
+}
+
+// IMPLICIT = true means that parameters are not specified in the literal, so rely on type inference
+// TODO: for floats, have extra const generic param F (of type bool, indicates whether float or int) on IntLiteralParser, this will allow us to use the n macro to parse both floats and integers, and type inference can work out which one is needed in the case that no suffix is provided
+#[doc(hidden)]
+pub struct IntLiteralParser<const IMPLICIT: bool, const S: bool, const N: usize, const B: usize, const OM: u8>;
+
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> IntLiteralParser<true, S, N, B, OM> {
+    #[doc(hidden)]
+    #[inline]
+    pub const fn parse<const R: bool, const M: usize, const A: usize, const OM1: u8>(negative: bool, radix: u32, literal_str_bytes: &[u8]) -> Integer<R, M, A, OM1> {
+        Integer::from_literal_str(negative, radix, literal_str_bytes)
+    }
+}
+
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> IntLiteralParser<false, S, N, B, OM> {
+    #[doc(hidden)]
+    #[inline]
+    pub const fn parse(negative: bool, radix: u32, literal_str_bytes: &[u8]) -> Integer<S, N, B, OM> {
+        Integer::from_literal_str(negative, radix, literal_str_bytes)
+    }
+}
+
+impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, B, OM> {
+    #[doc(hidden)]
+    #[inline]
+    pub const fn from_literal_str(negative: bool, radix: u32, digit_bytes: &[u8]) -> Self {
+        match Self::from_literal_str_checked(negative, radix, digit_bytes) {
+            Ok(n) => n,
+            Err(err) => match err {
+                ParseIntLiteralError::OutOfRange => {
+                    panic!("literal out of range for target type")
+                }
+                ParseIntLiteralError::NoDigits => {
+                    panic!("no valid digits found for number")
+                }
+                ParseIntLiteralError::InvalidDigit => {
+                    panic!("integer literal contains invalid digit")
+                }
+                ParseIntLiteralError::UnsignedNegation => {
+                    panic!("cannot apply unary operator `-` to unsigned integer type")
+                }
+            },
+        }
+    }
+
+    #[doc(hidden)]
+    #[inline]
+    pub const fn from_literal_str_checked(negative: bool, radix: u32, digit_bytes: &[u8]) -> Result<Self, ParseIntLiteralError> {
+        if digit_bytes.is_empty() {
+            return Err(ParseIntLiteralError::NoDigits);
+        }
+        if negative && !S {
+            return Err(ParseIntLiteralError::UnsignedNegation);
+        }
+
+        match Uint::from_buf_radix::<true, true, true>(digit_bytes, radix) {
+            Ok(uint) => {
+                let out = uint.force_sign::<S>();
+                if S && negative {
+                    // no error iff out is positive or out is Self::MIN, i.e. ...
+                    if uint.gt(&Self::MIN.force_sign()) {
+                        Err(ParseIntLiteralError::OutOfRange)
+                    } else {
+                        Ok(out.wrapping_neg()) // needs to be wrapping_neg as we need to handle the Self::MIN case (Self::MIN is mapped to Self:MIN)
+                    }
+                } else {
+                    if out.is_negative_internal() {
+                        Err(ParseIntLiteralError::OutOfRange)
+                    } else {
+                        Ok(out)
+                    }
+                }
+            }
+            Err(err) => match err.kind() {
+                IntErrorKind::Empty => Err(ParseIntLiteralError::NoDigits),
+                IntErrorKind::InvalidDigit => Err(ParseIntLiteralError::InvalidDigit),
+                IntErrorKind::PosOverflow | IntErrorKind::NegOverflow => {
+                    Err(ParseIntLiteralError::OutOfRange)
+                }
+                _ => unreachable!(),
+            },
+        }
+    }
 }
 
 #[doc(hidden)]
@@ -244,8 +250,10 @@ pub const fn get_negative_radix_digits_type_descriptor(literal_str: &str) -> (bo
 
 #[cfg(all(test, feature = "alloc"))]
 mod tests {
+    use crate::{t, n};
+    
     #[test]
-    fn test_n_macro() {
+    fn cases_n_macro() {
         type I256 = t!(I256);
         let a: I256 = n!(0x_ABCDEF_);
         assert_eq!(a.to_str_radix(16), "abcdef");

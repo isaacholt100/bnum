@@ -21,14 +21,15 @@ pub struct Radix<const MAX: u32>(pub u32);
 impl<const MAX: u32> quickcheck::Arbitrary for Radix<MAX> {
     fn arbitrary(g: &mut quickcheck::Gen) -> Self {
         let radix = (u32::arbitrary(g) % (MAX - 1)) + 2;
-        Self(radix)
+        
+        Self::from(radix)
     }
 }
 
 #[cfg(feature = "alloc")]
-impl<const MAX: u32> From<Radix<MAX>> for u32 {
-    fn from(r: Radix<MAX>) -> Self {
-        r.0
+impl<const MAX: u32> From<u32> for Radix<MAX> {
+    fn from(r: u32) -> Self {
+        Self(r)
     }
 }
 

@@ -274,39 +274,23 @@ digits_impl! {
             zeros
         }
 
-        #[inline]
-        pub const fn leading_ones(self) -> Exponent {
-            let mut ones = 0;
-            let mut i = Self::DIGIT_LEN;
-            while i > 0 {
-                i -= 1;
-                let digit = self.get(i);
-                ones += digit.leading_ones();
-                if digit != Digit::MAX {
-                    break;
-                }
-            }
-            ones
-        }
+        // #[inline]
+        // pub const fn leading_ones(self) -> Exponent {
+        //     let mut ones = 0;
+        //     let mut i = Self::DIGIT_LEN;
+        //     while i > 0 {
+        //         i -= 1;
+        //         let digit = self.get(i);
+        //         ones += digit.leading_ones();
+        //         if digit != Digit::MAX {
+        //             break;
+        //         }
+        //     }
+        //     ones
+        // }
 
         #[inline]
         pub const fn leading_zeros(self) -> Exponent {
-            let mut zeros = 0;
-            let mut i = Self::DIGIT_LEN;
-            while i > 0 {
-                i -= 1;
-                let digit = self.get(i);
-                let lz = digit.leading_zeros();
-                zeros += lz;
-                if lz != Digit::BITS {
-                    return zeros - (Self::LAST_DIGIT_PAD_BYTES as u32 * 8);
-                }
-            }
-            zeros - (Self::LAST_DIGIT_PAD_BYTES as u32 * 8)
-        }
-
-        #[inline]
-        pub const fn leading_zeros2(&self) -> Exponent {
             let mut zeros = 0;
             let mut i = Self::DIGIT_LEN;
             while i > 0 {

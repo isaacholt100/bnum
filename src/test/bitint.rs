@@ -163,11 +163,11 @@ impl<const B: usize> BitInt<false, B> {
         core::cmp::Ordering::Equal
     }
 
-    pub fn power_of_two(n: usize) -> Self {
-        let mut out = Self { bits: [false; B] };
-        out.set_bit(n, true);
-        out
-    }
+    // pub fn power_of_two(n: usize) -> Self {
+    //     let mut out = Self { bits: [false; B] };
+    //     out.set_bit(n, true);
+    //     out
+    // }
 
     pub fn is_power_of_two(self) -> bool {
         self.count_ones() == 1
@@ -177,9 +177,9 @@ impl<const B: usize> BitInt<false, B> {
         self.eq(&Self::ZERO)
     }
 
-    pub fn is_one(&self) -> bool {
-        self.bit(0) && self.is_power_of_two()
-    }
+    // pub fn is_one(&self) -> bool {
+    //     self.bit(0) && self.is_power_of_two()
+    // }
 
     pub fn widening_mul(self, rhs: Self) -> (Self, Self) {
         let mut low = Self::ZERO;
@@ -448,7 +448,7 @@ impl<const S: bool, const B: usize> Debug for BitInt<S, B> {
     }
 }
 
-use crate::literal_parse::get_size_params_from_bits;
+use crate::macros::get_size_params_from_bits;
 
 macro_rules! integer_from_bit_int {
     ($($bits: literal), *) => {
