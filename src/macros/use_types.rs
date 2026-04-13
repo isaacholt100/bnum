@@ -13,6 +13,7 @@ mod tests {
     #[test]
     fn cases_use_types_macro() {
         mod types {
+            #[allow(unused)]
             use_types! {
                 pub U256w,
                 pub I512s,
@@ -20,12 +21,11 @@ mod tests {
                 I257,
                 U1024,
             }
-            assert_eq!(I257::BITS, 257);
-            assert_eq!(U1024::BITS, 1024);
         }
+        use types::*;
         // check that the pub visibility modifier exported the right types
         assert_eq!(U256w::BITS, 256);
-        assert_eq!(I512s::OVERFLOW_MODE, crate::OverflowMode::Saturating);
+        assert_eq!(I512s::OVERFLOW_MODE, crate::OverflowMode::Saturate);
         assert!(!U123p::MIN.is_negative_internal());
     }
 }
