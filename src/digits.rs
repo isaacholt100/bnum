@@ -85,11 +85,13 @@ impl<D, const N: usize, const M: usize, const E: usize> Digits<D, N, M, E> {
     }
 
     pub const ALL_ZEROS: Self = Self([[0; N]; M], [0; E], PhantomData);
-    pub const ONE: Self = {
-        let mut out = Self::ALL_ZEROS.force_digit::<u8>();
-        out.set(0, 1);
-        out.force_digit()
-    };
+
+    // pub const ONE: Self = {
+    //     let mut out = Self::ALL_ZEROS.force_digit::<u8>();
+    //     out.set(0, 1);
+    //     out.force_digit()
+    // };
+
     const ALL_ONES: Self = Self([[u8::MAX; N]; M], [u8::MAX; E], PhantomData);
 
     const BYTE_LEN: usize = M * N + E;
@@ -874,8 +876,12 @@ digits_impl! {
                     overflow || borrow
                 };
 
-                if borrow {
+                if borrow { // unlikely: chance of this occurring is ~ 2/b where b is the base (2^Digit::BITS)
                     // D6
+
+                    // let a = self.remove_tail().to_integer::<false, 0, 0>();
+                    // return (Self::ALL_ZEROS, Self::ALL_ZEROS);
+
                     q_hat -= 1;
                     self.add_partial(rhs, j, n);
                 }

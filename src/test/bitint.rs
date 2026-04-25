@@ -137,9 +137,25 @@ impl<const B: usize> BitInt<false, B> {
         if radix < 2 || radix > 36 {
             panic!("radix must be in the range 2..=36");
         }
+        if s.is_empty() {
+            return Err(ParseIntError { kind: IntErrorKind::Empty });
+        }
+        if s == "+" {
+            return Err(ParseIntError { kind: IntErrorKind::InvalidDigit });
+        }
+        let s = s.strip_prefix('+').unwrap_or(s);
         let mut out = Self::ZERO;
         for c in s.chars() {
-            let digit = c.to_digit(radix).ok_or(ParseIntError { kind: IntErrorKind::InvalidDigit })?;
+            let digit = c.to_digit(radix)
+                .ok_or(ParseIntError { kind: IntErrorKind::InvalidDigit })?;
+            
+            if 32 - digit.leading_zeros() > B as u32 { // bit width too large
+                return Err(ParseIntError { kind: IntErrorKind::PosOverflow });
+            }
+            if 32 - radix.leading_zeros() > B as u32 && !out.is_zero() { // when multiplying by radix, this would cause overflow
+                return Err(ParseIntError { kind: IntErrorKind::PosOverflow });
+            }
+
             let (new_out, o1) = out.overflowing_mul(radix.as_());
             let (new_out, o2) = new_out.overflowing_add(digit.as_());
             if o1 || o2 {
@@ -441,9 +457,11 @@ impl<const S: bool, const B: usize> Arbitrary for BitInt<S, B> {
 
 impl<const S: bool, const B: usize> Debug for BitInt<S, B> {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "BitInt(")?;
         for &bit in self.bits.iter().rev() {
             write!(f, "{}", if bit { '1' } else { '0' })?;
         }
+        write!(f, ")");
         Ok(())
     }
 }

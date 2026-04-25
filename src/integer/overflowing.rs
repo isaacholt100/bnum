@@ -520,6 +520,47 @@ impl<const N: usize, const B: usize, const OM: u8> Int<N, B, OM> {
 mod tests {
     use crate::test::test_bignum;
 
+    type UTest = crate::t!(U128);
+    
+    #[test]
+    fn test_unlikely_div_condition() {
+        type UTest = crate::t!(U128);
+        
+        let a: UTest = crate::n!(203565452344189568513009437006494887321);
+        let b = crate::n!(11309220027692010240273368936514147941);
+    
+        use crate::cast::As;
+
+        let a_prim = a.as_::<u128>();
+        let b_prim = b.as_::<u128>();
+
+        let ad = a.to_digits::<u8>();
+        let bd = b.to_digits::<u8>();
+        let (q, r) = ad.div_rem_unchecked(bd);
+        let (q, r) = (UTest::from_digits(q), UTest::from_digits(r));
+
+        assert_eq!((q, r), (a / b, a % b));
+    }
+
+    // test to find test data which activates the unlikely div condition
+    // quickcheck::quickcheck! {
+    //     fn test_unlikely_div(a: UTest, b: UTest) -> quickcheck::TestResult {
+    //         if b.is_zero() || a <= b {
+    //             return quickcheck::TestResult::discard();
+    //         }
+    //         // let (q, r) = a.div_rem(b);
+            
+    //             let ad = a.to_digits::<u8>();
+    //             let bd = b.to_digits::<u8>();
+    //             let (q, r) = ad.div_rem_unchecked(bd);
+    //             let (q, r) = (UTest::from_digits(q), UTest::from_digits(r));
+    //         if (q, r) == (UTest::ZERO, UTest::ZERO) { // when we obtain test data, make the function return (0, 0) if the unlikely condition is met
+    //             panic!("a: {}, b: {}", a, b);
+    //         }
+    //         quickcheck::TestResult::passed()
+    //     }
+    // }
+
     crate::test::test_all! {
         testing unsigned;
 

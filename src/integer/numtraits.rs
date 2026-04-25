@@ -694,9 +694,11 @@ mod tests {
     crate::test::test_all! {
         testing integers;
 
+        use crate::test::cast_types::*;
+
         crate::test::test_into! {
             function: <STest as AsPrimitive>::as_,
-            into_types: (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64)
+            into_types: (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64, TestUint1, TestUint2, TestUint3, TestUint4, TestUint5, TestUint6, TestUint7, TestUint8, TestUint9, TestUint10, TestInt1, TestInt2, TestInt3, TestInt4, TestInt5, TestInt6, TestInt7, TestInt8, TestInt9, TestInt10)
         }
 
         test_bignum! {
@@ -829,7 +831,8 @@ mod tests {
                 let cond = a.is_negative_internal();
 
                 n % 2 == 0 && cond || (n == 1 && cond && a == <STest>::MIN) // second condition is due to an error in the num_integer crate, which incorrectly panics when calculating the first root of i128::MIN
-            }
+            },
+            cases: [(ref &STest::MAX, 2)]
         }
 
         test_to_primitive!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64);
@@ -877,6 +880,18 @@ mod tests {
             skip: b.is_zero()
         }
 
+        test_bignum! {
+            function: <STest as PrimInt>::from_be(a: STest)
+        }
+        test_bignum! {
+            function: <STest as PrimInt>::from_le(a: STest)
+        }
+        test_bignum! {
+            function: <STest as PrimInt>::to_be(a: STest)
+        }
+        test_bignum! {
+            function: <STest as PrimInt>::to_le(a: STest)
+        }
         test_bignum! {
             function: <STest as PrimInt>::unsigned_shl(a: STest, n: u8),
             skip: n >= <STest>::BITS as u8

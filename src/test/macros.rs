@@ -1,6 +1,7 @@
 macro_rules! test_bignum {
     {
         function: $($unsafe: ident)? <$TestType: ty $(as $Trait: ident $(<$($gen: ty), +>)?)?> :: $function: ident ($($param: ident : $(ref $re: tt)? $ty: ty), *)
+        $(, cmp: input.$idx: literal)?
         $(, skip: $skip: expr)?
     } => {
         paste::paste! {
@@ -12,7 +13,7 @@ macro_rules! test_bignum {
                     })?
 
                     let (actual, expected) = $($unsafe)? {
-                        crate::test::results!(<$TestType $(as $Trait $(<$($gen), *>)?)?>::$function ($($($re)? TryInto::try_into($param).expect("test argument conversion failed")), *))
+                        crate::test::results!(<$TestType $(as $Trait $(<$($gen), *>)?)?>::$function ($($($re)? $param.try_into().expect("test argument conversion failed")), *))
                     };
 
                     quickcheck::TestResult::from_bool(actual == expected)
@@ -22,6 +23,7 @@ macro_rules! test_bignum {
     };
     {
         function: <$TestType: ty> :: $function: ident, // need to handle the case with and without trait separately due to repetition of the cases arguments
+        $(, cmp: input.$idx: literal)?
         cases: [
             $(($($(ref $re2: tt)? $arg: expr), *)), *
         ]
@@ -40,9 +42,10 @@ macro_rules! test_bignum {
     };
     {
         function: <$TestType: ty as $Trait: ident> :: $function: ident,
+        $( , cmp: input.$idx: literal )?
         cases: [
             $(($($(ref $re2: tt)? $arg: expr), *)), *
-        ]
+        ],
     } => {
         paste::paste! {
             #[allow(non_snake_case)]
@@ -79,7 +82,7 @@ macro_rules! test_bignum {
 pub(crate) use test_bignum;
 
 macro_rules! results {
-    (<$TestType: ty $(as $Trait: ty)?> :: $function: ident ($($arg: expr), *)) => {
+    (<$TestType: ty $(as $Trait: ty)?> :: $function: ident ($($arg: expr), *) $(, cmp: input.$idx: literal)?) => {
         paste::paste! {
             {
                 let actual = <$TestType $(as $Trait)?>::$function(
@@ -97,6 +100,50 @@ macro_rules! results {
 }
 
 pub(crate) use results;
+
+macro_rules! mutable_var {
+    (&mut $arg: ident) => {
+        mut $arg
+    };
+    (& $arg: ident) => {
+        $arg
+    };
+    ($arg: ident) => {
+        $arg
+    };
+}
+
+pub(crate) use mutable_var;
+
+macro_rules! results2 {
+    (<$TestType: ty $(as $Trait: ty)?> :: $function: ident ($($a: tt $($b: ident $($c: ident)?)?), *) $(, cmp: input.$idx: literal)?) => {
+        paste::paste! {
+            {
+                // use crate::test::mutable_var;
+
+                // let (
+                //     $(mutable_var!($a $($b $($c)?)?)),*
+                // ) = ($($arg.try_into().expect("test argument conversion failed")), *);
+
+                // let (
+                //     $(mutable_var!([<$a $($b $($c)?)? _base>])), *
+                // ) = ($($arg.try_into().expect("test argument conversion failed")), *);
+
+                // let actual = <$TestType $(as $Trait)?>::$function(
+                //     $($a $($b $($c)?)?), *
+                // );
+                // let expected = <[<$TestType Base>] $(as $Trait)?>::$function(
+                //     $([<$a $($b $($c)?)? _base>]), *
+                // );
+
+                // use crate::test::TestConvert;
+                // (TestConvert::into(actual), TestConvert::into(expected))
+            }
+        }
+    };
+}
+
+pub(crate) use results2;
 
 macro_rules! test_tryfrom_same_sign {
     ($TestType: ty; $($From: ty), *) => {

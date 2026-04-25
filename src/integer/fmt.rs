@@ -186,3 +186,12 @@ mod tests {
     }
 }
 
+#[cfg(test)]
+crate::test::test_all_custom_bit_widths! {
+    quickcheck::quickcheck! {
+        fn quickcheck_fmt_binary(a: UTest) -> bool {
+            let a_base = UTestBase::from(a);
+            format!("BitInt({:0width$b})", a, width = UTest::BITS as usize) == format!("{:?}", a_base) // test type BitInt is formatted in Binary for convenience
+        }
+    }
+}

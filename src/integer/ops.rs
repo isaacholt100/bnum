@@ -227,6 +227,31 @@ mod tests {
     use crate::Exponent;
     use crate::test::test_bignum;
 
+    macro_rules! test_assign_trait {
+        { $($OpTrait: ident < $rhs: ty, $rhs_base: ty >), * } => {
+            paste::paste! {
+                $(
+                    quickcheck::quickcheck! {
+                    #[allow(non_snake_case)]
+                        fn [<quickcheck_STest_ $OpTrait Assign_ $rhs _ $OpTrait:lower _assign>](a: STest, b: $rhs) -> quickcheck::TestResult {
+                            if a.[<checked_ $OpTrait:lower>](b).is_none() {
+                                return quickcheck::TestResult::discard();
+                            }
+                            let mut a = a;
+                            let mut a_base = STestBase::try_from(a).unwrap();
+                            < STest as [<$OpTrait Assign>]<$rhs> >::[< $OpTrait:lower _assign>](&mut a, b);
+                            < STestBase as [<$OpTrait Assign>]<$rhs_base> >::[< $OpTrait:lower _assign>](&mut a_base, b.try_into().unwrap());
+
+                            use crate::test::TestConvert;
+
+                            quickcheck::TestResult::from_bool(TestConvert::into(a) == TestConvert::into(a_base))
+                        }
+                    }
+                )*
+            }
+        }
+    }
+
     macro_rules! test_shifts {
         ($($rhs: ty), *) => {
             $(
@@ -244,12 +269,27 @@ mod tests {
                         Err(_) => true,
                     }
                 }
+                // test_assign_trait! {
+                //     Shl<$rhs, $rhs>,
+                //     Shr<$rhs, $rhs>
+                // }
             )*
         }
     }
 
     crate::test::test_all! {
         testing integers;
+
+        // test_assign_trait! {
+        //     Add<STest, STestBase>,
+        //     Sub<STest, STestBase>,
+        //     Mul<STest, STestBase>,
+        //     Div<STest, STestBase>,
+        //     Rem<STest, STestBase>,
+        //     BitAnd<STest, STestBase>,
+        //     BitOr<STest, STestBase>,
+        //     BitXor<STest, STestBase>
+        // }
 
         test_bignum! {
             function: <STest as Add>::add(a: STest, b: STest),

@@ -424,6 +424,7 @@ mod tests {
 
                     let s = n.to_string();
                     let (actual, expected) = crate::test::results!(<$TestType>::from_str(&s));
+                    // let (actual, expected) = crate::test::results2!(<$TestType>::from_str(&s));
 
                     actual == expected
                 }
@@ -587,7 +588,7 @@ mod tests {
 
             let test_msg = STest::from_str_radix("a", 10).unwrap_err().to_string();
             assert!(test_msg.contains("attempt to parse integer from string containing invalid digit"));
-        }
+        } 
 
         #[test]
         #[should_panic(expected = "Radix must be in range [2, 36]")]
@@ -607,6 +608,7 @@ mod tests {
             let _ = STest::from_str_radix("1234", 1).unwrap();
         }
 
+        #[cfg(feature = "alloc")]
         #[test]
         fn from_str_radix_pos_overflow() {
             let large_literal = format!("{}0", STest::MAX); // this is 10x the max value so should overflow
@@ -643,7 +645,7 @@ mod tests {
                     let mut s2 = buf.into_iter().map(|b| byte_to_char(b % radix as u8)).collect::<String>();
                     s2.insert_str(0, leading_sign);
 
-                    let (actual, expected) = crate::test::results!(<$TestType>::from_str_radix(&s2, radix as u32));
+                    let (actual, expected) = crate::test::results!(<$TestType>::from_str_radix(&s2, radix));
 
                     quickcheck::TestResult::from_bool(actual == expected)
                 }
@@ -694,4 +696,59 @@ mod tests {
     }
 
     // TODO: custom bit width tests for from_str_radix
+}
+
+#[cfg(test)]
+crate::test::test_all_custom_bit_widths! {
+    use crate::test::test_bignum;
+
+    test_bignum! {
+        function: <UTest>::from_str_radix,
+        cases: [
+            ("+af7345asdofiuweor", 35u32),
+            ("+945hhdgi73945hjdfj", 32u32),
+            ("+3436847561345343455", 9u32),
+            ("+affe758457bc345540ac399", 16u32),
+            ("+", 10u32),
+            ("-", 10u32),
+            ("+affe758457bc345540ac39929334534ee34579234795", 17u32),
+            ("+3777777777777777777777777777777777777777777", 8u32),
+            ("+37777777777777777777777777777777777777777761", 8u32),
+            ("+1777777777777777777777", 8u32),
+            ("+17777777777777777777773", 8u32),
+            ("+2000000000000000000000", 8u32),
+            ("-234598734", 10u32),
+            ("234ab", 16u32),
+            ("g234ab", 16u32),
+            ("234£$2234", 15u32),
+            ("123456💯", 30u32),
+            ("6", 10u32),
+            ("85", 7u32),
+            ("3434💯34593487", 12u32),
+            ("💯34593487", 11u32),
+            ("abcdefw", 32u32),
+            ("1234ab", 11u32),
+            ("1234", 4u32),
+            ("010120101", 2u32),
+            ("10000000000000000", 16u32),
+            ("p8hrbe0mo0084i6vckj1tk7uvacnn4cm", 32u32),
+            ("", 10u32),
+            ("-14359abcasdhfkdgdfgsde", 34u32),
+            ("+23797984569ahgkhhjdskjdfiu", 32u32),
+            ("-253613132341435345", 7u32),
+            ("+23467abcad47790809ef37", 16u32),
+            ("-712930769245766867875986646", 10u32),
+            ("-😱234292", 36u32),
+            ("-+345934758", 13u32),
+            ("12💯12", 15u32),
+            ("gap gap", 36u32),
+            ("-9223372036854775809", 10u32),
+            ("-1000000000000000000001", 8u32),
+            ("+1000000000000000000001", 8u32),
+            ("-8000000000000001", 16u32),
+            ("+-23459374", 15u32),
+            ("8000000000000000", 16u32),
+            ("", 10u32)
+        ]
+    }
 }
