@@ -461,8 +461,7 @@ impl<const S: bool, const B: usize> Debug for BitInt<S, B> {
         for &bit in self.bits.iter().rev() {
             write!(f, "{}", if bit { '1' } else { '0' })?;
         }
-        write!(f, ")");
-        Ok(())
+        write!(f, ")")
     }
 }
 

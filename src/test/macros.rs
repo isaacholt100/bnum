@@ -45,7 +45,7 @@ macro_rules! test_bignum {
         $( , cmp: input.$idx: literal )?
         cases: [
             $(($($(ref $re2: tt)? $arg: expr), *)), *
-        ],
+        ]
     } => {
         paste::paste! {
             #[allow(non_snake_case)]
