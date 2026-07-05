@@ -127,8 +127,23 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
             };
         }
         // TODO: implement a faster multiplication algorithm for large values of `N`
-        let a = self.to_digits::<u128>();
-        let b = rhs.to_digits::<u128>();
+        //
+        // Select the schoolbook partial-product width by target. wasm32 has no
+        // 128-bit multiply, so a `u128` partial product lowers to a `__multi3`
+        // software libcall per digit — the dominant cost of wide-integer multiply
+        // on wasm. Splitting into `u32` digits makes each partial product a single
+        // `u32 * u32 -> u64` (one `i64.mul`, no libcall). The result is identical:
+        // `to_digits::<D>` reinterprets the same N-byte two's-complement operand,
+        // and the low-N-byte product (and whether it overflows the width) is a
+        // property of the true product, not of the accumulation digit width. Off
+        // wasm32, `u128` keeps the native path (with a hardware 128-bit multiply)
+        // unchanged.
+        #[cfg(target_arch = "wasm32")]
+        type MulDigit = u32;
+        #[cfg(not(target_arch = "wasm32"))]
+        type MulDigit = u128;
+        let a = self.to_digits::<MulDigit>();
+        let b = rhs.to_digits::<MulDigit>();
         
         let (out, mut overflow) = a.overflowing_mul(b);
         let mut out = out.to_integer();
