@@ -5,8 +5,6 @@ on:
     branches-ignore:
       - master # master is a protected branch so tests will be run when we create a PR
   pull_request:
-    branches-ignore:
-      - master # master is a protected branch so tests will be run when we create a PR
 
 env:
   CARGO_TERM_COLOR: always
@@ -22,6 +20,14 @@ jobs:
         uses: taiki-e/install-action@cargo-hack
       - name: Run unit tests with all features, no features, default features, and each individual feature
         run: cargo hack test --lib --each-feature --optional-deps
+  unit_tests_slow_widening_mul:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install latest stable Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Test the narrow multiplication-digit path
+        run: RUSTFLAGS="--cfg no_widening_u128_mul" cargo test --lib --all-features
   doc_tests:
     runs-on: ubuntu-latest
     steps:
