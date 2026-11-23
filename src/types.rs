@@ -18,10 +18,10 @@ macro_rules! int_types {
     { $($bits: literal $u: ident $i: ident; ) *}  => {
         $(
             #[doc = int_type_doc!($bits, "unsigned", "Uint")]
-            pub type $u = crate::Uint::<{ crate::macros::get_size_params_from_bits($bits).0 }, { crate::macros::get_size_params_from_bits($bits).1 }>;
+            pub type $u = crate::t!($u);
 
             #[doc = int_type_doc!($bits, "signed", "Int")]
-            pub type $i = crate::Int::<{ crate::macros::get_size_params_from_bits($bits).0 }, { crate::macros::get_size_params_from_bits($bits).1 }>;
+            pub type $i = crate::t!($i);
         )*
     };
 }

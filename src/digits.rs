@@ -116,10 +116,10 @@ impl<D, const N: usize, const M: usize, const E: usize> Digits<D, N, M, E> {
 
     const LAST_DIGIT_OFFSET: usize = Self::BYTE_LEN - Self::LAST_DIGIT_BYTES;
 
-    #[inline]
-    pub const fn remove_tail(self) -> Digits<D, N, M, 0> {
-        Digits(self.0, [0; 0], PhantomData)
-    }
+    // #[inline]
+    // pub const fn remove_tail(self) -> Digits<D, N, M, 0> {
+    //     Digits(self.0, [0; 0], PhantomData)
+    // }
 }
 
 macro_rules! digits_impl {
@@ -164,12 +164,8 @@ digits_impl! {
         }
 
         #[inline]
-        pub const fn last_padded<const ONES: bool>(&self) -> Digit {
-            let mut bytes = if ONES {
-                [u8::MAX; { core::mem::size_of::<Digit>() }]
-            } else {
-                [0; { core::mem::size_of::<Digit>() }]
-            };
+        pub const fn last_padded<const PAD: u8>(&self) -> Digit {
+            let mut bytes = [PAD; {core::mem::size_of::<Digit>() }];
             unsafe {
                 self.as_ptr()
                     .add(Self::LAST_DIGIT_OFFSET)
@@ -180,7 +176,7 @@ digits_impl! {
 
         #[inline]
         pub const fn last(&self) -> Digit {
-            self.last_padded::<false>()
+            self.last_padded::<0>()
         }
 
         #[inline]
@@ -862,6 +858,7 @@ digits_impl! {
                     }
                     q
                 } else {
+                    return (Self::ALL_ZEROS, Self::ALL_ZEROS);
                     Digit::MAX
                 };
 
