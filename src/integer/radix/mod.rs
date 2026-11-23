@@ -51,6 +51,7 @@ const MAX_RADIX_POWERS: [(u64, u32); 257] = {
 mod tests {
     use super::*;
 
+    #[cfg(feature = "alloc")]
     quickcheck::quickcheck! {
         fn quickcheck_max_radix_power(radix: u8) -> quickcheck::TestResult {
             if radix < 2 {

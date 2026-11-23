@@ -536,7 +536,6 @@ mod tests {
     crate::test::test_all! {
         testing unsigned;
 
-        #[cfg(nightly)]
         test_bignum! {
             function: <STest>::bit_width(a: STest)
         }

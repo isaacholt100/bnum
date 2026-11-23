@@ -565,7 +565,8 @@ mod tests {
                 let (q, r) = ad.div_rem_unchecked(bd);
                 let (q, r) = (UTest::from_digits(q), UTest::from_digits(r));
             if (q, r) == (UTest::ZERO, UTest::ZERO) { // when we obtain test data, make the function return (0, 0) if the unlikely condition is met
-                panic!("a: {}, b: {}", a, b);
+                #[cfg(feature = "alloc")]
+                panic!("unlikely div condition met with a: {}, b: {}", a, b);
             }
             quickcheck::TestResult::passed()
         }

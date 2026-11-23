@@ -805,12 +805,12 @@ mod tests {
 
         #[test]
         fn min_value() {
-            assert_eq!(STest::min_value(), TestConvert::into(STestBase::min_value()));
+            assert_eq!(STest::min_value(), TestConvert::into(<STestBase as Bounded>::min_value()));
         }
 
         #[test]
         fn max_value() {
-            assert_eq!(STest::max_value(), TestConvert::into(STestBase::max_value()));
+            assert_eq!(STest::max_value(), TestConvert::into(<STestBase as Bounded>::max_value()));
         }
 
         test_bignum! {

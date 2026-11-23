@@ -215,12 +215,13 @@ mod tests {
                 (<STest>::MIN, 1u8, true)
             ]
         }
-        test_bignum! {
-            function: <STest>::widening_mul(a: STest, b: STest),
-            cases: [
-                (<STest>::MAX, 2u8)
-            ]
-        }
+        // test_bignum! {
+        //     function: <STest>::widening_mul(a: STest, b: STest),
+        //     cases: [
+        //         (<STest>::MAX, 2u8)
+        //     ]
+        // }
+        // can't test this anymore as widening_mul now has a different type signature. but it gets tested in test_all_custom_bit_widths! below, and carrying_mul is a generalisation, so effectively tested there
         test_bignum! {
             function: <STest>::carrying_mul(a: STest, b: STest, c: STest)
         }

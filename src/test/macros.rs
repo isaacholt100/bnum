@@ -115,35 +115,35 @@ macro_rules! mutable_var {
 
 pub(crate) use mutable_var;
 
-macro_rules! results2 {
-    (<$TestType: ty $(as $Trait: ty)?> :: $function: ident ($($a: tt $($b: ident $($c: ident)?)?), *) $(, cmp: input.$idx: literal)?) => {
-        paste::paste! {
-            {
-                // use crate::test::mutable_var;
+// macro_rules! results2 {
+//     (<$TestType: ty $(as $Trait: ty)?> :: $function: ident ($($a: tt $($b: ident $($c: ident)?)?), *) $(, cmp: input.$idx: literal)?) => {
+//         paste::paste! {
+//             {
+//                 // use crate::test::mutable_var;
 
-                // let (
-                //     $(mutable_var!($a $($b $($c)?)?)),*
-                // ) = ($($arg.try_into().expect("test argument conversion failed")), *);
+//                 // let (
+//                 //     $(mutable_var!($a $($b $($c)?)?)),*
+//                 // ) = ($($arg.try_into().expect("test argument conversion failed")), *);
 
-                // let (
-                //     $(mutable_var!([<$a $($b $($c)?)? _base>])), *
-                // ) = ($($arg.try_into().expect("test argument conversion failed")), *);
+//                 // let (
+//                 //     $(mutable_var!([<$a $($b $($c)?)? _base>])), *
+//                 // ) = ($($arg.try_into().expect("test argument conversion failed")), *);
 
-                // let actual = <$TestType $(as $Trait)?>::$function(
-                //     $($a $($b $($c)?)?), *
-                // );
-                // let expected = <[<$TestType Base>] $(as $Trait)?>::$function(
-                //     $([<$a $($b $($c)?)? _base>]), *
-                // );
+//                 // let actual = <$TestType $(as $Trait)?>::$function(
+//                 //     $($a $($b $($c)?)?), *
+//                 // );
+//                 // let expected = <[<$TestType Base>] $(as $Trait)?>::$function(
+//                 //     $([<$a $($b $($c)?)? _base>]), *
+//                 // );
 
-                // use crate::test::TestConvert;
-                // (TestConvert::into(actual), TestConvert::into(expected))
-            }
-        }
-    };
-}
+//                 // use crate::test::TestConvert;
+//                 // (TestConvert::into(actual), TestConvert::into(expected))
+//             }
+//         }
+//     };
+// }
 
-pub(crate) use results2;
+// pub(crate) use results2;
 
 macro_rules! test_tryfrom_same_sign {
     ($TestType: ty; $($From: ty), *) => {

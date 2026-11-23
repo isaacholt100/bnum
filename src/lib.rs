@@ -8,11 +8,9 @@
         int_roundings,
         wrapping_int_impl,
         float_minimum_maximum,
-        uint_bit_width,
         wrapping_next_power_of_two,
         f16,
         f128,
-        int_from_ascii
     )
 )]
 #![doc = include_str!("../README.md")]

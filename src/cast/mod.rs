@@ -40,7 +40,7 @@ pub trait As {
     /// // Cast `u64` to `U256`:
     /// let a = 399872465243u64;
     /// let b: U256 = a.as_();
-    /// assert_eq!(a.as_::<u16>(), b.as_());
+    /// assert_eq!(a.as_::<u16>(), b.as_::<u16>());
     ///
     /// // Cast `i128` to `I512`:
     /// let c = -2098409234529234584094i128;

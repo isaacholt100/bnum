@@ -455,73 +455,74 @@ mod tests {
             ]
         }
 
-        #[cfg(nightly)] // since int_from_ascii not stable yet
-        test_bignum! {
-            function: <STest>::from_ascii,
-            cases: [
-                ("11111111".as_bytes()),
-                ("10000000000000000000000000000000000".as_bytes()),
-                ("12💩👍45".as_bytes()),
-                ("b1234567890a".as_bytes()),
-                ("".as_bytes()),
-                ("+10".as_bytes()),
-                ("-10".as_bytes()),
-                ("1234567890".as_bytes()),
-                ("-1234567890".as_bytes()),
-                ("+1234567890".as_bytes()),
-                ("-12345678901234567890".as_bytes()),
-                ("+12345678901234567890".as_bytes()),
-                ("-9223372036854775808".as_bytes()),
-                ("+9223372036854775807".as_bytes()),
-                ("0".as_bytes())
-            ]
-        }
+        // TODO: should rename these functions to from_ascii_bytes_radix and from_ascii_bytes to match std, but delay to later version as this is a breaking change
+        // #[cfg(nightly)] // since int_from_ascii not stable yet
+        // test_bignum! {
+        //     function: <STest>::from_ascii,
+        //     cases: [
+        //         ("11111111".as_bytes()),
+        //         ("10000000000000000000000000000000000".as_bytes()),
+        //         ("12💩👍45".as_bytes()),
+        //         ("b1234567890a".as_bytes()),
+        //         ("".as_bytes()),
+        //         ("+10".as_bytes()),
+        //         ("-10".as_bytes()),
+        //         ("1234567890".as_bytes()),
+        //         ("-1234567890".as_bytes()),
+        //         ("+1234567890".as_bytes()),
+        //         ("-12345678901234567890".as_bytes()),
+        //         ("+12345678901234567890".as_bytes()),
+        //         ("-9223372036854775808".as_bytes()),
+        //         ("+9223372036854775807".as_bytes()),
+        //         ("0".as_bytes())
+        //     ]
+        // }
 
-        #[cfg(nightly)] // since int_from_ascii not stable yet
-        test_bignum! {
-            function: <STest>::from_ascii_radix,
-            cases: [
-                ("+af7345asdofiuweor".as_bytes(), 35u32),
-                ("+945hhdgi73945hjdfj".as_bytes(), 32u32),
-                ("+3436847561345343455".as_bytes(), 9u32),
-                ("+affe758457bc345540ac399".as_bytes(), 16u32),
-                ("+affe758457bc345540ac39929334534ee34579234795".as_bytes(), 17u32),
-                ("+3777777777777777777777777777777777777777777".as_bytes(), 8u32),
-                ("+37777777777777777777777777777777777777777761".as_bytes(), 8u32),
-                ("+1777777777777777777777".as_bytes(), 8u32),
-                ("+17777777777777777777773".as_bytes(), 8u32),
-                ("+2000000000000000000000".as_bytes(), 8u32),
-                ("-234598734".as_bytes(), 10u32),
-                ("g234ab".as_bytes(), 16u32),
-                ("234£$2234".as_bytes(), 15u32),
-                ("123456💯".as_bytes(), 30u32),
-                ("3434💯34593487".as_bytes(), 12u32),
-                ("💯34593487".as_bytes(), 11u32),
-                ("abcdefw".as_bytes(), 32u32),
-                ("1234ab".as_bytes(), 11u32),
-                ("1234".as_bytes(), 4u32),
-                ("010120101".as_bytes(), 2u32),
-                ("10000000000000000".as_bytes(), 16u32),
-                ("p8hrbe0mo0084i6vckj1tk7uvacnn4cm".as_bytes(), 32u32),
-                ("".as_bytes(), 10u32),
-                ("-14359abcasdhfkdgdfgsde".as_bytes(), 34u32),
-                ("+23797984569ahgkhhjdskjdfiu".as_bytes(), 32u32),
-                ("-253613132341435345".as_bytes(), 7u32),
-                ("+23467abcad47790809ef37".as_bytes(), 16u32),
-                ("-712930769245766867875986646".as_bytes(), 10u32),
-                ("-😱234292".as_bytes(), 36u32),
-                ("-+345934758".as_bytes(), 13u32),
-                ("12💯12".as_bytes(), 15u32),
-                ("gap gap".as_bytes(), 36u32),
-                ("-9223372036854775809".as_bytes(), 10u32),
-                ("-1000000000000000000001".as_bytes(), 8u32),
-                ("+1000000000000000000001".as_bytes(), 8u32),
-                ("-8000000000000001".as_bytes(), 16u32),
-                ("+-23459374".as_bytes(), 15u32),
-                ("8000000000000000".as_bytes(), 16u32),
-                ("".as_bytes(), 10u32)
-            ]
-        }
+        // #[cfg(nightly)] // since int_from_ascii not stable yet
+        // test_bignum! {
+        //     function: <STest>::from_ascii_radix,
+        //     cases: [
+        //         ("+af7345asdofiuweor".as_bytes(), 35u32),
+        //         ("+945hhdgi73945hjdfj".as_bytes(), 32u32),
+        //         ("+3436847561345343455".as_bytes(), 9u32),
+        //         ("+affe758457bc345540ac399".as_bytes(), 16u32),
+        //         ("+affe758457bc345540ac39929334534ee34579234795".as_bytes(), 17u32),
+        //         ("+3777777777777777777777777777777777777777777".as_bytes(), 8u32),
+        //         ("+37777777777777777777777777777777777777777761".as_bytes(), 8u32),
+        //         ("+1777777777777777777777".as_bytes(), 8u32),
+        //         ("+17777777777777777777773".as_bytes(), 8u32),
+        //         ("+2000000000000000000000".as_bytes(), 8u32),
+        //         ("-234598734".as_bytes(), 10u32),
+        //         ("g234ab".as_bytes(), 16u32),
+        //         ("234£$2234".as_bytes(), 15u32),
+        //         ("123456💯".as_bytes(), 30u32),
+        //         ("3434💯34593487".as_bytes(), 12u32),
+        //         ("💯34593487".as_bytes(), 11u32),
+        //         ("abcdefw".as_bytes(), 32u32),
+        //         ("1234ab".as_bytes(), 11u32),
+        //         ("1234".as_bytes(), 4u32),
+        //         ("010120101".as_bytes(), 2u32),
+        //         ("10000000000000000".as_bytes(), 16u32),
+        //         ("p8hrbe0mo0084i6vckj1tk7uvacnn4cm".as_bytes(), 32u32),
+        //         ("".as_bytes(), 10u32),
+        //         ("-14359abcasdhfkdgdfgsde".as_bytes(), 34u32),
+        //         ("+23797984569ahgkhhjdskjdfiu".as_bytes(), 32u32),
+        //         ("-253613132341435345".as_bytes(), 7u32),
+        //         ("+23467abcad47790809ef37".as_bytes(), 16u32),
+        //         ("-712930769245766867875986646".as_bytes(), 10u32),
+        //         ("-😱234292".as_bytes(), 36u32),
+        //         ("-+345934758".as_bytes(), 13u32),
+        //         ("12💯12".as_bytes(), 15u32),
+        //         ("gap gap".as_bytes(), 36u32),
+        //         ("-9223372036854775809".as_bytes(), 10u32),
+        //         ("-1000000000000000000001".as_bytes(), 8u32),
+        //         ("+1000000000000000000001".as_bytes(), 8u32),
+        //         ("-8000000000000001".as_bytes(), 16u32),
+        //         ("+-23459374".as_bytes(), 15u32),
+        //         ("8000000000000000".as_bytes(), 16u32),
+        //         ("".as_bytes(), 10u32)
+        //     ]
+        // }
 
         test_bignum! {
             function: <STest>::from_str_radix,
@@ -678,6 +679,7 @@ mod tests {
         }
     }
 
+    #[cfg(feature = "alloc")]
     crate::test::test_all! {
         testing signed;
 
@@ -691,7 +693,6 @@ mod tests {
             assert!(test_msg.contains("attempt to parse integer too small to be represented by the target type"));
         }
 
-        #[cfg(feature = "alloc")]
         quickcheck_from_str_radix!(ITest, "+" | "-");
     }
 
