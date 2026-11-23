@@ -127,8 +127,18 @@ impl<const S: bool, const N: usize, const B: usize, const OM: u8> Integer<S, N, 
             };
         }
         // TODO: implement a faster multiplication algorithm for large values of `N`
-        let a = self.to_digits::<u128>();
-        let b = rhs.to_digits::<u128>();
+        //
+        // Accumulate partial products in the widest digit whose widening multiply
+        // is inlined on this target (see `no_widening_u128_mul` in build.rs).
+        // `to_digits::<D>` reinterprets the same N-byte two's-complement operand,
+        // so both the low-N-byte product and its overflow flag are independent of
+        // the chosen accumulation digit width.
+        #[cfg(no_widening_u128_mul)]
+        type MulDigit = u32;
+        #[cfg(not(no_widening_u128_mul))]
+        type MulDigit = u128;
+        let a = self.to_digits::<MulDigit>();
+        let b = rhs.to_digits::<MulDigit>();
         
         let (out, mut overflow) = a.overflowing_mul(b);
         let mut out = out.to_integer();
