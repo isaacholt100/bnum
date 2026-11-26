@@ -44,3 +44,20 @@ impl Display for ParseIntError {
         write!(f, "{} {}", super::err_prefix!(), self.description())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use alloc::string::ToString;
+
+    #[test]
+    fn parse_int_error_zero_display() {
+        let err = ParseIntError {
+            kind: IntErrorKind::Zero,
+        };
+        assert_eq!(err.kind(), &IntErrorKind::Zero);
+        assert!(err
+            .to_string()
+            .contains("attempt to parse the integer `0`"));
+    }
+}

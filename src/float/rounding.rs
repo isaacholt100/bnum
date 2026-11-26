@@ -116,6 +116,9 @@ impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
                 }
             }
             Ordering::Equal => {
+                if trunc.is_zero() {
+                    return trunc;
+                }
                 let (_, exponent, mantissa) = trunc.into_signed_parts();
                 let mantissa_length = (Self::MB - mantissa.trailing_zeros()) as FloatExponent;
                 debug_assert!(exponent >= mantissa_length);
@@ -217,13 +220,76 @@ mod tests {
             function: <FTest>::round(f: FTestBase)
         }
         test_bignum! {
-            function: <FTest>::round_ties_even(f: FTestBase)
+            function: <FTest>::round_ties_even(f: FTestBase),
+            cases: [
+                (0.5 as FTestBase),
+                (-0.5 as FTestBase),
+                (1.5 as FTestBase),
+                (-1.5 as FTestBase),
+                (2.5 as FTestBase),
+                (-2.5 as FTestBase),
+                (3.5 as FTestBase),
+                (-3.5 as FTestBase)
+            ]
         }
         test_bignum! {
-            function: <FTest>::trunc(f: FTestBase)
+            function: <FTest>::trunc(f: FTestBase),
+            cases: [
+                (0.25 as FTestBase),
+                (-0.25 as FTestBase),
+                (0.5 as FTestBase),
+                (-0.5 as FTestBase)
+            ]
         }
         test_bignum! {
-            function: <FTest>::fract(f: FTestBase)
+            function: <FTest>::fract(f: FTestBase),
+            cases: [
+                (0.25 as FTestBase),
+                (-0.25 as FTestBase),
+                (0.5 as FTestBase),
+                (-0.5 as FTestBase)
+            ]
+        }
+
+        #[test]
+        fn floor2_ceil2_round2_cases() {
+            let cases: &[FTestBase] = &[
+                FTestBase::NAN,
+                FTestBase::INFINITY,
+                FTestBase::NEG_INFINITY,
+                0.0,
+                -0.0,
+                FTestBase::from_bits(1),
+                -FTestBase::from_bits(1),
+                0.25,
+                -0.25,
+                0.5,
+                -0.5,
+                0.75,
+                -0.75,
+                1.0,
+                -1.0,
+                1.25,
+                -1.25,
+                1.5,
+                -1.5,
+                2.5,
+                -2.5,
+                1e20 as FTestBase,
+                -1e20 as FTestBase,
+            ];
+            for &x in cases {
+                let fx = FTest::from(x);
+                if x.is_nan() {
+                    assert!(fx.floor2().is_nan());
+                    assert!(fx.ceil2().is_nan());
+                    assert!(fx.round2().is_nan());
+                } else {
+                    assert_eq!(fx.floor2().to_bits(), fx.floor().to_bits(), "floor2({x})");
+                    assert_eq!(fx.ceil2().to_bits(), fx.ceil().to_bits(), "ceil2({x})");
+                    assert_eq!(fx.round2().to_bits(), fx.round().to_bits(), "round2({x})");
+                }
+            }
         }
     }
 }

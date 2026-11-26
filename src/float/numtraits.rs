@@ -153,5 +153,59 @@ mod tests {
         test_bignum! {
             function: <FTest as TotalOrder>::total_cmp(a: ref &FTestBase, b: ref &FTestBase)
         }
+
+        #[test]
+        fn bounded_zero_one_and_as_primitive() {
+            use crate::test::TestConvert;
+
+            assert_eq!(<FTest as Bounded>::min_value().to_bits(), FTest::MIN.to_bits());
+            assert_eq!(<FTest as Bounded>::max_value().to_bits(), FTest::MAX.to_bits());
+            assert_eq!(<FTest as Zero>::zero().to_bits(), FTest::ZERO.to_bits());
+            assert_eq!(<FTest as One>::one().to_bits(), FTest::ONE.to_bits());
+
+            let f = FTest::from(42.5 as FTestBase);
+            assert_eq!(<FTest as AsPrimitive<u8>>::as_(f), 42u8);
+            assert_eq!(<FTest as AsPrimitive<u16>>::as_(f), 42u16);
+            assert_eq!(<FTest as AsPrimitive<u32>>::as_(f), 42u32);
+            assert_eq!(<FTest as AsPrimitive<u64>>::as_(f), 42u64);
+            assert_eq!(<FTest as AsPrimitive<u128>>::as_(f), 42u128);
+            assert_eq!(<FTest as AsPrimitive<usize>>::as_(f), 42usize);
+            assert_eq!(<FTest as AsPrimitive<i8>>::as_(f), 42i8);
+            assert_eq!(<FTest as AsPrimitive<i16>>::as_(f), 42i16);
+            assert_eq!(<FTest as AsPrimitive<i32>>::as_(f), 42i32);
+            assert_eq!(<FTest as AsPrimitive<i64>>::as_(f), 42i64);
+            assert_eq!(<FTest as AsPrimitive<i128>>::as_(f), 42i128);
+            assert_eq!(<FTest as AsPrimitive<isize>>::as_(f), 42isize);
+            assert_eq!(<FTest as AsPrimitive<f32>>::as_(f), 42.5f32);
+            assert_eq!(<FTest as AsPrimitive<f64>>::as_(f), 42.5f64);
+
+            let f42 = FTest::from(42.0 as FTestBase);
+            assert_eq!(<u8 as AsPrimitive<FTest>>::as_(42u8).to_bits(), f42.to_bits());
+            assert_eq!(<u16 as AsPrimitive<FTest>>::as_(42u16).to_bits(), f42.to_bits());
+            assert_eq!(<u32 as AsPrimitive<FTest>>::as_(42u32).to_bits(), f42.to_bits());
+            assert_eq!(<u64 as AsPrimitive<FTest>>::as_(42u64).to_bits(), f42.to_bits());
+            assert_eq!(<u128 as AsPrimitive<FTest>>::as_(42u128).to_bits(), f42.to_bits());
+            assert_eq!(<usize as AsPrimitive<FTest>>::as_(42usize).to_bits(), f42.to_bits());
+            assert_eq!(<i8 as AsPrimitive<FTest>>::as_(42i8).to_bits(), f42.to_bits());
+            assert_eq!(<i16 as AsPrimitive<FTest>>::as_(42i16).to_bits(), f42.to_bits());
+            assert_eq!(<i32 as AsPrimitive<FTest>>::as_(42i32).to_bits(), f42.to_bits());
+            assert_eq!(<i64 as AsPrimitive<FTest>>::as_(42i64).to_bits(), f42.to_bits());
+            assert_eq!(<i128 as AsPrimitive<FTest>>::as_(42i128).to_bits(), f42.to_bits());
+            assert_eq!(<isize as AsPrimitive<FTest>>::as_(42isize).to_bits(), f42.to_bits());
+            assert_eq!(<f32 as AsPrimitive<FTest>>::as_(42.5f32).to_bits(), f.to_bits());
+            assert_eq!(<f64 as AsPrimitive<FTest>>::as_(42.5f64).to_bits(), f.to_bits());
+
+            // Integer -> Float and Float -> Float AsPrimitive
+            let u_one = UTest::ONE;
+            assert_eq!(<UTest as AsPrimitive<FTest>>::as_(u_one).to_bits(), FTest::ONE.to_bits());
+            let i_neg = ITest::ZERO - ITest::ONE;
+            assert_eq!(<ITest as AsPrimitive<FTest>>::as_(i_neg).to_bits(), FTest::NEG_ONE.to_bits());
+            let f16: crate::types::F16 = <FTest as AsPrimitive<crate::types::F16>>::as_(FTest::ONE);
+            assert_eq!(f16.to_bits(), crate::types::F16::ONE.to_bits());
+            assert_eq!(
+                TestConvert::into(<crate::types::F16 as AsPrimitive<FTest>>::as_(f16)),
+                TestConvert::into(FTest::ONE)
+            );
+        }
     }
 }

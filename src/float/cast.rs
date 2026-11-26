@@ -7,12 +7,7 @@ use crate::Exponent;
 use crate::cast::CastFrom;
 use crate::{Int, Integer, Uint};
 
-impl<const N: usize, const B: usize> FloatMantissa for Uint<N, B> {
-    #[inline]
-    fn is_power_of_two(self) -> bool {
-        Self::is_power_of_two(self)
-    }
-}
+impl<const N: usize, const B: usize> FloatMantissa for Uint<N, B> {}
 
 #[inline]
 const fn uint_low_u64<const W: usize>(u: &Uint<W>) -> u64 {
@@ -510,5 +505,58 @@ mod tests {
             function: <FTest as CastTo>::cast_to,
             into_types: (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64, UTest, ITest, TestUint1, TestUint2, TestUint3, TestUint4, TestUint5, TestUint6, TestUint7, TestUint8, TestUint9, TestUint10, TestInt1, TestInt2, TestInt3, TestInt4, TestInt5, TestInt6, TestInt7, TestInt8, TestInt9, TestInt10)
         }
+
+        #[test]
+        fn convert_float_parts_trait_methods() {
+            use crate::cast::float::ConvertFloatParts;
+            let f = FTest::from(-3.25 as FTestBase);
+            let (s, e, m) = ConvertFloatParts::into_raw_parts(f);
+            assert_eq!(<FTest as ConvertFloatParts>::from_raw_parts(s, e, m).to_bits(), f.to_bits());
+            let (s, e, m) = ConvertFloatParts::into_biased_parts(f);
+            assert_eq!(<FTest as ConvertFloatParts>::from_biased_parts(s, e, m).to_bits(), f.to_bits());
+            let (s, e, m) = ConvertFloatParts::into_signed_biased_parts(f);
+            assert_eq!(<FTest as ConvertFloatParts>::from_signed_biased_parts(s, e, m).to_bits(), f.to_bits());
+            let (s, e, m) = ConvertFloatParts::into_signed_parts(f);
+            assert_eq!(<FTest as ConvertFloatParts>::from_signed_parts(s, e, m).to_bits(), f.to_bits());
+        }
+    }
+
+    #[test]
+    fn cast_float_overflow_subnormal_and_stochastic() {
+        use crate::types::{F16, F64, F128};
+        use crate::{Float, RoundingMode, Uint};
+
+        const R_STOCH: u8 = RoundingMode::Stochastic as u8;
+        const R_POS: u8 = RoundingMode::TowardPositive as u8;
+
+        // Uint -> Float overflow
+        assert_eq!(F16::cast_from(u64::MAX).to_bits(), F16::INFINITY.to_bits());
+        assert_eq!(F16::cast_from(i64::MIN).to_bits(), F16::NEG_INFINITY.to_bits());
+
+        // Uint -> Float Stochastic for shift < 64, shift == 64, and shift > 64
+        type F16s = Float<2, 10, R_STOCH>;
+        type F32s = Float<4, 23, R_STOCH>;
+        type F64s = Float<8, 52, R_STOCH>;
+        let _ = F16s::cast_from(0x7FFFu16); // bit_width = 15, shift = 15 - 11 = 4 < 64 (no overflow)
+        let _ = F64s::cast_from((1u128 << 116) | 0x1234_5678_9abc_def1u128); // bit_width = 117, shift = 117 - 53 = 64
+        let _ = F32s::cast_from(u128::MAX - 123); // bit_width = 128, exp_u = 127 <= F32::MAX_EXP, shift = 104 > 64
+
+        // Float -> Float: subnormal source widened, subnormal target Stochastic, Stochastic (shift < 64, == 64, > 64), overflow
+        let sub_widen: F64 = F64::cast_from(F16::MIN_POSITIVE_SUBNORMAL);
+        assert_eq!(sub_widen.to_bits(), F64::from(2.0_f64.powi(-24)).to_bits());
+        let _: F16s = F16s::cast_from(F64::from(2.0_f64.powi(-20) * 1.3)); // normal -> subnormal Stochastic (line 396)
+
+        let f128_val = F128::from_str("1.2345678901234567890123456789012345").unwrap();
+        let _: F16s = F16s::cast_from(F64::from(1.23456789_f64)); // shift = 52 - 10 = 42 < 64
+        let _: F16s = F16s::cast_from(f128_val); // shift = 112 - 10 = 102 > 64
+        type F48m48s = Float<8, 48, R_STOCH>;
+        let _: F48m48s = F48m48s::cast_from(f128_val); // shift = 112 - 48 = 64
+        let _: F16s = F16s::cast_from(F16::from_bits(Uint::from_le_bytes([0x00, 0x3C]))); // shift == 0
+
+        // Overflow on rounding carry in Float -> Float
+        type F16p = Float<2, 10, R_POS>;
+        let near_max = F64::from(65504.0_f64 + 1.0);
+        assert_eq!(F16p::cast_from(near_max).to_bits(), F16p::INFINITY.to_bits());
+        assert_eq!(F16::cast_from(F64::MAX).to_bits(), F16::INFINITY.to_bits());
     }
 }

@@ -41,3 +41,19 @@ impl Display for ParseFloatError {
         write!(f, "{} {}", super::err_prefix!(), self.description())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use alloc::string::ToString;
+
+    #[test]
+    fn parse_float_error_display() {
+        assert!(ParseFloatError::EMPTY
+            .to_string()
+            .contains("cannot parse float from empty string"));
+        assert!(ParseFloatError::INVALID
+            .to_string()
+            .contains("invalid float literal"));
+    }
+}

@@ -242,5 +242,10 @@ mod tests {
         test_bignum! {
             function: <FTest>::next_down(a: FTestBase)
         }
+
+        #[test]
+        fn default() {
+            assert_eq!(FTest::default().to_bits(), FTest::ZERO.to_bits());
+        }
     }
 }

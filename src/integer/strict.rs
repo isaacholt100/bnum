@@ -603,6 +603,54 @@ mod tests {
             skip: a.checked_pow(b as u32).is_none()
         }
     }
+
+    #[test]
+    #[should_panic(expected = "attempt to divide with overflow")]
+    fn strict_div_overflow_panics() {
+        let _ = <crate::t!(I64)>::MIN.strict_div(crate::n!(-1));
+    }
+
+    #[test]
+    #[should_panic(expected = "attempt to divide by zero")]
+    fn strict_div_by_zero_panics() {
+        let _ = <crate::t!(I64)>::ONE.strict_div(crate::n!(0));
+    }
+
+    #[test]
+    #[should_panic(expected = "attempt to divide with overflow")]
+    fn strict_div_euclid_overflow_panics() {
+        let _ = <crate::t!(I64)>::MIN.strict_div_euclid(crate::n!(-1));
+    }
+
+    #[test]
+    #[should_panic(expected = "attempt to divide by zero")]
+    fn strict_div_euclid_by_zero_panics() {
+        let _ = <crate::t!(I64)>::ONE.strict_div_euclid(crate::n!(0));
+    }
+
+    #[test]
+    #[should_panic(expected = "attempt to calculate the remainder with overflow")]
+    fn strict_rem_overflow_panics() {
+        let _ = <crate::t!(I64)>::MIN.strict_rem(crate::n!(-1));
+    }
+
+    #[test]
+    #[should_panic(expected = "attempt to calculate the remainder with a divisor of zero")]
+    fn strict_rem_by_zero_panics() {
+        let _ = <crate::t!(I64)>::ONE.strict_rem(crate::n!(0));
+    }
+
+    #[test]
+    #[should_panic(expected = "attempt to calculate the remainder with overflow")]
+    fn strict_rem_euclid_overflow_panics() {
+        let _ = <crate::t!(I64)>::MIN.strict_rem_euclid(crate::n!(-1));
+    }
+
+    #[test]
+    #[should_panic(expected = "attempt to calculate the remainder with a divisor of zero")]
+    fn strict_rem_euclid_by_zero_panics() {
+        let _ = <crate::t!(I64)>::ONE.strict_rem_euclid(crate::n!(0));
+    }
 }
 
 use crate::doc;

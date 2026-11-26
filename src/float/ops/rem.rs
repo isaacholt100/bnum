@@ -24,8 +24,8 @@ impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
 
         let mut uxi = self.to_bits();
         let mut uyi = y.to_bits();
-        let mut ex = self.signed_biased_exponent();
-        let mut ey = y.signed_biased_exponent();
+        let mut ex = self.into_raw_parts().1 as crate::float::FloatExponent;
+        let mut ey = y.into_raw_parts().1 as crate::float::FloatExponent;
         let mut i;
 
         if uxi << 1 as Exponent <= uyi << 1 as Exponent {

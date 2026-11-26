@@ -94,6 +94,43 @@ mod tests {
             let expected: FTestBase = r2.sample(OpenClosed01);
 
             assert!(convert::test_eq(actual, expected));
+
+            let open_val: FTest = r1.sample(Open01);
+            assert!(open_val > FTest::ZERO && open_val < FTest::ONE);
+        }
+
+        #[test]
+        fn test_random_edge_mantissas() {
+            struct ConstRng(u64);
+            impl rand::TryRng for ConstRng {
+                type Error = core::convert::Infallible;
+                fn try_next_u32(&mut self) -> Result<u32, Self::Error> {
+                    Ok(self.0 as u32)
+                }
+                fn try_next_u64(&mut self) -> Result<u64, Self::Error> {
+                    Ok(self.0)
+                }
+                fn try_fill_bytes(&mut self, dst: &mut [u8]) -> Result<(), Self::Error> {
+                    let bytes = self.0.to_le_bytes();
+                    for (i, b) in dst.iter_mut().enumerate() {
+                        *b = bytes[i % 8];
+                    }
+                    Ok(())
+                }
+            }
+
+            // mantissa == 0
+            let mut zero_rng = ConstRng(0);
+            let s0: FTest = zero_rng.random();
+            assert_eq!(s0.to_bits(), FTest::ZERO.to_bits());
+            let o0: FTest = zero_rng.sample(Open01);
+            assert_eq!(o0.to_bits(), FTest::HALF_EPSILON.to_bits());
+
+            // mantissa == 1 in StandardUniform (bit at BITS - MB - 1)
+            let one_bit = 1u64 << (FTest::BITS - FTest::MB - 1);
+            let mut one_rng = ConstRng(one_bit);
+            let s1: FTest = one_rng.random();
+            assert_eq!(s1.to_bits(), FTest::HALF_EPSILON.to_bits());
         }
     }
 }

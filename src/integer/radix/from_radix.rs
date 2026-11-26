@@ -696,6 +696,18 @@ mod tests {
         quickcheck_from_str_radix!(ITest, "+" | "-");
     }
 
+    #[test]
+    fn from_radix_uppercase_ascii_and_base256() {
+        type U64 = crate::t!(U64);
+        type I64 = crate::t!(I64);
+
+        assert_eq!(U64::from_str_radix("DEADBEEF", 16), Ok(crate::n!(0xDEADBEEF)));
+        assert_eq!(U64::from_str_radix("ZZ", 36), Ok(crate::n!(1295)));
+        assert_eq!(U64::from_ascii(b"123456"), Ok(crate::n!(123456)));
+        assert_eq!(I64::from_ascii(b"-123456"), Ok(crate::n!(-123456)));
+        assert_eq!(U64::from_radix_le(&[0x78, 0x56, 0x34, 0x12], 256), Some(crate::n!(0x12345678)));
+    }
+
     // TODO: custom bit width tests for from_str_radix
 }
 

@@ -312,4 +312,59 @@ crate::test::test_all! {
             quickcheck::TestResult::from_bool(result)
         }
     }
+
+    #[test]
+    fn uniform_edge_cases_and_empty_fill() {
+        use rand::distr::uniform::{Error, UniformSampler};
+
+        let mut rng = SmallRng::seed_from_u64(42);
+
+        // Empty slice for Fill
+        let mut empty: [STest; 0] = [];
+        Fill::fill_slice(&mut empty, &mut rng);
+
+        // Empty range errors
+        assert_eq!(UniformInt::new(STest::ONE, STest::ONE).unwrap_err(), Error::EmptyRange);
+        assert_eq!(UniformInt::new(STest::MAX, STest::MIN).unwrap_err(), Error::EmptyRange);
+        assert_eq!(UniformInt::new_inclusive(STest::MAX, STest::MIN).unwrap_err(), Error::EmptyRange);
+        assert_eq!(
+            UniformInt::sample_single(STest::ONE, STest::ONE, &mut rng).unwrap_err(),
+            Error::EmptyRange
+        );
+        assert_eq!(
+            UniformInt::sample_single_inclusive(STest::MAX, STest::MIN, &mut rng).unwrap_err(),
+            Error::EmptyRange
+        );
+
+        // Full inclusive range (range == 0 paths)
+        let full_sampler = UniformInt::new_inclusive(STest::MIN, STest::MAX).unwrap();
+        let _ = full_sampler.sample(&mut rng);
+        let _ = UniformInt::sample_single_inclusive(STest::MIN, STest::MAX, &mut rng).unwrap();
+
+        // Deterministic RNG that yields all-0xFF first, then 0, to exercise x == MAX rejection branch
+        struct MaxThenZeroRng(usize);
+        impl rand::TryRng for MaxThenZeroRng {
+            type Error = core::convert::Infallible;
+            fn try_next_u32(&mut self) -> Result<u32, Self::Error> {
+                let v = if self.0 < 8 { u32::MAX } else { 0 };
+                self.0 += 1;
+                Ok(v)
+            }
+            fn try_next_u64(&mut self) -> Result<u64, Self::Error> {
+                let v = if self.0 < 8 { u64::MAX } else { 0 };
+                self.0 += 1;
+                Ok(v)
+            }
+            fn try_fill_bytes(&mut self, dst: &mut [u8]) -> Result<(), Self::Error> {
+                let fill = if self.0 < 4 { 0xFF } else { 0x00 };
+                self.0 += 1;
+                dst.fill(fill);
+                Ok(())
+            }
+        }
+        let mut mock = MaxThenZeroRng(0);
+        // Choose a range where zone is tight so x == MAX hits the rejection loop (x == u32::MAX / Uint::MAX)
+        let three = STest::ONE + STest::ONE + STest::ONE;
+        let _ = UniformInt::sample_single(STest::ZERO, three, &mut mock).unwrap();
+    }
 }

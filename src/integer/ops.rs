@@ -325,6 +325,16 @@ mod tests {
         }
 
         test_shifts!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
+
+        #[test]
+        fn ref_ops_and_assign_ref() {
+            let a = STest::ONE;
+            let b = STest::ONE;
+            assert_eq!(!&a, !a);
+            let mut c = a;
+            c += &b;
+            assert_eq!(c, a + b);
+        }
     }
 
     crate::test::test_all! {
@@ -333,6 +343,12 @@ mod tests {
         test_bignum! {
             function: <ITest>::neg(a: ITest),
             skip: crate::overflow::GLOBAL_OVERFLOW_CHECKS && a == ITest::MIN
+        }
+
+        #[test]
+        fn ref_neg() {
+            let a = ITest::ONE;
+            assert_eq!(-&a, -a);
         }
     }
 
@@ -372,7 +388,17 @@ mod tests {
             function: <STest as Rem>::rem(a: STest, b: STest),
             skip: b.is_zero()
         }
-        // TODO: test shifts
+
+        #[test]
+        fn wrapping_shifts() {
+            let a = STest::ONE;
+            assert_eq!(a << 1u64, a.wrapping_shl(1));
+            assert_eq!(a << (STest::BITS as u64 + 1), a.wrapping_shl(1));
+            assert_eq!(a << (-1i64), a.wrapping_shl(STest::BITS - 1));
+            assert_eq!(a >> 1u64, a.wrapping_shr(1));
+            assert_eq!(a >> (STest::BITS as u64 + 1), a.wrapping_shr(1));
+            assert_eq!(a >> (-1i64), a.wrapping_shr(STest::BITS - 1));
+        }
     }
 
     crate::test::test_all! {
@@ -395,6 +421,16 @@ mod tests {
             function: <STest as Rem>::rem(a: STest, b: STest),
             skip: b.is_zero()
         }
-        // TODO: test shifts
+
+        #[test]
+        fn saturating_shifts() {
+            let a = STest::ONE;
+            assert_eq!(a << 1u64, a.unbounded_shl(1));
+            assert_eq!(a << u64::MAX, a.unbounded_shl(u32::MAX));
+            assert_eq!(a << (-1i64), a.unbounded_shl(u32::MAX));
+            assert_eq!(a >> 1u64, a.unbounded_shr(1));
+            assert_eq!(a >> u64::MAX, a.unbounded_shr(u32::MAX));
+            assert_eq!(a >> (-1i64), a.unbounded_shr(u32::MAX));
+        }
     }
 }

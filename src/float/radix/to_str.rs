@@ -2234,6 +2234,64 @@ mod tests {
             assert!(f128_max_fixed.ends_with(".00"));
             assert!(f128_max_fixed.starts_with("1189731495357231765085759326628007"));
             assert_eq!(f128_max_fixed.len(), 4933 + 3);
+
+            // Wide padding (> 64 spaces, exact 64 spaces) and explicit '0' fill char
+            assert_eq!(alloc::format!("{:100?}", F64::ONE), alloc::format!("{:100?}", 1.0_f64));
+            assert_eq!(alloc::format!("{:67?}", F64::ONE), alloc::format!("{:67?}", 1.0_f64));
+            assert_eq!(alloc::format!("{:0<40?}", F64::ONE), alloc::format!("{:0<40?}", 1.0_f64));
+            assert_eq!(alloc::format!("{:040?}", F64::ONE), alloc::format!("{:040?}", 1.0_f64));
+
+            // F256 shortest formatting (including values hitting Dragon4 heap path)
+            let s_f256_min_sub = alloc::format!("{:?}", F256::MIN_POSITIVE_SUBNORMAL);
+            assert_eq!(F256::from_str(&s_f256_min_sub).unwrap().to_bits(), F256::MIN_POSITIVE_SUBNORMAL.to_bits());
+            let s_f256_max = alloc::format!("{:?}", F256::MAX);
+            assert_eq!(F256::from_str(&s_f256_max).unwrap().to_bits(), F256::MAX.to_bits());
+            let s_f256_min_pos = alloc::format!("{:?}", F256::MIN_POSITIVE);
+            assert_eq!(F256::from_str(&s_f256_min_pos).unwrap().to_bits(), F256::MIN_POSITIVE.to_bits());
+
+            // Direct coverage of dragon4_shortest heap tier (needed_limbs > 64) and > 1_000_000 None return,
+            // plus round_up_digits carry-all-9s cases
+            let mut d_out = [0u8; 256];
+            let res_heap = super::super::dragon4_shortest::<16, 112>(
+                &crate::Uint::<16>::ONE,
+                false,
+                -3000,
+                true,
+                &mut d_out,
+            );
+            assert!(res_heap.is_some());
+            assert!(
+                super::super::dragon4_shortest::<16, 112>(
+                    &crate::Uint::<16>::ONE,
+                    false,
+                    -1_000_001,
+                    true,
+                    &mut d_out,
+                )
+                .is_none()
+            );
+            let mut empty_d: [u8; 0] = [];
+            assert_eq!(super::super::round_up_digits(&mut empty_d), Some(b'1'));
+            let mut nines = *b"999";
+            assert_eq!(super::super::round_up_digits(&mut nines), Some(b'0'));
+            assert_eq!(&nines, b"100");
+
+            // Extreme exponent format (|e_eff| > 1_000_000) to exercise emergency shortest fallback
+            // and fmt_fixed_approx_fallback (both prec == 0, prec > 0, drop_usize >= prec, < prec, prod_exp2 < 0)
+            type HugeExpF = Float<8, 20>;
+            let huge_pos = HugeExpF::from_str("1.23456e400000").unwrap();
+            let s_huge_short = alloc::format!("{:?}", huge_pos);
+            assert!(s_huge_short.contains('e'));
+            let s_huge_fix0 = alloc::format!("{:.0?}", huge_pos);
+            assert!(s_huge_fix0.starts_with("12345"));
+            let s_huge_fix2 = alloc::format!("{:.2?}", huge_pos);
+            assert!(s_huge_fix2.ends_with(".00"));
+
+            let tiny_pos = HugeExpF::from_str("1.23456e-400000").unwrap();
+            let s_tiny_short = alloc::format!("{:?}", tiny_pos);
+            assert!(s_tiny_short.contains("e-"));
+            let s_tiny_fix2 = alloc::format!("{:.2?}", tiny_pos);
+            assert_eq!(s_tiny_fix2, "0.00");
         }
     }
 }

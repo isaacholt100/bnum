@@ -18,18 +18,12 @@ pub trait FloatMantissa:
     + One
     + Zero
 {
-    fn is_power_of_two(self) -> bool;
 }
 
 macro_rules! impl_float_mantissa_for_uint {
     ($($uint: ty), *) => {
         $(
-            impl FloatMantissa for $uint {
-                #[inline]
-                fn is_power_of_two(self) -> bool {
-                    Self::is_power_of_two(self)
-                }
-            }
+            impl FloatMantissa for $uint {}
         )*
     };
 }
@@ -111,7 +105,7 @@ macro_rules! impl_convert_float_parts_for_primitive_float {
                 if mant == 0 || shift == 0 {
                     (sign, exp, mant)
                 } else {
-                    let normalised_mant = mant >> shift;
+                    let normalised_mant = mant << shift;
                     let normalised_exp = exp - (shift as Self::SignedExp);
 
                     (sign, normalised_exp, normalised_mant)
@@ -213,3 +207,31 @@ macro_rules! impl_float_cast_helper_for_primitive_float {
 
 impl_float_cast_helper_for_primitive_float!(f32, u32, i32, 32);
 impl_float_cast_helper_for_primitive_float!(f64, u64, i32, 64);
+
+#[cfg(test)]
+mod tests {
+    use super::ConvertFloatParts;
+
+    #[test]
+    fn primitive_float_parts_subnormal_and_negative() {
+        let sub64 = f64::from_bits(1);
+        let (s, e, m) = sub64.into_normalised_signed_parts();
+        assert!(!s);
+        assert_eq!(e, -1074);
+        assert_eq!(m, 1u64 << 52);
+
+        let neg_sub64 = -sub64;
+        let (ns, ne, nm) = neg_sub64.into_biased_parts();
+        assert_eq!(f64::from_biased_parts(ns, ne, nm).to_bits(), neg_sub64.to_bits());
+
+        let sub32 = f32::from_bits(1);
+        let (s32, e32, m32) = sub32.into_normalised_signed_parts();
+        assert!(!s32);
+        assert_eq!(e32, -149);
+        assert_eq!(m32, 1u32 << 23);
+
+        let neg_sub32 = -sub32;
+        let (ns32, ne32, nm32) = neg_sub32.into_biased_parts();
+        assert_eq!(f32::from_biased_parts(ns32, ne32, nm32).to_bits(), neg_sub32.to_bits());
+    }
+}

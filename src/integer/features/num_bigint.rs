@@ -7,7 +7,11 @@ use crate::errors::TryFromIntError;
 impl<const S: bool, const N: usize, const B: usize, const OM: u8> From<Integer<S, N, B, OM>> for BigInt {
     #[inline]
     fn from(value: Integer<S, N, B, OM>) -> Self {
-        BigInt::from_signed_bytes_le(value.as_bytes())
+        if S {
+            BigInt::from_signed_bytes_le(value.as_bytes())
+        } else {
+            BigInt::from_bytes_le(Sign::Plus, value.as_bytes())
+        }
     }
 }
 
@@ -111,5 +115,22 @@ crate::test::test_all_custom_bit_widths! {
             
             quickcheck::TestResult::from_bool(rug_int.to_string() == value.to_string())
         }
+    }
+
+    #[test]
+    fn num_bigint_edge_cases() {
+        let big_from_u: BigInt = UTest::MAX.into();
+        let big_from_i: BigInt = ITest::MIN.into();
+        assert!(big_from_u >= BigInt::from(0u8));
+        assert!(big_from_i < BigInt::from(0u8));
+
+        // Negative Int cannot convert to BigUint
+        assert!(BigUint::try_from(ITest::MIN).is_err());
+
+        // Overflow BigUint -> Uint / Int
+        let too_big_u = BigUint::from(1u8) << (UTest::BITS as usize);
+        assert!(UTest::try_from(&too_big_u).is_err());
+        let too_big_i = BigUint::from(1u8) << (ITest::BITS as usize - 1);
+        assert!(ITest::try_from(&too_big_i).is_err());
     }
 }

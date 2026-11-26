@@ -342,6 +342,19 @@ mod tests {
         let a: Float<8, 52, R_POS> = Float::cast_from(1.5_f64);
         let b: Float<8, 52, R_NEG> = a.with_rounding_mode::<R_NEG>();
         assert_eq!(a.to_bits(), b.to_bits());
+
+        // round_with_tiny_delta overflow at MAX
+        type F16p = Float<2, 10, R_POS>;
+        assert_eq!(
+            F16p::round_with_tiny_delta(F16p::MAX, true).to_bits(),
+            F16p::INFINITY.to_bits()
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "invalid RoundingMode discriminant")]
+    fn rounding_mode_from_u8_invalid_panics() {
+        let _ = RoundingMode::from_u8(99);
     }
 
     #[test]

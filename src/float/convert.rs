@@ -333,5 +333,36 @@ mod tests {
         test_reversible_conversion!(into_signed_biased_parts, from_signed_biased_parts(a, b, c) -> FTest, FTest::to_bits);
         test_reversible_conversion!(into_signed_parts, from_signed_parts(a, b, c) -> FTest, FTest::to_bits);
         test_reversible_conversion!(into_normalised_signed_parts, from_normalised_signed_parts(a, b, c) -> FTest, FTest::to_bits);
+
+        #[test]
+        fn as_bits_integral_parts_and_round_mantissa() {
+            let zero = FTest::ZERO;
+            assert_eq!(*zero.as_bits(), zero.to_bits());
+            let (zs, ze, zm) = zero.into_integral_signed_parts();
+            assert!(!zs && zm.is_zero() && ze == FTest::MIN_EXP - 1);
+
+            let neg = FTest::from(-1.5 as FTestBase);
+            let (ns, ne, nm) = neg.into_integral_signed_parts();
+            assert!(ns && !nm.is_zero() && ne == -(FTest::MB as crate::float::FloatExponent));
+
+            // round_exponent_mantissa: truncate vs ties-to-even with carry overflow
+            let trunc = FTest::round_exponent_mantissa::<false>(0, crate::Uint::from_le_bytes({
+                let mut b = [0u8; core::mem::size_of::<FTest>()];
+                b[0] = 0b1111;
+                b
+            }), 2);
+            assert_eq!(trunc.0, 0);
+            assert_eq!(trunc.1.bytes[0], 0b11);
+
+            // Ties-to-even rounding up and overflowing mantissa width (bit `shift` becomes 1)
+            // shift = 4, mantissa = 0b1111_1000 -> shifted = 0b1111 (odd), discarded = 0b1000 (>= half)
+            // -> shifted + 1 = 0b1_0000 -> bit(4) is set -> exponent += 1, shifted >>= 1 = 0b1000
+            let mut m_bytes = [0u8; core::mem::size_of::<FTest>()];
+            m_bytes[0] = 0b1111_1000;
+            let (e_out, m_out) =
+                FTest::round_exponent_mantissa::<true>(5, crate::Uint::from_le_bytes(m_bytes), 4);
+            assert_eq!(e_out, 6);
+            assert_eq!(m_out.bytes[0], 0b1000);
+        }
     }
 }

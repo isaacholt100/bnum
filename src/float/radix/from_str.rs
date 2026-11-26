@@ -105,63 +105,73 @@ const fn str_eq_case_insensitive(a: &str, b: &str) -> bool {
 }
 
 #[derive(Clone, Copy)]
-struct ParsedDecimal<'a> {
+struct ParsedDecimal<'a, const ALLOW_UNDERSCORES: bool> {
     is_negative: bool,
     int_digits: &'a [u8],
     frac_digits: &'a [u8],
     /// Decimal exponent of the first nonzero digit (`value = d_0.d_1... * 10^exp10`).
     exp10: i128,
-    /// Index of the first nonzero digit in the concatenated `(int_digits, frac_digits)` stream.
+    /// Byte index of the first nonzero digit in the concatenated `(int_digits, frac_digits)` stream.
     first_nz: usize,
-    /// One past the index of the last nonzero digit in the concatenated stream.
+    /// One past the byte index of the last nonzero digit in the concatenated stream.
     last_nz_end: usize,
+    /// Number of ASCII digits (excluding underscores) in `first_nz..last_nz_end`.
+    sig_digits: usize,
 }
 
-impl<'a> ParsedDecimal<'a> {
+impl<'a, const ALLOW_UNDERSCORES: bool> ParsedDecimal<'a, ALLOW_UNDERSCORES> {
     #[inline(always)]
-    fn digit_at(&self, idx: usize) -> u8 {
+    const fn byte_at(&self, idx: usize) -> u8 {
         if idx < self.int_digits.len() {
-            self.int_digits[idx] - b'0'
+            self.int_digits[idx]
         } else {
-            self.frac_digits[idx - self.int_digits.len()] - b'0'
+            self.frac_digits[idx - self.int_digits.len()]
         }
     }
 
     #[inline(always)]
-    fn sig_len(&self) -> usize {
-        self.last_nz_end - self.first_nz
+    const fn digit_at(&self, idx: usize) -> u8 {
+        self.byte_at(idx) - b'0'
+    }
+
+    #[inline(always)]
+    const fn sig_len(&self) -> usize {
+        self.sig_digits
     }
 
     /// Place value (power of 10) of the last nonzero digit.
     #[inline(always)]
-    fn last_nz_place(&self) -> i128 {
-        self.exp10 - (self.sig_len() as i128 - 1)
+    const fn last_nz_place(&self) -> i128 {
+        self.exp10 - (self.sig_digits as i128 - 1)
     }
 }
 
-enum LexResult<'a> {
+enum LexResult<'a, const ALLOW_UNDERSCORES: bool> {
     Zero { is_negative: bool },
     Infinity { is_negative: bool },
     Nan { is_negative: bool },
-    Finite(ParsedDecimal<'a>),
+    Finite(ParsedDecimal<'a, ALLOW_UNDERSCORES>),
 }
 
-/// Lexes and validates `src` according to Rust's exact `f32`/`f64` `FromStr` grammar:
+/// Lexes and validates `src` according to Rust's exact `f32`/`f64` `FromStr` grammar
+/// (and optionally accepts `_` digit separators when `ALLOW_UNDERSCORES` is `true`):
 ///
 /// ```text
 /// Float  ::= Sign? ( 'inf' | 'infinity' | 'nan' | Number )
 /// Number ::= ( Digit+ | Digit+ '.' Digit* | Digit* '.' Digit+ ) Exp?
 /// Exp    ::= ('e' | 'E') ('+' | '-')? Digit+
 /// ```
-fn lex_decimal(src: &str) -> Result<LexResult<'_>, ParseFloatError> {
+const fn lex_decimal<const ALLOW_UNDERSCORES: bool>(
+    src: &str,
+) -> Result<LexResult<'_, ALLOW_UNDERSCORES>, ParseFloatError> {
     if src.is_empty() {
         return Err(ParseFloatError::EMPTY);
     }
 
     let bytes = src.as_bytes();
     let (is_negative, rest) = match bytes[0] {
-        b'+' => (false, &bytes[1..]),
-        b'-' => (true, &bytes[1..]),
+        b'+' => (false, bytes.split_at(1).1),
+        b'-' => (true, bytes.split_at(1).1),
         _ => (false, bytes),
     };
 
@@ -191,60 +201,74 @@ fn lex_decimal(src: &str) -> Result<LexResult<'_>, ParseFloatError> {
 
     // Parse integer digits.
     let mut i = 0;
-    while i < rest.len() && rest[i].is_ascii_digit() {
-        i += 1;
+    let mut int_digit_count = 0usize;
+    while i < rest.len() {
+        let b = rest[i];
+        if b.is_ascii_digit() {
+            int_digit_count += 1;
+            i += 1;
+        } else if ALLOW_UNDERSCORES && b == b'_' {
+            i += 1;
+        } else {
+            break;
+        }
     }
-    let int_digits = &rest[..i];
+    let (int_digits, after_int) = rest.split_at(i);
 
     // Parse optional fractional part.
-    let frac_digits = if i < rest.len() && rest[i] == b'.' {
-        i += 1;
-        let frac_start = i;
-        while i < rest.len() && rest[i].is_ascii_digit() {
-            i += 1;
+    let mut frac_digit_count = 0usize;
+    let (frac_digits, after_frac) = if !after_int.is_empty() && after_int[0] == b'.' {
+        let after_dot = after_int.split_at(1).1;
+        let mut j = 0;
+        while j < after_dot.len() {
+            let b = after_dot[j];
+            if b.is_ascii_digit() {
+                frac_digit_count += 1;
+                j += 1;
+            } else if ALLOW_UNDERSCORES && b == b'_' {
+                j += 1;
+            } else {
+                break;
+            }
         }
-        &rest[frac_start..i]
+        after_dot.split_at(j)
     } else {
-        &rest[0..0]
+        (after_int.split_at(0).0, after_int)
     };
 
     // Must have at least one significand digit.
-    if int_digits.is_empty() && frac_digits.is_empty() {
+    if int_digit_count == 0 && frac_digit_count == 0 {
         return Err(ParseFloatError::INVALID);
     }
 
     // Parse optional exponent.
-    let raw_exp: i128 = if i < rest.len() {
-        if rest[i] != b'e' && rest[i] != b'E' {
+    let raw_exp: i128 = if !after_frac.is_empty() {
+        if after_frac[0] != b'e' && after_frac[0] != b'E' {
             return Err(ParseFloatError::INVALID);
         }
-        i += 1;
-        let exp_neg = if i < rest.len() {
-            match rest[i] {
-                b'+' => {
-                    i += 1;
-                    false
-                }
-                b'-' => {
-                    i += 1;
-                    true
-                }
-                _ => false,
-            }
-        } else {
+        let exp_rest = after_frac.split_at(1).1;
+        if exp_rest.is_empty() {
             return Err(ParseFloatError::INVALID);
+        }
+        let (exp_neg, exp_digits) = match exp_rest[0] {
+            b'+' => (false, exp_rest.split_at(1).1),
+            b'-' => (true, exp_rest.split_at(1).1),
+            _ => (false, exp_rest),
         };
 
-        if i >= rest.len() {
-            return Err(ParseFloatError::INVALID);
-        }
-
+        let mut exp_digit_count = 0usize;
         let mut abs_exp: i128 = 0;
-        while i < rest.len() {
-            let b = rest[i];
+        let mut k = 0;
+        while k < exp_digits.len() {
+            let b = exp_digits[k];
+            if ALLOW_UNDERSCORES && b == b'_' {
+                k += 1;
+                continue;
+            }
             if !b.is_ascii_digit() {
                 return Err(ParseFloatError::INVALID);
             }
+            exp_digit_count += 1;
             let d = (b - b'0') as i128;
             if abs_exp < EXP_SAT_LIMIT {
                 abs_exp = abs_exp.saturating_mul(10).saturating_add(d);
@@ -252,7 +276,10 @@ fn lex_decimal(src: &str) -> Result<LexResult<'_>, ParseFloatError> {
                     abs_exp = EXP_SAT_LIMIT;
                 }
             }
-            i += 1;
+            k += 1;
+        }
+        if exp_digit_count == 0 {
+            return Err(ParseFloatError::INVALID);
         }
         if exp_neg { -abs_exp } else { abs_exp }
     } else {
@@ -262,15 +289,21 @@ fn lex_decimal(src: &str) -> Result<LexResult<'_>, ParseFloatError> {
     // Locate first and last nonzero digits across (int_digits, frac_digits).
     let total_len = int_digits.len() + frac_digits.len();
     let mut first_nz = 0;
+    let mut first_nz_digit_idx = 0usize;
     while first_nz < total_len {
         let b = if first_nz < int_digits.len() {
             int_digits[first_nz]
         } else {
             frac_digits[first_nz - int_digits.len()]
         };
+        if ALLOW_UNDERSCORES && b == b'_' {
+            first_nz += 1;
+            continue;
+        }
         if b != b'0' {
             break;
         }
+        first_nz_digit_idx += 1;
         first_nz += 1;
     }
 
@@ -286,13 +319,32 @@ fn lex_decimal(src: &str) -> Result<LexResult<'_>, ParseFloatError> {
         } else {
             frac_digits[idx - int_digits.len()]
         };
-        if b != b'0' {
+        if b != b'0' && (!ALLOW_UNDERSCORES || b != b'_') {
             break;
         }
         last_nz_end -= 1;
     }
 
-    let exp10 = raw_exp + (int_digits.len() as i128) - 1 - (first_nz as i128);
+    let sig_digits = if ALLOW_UNDERSCORES {
+        let mut count = 0usize;
+        let mut p = first_nz;
+        while p < last_nz_end {
+            let b = if p < int_digits.len() {
+                int_digits[p]
+            } else {
+                frac_digits[p - int_digits.len()]
+            };
+            if b != b'_' {
+                count += 1;
+            }
+            p += 1;
+        }
+        count
+    } else {
+        last_nz_end - first_nz
+    };
+
+    let exp10 = raw_exp + (int_digit_count as i128) - 1 - (first_nz_digit_idx as i128);
 
     Ok(LexResult::Finite(ParsedDecimal {
         is_negative,
@@ -301,6 +353,7 @@ fn lex_decimal(src: &str) -> Result<LexResult<'_>, ParseFloatError> {
         exp10,
         first_nz,
         last_nz_end,
+        sig_digits,
     }))
 }
 
@@ -309,7 +362,7 @@ fn lex_decimal(src: &str) -> Result<LexResult<'_>, ParseFloatError> {
 // -----------------------------------------------------------------------------
 
 #[inline]
-pub(super) fn fp_bit_width<const W: usize>(a: &Fixed<W>, limbs: usize) -> Exponent {
+pub(super) const fn fp_bit_width<const W: usize>(a: &Fixed<W>, limbs: usize) -> Exponent {
     let mut i = limbs;
     while i > 0 {
         i -= 1;
@@ -322,7 +375,7 @@ pub(super) fn fp_bit_width<const W: usize>(a: &Fixed<W>, limbs: usize) -> Expone
 }
 
 #[inline]
-pub(super) fn fp_shl<const W: usize>(a: &Fixed<W>, shift: Exponent, limbs: usize) -> Fixed<W> {
+pub(super) const fn fp_shl<const W: usize>(a: &Fixed<W>, shift: Exponent, limbs: usize) -> Fixed<W> {
     if shift == 0 {
         return *a;
     }
@@ -349,46 +402,52 @@ pub(super) fn fp_shl<const W: usize>(a: &Fixed<W>, shift: Exponent, limbs: usize
 }
 
 #[inline]
-fn fp_shl1_with_bit<const W: usize>(a: &Fixed<W>, low_bit: u64, limbs: usize) -> Fixed<W> {
+const fn fp_shl1_with_bit<const W: usize>(a: &Fixed<W>, low_bit: u64, limbs: usize) -> Fixed<W> {
     let mut out = Fixed::<W>::ALL_ZEROS;
     let mut carry = low_bit & 1;
-    for i in 0..limbs {
+    let mut i = 0;
+    while i < limbs {
         let d = a.get(i);
         out.set(i, (d << 1) | carry);
         carry = d >> 63;
+        i += 1;
     }
     debug_assert!(carry == 0);
     out
 }
 
 #[inline]
-fn fp_wrapping_neg<const W: usize>(a: &Fixed<W>, limbs: usize) -> Fixed<W> {
+const fn fp_wrapping_neg<const W: usize>(a: &Fixed<W>, limbs: usize) -> Fixed<W> {
     let mut out = Fixed::<W>::ALL_ZEROS;
     let mut carry = 1u128;
-    for i in 0..limbs {
+    let mut i = 0;
+    while i < limbs {
         let sum = (!a.get(i) as u128) + carry;
         out.set(i, sum as u64);
         carry = sum >> 64;
+        i += 1;
     }
     out
 }
 
 /// Multiplies `a` in place by `mul` and adds `add`, returning the overflow carry (if any).
 #[inline]
-fn fp_mul_add_u64<const W: usize>(a: &mut Fixed<W>, mul: u64, add: u64, limbs: usize) -> u64 {
+const fn fp_mul_add_u64<const W: usize>(a: &mut Fixed<W>, mul: u64, add: u64, limbs: usize) -> u64 {
     let mut carry = add as u128;
     let mul128 = mul as u128;
-    for i in 0..limbs {
+    let mut i = 0;
+    while i < limbs {
         let prod = (a.get(i) as u128) * mul128 + carry;
         a.set(i, prod as u64);
         carry = prod >> 64;
+        i += 1;
     }
     carry as u64
 }
 
 /// Computes the high `limbs` words of `a * b` together with one guard limb immediately below.
 #[inline]
-fn fp_mul_hi_with_guard<const W: usize>(
+const fn fp_mul_hi_with_guard<const W: usize>(
     a: &Fixed<W>,
     b: &Fixed<W>,
     limbs: usize,
@@ -396,14 +455,16 @@ fn fp_mul_hi_with_guard<const W: usize>(
     let mut out = Fixed::<W>::ALL_ZEROS;
     let mut guard: u64 = 0;
 
-    for i in 0..limbs {
+    let mut i = 0;
+    while i < limbs {
         let ai = a.get(i) as u128;
         if ai == 0 {
+            i += 1;
             continue;
         }
         let mut carry: u128 = 0;
-        let j_start = if i + 1 < limbs { limbs - 1 - i } else { 0 };
-        for j in j_start..limbs {
+        let mut j = if i + 1 < limbs { limbs - 1 - i } else { 0 };
+        while j < limbs {
             let prod = ai * (b.get(j) as u128) + carry;
             let idx = i + j;
             if idx == limbs - 1 {
@@ -416,6 +477,7 @@ fn fp_mul_hi_with_guard<const W: usize>(
                 out.set(o_idx, sum as u64);
                 carry = sum >> 64;
             }
+            j += 1;
         }
         let mut k = i;
         while carry != 0 && k < limbs {
@@ -425,6 +487,7 @@ fn fp_mul_hi_with_guard<const W: usize>(
             k += 1;
         }
         debug_assert!(carry == 0);
+        i += 1;
     }
     (out, guard)
 }
@@ -432,7 +495,7 @@ fn fp_mul_hi_with_guard<const W: usize>(
 /// Multiplies two normalized numbers `(a * 2^(ea - P))` and `(b * 2^(eb - P))` where both
 /// have bit `P - 1` set (`in [0.5, 1.0)`), returning a normalized product `(m, em)`.
 #[inline]
-pub(super) fn fp_norm_mul<const W: usize>(
+pub(super) const fn fp_norm_mul<const W: usize>(
     a: &Fixed<W>,
     ea: i128,
     b: &Fixed<W>,
@@ -449,7 +512,7 @@ pub(super) fn fp_norm_mul<const W: usize>(
 
 /// Computes `1 / D` for `D = d * 2^(-P) in (0.5, 1.0)` via Newton-Raphson, returning
 /// `r` such that `R = r * 2^(-(P - 1)) in (1.0, 2.0)`.
-fn fp_recip<const W: usize>(d: &Fixed<W>, limbs: usize) -> Fixed<W> {
+const fn fp_recip<const W: usize>(d: &Fixed<W>, limbs: usize) -> Fixed<W> {
     let d_hi = d.get(limbs - 1);
     debug_assert!(d_hi >= (1u64 << 63));
     let q = (((1u128 << 127) - 1) / ((d_hi as u128) + 1)) as u64;
@@ -470,7 +533,7 @@ fn fp_recip<const W: usize>(d: &Fixed<W>, limbs: usize) -> Fixed<W> {
 
 /// Computes normalized `5^q10` as `(mant, exp2)` such that `5^q10 ≈ mant * 2^(exp2 - 64*limbs)`
 /// with bit `64*limbs - 1` of `mant` set.
-pub(super) fn fp_pow5<const W: usize>(q10: i128, limbs: usize) -> (Fixed<W>, i128) {
+pub(super) const fn fp_pow5<const W: usize>(q10: i128, limbs: usize) -> (Fixed<W>, i128) {
     let abs_q = q10.unsigned_abs();
     if abs_q == 0 {
         let mut one = Fixed::<W>::ALL_ZEROS;
@@ -516,7 +579,7 @@ pub(super) fn fp_pow5<const W: usize>(q10: i128, limbs: usize) -> (Fixed<W>, i12
 }
 
 #[inline]
-fn fp_add_pow2_with_carry<const W: usize>(
+const fn fp_add_pow2_with_carry<const W: usize>(
     val: &Fixed<W>,
     mut carry_hi: u64,
     bit_idx: Exponent,
@@ -543,7 +606,7 @@ fn fp_add_pow2_with_carry<const W: usize>(
 }
 
 #[inline]
-fn fp_sub_pow2_with_carry<const W: usize>(
+const fn fp_sub_pow2_with_carry<const W: usize>(
     val: &Fixed<W>,
     mut carry_hi: u64,
     bit_idx: Exponent,
@@ -571,7 +634,7 @@ fn fp_sub_pow2_with_carry<const W: usize>(
 }
 
 #[inline]
-fn fp_shr_with_carry_to_uint<const W: usize>(
+const fn fp_shr_with_carry_to_uint<const W: usize>(
     val: &Fixed<W>,
     carry: u64,
     shift: Exponent,
@@ -582,7 +645,8 @@ fn fp_shr_with_carry_to_uint<const W: usize>(
     let word_shift = (shift / 64) as usize;
     let bit_shift = shift % 64;
 
-    for i in 0..out_limbs {
+    let mut i = 0;
+    while i < out_limbs {
         let src = i + word_shift;
         let lo = if src < limbs {
             val.get(src)
@@ -606,6 +670,7 @@ fn fp_shr_with_carry_to_uint<const W: usize>(
         if word != 0 {
             out.set(i, word);
         }
+        i += 1;
     }
     Uint::<W>::from_digits(out)
 }
@@ -617,14 +682,16 @@ fn fp_shr_with_carry_to_uint<const W: usize>(
 /// Multiplies `buf[..*len]` by `mul` and adds `add`, extending `*len` if needed.
 /// Returns `true` if the result overflows `buf.len()`.
 #[inline]
-pub(super) fn slice_mul_add_u64(buf: &mut [u64], len: &mut usize, mul: u64, add: u64) -> bool {
+pub(super) const fn slice_mul_add_u64(buf: &mut [u64], len: &mut usize, mul: u64, add: u64) -> bool {
     let mut carry = add as u128;
     let mul128 = mul as u128;
     let cur_len = *len;
-    for d in &mut buf[..cur_len] {
-        let prod = (*d as u128) * mul128 + carry;
-        *d = prod as u64;
+    let mut i = 0;
+    while i < cur_len {
+        let prod = (buf[i] as u128) * mul128 + carry;
+        buf[i] = prod as u64;
         carry = prod >> 64;
+        i += 1;
     }
     if carry != 0 {
         if cur_len >= buf.len() {
@@ -637,7 +704,7 @@ pub(super) fn slice_mul_add_u64(buf: &mut [u64], len: &mut usize, mul: u64, add:
 }
 
 /// Multiplies `buf[..*len]` by `10^count`. Returns `true` on overflow of `buf`.
-fn slice_mul_pow10(buf: &mut [u64], len: &mut usize, mut count: u128) -> bool {
+const fn slice_mul_pow10(buf: &mut [u64], len: &mut usize, mut count: u128) -> bool {
     if *len == 0 {
         return false;
     }
@@ -656,7 +723,7 @@ fn slice_mul_pow10(buf: &mut [u64], len: &mut usize, mut count: u128) -> bool {
 }
 
 /// Multiplies `buf[..*len]` by `5^count`. Caller guarantees `buf` is large enough.
-pub(super) fn slice_mul_pow5(buf: &mut [u64], len: &mut usize, mut count: u128) {
+pub(super) const fn slice_mul_pow5(buf: &mut [u64], len: &mut usize, mut count: u128) {
     while count >= 27 {
         let ovf = slice_mul_add_u64(buf, len, POW5_U64[27], 0);
         debug_assert!(!ovf);
@@ -669,7 +736,7 @@ pub(super) fn slice_mul_pow5(buf: &mut [u64], len: &mut usize, mut count: u128) 
 }
 
 /// Compares `a[..len_a]` against `b[..len_b]` (normalized, no leading zero limbs assumed).
-pub(super) fn slice_cmp(a: &[u64], len_a: usize, b: &[u64], len_b: usize) -> Ordering {
+pub(super) const fn slice_cmp(a: &[u64], len_a: usize, b: &[u64], len_b: usize) -> Ordering {
     let mut la = len_a;
     while la > 0 && a[la - 1] == 0 {
         la -= 1;
@@ -678,19 +745,27 @@ pub(super) fn slice_cmp(a: &[u64], len_a: usize, b: &[u64], len_b: usize) -> Ord
     while lb > 0 && b[lb - 1] == 0 {
         lb -= 1;
     }
-    if la != lb {
-        return la.cmp(&lb);
+    if la < lb {
+        return Ordering::Less;
     }
-    for i in (0..la).rev() {
-        if a[i] != b[i] {
-            return a[i].cmp(&b[i]);
+    if la > lb {
+        return Ordering::Greater;
+    }
+    let mut i = la;
+    while i > 0 {
+        i -= 1;
+        if a[i] < b[i] {
+            return Ordering::Less;
+        }
+        if a[i] > b[i] {
+            return Ordering::Greater;
         }
     }
     Ordering::Equal
 }
 
 /// Loads `m_odd << shift` into `buf_m` and returns its active limb length.
-pub(super) fn slice_load_uint_shl<const W: usize>(
+pub(super) const fn slice_load_uint_shl<const W: usize>(
     m_odd: &Uint<W>,
     shift: usize,
     buf: &mut [u64],
@@ -701,9 +776,11 @@ pub(super) fn slice_load_uint_shl<const W: usize>(
     let bs = shift % 64;
     let mut top = 0;
 
-    for i in 0..u_limbs {
+    let mut i = 0;
+    while i < u_limbs {
         let d = u_digits.get(i);
         if d == 0 {
+            i += 1;
             continue;
         }
         let dst = i + ws;
@@ -725,14 +802,15 @@ pub(super) fn slice_load_uint_shl<const W: usize>(
                 }
             }
         }
+        i += 1;
     }
     top
 }
 
 /// Parses `floor(dec * 10^scale_pow10)` into `buf_v` (where `scale_pow10 >= 0`), returning
 /// `None` if the value overflows `buf_v` (meaning `V > M`), or `Some((len_v, has_tail_nonzero))`.
-fn slice_parse_scaled_decimal(
-    dec: &ParsedDecimal<'_>,
+const fn slice_parse_scaled_decimal<const ALLOW_UNDERSCORES: bool>(
+    dec: &ParsedDecimal<'_, ALLOW_UNDERSCORES>,
     scale_pow10: u128,
     buf_v: &mut [u64],
 ) -> Option<(usize, bool)> {
@@ -755,17 +833,42 @@ fn slice_parse_scaled_decimal(
 
     let mut len_v = 0usize;
     let mut pos = dec.first_nz;
-    let end = dec.first_nz + read_digits;
-    while pos < end {
-        let chunk_len = (end - pos).min(19);
-        let mut chunk: u64 = 0;
-        for k in 0..chunk_len {
-            chunk = chunk * 10 + (dec.digit_at(pos + k) as u64);
+    if ALLOW_UNDERSCORES {
+        let mut done = 0usize;
+        while done < read_digits {
+            let rem = read_digits - done;
+            let max_chunk = if rem < 19 { rem } else { 19 };
+            let mut chunk: u64 = 0;
+            let mut chunk_len = 0usize;
+            while chunk_len < max_chunk {
+                let b = dec.byte_at(pos);
+                pos += 1;
+                if b != b'_' {
+                    chunk = chunk * 10 + ((b - b'0') as u64);
+                    chunk_len += 1;
+                }
+            }
+            if slice_mul_add_u64(buf_v, &mut len_v, POW10_U64[chunk_len], chunk) {
+                return None;
+            }
+            done += chunk_len;
         }
-        if slice_mul_add_u64(buf_v, &mut len_v, POW10_U64[chunk_len], chunk) {
-            return None;
+    } else {
+        let end = dec.first_nz + read_digits;
+        while pos < end {
+            let rem = end - pos;
+            let chunk_len = if rem < 19 { rem } else { 19 };
+            let mut chunk: u64 = 0;
+            let mut k = 0;
+            while k < chunk_len {
+                chunk = chunk * 10 + (dec.digit_at(pos + k) as u64);
+                k += 1;
+            }
+            if slice_mul_add_u64(buf_v, &mut len_v, POW10_U64[chunk_len], chunk) {
+                return None;
+            }
+            pos += chunk_len;
         }
-        pos += chunk_len;
     }
 
     if trailing_zeros > 0 && slice_mul_pow10(buf_v, &mut len_v, trailing_zeros) {
@@ -777,8 +880,8 @@ fn slice_parse_scaled_decimal(
 
 /// Exact comparison of `dec` against the dyadic midpoint `M = m_odd * 2^p` using the provided
 /// zero-initialized scratch buffers `buf_m` and `buf_v`.
-fn exact_cmp_midpoint_in_bufs<const W: usize>(
-    dec: &ParsedDecimal<'_>,
+const fn exact_cmp_midpoint_in_bufs<const W: usize, const ALLOW_UNDERSCORES: bool>(
+    dec: &ParsedDecimal<'_, ALLOW_UNDERSCORES>,
     m_odd: &Uint<W>,
     p: i128,
     buf_m: &mut [u64],
@@ -814,8 +917,8 @@ fn exact_cmp_midpoint_in_bufs<const W: usize>(
 /// Returns `Some(ordering)` whenever `M` fits in our exact stack buffer (always true for
 /// `F16`, `F32`, `F64` and any `|p| <= 1700`) or heap buffer (when `feature = "alloc"` is
 /// enabled, covering all `F80`, `F128`, `F256`).
-fn exact_cmp_midpoint<const W: usize, const MB: usize>(
-    dec: &ParsedDecimal<'_>,
+fn exact_cmp_midpoint<const W: usize, const MB: usize, const ALLOW_UNDERSCORES: bool>(
+    dec: &ParsedDecimal<'_, ALLOW_UNDERSCORES>,
     m_odd: &Uint<W>,
     p: i128,
 ) -> Option<Ordering> {
@@ -839,8 +942,8 @@ fn exact_cmp_midpoint<const W: usize, const MB: usize>(
             dec,
             m_odd,
             p,
-            &mut buf_m[..needed_limbs],
-            &mut buf_v[..needed_limbs],
+            buf_m.split_at_mut(needed_limbs).0,
+            buf_v.split_at_mut(needed_limbs).0,
         ));
     }
 
@@ -860,12 +963,80 @@ fn exact_cmp_midpoint<const W: usize, const MB: usize>(
     None
 }
 
+const fn exact_cmp_midpoint_with_const_buf<
+    const LIMBS: usize,
+    const W: usize,
+    const ALLOW_UNDERSCORES: bool,
+>(
+    dec: &ParsedDecimal<'_, ALLOW_UNDERSCORES>,
+    m_odd: &Uint<W>,
+    p: i128,
+    needed_limbs: usize,
+) -> Ordering {
+    let mut buf_m = [0u64; LIMBS];
+    let mut buf_v = [0u64; LIMBS];
+    exact_cmp_midpoint_in_bufs(
+        dec,
+        m_odd,
+        p,
+        buf_m.split_at_mut(needed_limbs).0,
+        buf_v.split_at_mut(needed_limbs).0,
+    )
+}
+
+/// Const-evaluation exact midpoint comparison using tiered stack buffers
+/// (covering 100% of `F16`, `F32`, `F64`, `F80`, `F128`, and `F256`).
+const fn exact_cmp_midpoint_const<
+    const W: usize,
+    const MB: usize,
+    const ALLOW_UNDERSCORES: bool,
+>(
+    dec: &ParsedDecimal<'_, ALLOW_UNDERSCORES>,
+    m_odd: &Uint<W>,
+    p: i128,
+) -> Option<Ordering> {
+    let abs_p = p.unsigned_abs();
+    if abs_p > 1_000_000 {
+        return None;
+    }
+    let needed_bits: usize = if p >= 0 {
+        (MB + 3) + (abs_p as usize)
+    } else {
+        (MB + 4) + ((abs_p * 2322) / 1000) as usize
+    };
+    let needed_limbs = needed_bits.div_ceil(64) + 1;
+
+    if needed_limbs <= EXACT_STACK_LIMBS {
+        return Some(exact_cmp_midpoint_with_const_buf::<
+            EXACT_STACK_LIMBS,
+            W,
+            ALLOW_UNDERSCORES,
+        >(dec, m_odd, p, needed_limbs));
+    }
+    if needed_limbs <= 1024 {
+        return Some(exact_cmp_midpoint_with_const_buf::<
+            1024,
+            W,
+            ALLOW_UNDERSCORES,
+        >(dec, m_odd, p, needed_limbs));
+    }
+    if needed_limbs <= 10_000 {
+        return Some(exact_cmp_midpoint_with_const_buf::<
+            10_000,
+            W,
+            ALLOW_UNDERSCORES,
+        >(dec, m_odd, p, needed_limbs));
+    }
+
+    None
+}
+
 // -----------------------------------------------------------------------------
 // Stage 1 / Stage 2 scaling & rounding + Float::from_str entry point
 // -----------------------------------------------------------------------------
 
 #[inline]
-fn fp_extract_top64<const W: usize>(a: &Fixed<W>, shift: Exponent, limbs: usize) -> u64 {
+const fn fp_extract_top64<const W: usize>(a: &Fixed<W>, shift: Exponent, limbs: usize) -> u64 {
     if shift == 0 {
         return 0;
     }
@@ -891,7 +1062,7 @@ fn fp_extract_top64<const W: usize>(a: &Fixed<W>, shift: Exponent, limbs: usize)
 }
 
 #[inline]
-fn uint_low_u64_fs<const W: usize>(u: &Uint<W>) -> u64 {
+const fn uint_low_u64_fs<const W: usize>(u: &Uint<W>) -> u64 {
     let mut v = 0u64;
     let mut i = 0;
     while i < W && i < 8 {
@@ -915,11 +1086,25 @@ enum ScaleOutcome<const W: usize, const MB: usize, const RM: u8> {
     },
 }
 
+enum Stage12Outcome<'a, const W: usize, const MB: usize, const RM: u8, const ALLOW_UNDERSCORES: bool> {
+    Resolved(Float<W, MB, RM>),
+    NeedsStage3 {
+        dec: ParsedDecimal<'a, ALLOW_UNDERSCORES>,
+        bias: Uint<W>,
+        bias_i128: Option<i128>,
+        is_subnormal: bool,
+        q_lo: Uint<W>,
+        p: i128,
+        approx_q: Uint<W>,
+        is_grid_boundary: bool,
+    },
+}
+
 impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     /// Packs a rounded significand `q` (normal or subnormal) into `Float<W, MB, RM>`,
     /// handling rounding carry into the next power of two, subnormal-to-normal carry,
     /// and mode-appropriate overflow.
-    fn pack_rounded(
+    const fn pack_rounded(
         is_negative: bool,
         is_subnormal: bool,
         out_exp: i128,
@@ -970,8 +1155,8 @@ impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     /// Rounds `prod_mant` shifted right by `drop` under rounding mode `RM` at working
     /// precision `limbs`, returning `Resolved` if provably unambiguous or `Ambiguous` to trigger
     /// higher precision / exact Stage 3 comparison.
-    fn resolve_with_rm(
-        dec: &ParsedDecimal<'_>,
+    const fn resolve_with_rm<const ALLOW_UNDERSCORES: bool>(
+        dec: &ParsedDecimal<'_, ALLOW_UNDERSCORES>,
         prod_mant: &Fixed<W>,
         is_subnormal: bool,
         out_exp: i128,
@@ -1131,8 +1316,8 @@ impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
 
     /// Evaluates `dec` at `limbs` 64-bit limbs of working precision and checks whether the
     /// rounding decision is provably unambiguous.
-    fn scale_at_precision(
-        dec: &ParsedDecimal<'_>,
+    const fn scale_at_precision<const ALLOW_UNDERSCORES: bool>(
+        dec: &ParsedDecimal<'_, ALLOW_UNDERSCORES>,
         bias: Uint<W>,
         bias_i128: Option<i128>,
         limbs: usize,
@@ -1142,28 +1327,66 @@ impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
         let mut d_val = Fixed::<W>::ALL_ZEROS;
         let mut pos = dec.first_nz;
         let end = dec.last_nz_end;
+        let mut digits_read = 0usize;
 
-        let fast_limit = dec.first_nz + (limbs - 1) * 19;
-        let fast_end = end.min(fast_limit);
-        while pos < fast_end {
-            let chunk_len = (fast_end - pos).min(19);
-            let mut chunk: u64 = 0;
-            for k in 0..chunk_len {
-                chunk = chunk * 10 + (dec.digit_at(pos + k) as u64);
+        if ALLOW_UNDERSCORES {
+            let fast_limit_digits = (limbs - 1) * 19;
+            while pos < end && digits_read < fast_limit_digits {
+                let rem = fast_limit_digits - digits_read;
+                let max_chunk = if rem < 19 { rem } else { 19 };
+                let mut chunk: u64 = 0;
+                let mut chunk_len = 0usize;
+                while pos < end && chunk_len < max_chunk {
+                    let b = dec.byte_at(pos);
+                    pos += 1;
+                    if b != b'_' {
+                        chunk = chunk * 10 + ((b - b'0') as u64);
+                        chunk_len += 1;
+                    }
+                }
+                if chunk_len > 0 {
+                    let ovf = fp_mul_add_u64(&mut d_val, POW10_U64[chunk_len], chunk, limbs);
+                    debug_assert!(ovf == 0);
+                    digits_read += chunk_len;
+                }
             }
-            let ovf = fp_mul_add_u64(&mut d_val, POW10_U64[chunk_len], chunk, limbs);
-            debug_assert!(ovf == 0);
-            pos += chunk_len;
-        }
-        let top_thresh = u64::MAX / 10;
-        while pos < end && d_val.get(limbs - 1) < top_thresh {
-            let d = dec.digit_at(pos) as u64;
-            let ovf = fp_mul_add_u64(&mut d_val, 10, d, limbs);
-            debug_assert!(ovf == 0);
-            pos += 1;
+            let top_thresh = u64::MAX / 10;
+            while pos < end && d_val.get(limbs - 1) < top_thresh {
+                let b = dec.byte_at(pos);
+                pos += 1;
+                if b != b'_' {
+                    let d = (b - b'0') as u64;
+                    let ovf = fp_mul_add_u64(&mut d_val, 10, d, limbs);
+                    debug_assert!(ovf == 0);
+                    digits_read += 1;
+                }
+            }
+        } else {
+            let fast_limit = dec.first_nz + (limbs - 1) * 19;
+            let fast_end = if end < fast_limit { end } else { fast_limit };
+            while pos < fast_end {
+                let rem = fast_end - pos;
+                let chunk_len = if rem < 19 { rem } else { 19 };
+                let mut chunk: u64 = 0;
+                let mut k = 0;
+                while k < chunk_len {
+                    chunk = chunk * 10 + (dec.digit_at(pos + k) as u64);
+                    k += 1;
+                }
+                let ovf = fp_mul_add_u64(&mut d_val, POW10_U64[chunk_len], chunk, limbs);
+                debug_assert!(ovf == 0);
+                pos += chunk_len;
+            }
+            let top_thresh = u64::MAX / 10;
+            while pos < end && d_val.get(limbs - 1) < top_thresh {
+                let d = dec.digit_at(pos) as u64;
+                let ovf = fp_mul_add_u64(&mut d_val, 10, d, limbs);
+                debug_assert!(ovf == 0);
+                pos += 1;
+            }
+            digits_read = pos - dec.first_nz;
         }
 
-        let digits_read = pos - dec.first_nz;
         let q10: i128 = dec.exp10 - (digits_read as i128 - 1);
 
         let d_bw = fp_bit_width(&d_val, limbs);
@@ -1279,10 +1502,9 @@ impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
         )
     }
 
-    /// Parses a base-10 floating-point string into `Float<W, MB, RM>`, rounding according to `RM`.
-    ///
-    /// Valid for all `W > 1` and `2 < MB < Self::BITS - 2`.
-    pub fn from_str(src: &str) -> Result<Self, ParseFloatError> {
+    const fn parse_stages_1_2<'a, const ALLOW_UNDERSCORES: bool>(
+        src: &'a str,
+    ) -> Result<Stage12Outcome<'a, W, MB, RM, ALLOW_UNDERSCORES>, ParseFloatError> {
         const {
             assert!(W > 1, "Float byte width W must be greater than 1");
             assert!(
@@ -1292,29 +1514,30 @@ impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
             assert!(RM <= RoundingMode::MAX_U8, "invalid RoundingMode discriminant");
         }
 
-        let dec = match lex_decimal(src)? {
-            LexResult::Zero { is_negative } => {
-                return Ok(if is_negative {
+        let dec = match lex_decimal::<ALLOW_UNDERSCORES>(src) {
+            Ok(LexResult::Zero { is_negative }) => {
+                return Ok(Stage12Outcome::Resolved(if is_negative {
                     Self::NEG_ZERO
                 } else {
                     Self::ZERO
-                });
+                }));
             }
-            LexResult::Infinity { is_negative } => {
-                return Ok(if is_negative {
+            Ok(LexResult::Infinity { is_negative }) => {
+                return Ok(Stage12Outcome::Resolved(if is_negative {
                     Self::NEG_INFINITY
                 } else {
                     Self::INFINITY
-                });
+                }));
             }
-            LexResult::Nan { is_negative } => {
-                return Ok(if is_negative {
+            Ok(LexResult::Nan { is_negative }) => {
+                return Ok(Stage12Outcome::Resolved(if is_negative {
                     Self::NEG_NAN
                 } else {
                     Self::NAN
-                });
+                }));
             }
-            LexResult::Finite(dec) => dec,
+            Ok(LexResult::Finite(dec)) => dec,
+            Err(e) => return Err(e),
         };
 
         let bias: Uint<W> = Uint::power_of_two(Self::EXPONENT_BITS - 1).sub(Uint::ONE);
@@ -1327,11 +1550,15 @@ impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
         if let Some(b_i128) = bias_i128 {
             let max_exp10 = (b_i128 + 1) / 3 + 2;
             if dec.exp10 > max_exp10 {
-                return Ok(Self::overflow_value(dec.is_negative));
+                return Ok(Stage12Outcome::Resolved(Self::overflow_value(
+                    dec.is_negative,
+                )));
             }
             let min_exp10 = -((b_i128 + MB as i128) / 3 + 3);
             if dec.exp10 < min_exp10 {
-                return Ok(Self::underflow_nonzero(dec.is_negative));
+                return Ok(Stage12Outcome::Resolved(Self::underflow_nonzero(
+                    dec.is_negative,
+                )));
             }
         }
 
@@ -1341,41 +1568,60 @@ impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
         } else {
             128 - dec.exp10.unsigned_abs().leading_zeros()
         };
-        let l1 = ((MB + 56 + exp10_bits as usize).div_ceil(64)).min(max_limbs);
+        let raw_l1 = (MB + 56 + exp10_bits as usize).div_ceil(64);
+        let l1 = if raw_l1 < max_limbs { raw_l1 } else { max_limbs };
 
         if let ScaleOutcome::Resolved(f) = Self::scale_at_precision(&dec, bias, bias_i128, l1) {
-            return Ok(f);
+            return Ok(Stage12Outcome::Resolved(f));
         }
 
-        let (is_subnormal, q_lo, p, approx_q, is_grid_boundary) =
-            match Self::scale_at_precision(&dec, bias, bias_i128, max_limbs) {
-                ScaleOutcome::Resolved(f) => return Ok(f),
-                ScaleOutcome::Ambiguous {
-                    is_subnormal,
-                    q_lo,
-                    p,
-                    approx_q,
-                    is_grid_boundary,
-                } => (is_subnormal, q_lo, p, approx_q, is_grid_boundary),
-            };
+        match Self::scale_at_precision(&dec, bias, bias_i128, max_limbs) {
+            ScaleOutcome::Resolved(f) => Ok(Stage12Outcome::Resolved(f)),
+            ScaleOutcome::Ambiguous {
+                is_subnormal,
+                q_lo,
+                p,
+                approx_q,
+                is_grid_boundary,
+            } => Ok(Stage12Outcome::NeedsStage3 {
+                dec,
+                bias,
+                bias_i128,
+                is_subnormal,
+                q_lo,
+                p,
+                approx_q,
+                is_grid_boundary,
+            }),
+        }
+    }
 
+    const fn finish_stage3(
+        is_negative: bool,
+        bias: Uint<W>,
+        bias_i128: Option<i128>,
+        is_subnormal: bool,
+        q_lo: Uint<W>,
+        p: i128,
+        approx_q: Uint<W>,
+        is_grid_boundary: bool,
+        cmp_result: Option<Ordering>,
+    ) -> Self {
         if is_grid_boundary {
-            // Exact comparison against the integer grid point `G = (2 * q_hi) * 2^p`.
             let q_hi = q_lo.add(Uint::ONE);
-            let m_even = q_hi.shl(1);
             let g_overflows = if !is_subnormal && q_hi.bit(Self::MB + 1) {
                 matches!(bias_i128, Some(b_i128) if p + (Self::MB as i128) + 2 > b_i128)
             } else {
                 false
             };
             let out_exp = p + (Self::MB as i128) + 1;
-            let res = match exact_cmp_midpoint::<W, MB>(&dec, &m_even, p) {
+            return match cmp_result {
                 Some(Ordering::Equal) => {
                     if g_overflows {
-                        Self::overflow_value(dec.is_negative)
+                        Self::overflow_value(is_negative)
                     } else {
                         Self::pack_rounded(
-                            dec.is_negative,
+                            is_negative,
                             is_subnormal,
                             out_exp,
                             q_hi,
@@ -1386,41 +1632,37 @@ impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
                 }
                 Some(Ordering::Greater) => {
                     if g_overflows {
-                        Self::overflow_value(dec.is_negative)
+                        Self::overflow_value(is_negative)
                     } else {
                         let g = Self::pack_rounded(
-                            dec.is_negative,
+                            is_negative,
                             is_subnormal,
                             out_exp,
                             q_hi,
                             bias,
                             bias_i128,
                         );
-                        Self::round_with_tiny_delta(g, !dec.is_negative)
+                        Self::round_with_tiny_delta(g, !is_negative)
                     }
                 }
                 Some(Ordering::Less) => {
                     if g_overflows {
-                        let max_signed = if dec.is_negative {
-                            Self::MIN
-                        } else {
-                            Self::MAX
-                        };
-                        Self::round_with_tiny_delta(max_signed, !dec.is_negative)
+                        let max_signed = if is_negative { Self::MIN } else { Self::MAX };
+                        Self::round_with_tiny_delta(max_signed, !is_negative)
                     } else {
                         let g = Self::pack_rounded(
-                            dec.is_negative,
+                            is_negative,
                             is_subnormal,
                             out_exp,
                             q_hi,
                             bias,
                             bias_i128,
                         );
-                        Self::round_with_tiny_delta(g, dec.is_negative)
+                        Self::round_with_tiny_delta(g, is_negative)
                     }
                 }
                 None => Self::pack_rounded(
-                    dec.is_negative,
+                    is_negative,
                     is_subnormal,
                     out_exp,
                     approx_q,
@@ -1428,43 +1670,126 @@ impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
                     bias_i128,
                 ),
             };
-            return Ok(res);
         }
 
-        // Exact comparison against the halfway midpoint `M = (2 * q_lo + 1) * 2^p`.
-        let final_q = {
-            let m_odd = q_lo.shl(1).bitor(Uint::ONE);
-            match exact_cmp_midpoint::<W, MB>(&dec, &m_odd, p) {
-                Some(Ordering::Less) => q_lo,
-                Some(Ordering::Greater) => q_lo.add(Uint::ONE),
-                Some(Ordering::Equal) => {
-                    let seed = (p as u64).wrapping_mul(0x9e37_79b9_7f4a_7c15)
-                        ^ uint_low_u64_fs(&q_lo);
-                    if RoundingMode::should_round_up::<RM>(
-                        dec.is_negative,
-                        q_lo.is_odd(),
-                        true,
-                        false,
-                        1u64 << 63,
-                        seed,
-                    ) {
-                        q_lo.add(Uint::ONE)
-                    } else {
-                        q_lo
-                    }
+        let final_q = match cmp_result {
+            Some(Ordering::Less) => q_lo,
+            Some(Ordering::Greater) => q_lo.add(Uint::ONE),
+            Some(Ordering::Equal) => {
+                let seed =
+                    (p as u64).wrapping_mul(0x9e37_79b9_7f4a_7c15) ^ uint_low_u64_fs(&q_lo);
+                if RoundingMode::should_round_up::<RM>(
+                    is_negative,
+                    q_lo.is_odd(),
+                    true,
+                    false,
+                    1u64 << 63,
+                    seed,
+                ) {
+                    q_lo.add(Uint::ONE)
+                } else {
+                    q_lo
                 }
-                None => approx_q,
             }
+            None => approx_q,
         };
 
         let out_exp = p + (MB as i128) + 1;
-        Ok(Self::pack_rounded(
+        Self::pack_rounded(is_negative, is_subnormal, out_exp, final_q, bias, bias_i128)
+    }
+
+    /// Parses a base-10 floating-point string into `Float<W, MB, RM>`, rounding according to `RM`.
+    ///
+    /// Valid for all `W > 1` and `2 < MB < Self::BITS - 2`.
+    pub fn from_str(src: &str) -> Result<Self, ParseFloatError> {
+        let (dec, bias, bias_i128, is_subnormal, q_lo, p, approx_q, is_grid_boundary) =
+            match Self::parse_stages_1_2::<false>(src)? {
+                Stage12Outcome::Resolved(f) => return Ok(f),
+                Stage12Outcome::NeedsStage3 {
+                    dec,
+                    bias,
+                    bias_i128,
+                    is_subnormal,
+                    q_lo,
+                    p,
+                    approx_q,
+                    is_grid_boundary,
+                } => (
+                    dec,
+                    bias,
+                    bias_i128,
+                    is_subnormal,
+                    q_lo,
+                    p,
+                    approx_q,
+                    is_grid_boundary,
+                ),
+            };
+
+        let cmp_target = if is_grid_boundary {
+            q_lo.add(Uint::ONE).shl(1)
+        } else {
+            q_lo.shl(1).bitor(Uint::ONE)
+        };
+        let cmp_result = exact_cmp_midpoint::<W, MB, false>(&dec, &cmp_target, p);
+        Ok(Self::finish_stage3(
             dec.is_negative,
-            is_subnormal,
-            out_exp,
-            final_q,
             bias,
             bias_i128,
+            is_subnormal,
+            q_lo,
+            p,
+            approx_q,
+            is_grid_boundary,
+            cmp_result,
+        ))
+    }
+
+    /// Const-compatible decimal float parser used by the [`f!`](crate::f) macro.
+    pub(crate) const fn from_str_const<const ALLOW_UNDERSCORES: bool>(
+        src: &str,
+    ) -> Result<Self, ParseFloatError> {
+        let (dec, bias, bias_i128, is_subnormal, q_lo, p, approx_q, is_grid_boundary) =
+            match Self::parse_stages_1_2::<ALLOW_UNDERSCORES>(src) {
+                Ok(Stage12Outcome::Resolved(f)) => return Ok(f),
+                Ok(Stage12Outcome::NeedsStage3 {
+                    dec,
+                    bias,
+                    bias_i128,
+                    is_subnormal,
+                    q_lo,
+                    p,
+                    approx_q,
+                    is_grid_boundary,
+                }) => (
+                    dec,
+                    bias,
+                    bias_i128,
+                    is_subnormal,
+                    q_lo,
+                    p,
+                    approx_q,
+                    is_grid_boundary,
+                ),
+                Err(e) => return Err(e),
+            };
+
+        let cmp_target = if is_grid_boundary {
+            q_lo.add(Uint::ONE).shl(1)
+        } else {
+            q_lo.shl(1).bitor(Uint::ONE)
+        };
+        let cmp_result = exact_cmp_midpoint_const::<W, MB, ALLOW_UNDERSCORES>(&dec, &cmp_target, p);
+        Ok(Self::finish_stage3(
+            dec.is_negative,
+            bias,
+            bias_i128,
+            is_subnormal,
+            q_lo,
+            p,
+            approx_q,
+            is_grid_boundary,
+            cmp_result,
         ))
     }
 
@@ -1514,7 +1839,7 @@ impl<const W: usize, const MB: usize, const RM: u8> FromStr for Float<W, MB, RM>
 /// Computes `bias + delta` as `Uint<W>`, where `delta` is an unbiased exponent guaranteed to
 /// produce a non-negative biased exponent `< 2^EXPONENT_BITS`.
 #[inline]
-fn add_i128_to_uint<const W: usize>(bias: Uint<W>, delta: i128) -> Uint<W> {
+const fn add_i128_to_uint<const W: usize>(bias: Uint<W>, delta: i128) -> Uint<W> {
     let abs_bytes = delta.unsigned_abs().to_le_bytes();
     let mut mag = Uint::<W>::ZERO;
     let mut i = 0;
@@ -2029,5 +2354,145 @@ mod tests {
             F128::from_str(&strictly_above).unwrap().to_bits(),
             F128::MIN_POSITIVE_SUBNORMAL.to_bits()
         );
+
+        // Also exercise const Stage 3 buffer tier <= 1024 with from_str_const
+        assert_eq!(
+            F128::from_str_const::<false>(&exact_tie).unwrap().to_bits(),
+            F128::ZERO.to_bits()
+        );
+        assert_eq!(
+            F128::from_str_const::<false>(&strictly_above).unwrap().to_bits(),
+            F128::MIN_POSITIVE_SUBNORMAL.to_bits()
+        );
+    }
+
+    #[test]
+    fn from_str_const_underscores_rounding_modes_and_radix() {
+        const R_POS: u8 = RoundingMode::TowardPositive as u8;
+        const R_NEG: u8 = RoundingMode::TowardNegative as u8;
+        const R_ZERO: u8 = RoundingMode::TowardZero as u8;
+        const R_FAITH: u8 = RoundingMode::Faithful as u8;
+        const R_STOCH: u8 = RoundingMode::Stochastic as u8;
+
+        // from_str_const with underscores (int, frac, exp, leading zeros, >19 digits, midpoint, errors)
+        let a = Float::<8, 52>::from_str_const::<true>("0_0_1_234.5_6_7e+1_0").unwrap();
+        assert_eq!(a.to_bits(), Float::<8, 52>::from_str("1234.567e10").unwrap().to_bits());
+        let b = Float::<8, 52>::from_str_const::<true>("0.00_00_1_5").unwrap();
+        assert_eq!(b.to_bits(), Float::<8, 52>::from_str("0.000015").unwrap().to_bits());
+        let long_u = Float::<8, 52>::from_str_const::<true>(
+            "1_234567890_1234567890_1234567890.123456789_0123456789_123456789"
+        ).unwrap();
+        assert_eq!(
+            long_u.to_bits(),
+            Float::<8, 52>::from_str("123456789012345678901234567890.1234567890123456789123456789").unwrap().to_bits()
+        );
+        assert!(Float::<8, 52>::from_str_const::<true>("").is_err());
+        assert!(Float::<8, 52>::from_str_const::<true>("___").is_err());
+
+        // Stage 3 midpoint with underscores (exact, less, greater)
+        let tie_u = Float::<8, 52>::from_str_const::<true>(
+            "1.000000000000000_11102230246251565404236316680908203125"
+        ).unwrap();
+        assert_eq!(tie_u.to_bits(), Float::<8, 52>::ONE.to_bits());
+        let lt_u = Float::<8, 52>::from_str_const::<true>(
+            "1.000000000000000_11102230246251565404236316680908203124999999999999"
+        ).unwrap();
+        assert_eq!(lt_u.to_bits(), Float::<8, 52>::ONE.to_bits());
+        let gt_u = Float::<8, 52>::from_str_const::<true>(
+            "1.000000000000000_11102230246251565404236316680908203125000000000001"
+        ).unwrap();
+        assert_eq!(gt_u.to_bits(), Float::<8, 52>::ONE.to_bits().add(Uint::ONE));
+
+        // Grid boundaries in directed rounding modes (Equal, Less, Greater, overflow boundary)
+        type F16p = Float<2, 10, R_POS>;
+        type F16n = Float<2, 10, R_NEG>;
+        type F16z = Float<2, 10, R_ZERO>;
+        type F16f = Float<2, 10, R_FAITH>;
+        type F16s = Float<2, 10, R_STOCH>;
+        type F64s = Float<8, 52, R_STOCH>;
+        type F128s = Float<16, 112, R_STOCH>;
+
+        // Grid boundaries requiring Stage 3 (more than 100 trailing 0s/9s so Stage 2 is ambiguous)
+        for s in [
+            "1.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+            "1.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001",
+            "0.9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
+            "-1.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001",
+            "-0.9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
+            "65536.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+            "65536.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001",
+            "65535.9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
+            "-65535.9999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999999",
+            "1e-100",
+            "-1e-100",
+            "2.98023223876953125e-8",  // 0.5 * F16::MIN_POSITIVE_SUBNORMAL
+            "-2.98023223876953125e-8",
+            "2.0e-8",                  // < 0.5 * F16::MIN_POSITIVE_SUBNORMAL
+            "-2.0e-8",
+            "4.0e-8",                  // in (0.5, 1.0) * F16::MIN_POSITIVE_SUBNORMAL
+            "-4.0e-8",
+        ] {
+            let _ = F16p::from_str(s).unwrap();
+            let _ = F16p::from_str_const::<false>(s).unwrap();
+            let _ = F16n::from_str(s).unwrap();
+            let _ = F16z::from_str(s).unwrap();
+            let _ = F16f::from_str(s).unwrap();
+            let _ = F16s::from_str(s).unwrap();
+            let _ = F16::from_str(s).unwrap();
+        }
+        // Negative subnormal stochastic underflow (ensure both round-up and NEG_ZERO are exercised)
+        for k in 10u32..40 {
+            let _ = F16s::from_str(&alloc::format!("-{k}.1e-9")).unwrap();
+        }
+        // Formats with drop == 64 and drop < 64 in Stochastic to exercise fp_extract_top64 shift <= 64
+        type F72m63s = Float<9, 63, R_STOCH>;
+        type F80m70s = Float<10, 70, R_STOCH>;
+        let _ = F72m63s::from_str("1.2345678901234567890123456789").unwrap();
+        let _ = F80m70s::from_str("1.2345678901234567890123456789").unwrap();
+
+        // exact_cmp_midpoint / exact_cmp_midpoint_const: p >= 0, tier <= 10_000, and abs_p > 1_000_000
+        let dec_one = ParsedDecimal::<false> {
+            is_negative: false,
+            int_digits: b"1",
+            frac_digits: b"",
+            first_nz: 0,
+            last_nz_end: 1,
+            sig_digits: 1,
+            exp10: 0,
+        };
+        let m_one = Uint::<8>::ONE;
+        assert!(exact_cmp_midpoint::<8, 52, false>(&dec_one, &m_one, 1_000_001).is_none());
+        assert!(exact_cmp_midpoint_const::<8, 52, false>(&dec_one, &m_one, 1_000_001).is_none());
+        assert!(exact_cmp_midpoint_const::<8, 52, false>(&dec_one, &m_one, 80_000).is_some());
+        assert!(exact_cmp_midpoint_const::<8, 52, false>(&dec_one, &m_one, 700_000).is_none());
+        // Direct finish_stage3 None fallbacks (grid boundary and non-grid)
+        let _ = F16::finish_stage3(false, Uint::from_le_bytes([15, 0]), Some(15), false, Uint::ONE, 0, Uint::ONE, true, None);
+        let _ = F16::finish_stage3(false, Uint::from_le_bytes([15, 0]), Some(15), false, Uint::ONE, 0, Uint::ONE, false, None);
+
+        // Stochastic with F64s and F128s (exercises fp_extract_top64 with shift <= 64, == 64, > 64)
+        for s in ["1.234567890123456789", "3.1415926535897932384626433832795028841971", "1e-323", "-1e-323", "2.4703282292062327e-324"] {
+            let _ = F64s::from_str(s).unwrap();
+            let _ = F128s::from_str(s).unwrap();
+        }
+
+        // Exact huge-exponent format hitting abs_p > 1_000_000 fallback in Stage 3
+        type HugeExpF = Float<8, 20>;
+        let huge_s = "1.0000000000000000000000000000000000000000001e400000";
+        assert!(HugeExpF::from_str(huge_s).unwrap().is_finite());
+        assert!(HugeExpF::from_str_const::<false>(huge_s).unwrap().is_finite());
+
+        // Const Stage 3 tier <= 10_000 (F256 subnormal-scale exponent ~ -70000 -> ~2500 limbs)
+        let _ = F256::from_str_const::<false>("1.234567890123456789012345678901234567890123456789012345678901234567890123456e-70000").unwrap();
+
+        // from_str_radix error and special value paths
+        assert!(F16::from_str_radix("1", 1).is_err());
+        assert!(F16::from_str_radix("1", 37).is_err());
+        assert!(F16::from_str_radix("1", 10).is_err());
+        assert!(F16::from_str_radix("", 16).is_err());
+        assert_eq!(F16::from_str_radix("+inf", 16).unwrap().to_bits(), F16::INFINITY.to_bits());
+        assert_eq!(F16::from_str_radix("-infinity", 16).unwrap().to_bits(), F16::NEG_INFINITY.to_bits());
+        assert_eq!(F16::from_str_radix("inf", 2).unwrap().to_bits(), F16::INFINITY.to_bits());
+        assert!(F16::from_str_radix("nan", 16).unwrap().is_nan());
+        assert!(F16::from_str_radix("-NaN", 16).unwrap().is_nan());
     }
 }

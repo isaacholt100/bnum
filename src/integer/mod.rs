@@ -233,5 +233,25 @@ mod tests {
         fn default() {
             assert_eq!(UTest::default(), UTestBase::default().as_());
         }
+
+        #[cfg(feature = "borsh")]
+        #[test]
+        fn borsh_roundtrip_and_schema() {
+            let val = UTest::MAX;
+            let encoded = borsh::to_vec(&val).unwrap();
+            let decoded: UTest = borsh::from_slice(&encoded).unwrap();
+            assert_eq!(val, decoded);
+            let _schema = borsh::schema_container_of::<UTest>();
+        }
+    }
+
+    #[test]
+    fn force_sign_sets_sign_bits() {
+        type U13 = crate::t!(U13);
+        type I13 = crate::t!(I13);
+        let a: I13 = U13::MAX.force_sign();
+        assert_eq!(a, I13::ZERO.wrapping_sub(I13::ONE));
+        let b: I13 = U13::MAX.force::<true, 13, { crate::OverflowMode::DEFAULT.to_u8() }>();
+        assert_eq!(b, a);
     }
 }

@@ -818,6 +818,15 @@ mod tests {
             skip: a.checked_mul(b).map(|d| d.checked_add(c)).flatten().is_none()
         }
 
+        #[test]
+        fn mul_add_assign_and_pow_and_from_str_radix() {
+            let mut x = STest::ONE;
+            <STest as MulAddAssign>::mul_add_assign(&mut x, STest::ONE, STest::ONE);
+            assert_eq!(x, STest::ONE + STest::ONE);
+            assert_eq!(<STest as num_traits::Pow<u32>>::pow(x, 3), x.pow(3));
+            assert_eq!(<STest as Num>::from_str_radix("10", 16), Ok(STest::from_str_radix("10", 16).unwrap()));
+        }
+
         test_bignum! {
             function: <STest as Roots>::sqrt(a: ref &STest),
             skip: a.is_negative_internal()
@@ -977,5 +986,47 @@ mod tests {
         test_bignum! {
             function: <STest as Signed>::is_negative(a: ref &STest)
         }
+    }
+
+    #[test]
+    fn gcd_min_min_wrapping() {
+        type I16w = crate::t!(I16w);
+        assert_eq!(<I16w as IntegerTrait>::gcd(&I16w::MIN, &I16w::MIN), I16w::MIN);
+    }
+
+    #[test]
+    #[should_panic]
+    fn num_cast_panics() {
+        let _ = <crate::t!(U64) as num_traits::NumCast>::from(0u8);
+    }
+
+    #[test]
+    #[should_panic(expected = "attempt to divide with overflow")]
+    fn div_floor_overflow_panics() {
+        let _ = <crate::t!(I64) as IntegerTrait>::div_floor(&<crate::t!(I64)>::MIN, &crate::n!(-1));
+    }
+
+    #[test]
+    #[should_panic(expected = "attempt to divide by zero")]
+    fn div_floor_zero_panics() {
+        let _ = <crate::t!(I64) as IntegerTrait>::div_floor(&<crate::t!(I64)>::ONE, &crate::n!(0));
+    }
+
+    #[test]
+    #[should_panic(expected = "attempt to calculate zeroth root")]
+    fn nth_root_zero_panics() {
+        let _ = <crate::t!(U64) as Roots>::nth_root(&<crate::t!(U64)>::ONE, 0);
+    }
+
+    #[test]
+    #[should_panic(expected = "attempt to divide with overflow")]
+    fn div_rem_overflow_panics() {
+        let _ = <crate::t!(I64) as IntegerTrait>::div_rem(&<crate::t!(I64)>::MIN, &crate::n!(-1));
+    }
+
+    #[test]
+    #[should_panic(expected = "attempt to divide by zero")]
+    fn div_rem_zero_panics() {
+        let _ = <crate::t!(I64) as IntegerTrait>::div_rem(&<crate::t!(I64)>::ONE, &crate::n!(0));
     }
 }

@@ -1,5 +1,4 @@
 use super::FloatCastHelper;
-use super::FloatMantissa;
 use crate::Exponent;
 use crate::cast::CastFrom;
 use crate::helpers::{Bits, One, Zero};
@@ -67,17 +66,9 @@ where
     if is_infinite {
         return Err(UintFromFloatError::Overflow);
     }
-    if exp < -F::SignedExp::ONE {
-        // in this case, the value is at most a half, so we round (ties to even) to zero
+    if exp <= -F::SignedExp::ONE {
+        // in this case, the value is strictly less than 1, so truncating toward zero gives 0
         return Ok(U::ZERO);
-    }
-    if exp == -F::SignedExp::ONE {
-        // exponent is -1, so value is in range [1/2, 1)
-        if mant.is_power_of_two() {
-            // in this case, the value is exactly 1/2, so we round (ties to even) to zero
-            return Ok(U::ZERO);
-        }
-        return Ok(U::ONE);
     }
     // now we know that the exponent is non-negative so can shift
     // As per Rust's numeric casting semantics (https://doc.rust-lang.org/reference/expressions/operator-expr.html#numeric-cast), casting a float to an integer truncates rather than using ties to even

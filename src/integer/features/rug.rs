@@ -85,4 +85,11 @@ crate::test::test_all_custom_bit_widths! {
             rug_int.to_string() == value.to_string()
         }
     }
+
+    #[test]
+    fn rug_integer_error_cases() {
+        assert!(UTest::try_from(RugInteger::from(-1)).is_err());
+        assert!(ITest::try_from(RugInteger::from(1) << ITest::BITS).is_err());
+        assert!(UTest::try_from(RugInteger::from(1) << UTest::BITS).is_err());
+    }
 }

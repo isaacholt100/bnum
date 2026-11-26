@@ -128,5 +128,42 @@ mod tests {
         test_bignum! {
             function: <FTest as PartialEq>::eq(a: ref &FTestBase, b: ref &FTestBase)
         }
+
+        #[test]
+        fn maximum_minimum_and_const_cmp_fillers() {
+            let vals: &[FTestBase] = &[
+                FTestBase::NAN,
+                FTestBase::NEG_INFINITY,
+                -2.5,
+                -0.0,
+                0.0,
+                2.5,
+                FTestBase::INFINITY,
+            ];
+            for &a in vals {
+                let fa = FTest::from(a);
+                for &b in vals {
+                    let fb = FTest::from(b);
+
+                    // const trait fillers ne and ge
+                    assert_eq!(FTest::ne(&fa, &fb), a != b);
+                    assert_eq!(FTest::ge(&fa, &fb), a >= b);
+
+                    // IEEE 754-2019 maximum / minimum semantics (NaN propagates, +0.0 > -0.0)
+                    let max_r = fa.maximum(fb);
+                    let min_r = fa.minimum(fb);
+                    if a.is_nan() || b.is_nan() {
+                        assert!(max_r.is_nan());
+                        assert!(min_r.is_nan());
+                    } else if a.total_cmp(&b).is_lt() {
+                        assert_eq!(max_r.to_bits(), fb.to_bits());
+                        assert_eq!(min_r.to_bits(), fa.to_bits());
+                    } else {
+                        assert_eq!(max_r.to_bits(), fa.to_bits());
+                        assert_eq!(min_r.to_bits(), fb.to_bits());
+                    }
+                }
+            }
+        }
     }
 }

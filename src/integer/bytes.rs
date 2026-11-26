@@ -532,6 +532,54 @@ mod tests {
         #[test]
         fn cases_from_be_slice() {
             assert_eq!(STest::from_be_slice(&[]), Some(n!(0)));
+            // Slice longer than N with non-zero leading byte -> None
+            let mut long_pos = [0u8; STest::BYTES as usize + 1];
+            long_pos[0] = 1;
+            assert_eq!(STest::from_be_slice(&long_pos), None);
+            if STest::MIN.is_negative_internal() {
+                // Negative slice longer than N with non-0xFF leading byte -> None
+                let mut long_neg = [0xFFu8; STest::BYTES as usize + 2];
+                long_neg[0] = 0x80;
+                long_neg[1] = 0xFE;
+                assert_eq!(STest::from_be_slice(&long_neg), None);
+            }
         }
+
+        #[test]
+        fn cases_from_le_slice() {
+            assert_eq!(STest::from_le_slice(&[]), Some(n!(0)));
+            let mut long_pos = [0u8; STest::BYTES as usize + 1];
+            long_pos[STest::BYTES as usize] = 1;
+            assert_eq!(STest::from_le_slice(&long_pos), None);
+            if STest::MIN.is_negative_internal() {
+                let mut long_neg = [0xFFu8; STest::BYTES as usize + 2];
+                long_neg[STest::BYTES as usize] = 0xFE;
+                long_neg[STest::BYTES as usize + 1] = 0x80;
+                assert_eq!(STest::from_le_slice(&long_neg), None);
+            }
+        }
+    }
+
+    #[test]
+    fn cases_from_slice_non_byte_multiple() {
+        type U12 = crate::t!(U12);
+        type I12 = crate::t!(I12);
+
+        // LAST_BYTE_PAD_BITS == 4
+        assert_eq!(U12::from_be_slice(&[0x10, 0x00]), None);
+        assert_eq!(U12::from_le_slice(&[0x00, 0x10]), None);
+        assert_eq!(U12::from_be_slice(&[0x0F, 0xFF]), Some(U12::MAX));
+        assert_eq!(U12::from_le_slice(&[0xFF, 0x0F]), Some(U12::MAX));
+
+        assert_eq!(I12::from_be_slice(&[0x08, 0x00]), None);
+        assert_eq!(I12::from_le_slice(&[0x00, 0x08]), None);
+        assert_eq!(I12::from_be_slice(&[0x07, 0xFF]), Some(I12::MAX));
+        assert_eq!(I12::from_le_slice(&[0xFF, 0x07]), Some(I12::MAX));
+
+        // Negative with too few leading ones (< 4): 0xE0 = 0b1110_0000 has 3 leading ones
+        assert_eq!(I12::from_be_slice(&[0xE0, 0x00]), None);
+        assert_eq!(I12::from_le_slice(&[0x00, 0xE0]), None);
+        assert_eq!(I12::from_be_slice(&[0xF8, 0x00]), Some(I12::MIN));
+        assert_eq!(I12::from_le_slice(&[0x00, 0xF8]), Some(I12::MIN));
     }
 }

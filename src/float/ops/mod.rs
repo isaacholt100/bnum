@@ -140,10 +140,35 @@ mod tests {
             function: <FTest as Div>::div(a: FTestBase, b: FTestBase)
         }
         test_bignum! {
-            function: <FTest as Rem>::rem(a: FTestBase, b: FTestBase)
+            function: <FTest as Rem>::rem(a: FTestBase, b: FTestBase),
+            cases: [
+                (1.5 as FTestBase, 1.5 as FTestBase),
+                (-1.5 as FTestBase, 1.5 as FTestBase),
+                (6.0 as FTestBase, 3.0 as FTestBase),
+                (-6.0 as FTestBase, 3.0 as FTestBase),
+                (3.0 as FTestBase, 1.5 as FTestBase),
+                (-3.0 as FTestBase, 1.5 as FTestBase),
+                (3.0 as FTestBase, 1.0 as FTestBase),
+                (-3.0 as FTestBase, 1.0 as FTestBase),
+                (FTestBase::from_bits(5), FTestBase::from_bits(2)),
+                (FTestBase::from_bits(10), FTestBase::from_bits(3)),
+                (-FTestBase::from_bits(10), FTestBase::from_bits(3))
+            ]
         }
         test_bignum! {
             function: <FTest as Neg>::neg(f: FTestBase)
+        }
+
+        #[test]
+        fn sum_product_and_ref_neg() {
+            let vals = [FTest::from(1.5 as FTestBase), FTest::from(2.0 as FTestBase), FTest::from(3.0 as FTestBase)];
+            let expected_sum = FTest::from(6.5 as FTestBase);
+            let expected_prod = FTest::from(9.0 as FTestBase);
+            assert_eq!(vals.iter().sum::<FTest>().to_bits(), expected_sum.to_bits());
+            assert_eq!(vals.into_iter().sum::<FTest>().to_bits(), expected_sum.to_bits());
+            assert_eq!(vals.iter().product::<FTest>().to_bits(), expected_prod.to_bits());
+            assert_eq!(vals.into_iter().product::<FTest>().to_bits(), expected_prod.to_bits());
+            assert_eq!((-&vals[0]).to_bits(), (-vals[0]).to_bits());
         }
     }
 
@@ -217,6 +242,67 @@ mod tests {
         let q128 = x128 / y128;
         let back = q128 * y128;
         assert!(back.to_bits().abs_diff(x128.to_bits()) <= Uint::cast_from(2u8));
+
+        // Division rounding up to MAX with TowardPositive
+        const R_POS: u8 = crate::RoundingMode::TowardPositive as u8;
+        type F16p = Float<2, 10, R_POS>;
+        let a_div = F16p::from_bits(Uint::from_le_bytes([0xFE, 0x7B])); // e1 = 30, s1 = 2046
+        let b_div = F16p::from_bits(Uint::from_le_bytes([0xFF, 0x3B])); // e2 = 14, s2 = 2047
+        assert_eq!((a_div / b_div).to_bits(), F16p::MAX.to_bits());
+
+        // Stochastic rounding across add, sub, mul, div (including shift < 64, == 64, > 64, huge diff, subnormal)
+        const R_STOCH: u8 = crate::RoundingMode::Stochastic as u8;
+        type F16s = Float<2, 10, R_STOCH>;
+        type F64s = Float<8, 52, R_STOCH>;
+        type F128s = Float<16, 112, R_STOCH>;
+
+        // add stochastic: diff > MB+2 (d <= 64 and d > 64), MAX overflow, diff >= MB+65, sum.bit(MB+1)
+        let f128_one = F128s::from_str("1.0").unwrap();
+        let f128_1_5 = F128s::from_str("1.5").unwrap();
+        let f128_p64 = F128s::from_str("5.42101086242752217003726400434970855712890625e-20").unwrap(); // 2^-64
+        let f128_p80 = F128s::from_str("8.2718061255302767487140869206996285356581211090087890625e-25").unwrap(); // 2^-80
+        let f128_p120 = F128s::from_str("7.52316384526264005099991383822237233803945956334136013765601092018187046051025390625e-37").unwrap(); // 2^-120
+        let _ = f128_one + f128_p64; // d == 64
+        let _ = f128_one + f128_p80; // d == 80 > 64
+        let _ = f128_one + f128_p120; // diff == 120 > MB+2, d > 64
+        let _ = f128_1_5 + (f128_one - f128_p80); // sum.bit(MB+1) with stochastic
+        let _ = F16s::MAX + F16s::from_bits(Uint::from_le_bytes([0x00, 0x04])); // diff > MB+2, near MAX
+        for k in 0u16..32 {
+            let tiny = F16s::from_bits(Uint::from_le_bytes((0x4400u16 + k).to_le_bytes()));
+            let _ = F16s::MAX + tiny;
+        }
+        let _ = F64s::cast_from(1.0_f64) + F64s::cast_from(2.0_f64.powi(-200)); // diff >= MB+65
+
+        // sub stochastic: diff > MB+3 (non-pow2, pow2, d_eff <= 64, > 64, >= MB+65, prev_bits vs a_signed),
+        // and diff in 3..=MB+3 with LSB set in mb (so sticky == true, exercising uint_frac64 shift < 64, == 64, > 64)
+        let _ = f128_1_5 - f128_p120; // diff > MB+3, non-pow2, d_eff > 64
+        let f128_p3_odd = F128s::from_bits(F128s::from_str("0.125").unwrap().to_bits().add(Uint::ONE));
+        let f128_p66 = f128_p64 / F128s::from_str("4.0").unwrap();
+        let f128_p66_odd = F128s::from_bits(f128_p66.to_bits().add(Uint::ONE));
+        let f128_p80_odd = F128s::from_bits(f128_p80.to_bits().add(Uint::ONE));
+        let _ = f128_1_5 - f128_p3_odd; // d == 3, shift == 1 < 64, sticky == true
+        let _ = f128_1_5 - f128_p66_odd; // d == 66, shift == 64, sticky == true
+        let _ = f128_1_5 - f128_p80_odd; // d == 80, shift == 78 > 64, sticky == true
+        let _ = f128_one - f128_p66_odd; // diff4.bit(MB+2) false!
+        let _ = F64s::cast_from(1.5_f64) - F64s::cast_from(2.0_f64.powi(-60)); // diff > MB+3, d_eff = 60 <= 64
+        let _ = F64s::cast_from(1.0_f64) - F64s::cast_from(2.0_f64.powi(-118)); // diff = 118
+        let _ = F64s::cast_from(1.5_f64) - F64s::cast_from(2.0_f64.powi(-117)); // diff = 117 = MB+65 -> d_eff == MB+65 -> sub_frac64 == 0
+        let _ = F64s::cast_from(1.5_f64) - F64s::cast_from(2.0_f64.powi(-200)); // diff >= MB+66 -> return a_signed
+        for k in 0u16..64 {
+            let a_s = F16s::from_bits(Uint::from_le_bytes((0x3E00u16 + k).to_le_bytes()));
+            let b_s = F16s::from_bits(Uint::from_le_bytes((0x0400u16 + k).to_le_bytes()));
+            let _ = a_s - b_s;
+        }
+
+        // mul stochastic: shift == 64 (two normals whose product is subnormal with sub_drop == 12) and shift > 64
+        let _ = (f128_1_5 + f128_p64) * (f128_1_5 + f128_p80); // shift > 64
+        let n_m517 = F64s::cast_from(1.25_f64 * 2.0_f64.powi(-517));
+        let _ = n_m517 * n_m517; // total_shift = 52 + 12 = 64!
+
+        // div stochastic: normal F64s (den_bw <= 63), normal F128s (den_bw > 63), subnormal tie na > nb
+        let _ = F64s::cast_from(1.0_f64) / F64s::cast_from(3.0_f64);
+        let _ = f128_one / F128s::from_str("3.0").unwrap();
+        let _ = F16s::MIN_POSITIVE_SUBNORMAL / F16s::from_bits(Uint::from_le_bytes([0x00, 0x3E])); // 1.5 -> sub_drop == MB+1, na > nb
     }
 
     #[test]

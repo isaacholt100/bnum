@@ -45,4 +45,23 @@ mod tests {
         assert_eq!(I512s::OVERFLOW_MODE, crate::OverflowMode::Saturate);
         assert!(!U123p::MIN.is_negative_internal());
     }
+
+    #[cfg(feature = "float")]
+    #[test]
+    fn cases_use_types_macro_float() {
+        #[allow(unused)]
+        mod float_types {
+            use_types! {
+                pub F16,
+                pub F16m7z,
+                pub F64tp,
+                F128,
+            }
+        }
+        use float_types::*;
+        assert_eq!(F16::MANTISSA_DIGITS, 11);
+        assert_eq!(F16m7z::MANTISSA_DIGITS, 8);
+        assert_eq!(F16m7z::ROUNDING_MODE, crate::RoundingMode::TowardZero);
+        assert_eq!(F64tp::ROUNDING_MODE, crate::RoundingMode::TiesTowardPositive);
+    }
 }

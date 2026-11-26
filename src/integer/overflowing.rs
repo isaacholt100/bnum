@@ -550,6 +550,26 @@ mod tests {
         let (q, r) = (UTest::from_digits(q), UTest::from_digits(r));
 
         assert_eq!((q, r), (a / b, a % b));
+
+        // Same operands in U256 so range + start != DIGIT_LEN in Digits::add_partial
+        type U256 = crate::t!(U256);
+        let a256: U256 = a.as_();
+        let b256: U256 = b.as_();
+        let (q256, r256) = a256.to_digits::<u8>().div_rem_unchecked(b256.to_digits::<u8>());
+        assert_eq!(
+            (U256::from_digits(q256), U256::from_digits(r256)),
+            (a256 / b256, a256 % b256)
+        );
+
+        // Case where u_dash == v_dash (q_hat = Digit::MAX branch in Knuth D3)
+        type U32 = crate::t!(U32);
+        let a32: U32 = crate::n!(0x80_00_00_00);
+        let b32: U32 = crate::n!(0x80_FF_FF);
+        let (q32, r32) = a32.to_digits::<u8>().div_rem_unchecked(b32.to_digits::<u8>());
+        assert_eq!(
+            (U32::from_digits(q32), U32::from_digits(r32)),
+            (a32 / b32, a32 % b32)
+        );
     }
 
     // test to find test data which activates the unlikely div condition
@@ -599,6 +619,28 @@ mod tests {
                 (ITest::MIN)
             ]
         }
+
+        #[test]
+        fn signed_overflowing_edge_cases() {
+            let neg_one = ITest::ZERO.wrapping_sub(ITest::ONE);
+            assert_eq!(ITest::MIN.overflowing_mul(ITest::ONE), (ITest::MIN, false));
+            assert_eq!(ITest::MIN.overflowing_div(neg_one), (ITest::MIN, true));
+            assert_eq!(ITest::MIN.overflowing_div_euclid(neg_one), (ITest::MIN, true));
+            assert_eq!(ITest::MIN.overflowing_rem(neg_one), (ITest::ZERO, true));
+            assert_eq!(ITest::MIN.overflowing_rem_euclid(neg_one), (ITest::ZERO, true));
+        }
+    }
+
+    #[test]
+    #[should_panic]
+    fn overflowing_div_euclid_by_zero_panics() {
+        let _ = <crate::t!(I64)>::ONE.overflowing_div_euclid(crate::n!(0));
+    }
+
+    #[test]
+    #[should_panic]
+    fn overflowing_rem_euclid_by_zero_panics() {
+        let _ = <crate::t!(I64)>::ONE.overflowing_rem_euclid(crate::n!(0));
     }
 
     crate::test::test_all! {

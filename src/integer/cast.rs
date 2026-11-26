@@ -178,7 +178,52 @@ mod tests {
             into_types: (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64, TestUint1, TestUint2, TestUint3, TestUint4, TestUint5, TestUint6, TestUint7, TestUint8, TestUint9, TestUint10, TestInt1, TestInt2, TestInt3, TestInt4, TestInt5, TestInt6, TestInt7, TestInt8, TestInt9, TestInt10)
         }
 
-        
+        #[test]
+        fn cases_cast_from_float_edge_values() {
+            use crate::test::TestConvert;
+            for f in [
+                0.0_f64,
+                -0.0_f64,
+                f64::from_bits(1),
+                -f64::from_bits(1),
+                0.25_f64,
+                0.5_f64,
+                0.75_f64,
+                -0.25_f64,
+                -0.5_f64,
+                -0.75_f64,
+                1.0_f64,
+                -1.0_f64,
+                f64::MAX,
+                f64::MIN,
+                f64::INFINITY,
+                f64::NEG_INFINITY,
+                f64::NAN,
+            ] {
+                assert_eq!(
+                    TestConvert::into(STest::cast_from(f)),
+                    TestConvert::into(STestBase::cast_from(f))
+                );
+            }
+            for f in [
+                0.0_f32,
+                -0.0_f32,
+                f32::from_bits(1),
+                0.25_f32,
+                0.5_f32,
+                0.75_f32,
+                -0.75_f32,
+                f32::MAX,
+                f32::INFINITY,
+                f32::NEG_INFINITY,
+                f32::NAN,
+            ] {
+                assert_eq!(
+                    TestConvert::into(STest::cast_from(f)),
+                    TestConvert::into(STestBase::cast_from(f))
+                );
+            }
+        }
     }
 }
 

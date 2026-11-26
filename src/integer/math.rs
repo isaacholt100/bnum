@@ -748,14 +748,29 @@ mod tests {
         test_bignum! {
             function: <STest>::pow(a: STest, b: u16)
         }
-        // test_bignum! {
-        //     function: <STest>::div_euclid(a: STest, b: STest),
-        //     skip: b.is_zero()
-        // }
-        // test_bignum! {
-        //     function: <STest>::rem_euclid(a: STest, b: STest),
-        //     skip: b.is_zero()
-        // }
+
+        #[test]
+        fn wrapping_euclid() {
+            let a = STest::MAX;
+            let b = STest::ONE;
+            assert_eq!(a.div_euclid(b), a.wrapping_div_euclid(b));
+            assert_eq!(a.rem_euclid(b), a.wrapping_rem_euclid(b));
+            if STest::MIN.is_negative_internal() {
+                let neg_one = STest::ZERO.wrapping_sub(STest::ONE);
+                assert_eq!(STest::MIN.div_euclid(neg_one), STest::MIN.wrapping_div_euclid(neg_one));
+                assert_eq!(STest::MIN.rem_euclid(neg_one), STest::MIN.wrapping_rem_euclid(neg_one));
+            }
+        }
+    }
+
+    crate::test::test_all! {
+        testing unsigned w;
+
+        #[test]
+        fn wrapping_next_power_of_two_mode() {
+            assert_eq!(UTest::ONE.next_power_of_two(), UTest::ONE);
+            assert_eq!(UTest::MAX.next_power_of_two(), UTest::ZERO);
+        }
     }
 
     crate::test::test_all! {
@@ -773,14 +788,29 @@ mod tests {
         test_bignum! {
             function: <STest>::pow(a: STest, b: u16)
         }
-        // test_bignum! {
-        //     function: <STest>::div_euclid(a: STest, b: STest),
-        //     skip: b.is_zero()
-        // }
-        // test_bignum! {
-        //     function: <STest>::rem_euclid(a: STest, b: STest),
-        //     skip: b.is_zero()
-        // }
+
+        #[test]
+        fn saturating_euclid() {
+            let a = STest::MAX;
+            let b = STest::ONE;
+            assert_eq!(a.div_euclid(b), a.saturating_div_euclid(b));
+            assert_eq!(a.rem_euclid(b), a.saturating_rem_euclid(b));
+            if STest::MIN.is_negative_internal() {
+                let neg_one = STest::ZERO.wrapping_sub(STest::ONE);
+                assert_eq!(STest::MIN.div_euclid(neg_one), STest::MAX);
+                assert_eq!(STest::MIN.rem_euclid(neg_one), STest::ZERO);
+            }
+        }
+    }
+
+    crate::test::test_all! {
+        testing unsigned s;
+
+        #[test]
+        fn saturating_next_power_of_two_mode() {
+            assert_eq!(UTest::ONE.next_power_of_two(), UTest::ONE);
+            assert_eq!(UTest::MAX.next_power_of_two(), UTest::MAX);
+        }
     }
 
     crate::test::test_all! {
@@ -844,6 +874,36 @@ mod tests {
             function: <ITest>::isqrt(a: ITest),
             skip: a.is_negative()
         }
+    }
+
+    #[test]
+    #[should_panic]
+    fn ilog_invalid_base_panics() {
+        let _ = <crate::t!(U64)>::ONE.ilog(crate::n!(1));
+    }
+
+    #[test]
+    #[should_panic]
+    fn div_floor_zero_panics() {
+        let _ = <crate::t!(I64)>::ONE.div_floor(crate::n!(0));
+    }
+
+    #[test]
+    #[should_panic]
+    fn div_floor_overflow_panics() {
+        let _ = <crate::t!(I64)>::MIN.div_floor(crate::n!(-1));
+    }
+
+    #[test]
+    #[should_panic]
+    fn div_ceil_zero_panics() {
+        let _ = <crate::t!(I64)>::ONE.div_ceil(crate::n!(0));
+    }
+
+    #[test]
+    #[should_panic]
+    fn isqrt_negative_panics() {
+        let _ = <crate::t!(I64)>::cast_from(-1i8).isqrt();
     }
 }
 
