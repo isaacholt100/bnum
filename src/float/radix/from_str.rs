@@ -2020,6 +2020,18 @@ mod tests {
             ]
         }
 
+        #[test]
+        fn from_str_nan_sign_bits() {
+            for s in ["nan", "+nan", "NaN", "NAN"] {
+                let v = FTest::from_str(s).unwrap();
+                assert!(v.is_nan() && v.is_sign_positive(), "expected +NaN for {s:?}");
+            }
+            for s in ["-nan", "-NaN", "-NAN"] {
+                let v = FTest::from_str(s).unwrap();
+                assert!(v.is_nan() && v.is_sign_negative(), "expected -NaN for {s:?}");
+            }
+        }
+
         #[cfg(feature = "alloc")]
         quickcheck::quickcheck! {
             fn quickcheck_roundtrip_to_string(f: FTestBase) -> bool {

@@ -676,7 +676,7 @@ mod tests {
     #[test]
     fn special_and_exact_values() {
         // F64 exact cubes and boundary values
-        let cases_f64: &[(f64, f64)] = &[
+        let exact_cases_f64: &[(f64, f64)] = &[
             (0.0, 0.0),
             (-0.0, -0.0),
             (1.0, 1.0),
@@ -692,16 +692,12 @@ mod tests {
             (-1e300, -1e100),
             (f64::INFINITY, f64::INFINITY),
             (f64::NEG_INFINITY, f64::NEG_INFINITY),
-            (f64::MIN_POSITIVE, f64::MIN_POSITIVE.cbrt()),
-            (f64::MAX, f64::MAX.cbrt()),
-            (f64::MIN, f64::MIN.cbrt()),
-            (f64::from_bits(1), f64::from_bits(1).cbrt()),
-            (f64::from_bits(0x000f_ffff_ffff_ffff), f64::from_bits(0x000f_ffff_ffff_ffff).cbrt()),
+            (f64::from_bits(1), 2.0_f64.powi(-358)),
             // Value just below 8.0 whose cube root rounds up to 2.0
             (f64::from_bits(8.0_f64.to_bits() - 1), 2.0),
         ];
 
-        for &(input, expected) in cases_f64 {
+        for &(input, expected) in exact_cases_f64 {
             let f = F64::from(input);
             let res = f.cbrt_internal();
             assert_correctly_rounded::<8, 52, 64>(f);
@@ -710,6 +706,26 @@ mod tests {
                 res.to_bits(),
                 F64::from(expected).to_bits(),
                 "mismatch on f64 input {input:?}"
+            );
+        }
+
+        // Inexact boundary values: `assert_correctly_rounded` proves exact 0.5-ULP rounding;
+        // platform libm `cbrt` (e.g., glibc on x86_64) can drift by up to a few ULPs.
+        for input in [
+            f64::MIN_POSITIVE,
+            f64::MAX,
+            f64::MIN,
+            f64::from_bits(0x000f_ffff_ffff_ffff),
+        ] {
+            let f = F64::from(input);
+            let res = f.cbrt_internal();
+            assert_correctly_rounded::<8, 52, 64>(f);
+            assert_kernels_agree(f);
+            let ours = u64::from_le_bytes(res.to_bits().to_bytes());
+            let theirs = input.cbrt().to_bits();
+            assert!(
+                ours.abs_diff(theirs) <= 4,
+                "cbrt ULP diff > 4 vs std on {input:?}: ours={ours:#x}, std={theirs:#x}"
             );
         }
 
@@ -751,7 +767,7 @@ mod tests {
             if !std_f32.is_nan() {
                 let ours = u32::from_le_bytes(f32_val.cbrt_internal().to_bits().to_bytes());
                 let theirs = std_f32.cbrt().to_bits();
-                assert!(ours.abs_diff(theirs) <= 1);
+                assert!(ours.abs_diff(theirs) <= 4);
             }
 
             // Also test subnormal F32
@@ -765,7 +781,7 @@ mod tests {
             if !std_f64.is_nan() {
                 let ours = u64::from_le_bytes(f64_val.cbrt_internal().to_bits().to_bytes());
                 let theirs = std_f64.cbrt().to_bits();
-                assert!(ours.abs_diff(theirs) <= 1);
+                assert!(ours.abs_diff(theirs) <= 4);
             }
 
             // Also test subnormal F64

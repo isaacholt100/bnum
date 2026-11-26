@@ -48,5 +48,18 @@ mod tests {
         test_bignum! {
             function: <FTest>::from_le_bytes(a: [u8; FTest::BITS as usize / 8])
         }
+
+        #[test]
+        fn bytes_preserve_nan_bits() {
+            for nan in [
+                FTest::NAN,
+                FTest::NEG_NAN,
+                FTest::from_bits(FTest::NAN.to_bits() | crate::Uint::ONE),
+                FTest::from_bits(FTest::NEG_NAN.to_bits() | crate::Uint::ONE),
+            ] {
+                assert_eq!(FTest::from_be_bytes(nan.to_be_bytes()).to_bits(), nan.to_bits());
+                assert_eq!(FTest::from_le_bytes(nan.to_le_bytes()).to_bits(), nan.to_bits());
+            }
+        }
     }
 }

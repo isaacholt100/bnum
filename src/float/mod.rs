@@ -244,8 +244,16 @@ mod tests {
         }
 
         #[test]
-        fn default() {
+        fn default_and_nan_copysign() {
             assert_eq!(FTest::default().to_bits(), FTest::ZERO.to_bits());
+
+            // copysign must copy the sign bit bit-for-bit even for NaNs with payloads.
+            let payload_pos = FTest::from_bits(FTest::NAN.to_bits() | crate::Uint::ONE);
+            let payload_neg = FTest::from_bits(FTest::NEG_NAN.to_bits() | crate::Uint::ONE);
+            assert_eq!(payload_pos.copysign(FTest::NEG_ONE).to_bits(), payload_neg.to_bits());
+            assert_eq!(payload_neg.copysign(FTest::ONE).to_bits(), payload_pos.to_bits());
+            assert_eq!(FTest::ONE.copysign(payload_neg).to_bits(), FTest::NEG_ONE.to_bits());
+            assert_eq!(FTest::NEG_ONE.copysign(payload_pos).to_bits(), FTest::ONE.to_bits());
         }
     }
 }

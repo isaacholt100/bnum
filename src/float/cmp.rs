@@ -101,11 +101,16 @@ mod tests {
     crate::test::test_all! {
         testing floats;
 
+        // Rust's `f32::max`/`f64::max` and `min` leave the sign of zero unspecified
+        // when comparing `-0.0` and `+0.0` (e.g. x86_64 `maxsd`/`minsd` vs aarch64
+        // `fmaxnm`/`fminnm`). Skip mixed signed zeros here and test them explicitly below.
         test_bignum! {
-            function: <FTest>::max(a: FTestBase, b: FTestBase)
+            function: <FTest>::max(a: FTestBase, b: FTestBase),
+            skip: a == 0.0 && b == 0.0 && a.is_sign_negative() != b.is_sign_negative()
         }
         test_bignum! {
-            function: <FTest>::min(a: FTestBase, b: FTestBase)
+            function: <FTest>::min(a: FTestBase, b: FTestBase),
+            skip: a == 0.0 && b == 0.0 && a.is_sign_negative() != b.is_sign_negative()
         }
         // #[cfg(nightly)]
         // test_bignum! {
@@ -164,6 +169,14 @@ mod tests {
                     }
                 }
             }
+
+            // Explicit signed-zero semantics for Float::max / Float::min (+0.0 > -0.0).
+            assert_eq!(FTest::ZERO.max(FTest::NEG_ZERO).to_bits(), FTest::ZERO.to_bits());
+            assert_eq!(FTest::NEG_ZERO.max(FTest::ZERO).to_bits(), FTest::ZERO.to_bits());
+            assert_eq!(FTest::NEG_ZERO.max(FTest::NEG_ZERO).to_bits(), FTest::NEG_ZERO.to_bits());
+            assert_eq!(FTest::ZERO.min(FTest::NEG_ZERO).to_bits(), FTest::NEG_ZERO.to_bits());
+            assert_eq!(FTest::NEG_ZERO.min(FTest::ZERO).to_bits(), FTest::NEG_ZERO.to_bits());
+            assert_eq!(FTest::ZERO.min(FTest::ZERO).to_bits(), FTest::ZERO.to_bits());
         }
     }
 }

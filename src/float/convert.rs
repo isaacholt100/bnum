@@ -338,6 +338,14 @@ mod tests {
         fn as_bits_integral_parts_and_round_mantissa() {
             let zero = FTest::ZERO;
             assert_eq!(*zero.as_bits(), zero.to_bits());
+            for nan in [
+                FTest::NAN,
+                FTest::NEG_NAN,
+                FTest::from_bits(FTest::NAN.to_bits() | crate::Uint::ONE),
+                FTest::from_bits(FTest::NEG_NAN.to_bits() | crate::Uint::ONE),
+            ] {
+                assert_eq!(FTest::from_bits(nan.to_bits()).to_bits(), nan.to_bits());
+            }
             let (zs, ze, zm) = zero.into_integral_signed_parts();
             assert!(!zs && zm.is_zero() && ze == FTest::MIN_EXP - 1);
 

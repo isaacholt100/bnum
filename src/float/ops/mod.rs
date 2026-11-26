@@ -137,11 +137,19 @@ mod tests {
             ]
         }
         test_bignum! {
-            function: <FTest as Div>::div(a: FTestBase, b: FTestBase)
+            function: <FTest as Div>::div(a: FTestBase, b: FTestBase),
+            cases: [
+                (0.0 as FTestBase, 0.0 as FTestBase),
+                (FTestBase::INFINITY, FTestBase::INFINITY)
+            ]
         }
         test_bignum! {
             function: <FTest as Rem>::rem(a: FTestBase, b: FTestBase),
             cases: [
+                (0.0 as FTestBase, 0.0 as FTestBase),
+                (-0.0 as FTestBase, 0.0 as FTestBase),
+                (1.0 as FTestBase, 0.0 as FTestBase),
+                (FTestBase::INFINITY, 1.0 as FTestBase),
                 (1.5 as FTestBase, 1.5 as FTestBase),
                 (-1.5 as FTestBase, 1.5 as FTestBase),
                 (6.0 as FTestBase, 3.0 as FTestBase),
@@ -169,6 +177,14 @@ mod tests {
             assert_eq!(vals.iter().product::<FTest>().to_bits(), expected_prod.to_bits());
             assert_eq!(vals.into_iter().product::<FTest>().to_bits(), expected_prod.to_bits());
             assert_eq!((-&vals[0]).to_bits(), (-vals[0]).to_bits());
+
+            // Neg must flip the sign bit while preserving NaN payloads bit-for-bit.
+            assert_eq!((-FTest::NAN).to_bits(), FTest::NEG_NAN.to_bits());
+            assert_eq!((-FTest::NEG_NAN).to_bits(), FTest::NAN.to_bits());
+            let payload_nan = FTest::from_bits(FTest::NAN.to_bits() | crate::Uint::ONE);
+            let neg_payload_nan = FTest::from_bits(FTest::NEG_NAN.to_bits() | crate::Uint::ONE);
+            assert_eq!((-payload_nan).to_bits(), neg_payload_nan.to_bits());
+            assert_eq!((-neg_payload_nan).to_bits(), payload_nan.to_bits());
         }
     }
 

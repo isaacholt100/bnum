@@ -247,7 +247,9 @@ mod tests {
                 (0.25 as FTestBase),
                 (-0.25 as FTestBase),
                 (0.5 as FTestBase),
-                (-0.5 as FTestBase)
+                (-0.5 as FTestBase),
+                (FTestBase::INFINITY),
+                (FTestBase::NEG_INFINITY)
             ]
         }
 

@@ -118,12 +118,26 @@ impl<T: TestConvert> TestConvert for Option<T> {
     }
 }
 
+// IEEE 754 and Rust do not specify the sign bit or payload of NaN results produced by
+// arithmetic or math operations across architectures: for instance, on x86_64 SSE,
+// `0.0 / 0.0`, `0.0 % 0.0`, `(-1.0).sqrt()`, and `inf - inf` produce the negative
+// quiet NaN indefinite (`0xfff8_0000_0000_0000` / `0xffc0_0000`), whereas on aarch64
+// they produce positive quiet NaN (`0x7ff8_0000_0000_0000` / `0x7fc0_0000`).
+// Canonicalise all NaNs in `TestConvert` so any two NaNs compare equal while every
+// non-NaN value (including `+0.0` vs `-0.0`) is still checked bit-for-bit.
+const CANONICAL_F64_NAN_BITS: u64 = 0x7ff8_0000_0000_0000;
+const CANONICAL_F32_NAN_BITS: u32 = 0x7fc0_0000;
+
 impl TestConvert for f64 {
     type Output = u64;
 
     #[inline]
     fn into(self) -> Self::Output {
-        self.to_bits()
+        if self.is_nan() {
+            CANONICAL_F64_NAN_BITS
+        } else {
+            self.to_bits()
+        }
     }
 }
 
@@ -132,7 +146,11 @@ impl TestConvert for f32 {
 
     #[inline]
     fn into(self) -> Self::Output {
-        self.to_bits()
+        if self.is_nan() {
+            CANONICAL_F32_NAN_BITS
+        } else {
+            self.to_bits()
+        }
     }
 }
 
@@ -144,7 +162,11 @@ impl TestConvert for crate::types::F64 {
     fn into(self) -> Self::Output {
         use crate::cast::As;
 
-        self.to_bits().as_()
+        if self.is_nan() {
+            CANONICAL_F64_NAN_BITS
+        } else {
+            self.to_bits().as_()
+        }
     }
 }
 
@@ -156,7 +178,11 @@ impl TestConvert for crate::types::F32 {
     fn into(self) -> Self::Output {
         use crate::cast::As;
 
-        self.to_bits().as_()
+        if self.is_nan() {
+            CANONICAL_F32_NAN_BITS
+        } else {
+            self.to_bits().as_()
+        }
     }
 }
 
@@ -302,3 +328,56 @@ test_convert_to_self!(
 
 #[cfg(feature = "alloc")]
 test_convert_to_self!(alloc::string::String);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_convert_canonicalises_float_nans() {
+        // Simulate x86_64 negative QNaN indefinite, aarch64 positive QNaN, payload NaNs, and sNaNs.
+        for nan64_bits in [
+            0x7ff8_0000_0000_0000u64,
+            0xfff8_0000_0000_0000u64,
+            0x7ff8_0000_0000_0001u64,
+            0xfff8_1234_5678_9abcu64,
+            0x7ff0_0000_0000_0001u64,
+            0xfff0_0000_0000_0001u64,
+        ] {
+            let f = f64::from_bits(nan64_bits);
+            assert_eq!(TestConvert::into(f), CANONICAL_F64_NAN_BITS);
+            #[cfg(feature = "float")]
+            {
+                let bf = crate::types::F64::from(f);
+                assert_eq!(TestConvert::into(bf), CANONICAL_F64_NAN_BITS);
+                assert!(test_eq(bf, f));
+                assert!(test_eq(crate::types::F64::NAN, f));
+            }
+        }
+
+        for nan32_bits in [
+            0x7fc0_0000u32,
+            0xffc0_0000u32,
+            0x7fc0_0001u32,
+            0xffc0_1234u32,
+            0x7f80_0001u32,
+            0xff80_0001u32,
+        ] {
+            let f = f32::from_bits(nan32_bits);
+            assert_eq!(TestConvert::into(f), CANONICAL_F32_NAN_BITS);
+            #[cfg(feature = "float")]
+            {
+                let bf = crate::types::F32::from(f);
+                assert_eq!(TestConvert::into(bf), CANONICAL_F32_NAN_BITS);
+                assert!(test_eq(bf, f));
+                assert!(test_eq(crate::types::F32::NAN, f));
+            }
+        }
+
+        // Non-NaN bit patterns (including +0.0 vs -0.0 and +inf vs -inf) must remain distinct.
+        assert_ne!(TestConvert::into(0.0_f64), TestConvert::into(-0.0_f64));
+        assert_ne!(TestConvert::into(0.0_f32), TestConvert::into(-0.0_f32));
+        assert_ne!(TestConvert::into(f64::INFINITY), TestConvert::into(f64::NAN));
+        assert_ne!(TestConvert::into(f32::INFINITY), TestConvert::into(f32::NAN));
+    }
+}

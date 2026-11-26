@@ -69,7 +69,7 @@ impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     //     Self::from_bits(bits.bitor(Uint::ONE.shl(Self::MB - 1)))
     // };
 
-    pub const NEG_NAN: Self = Self::NAN.neg();
+    pub(crate) const NEG_NAN: Self = Self::NAN.neg();
 
     // pub const NEG_QNAN: Self = Self::QNAN.neg();
 
@@ -88,19 +88,19 @@ impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
         Self::from_bits(u)
     };
 
-    pub const ZERO: Self = Self::from_bits(Uint::ZERO);
+    pub(crate) const ZERO: Self = Self::from_bits(Uint::ZERO);
 
-    pub const NEG_ZERO: Self = Self::ZERO.neg();
+    pub(crate) const NEG_ZERO: Self = Self::ZERO.neg();
 
-    pub const ONE: Self = Self::normal_power_of_two(0);
+    pub(crate) const ONE: Self = Self::normal_power_of_two(0);
 
-    pub const TWO: Self = Self::normal_power_of_two(1);
+    pub(crate) const TWO: Self = Self::normal_power_of_two(1);
 
-    pub const HALF: Self = Self::normal_power_of_two(-1);
+    pub(crate) const HALF: Self = Self::normal_power_of_two(-1);
 
-    pub const QUARTER: Self = Self::normal_power_of_two(-2);
+    pub(crate) const QUARTER: Self = Self::normal_power_of_two(-2);
 
-    pub const NEG_ONE: Self = Self::ONE.neg();
+    pub(crate) const NEG_ONE: Self = Self::ONE.neg();
 }
 
 #[cfg(test)]
