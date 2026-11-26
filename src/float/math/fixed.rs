@@ -17,13 +17,13 @@ use core::cmp::Ordering;
 ///
 /// The number of full 64-bit limbs `MAX_LIMBS = (2 * W + 24) / 8` satisfies
 /// `MAX_LIMBS * 64 >= 16 * W + 136 > 2 * MB + 128` for all `W > 1` and `MB < 8 * W - 2`.
-pub(super) type Fixed<const W: usize> = Digits<u64, W, 2, 24>;
+pub(in crate::float) type Fixed<const W: usize> = Digits<u64, W, 2, 24>;
 
 /// Wider buffer (`4 * W + 48` bytes) used for Payne-Hanek trigonometric range reduction.
 type WideFixed<const W: usize> = Digits<u64, W, 4, 48>;
 
 /// Conservative Ziv error margin in ULPs of `Fixed<W>`: `2^24`.
-pub(super) const ZIV_ERR_BITS: Exponent = 24;
+pub(in crate::float) const ZIV_ERR_BITS: Exponent = 24;
 
 /// Exact top 512 bits of `ln(2)` (`floor(ln(2) * 2^512)`), big-endian `u64` limbs.
 const LN2_512_BE: [u64; 8] = [
@@ -63,7 +63,7 @@ const PI_DIV4_512_BE: [u64; 8] = [
 
 /// Exact top 1408 bits of `2 / pi` (`floor((2 / pi) * 2^1408)`), big-endian `u64` limbs.
 /// Covers Payne-Hanek range reduction for every `F16`, `F32`, `F64`, and all `|x| < 2^1200`.
-const TWO_OVER_PI_1408_BE: [u64; 22] = [
+pub(in crate::float) const TWO_OVER_PI_1408_BE: [u64; 22] = [
     0xa2f9_836e_4e44_1529,
     0xfc27_57d1_f534_ddc0,
     0xdb62_9599_3c43_9041,
@@ -97,7 +97,7 @@ const TWO_OVER_PI_1408_BE: [u64; 22] = [
 ///
 /// where `sig / 2^(P - 1)` lies in `[1.0, 2.0)`.
 #[derive(Clone, Copy)]
-pub(super) struct Ext<const W: usize> {
+pub(in crate::float) struct Ext<const W: usize> {
     pub sign: bool,
     pub zero: bool,
     pub exp: Int<W>,
@@ -105,12 +105,12 @@ pub(super) struct Ext<const W: usize> {
 }
 
 #[inline(always)]
-pub(super) const fn max_limbs<const W: usize>() -> usize {
+pub(in crate::float) const fn max_limbs<const W: usize>() -> usize {
     (2 * W + 24) / 8
 }
 
 #[inline(always)]
-pub(super) const fn stage1_limbs<const W: usize, const MB: usize>() -> usize {
+pub(in crate::float) const fn stage1_limbs<const W: usize, const MB: usize>() -> usize {
     let raw = (MB + 97).div_ceil(64);
     let m = max_limbs::<W>();
     let l = if raw < 2 { 2 } else { raw };
@@ -122,7 +122,7 @@ pub(super) const fn stage1_limbs<const W: usize, const MB: usize>() -> usize {
 // ---------------------------------------------------------------------------
 
 #[inline]
-pub(super) const fn fp_is_zero<const W: usize>(a: &Fixed<W>, limbs: usize) -> bool {
+pub(in crate::float) const fn fp_is_zero<const W: usize>(a: &Fixed<W>, limbs: usize) -> bool {
     let mut i = 0;
     while i < limbs {
         if a.get(i) != 0 {
@@ -191,7 +191,7 @@ pub(super) const fn fp_cmp<const W: usize>(
 }
 
 #[inline]
-pub(super) const fn fp_add<const W: usize>(
+pub(in crate::float) const fn fp_add<const W: usize>(
     a: &Fixed<W>,
     b: &Fixed<W>,
     limbs: usize,
@@ -491,7 +491,7 @@ pub(super) const fn fp_mul_u64<const W: usize>(
 }
 
 #[inline]
-pub(super) const fn fp_div_u64<const W: usize>(
+pub(in crate::float) const fn fp_div_u64<const W: usize>(
     a: &Fixed<W>,
     d: u64,
     limbs: usize,
@@ -582,7 +582,7 @@ pub(super) const fn int_from_u64<const W: usize>(v: u64) -> Int<W> {
 
 /// Converts an `i64` into an `Int<W>` (valid for any `W > 1`, assuming `|v| < 2^(8*W - 1)`).
 #[inline]
-pub(super) const fn int_from_i64<const W: usize>(v: i64) -> Int<W> {
+pub(in crate::float) const fn int_from_i64<const W: usize>(v: i64) -> Int<W> {
     if v >= 0 {
         int_from_u64(v as u64)
     } else {
@@ -629,7 +629,7 @@ pub(super) const fn ext_one<const W: usize>(limbs: usize) -> Ext<W> {
 }
 
 #[inline]
-pub(super) const fn ext_from_u64<const W: usize>(v: u64, limbs: usize) -> Ext<W> {
+pub(in crate::float) const fn ext_from_u64<const W: usize>(v: u64, limbs: usize) -> Ext<W> {
     if v == 0 {
         return ext_zero(false);
     }
@@ -706,7 +706,7 @@ pub(super) const fn ext_abs<const W: usize>(mut a: Ext<W>) -> Ext<W> {
 }
 
 #[inline]
-pub(super) const fn ext_scale_pow2<const W: usize>(mut a: Ext<W>, k: i64) -> Ext<W> {
+pub(in crate::float) const fn ext_scale_pow2<const W: usize>(mut a: Ext<W>, k: i64) -> Ext<W> {
     if !a.zero {
         a.exp = a.exp.add(int_from_i64(k));
     }
@@ -839,7 +839,7 @@ pub(super) const fn ext_mul<const W: usize>(
 }
 
 #[inline]
-pub(super) const fn ext_recip<const W: usize>(a: &Ext<W>, limbs: usize) -> Ext<W> {
+pub(in crate::float) const fn ext_recip<const W: usize>(a: &Ext<W>, limbs: usize) -> Ext<W> {
     debug_assert!(!a.zero);
     if fp_is_exact_half(&a.sig, limbs) {
         return Ext {
@@ -859,7 +859,7 @@ pub(super) const fn ext_recip<const W: usize>(a: &Ext<W>, limbs: usize) -> Ext<W
 }
 
 #[inline]
-pub(super) const fn ext_div<const W: usize>(
+pub(in crate::float) const fn ext_div<const W: usize>(
     a: &Ext<W>,
     b: &Ext<W>,
     limbs: usize,
@@ -873,7 +873,7 @@ pub(super) const fn ext_div<const W: usize>(
 }
 
 /// Computes `sqrt(a)` for non-negative `Ext<W>` via Newton-Raphson inverse square root.
-pub(super) const fn ext_sqrt<const W: usize>(a: &Ext<W>, limbs: usize) -> Ext<W> {
+pub(in crate::float) const fn ext_sqrt<const W: usize>(a: &Ext<W>, limbs: usize) -> Ext<W> {
     if a.zero {
         return ext_zero(a.sign);
     }
@@ -968,7 +968,7 @@ pub(super) const fn ext_round_to_int<const W: usize>(a: &Ext<W>, limbs: usize) -
 // ---------------------------------------------------------------------------
 
 #[inline]
-const fn fp_from_be_table<const W: usize>(table: &[u64], limbs: usize) -> Fixed<W> {
+pub(in crate::float) const fn fp_from_be_table<const W: usize>(table: &[u64], limbs: usize) -> Fixed<W> {
     let mut out = Fixed::<W>::ALL_ZEROS;
     let mut i = 0;
     while i < limbs && i < table.len() {
@@ -1046,7 +1046,7 @@ const fn fp_atan_inv_u64<const W: usize>(d: u64, limbs: usize) -> Fixed<W> {
 }
 
 /// Returns `ln(2)` as an `Ext<W>` accurate to `limbs` 64-bit limbs.
-pub(super) const fn const_ln2<const W: usize>(limbs: usize) -> Ext<W> {
+pub(in crate::float) const fn const_ln2<const W: usize>(limbs: usize) -> Ext<W> {
     let sig = if limbs <= LN2_512_BE.len() {
         fp_from_be_table(&LN2_512_BE, limbs)
     } else {
@@ -1066,7 +1066,7 @@ pub(super) const fn const_ln2<const W: usize>(limbs: usize) -> Ext<W> {
 }
 
 /// Returns `ln(10)` as an `Ext<W>` accurate to `limbs` 64-bit limbs.
-pub(super) const fn const_ln10<const W: usize>(limbs: usize) -> Ext<W> {
+pub(in crate::float) const fn const_ln10<const W: usize>(limbs: usize) -> Ext<W> {
     let sig = if limbs <= LN10_DIV4_512_BE.len() {
         fp_from_be_table(&LN10_DIV4_512_BE, limbs)
     } else {
@@ -1092,7 +1092,7 @@ pub(super) const fn const_ln10<const W: usize>(limbs: usize) -> Ext<W> {
 }
 
 /// Returns `pi / 4` normalized in `[0.5, 1.0)` as `sig` (`exp = -1` for `pi/4`, `0` for `pi/2`, `1` for `pi`).
-const fn pi_div4_sig<const W: usize>(limbs: usize) -> Fixed<W> {
+pub(in crate::float) const fn pi_div4_sig<const W: usize>(limbs: usize) -> Fixed<W> {
     if limbs <= PI_DIV4_512_BE.len() {
         fp_from_be_table(&PI_DIV4_512_BE, limbs)
     } else {
@@ -1108,7 +1108,7 @@ const fn pi_div4_sig<const W: usize>(limbs: usize) -> Fixed<W> {
 }
 
 #[inline]
-pub(super) const fn const_pi<const W: usize>(limbs: usize) -> Ext<W> {
+pub(in crate::float) const fn const_pi<const W: usize>(limbs: usize) -> Ext<W> {
     Ext {
         sign: false,
         zero: false,
@@ -1118,7 +1118,7 @@ pub(super) const fn const_pi<const W: usize>(limbs: usize) -> Ext<W> {
 }
 
 #[inline]
-pub(super) const fn const_pi_over_2<const W: usize>(limbs: usize) -> Ext<W> {
+pub(in crate::float) const fn const_pi_over_2<const W: usize>(limbs: usize) -> Ext<W> {
     Ext {
         sign: false,
         zero: false,
@@ -1128,7 +1128,7 @@ pub(super) const fn const_pi_over_2<const W: usize>(limbs: usize) -> Ext<W> {
 }
 
 #[inline]
-pub(super) const fn const_pi_over_4<const W: usize>(limbs: usize) -> Ext<W> {
+pub(in crate::float) const fn const_pi_over_4<const W: usize>(limbs: usize) -> Ext<W> {
     Ext {
         sign: false,
         zero: false,
@@ -2087,7 +2087,7 @@ const fn fp_range_all_eq<const W: usize>(
 /// ULPs of `Fixed<W>` from the rounding-mode discontinuity (`0.5` ULP for round-to-nearest
 /// modes, `0.0`/`1.0` ULP for directed and `ToOdd` modes), signaling the caller to retry at
 /// `max_limbs::<W>()`. `Faithful` and `Stochastic` never need Stage 2 escalation.
-pub(super) const fn ext_round_to_float<const W: usize, const MB: usize, const RM: u8>(
+pub(in crate::float) const fn ext_round_to_float<const W: usize, const MB: usize, const RM: u8>(
     val: &Ext<W>,
     limbs: usize,
     err_bits: Exponent,

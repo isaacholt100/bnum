@@ -15,7 +15,7 @@ mod div_euclid;
 mod exp;
 mod exp2;
 mod exp_m1;
-mod fixed;
+pub(super) mod fixed;
 mod hypot;
 mod ln;
 mod ln_1p;
@@ -85,8 +85,8 @@ impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     ///
     /// // Avoids intermediate rounding loss when `a * b` nearly cancels `c`:
     /// let eps = F64::EPSILON;
-    /// let one_plus_eps = F64::ONE + eps;
-    /// assert_eq!(one_plus_eps.mul_add(one_plus_eps, -(F64::ONE + f!(2.0) * eps)), eps * eps);
+    /// let one_plus_eps = f!(1.0) + eps;
+    /// assert_eq!(one_plus_eps.mul_add(one_plus_eps, -(f!(1.0) + f!(2.0) * eps)), eps * eps);
     /// ```
     #[must_use = doc::must_use_op!(float)]
     pub const fn mul_add(self, a: Self, b: Self) -> Self {
@@ -165,7 +165,7 @@ impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     ///
     /// assert_eq!(x.powi(3), f!(8.0));
     /// assert_eq!(x.powi(-2), f!(0.25));
-    /// assert_eq!(F64::NAN.powi(0), F64::ONE);
+    /// assert_eq!(F64::NAN.powi(0), f!(1.0));
     /// ```
     #[must_use = doc::must_use_op!(float)]
     pub const fn powi(self, n: i32) -> Self {
@@ -234,8 +234,8 @@ impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     /// let zero: F64 = f!(0.0);
     /// let one: F64 = f!(1.0);
     ///
-    /// assert_eq!(zero.exp(), F64::ONE);
-    /// assert_eq!(one.exp(), f!(2.71828182845904523536));
+    /// assert_eq!(zero.exp(), one);
+    /// assert_eq!(one.exp(), F64::E);
     /// ```
     #[must_use = doc::must_use_op!(float)]
     pub const fn exp(self) -> Self {
@@ -278,10 +278,10 @@ impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     /// let one: F64 = f!(1.0);
     /// let two: F64 = f!(2.0);
     ///
-    /// assert_eq!(one.ln(), F64::ZERO);
+    /// assert_eq!(one.ln(), f!(0.0));
     /// assert_eq!(two.ln(), f!(0.69314718055994530942));
-    /// assert_eq!(F64::ZERO.ln(), F64::NEG_INFINITY);
-    /// assert!(F64::NEG_ONE.ln().is_nan());
+    /// assert_eq!(f!(0.0F64).ln(), F64::NEG_INFINITY);
+    /// assert!(f!(-1.0F64).ln().is_nan());
     /// ```
     #[must_use = doc::must_use_op!(float)]
     pub const fn ln(self) -> Self {
@@ -350,7 +350,7 @@ impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     /// let thousand: F64 = f!(1000.0);
     ///
     /// assert_eq!(thousand.log10(), f!(3.0));
-    /// assert_eq!(f!(1.0F64).log10(), F64::ZERO);
+    /// assert_eq!(f!(1.0F64).log10(), f!(0.0));
     /// ```
     #[must_use = doc::must_use_op!(float)]
     pub const fn log10(self) -> Self {
@@ -416,10 +416,8 @@ impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     ///
     /// use_types! { F64 }
     ///
-    /// let half_pi: F64 = f!(1.57079632679489661923);
-    ///
-    /// assert_eq!(F64::ZERO.sin(), F64::ZERO);
-    /// assert_eq!(half_pi.sin(), F64::ONE);
+    /// assert_eq!(f!(0.0F64).sin(), f!(0.0));
+    /// assert_eq!(F64::FRAC_PI_2.sin(), f!(1.0));
     /// ```
     #[must_use = doc::must_use_op!(float)]
     pub const fn sin(self) -> Self {
@@ -440,8 +438,8 @@ impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     ///
     /// let pi: F64 = f!(3.14159265358979323846);
     ///
-    /// assert_eq!(F64::ZERO.cos(), F64::ONE);
-    /// assert_eq!(pi.cos(), F64::NEG_ONE);
+    /// assert_eq!(f!(0.0F64).cos(), f!(1.0));
+    /// assert_eq!(F64::PI.cos(), f!(-1.0));
     /// ```
     #[must_use = doc::must_use_op!(float)]
     pub const fn cos(self) -> Self {
@@ -462,8 +460,8 @@ impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     ///
     /// let quarter_pi: F64 = f!(0.78539816339744830962);
     ///
-    /// assert_eq!(F64::ZERO.tan(), F64::ZERO);
-    /// assert!((quarter_pi.tan() - F64::ONE).abs() < f!(1e-15));
+    /// assert_eq!(f!(0.0F64).tan(), f!(0.0));
+    /// assert!((quarter_pi.tan() - f!(1)).abs() < f!(1e-15));
     /// ```
     #[must_use = doc::must_use_op!(float)]
     pub const fn tan(self) -> Self {
@@ -484,10 +482,9 @@ impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     /// use_types! { F64 }
     ///
     /// let half: F64 = f!(0.5);
-    /// let pi_over_6: F64 = f!(0.52359877559829887308);
     ///
-    /// assert_eq!(F64::ZERO.asin(), F64::ZERO);
-    /// assert_eq!(half.asin(), pi_over_6);
+    /// assert_eq!(f!(0.0F64).asin(), f!(0.0));
+    /// assert_eq!(half.asin(), F64::FRAC_PI_6);
     /// assert!(f!(2.0F64).asin().is_nan());
     /// ```
     #[must_use = doc::must_use_op!(float)]
@@ -509,10 +506,9 @@ impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     /// use_types! { F64 }
     ///
     /// let half: F64 = f!(0.5);
-    /// let pi_over_3: F64 = f!(1.04719755119659774615);
     ///
-    /// assert_eq!(F64::ONE.acos(), F64::ZERO);
-    /// assert_eq!(half.acos(), pi_over_3);
+    /// assert_eq!(f!(1.0F64).acos(), f!(0.0));
+    /// assert_eq!(half.acos(), F64::FRAC_PI_3);
     /// assert!(f!(-2.0F64).acos().is_nan());
     /// ```
     #[must_use = doc::must_use_op!(float)]
@@ -535,7 +531,7 @@ impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     /// let one: F64 = f!(1.0);
     /// let quarter_pi: F64 = f!(0.78539816339744830962);
     ///
-    /// assert_eq!(F64::ZERO.atan(), F64::ZERO);
+    /// assert_eq!(f!(0.0F64).atan(), f!(0.0));
     /// assert_eq!(one.atan(), quarter_pi);
     /// ```
     #[must_use = doc::must_use_op!(float)]
@@ -565,7 +561,7 @@ impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     /// let three_pi_over_4: F64 = f!(2.35619449019234492885);
     ///
     /// assert_eq!(y.atan2(x), three_pi_over_4);
-    /// assert_eq!(F64::ZERO.atan2(F64::ONE), F64::ZERO);
+    /// assert_eq!(f!(0.0F64).atan2(f!(1.0F64)), f!(0.0));
     /// ```
     #[must_use = doc::must_use_op!(float)]
     pub const fn atan2(self, other: Self) -> Self {
@@ -590,7 +586,7 @@ impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     ///
     /// assert_eq!(s, x.sin());
     /// assert_eq!(c, x.cos());
-    /// assert!((s * s + c * c - F64::ONE).abs() < f!(1e-15));
+    /// assert!((s * s + c * c - f!(1.0)).abs() < f!(1e-15));
     /// ```
     #[must_use = doc::must_use_op!(float)]
     pub const fn sin_cos(self) -> (Self, Self) {
@@ -612,7 +608,7 @@ impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     ///
     /// // For tiny x, exp(x) - 1 would lose precision, whereas exp_m1(x) ≈ x:
     /// assert_eq!(x.exp_m1(), x);
-    /// assert_eq!(F64::ZERO.exp_m1(), F64::ZERO);
+    /// assert_eq!(f!(0.0F64).exp_m1(), f!(0.0));
     /// ```
     #[must_use = doc::must_use_op!(float)]
     pub const fn exp_m1(self) -> Self {
@@ -635,8 +631,8 @@ impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     /// let x: F64 = f!(1e-16);
     ///
     /// assert_eq!(x.ln_1p(), x);
-    /// assert_eq!(F64::ONE.ln_1p(), f!(2.0F64).ln());
-    /// assert_eq!(F64::NEG_ONE.ln_1p(), F64::NEG_INFINITY);
+    /// assert_eq!(f!(1.0F64).ln_1p(), f!(2.0F64).ln());
+    /// assert_eq!(f!(-1.0F64).ln_1p(), F64::NEG_INFINITY);
     /// ```
     #[must_use = doc::must_use_op!(float)]
     pub const fn ln_1p(self) -> Self {
@@ -656,7 +652,7 @@ impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     ///
     /// let x: F64 = f!(1.0);
     ///
-    /// assert_eq!(F64::ZERO.sinh(), F64::ZERO);
+    /// assert_eq!(f!(0.0F64).sinh(), f!(0.0));
     /// assert_eq!(x.sinh(), f!(1.17520119364380145688));
     /// ```
     #[must_use = doc::must_use_op!(float)]
@@ -677,7 +673,7 @@ impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     ///
     /// let x: F64 = f!(1.0);
     ///
-    /// assert_eq!(F64::ZERO.cosh(), F64::ONE);
+    /// assert_eq!(f!(0.0F64).cosh(), f!(1.0));
     /// assert_eq!(x.cosh(), f!(1.54308063481524377848));
     /// ```
     #[must_use = doc::must_use_op!(float)]
@@ -698,7 +694,7 @@ impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     ///
     /// let x: F64 = f!(1.0);
     ///
-    /// assert_eq!(F64::ZERO.tanh(), F64::ZERO);
+    /// assert_eq!(f!(0.0F64).tanh(), f!(0.0));
     /// assert_eq!(x.tanh(), f!(0.76159415595576488812));
     /// ```
     #[must_use = doc::must_use_op!(float)]
@@ -719,7 +715,7 @@ impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     ///
     /// let x: F64 = f!(1.0);
     ///
-    /// assert_eq!(F64::ZERO.asinh(), F64::ZERO);
+    /// assert_eq!(f!(0.0F64).asinh(), f!(0.0));
     /// assert_eq!(x.asinh(), f!(0.88137358701954302523));
     /// ```
     #[must_use = doc::must_use_op!(float)]
@@ -742,7 +738,7 @@ impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     ///
     /// let x: F64 = f!(2.0);
     ///
-    /// assert_eq!(F64::ONE.acosh(), F64::ZERO);
+    /// assert_eq!(f!(1.0F64).acosh(), f!(0.0));
     /// assert_eq!(x.acosh(), f!(1.31695789692481670863));
     /// assert!(f!(0.5F64).acosh().is_nan());
     /// ```
@@ -766,9 +762,9 @@ impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     ///
     /// let half: F64 = f!(0.5);
     ///
-    /// assert_eq!(F64::ZERO.atanh(), F64::ZERO);
+    /// assert_eq!(f!(0.0F64).atanh(), f!(0.0));
     /// assert_eq!(half.atanh(), f!(0.54930614433405484570));
-    /// assert_eq!(F64::ONE.atanh(), F64::INFINITY);
+    /// assert_eq!(f!(1.0F64).atanh(), F64::INFINITY);
     /// assert!(f!(2.0F64).atanh().is_nan());
     /// ```
     #[must_use = doc::must_use_op!(float)]
@@ -789,8 +785,8 @@ impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     ///
     /// let pi: F64 = f!(3.14159265358979323846);
     ///
-    /// assert_eq!(F64::ZERO.to_degrees(), F64::ZERO);
-    /// assert_eq!(pi.to_degrees(), f!(180.0));
+    /// assert_eq!(f!(0.0F64).to_degrees(), f!(0.0));
+    /// assert_eq!(F64::PI.to_degrees(), f!(180.0));
     /// ```
     #[must_use = doc::must_use_op!(float)]
     pub const fn to_degrees(self) -> Self {
@@ -808,11 +804,8 @@ impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     ///
     /// use_types! { F64 }
     ///
-    /// let deg: F64 = f!(180.0);
-    /// let pi: F64 = f!(3.14159265358979323846);
-    ///
-    /// assert_eq!(F64::ZERO.to_radians(), F64::ZERO);
-    /// assert_eq!(deg.to_radians(), pi);
+    /// assert_eq!(f!(0.0F64).to_radians(), f!(0.0));
+    /// assert_eq!(f!(180).to_radians(), F64::PI);
     /// ```
     #[must_use = doc::must_use_op!(float)]
     pub const fn to_radians(self) -> Self {
