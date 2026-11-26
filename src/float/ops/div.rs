@@ -1,82 +1,133 @@
 use super::Float;
-use crate::Exponent;
-use crate::Uint;
-use crate::float::FloatExponent;
-use crate::float::UnsignedFloatExponent;
+use crate::{Exponent, Int, Uint};
+use core::cmp::Ordering;
 use core::num::FpCategory;
 
 impl<const W: usize, const MB: usize> Float<W, MB> {
+    /// Divides two finite non-zero floats with IEEE 754 round-to-nearest-even.
     #[inline]
-    pub(crate) fn div_internal(self, rhs: Self, negative: bool) -> Self {
-        let (a, b) = (self, rhs);
-        let (_, e1, s1) = a.into_biased_parts();
-        let (_, e2, s2) = b.into_biased_parts();
+    pub(crate) const fn div_internal(self, rhs: Self, negative: bool) -> Self {
+        const {
+            assert!(W > 1, "Float requires W > 1");
+            assert!(
+                MB > 2 && (MB as Exponent) < Self::BITS - 2,
+                "Float requires 2 < MB < BITS - 2"
+            );
+        }
+
+        let (_, e1, s1) = self.into_biased_uint_parts();
+        let (_, e2, s2) = rhs.into_biased_uint_parts();
 
         let b1 = s1.bit_width();
         let b2 = s2.bit_width();
+        let sh1 = (Self::MB + 1) - b1;
+        let sh2 = (Self::MB + 1) - b2;
 
-        let mut e =
-            (e1 as FloatExponent) - (e2 as FloatExponent) + Self::EXP_BIAS + (b1 as FloatExponent)
-                - (b2 as FloatExponent)
-                - 1;
+        let mut na = if sh1 != 0 { s1.shl(sh1) } else { s1 };
+        let nb = if sh2 != 0 { s2.shl(sh2) } else { s2 };
 
-        let mut extra_shift = 0;
-        if !e.is_positive() {
-            extra_shift = (1 - e) as UnsignedFloatExponent;
-            e = 1;
+        let bias = Self::exp_bias_uint().cast_signed();
+        let exp_max = Self::exp_max_uint().cast_signed();
+
+        let mut e: Int<W> = e1
+            .cast_signed()
+            .sub(e2.cast_signed())
+            .add(bias)
+            .add(Uint::cast_from_unsigned_float_exponent(b1).cast_signed())
+            .sub(Uint::cast_from_unsigned_float_exponent(b2).cast_signed());
+
+        if na.lt(&nb) {
+            na = na.shl(1);
+            e = e.sub(Int::ONE);
         }
 
-        let total_shift = (MB as FloatExponent + 1 + b2 as FloatExponent - b1 as FloatExponent)
-            - (extra_shift as FloatExponent);
+        // Now 1 <= na / nb < 2 and exact quotient is (na / nb) * 2^(e - bias).
+        if e.ge(&exp_max) {
+            return if negative {
+                Self::NEG_INFINITY
+            } else {
+                Self::INFINITY
+            };
+        }
 
-        let widened_s1 = s1.to_digits::<u64>().grow::<1, W>(); // double the number of bits in s1, extending with zeros
-        let widened_s2 = s2.to_digits::<u64>().grow::<1, W>(); // double the number of bits in s2, extending with zeros
-
-        let large = if !total_shift.is_negative() {
-            unsafe { widened_s1.unchecked_shl(total_shift as Exponent) }
-        } else {
-            unsafe { widened_s1.unchecked_shr((-total_shift) as Exponent, false) }
-        };
-        let (q, r) = large.div_rem_unchecked(widened_s2);
-        let mut division = Uint::<W>::from_digits(q.remove_tail()); // remove_tail means we resize to the desired width
-
-        let rem = if division.bit_width() != Self::MB + 2 {
-            let rem = Uint::<W>::from_digits(r.remove_tail()); // remove_tail means we resize to the desired width
-            rem
-        } else {
-            e += 1;
-            let (q, r) = unsafe { large.unchecked_shr(1, false).div_rem_unchecked(widened_s2) };
-            division = Uint::<W>::from_digits(q.remove_tail()); // remove_tail means we resize to the desired width
-            let rem = Uint::<W>::from_digits(r.remove_tail()); // remove_tail means we resize to the desired width
-            rem
-        };
-        if rem * crate::n!(0b10) > s2 {
-            division += crate::n!(0b1);
-        } else if rem * crate::n!(0b10) == s2 {
-            if division.is_odd() {
-                division += crate::n!(0b1);
+        let left_shift: Exponent = if e.le(&Int::ZERO) {
+            let sub_drop = Int::<W>::ONE.sub(e);
+            let mb_plus_1 = Uint::<W>::cast_from_unsigned_float_exponent(Self::MB + 1).cast_signed();
+            match sub_drop.cmp(&mb_plus_1) {
+                Ordering::Greater => {
+                    return if negative {
+                        Self::NEG_ZERO
+                    } else {
+                        Self::ZERO
+                    };
+                }
+                Ordering::Equal => {
+                    // Exact value in [0.5, 1.0) ULPs of MIN_POSITIVE_SUBNORMAL.
+                    // Ties-to-even rounds exact 0.5 (na == nb) to 0, strictly > 0.5 to 1.
+                    return if na.gt(&nb) {
+                        Self::from_biased_uint_parts(negative, Uint::ONE, Uint::ONE)
+                    } else if negative {
+                        Self::NEG_ZERO
+                    } else {
+                        Self::ZERO
+                    };
+                }
+                Ordering::Less => {
+                    let drop = sub_drop.cast_unsigned().cast_to_unsigned_float_exponent() as Exponent;
+                    e = Int::ONE;
+                    Self::MB - drop
+                }
             }
-        }
-        if division.bit_width() == Self::MB + 2 {
-            e += 1;
-            division >>= 1 as Exponent;
+        } else {
+            Self::MB
+        };
+
+        let widened_na = na.to_digits::<u64>().grow::<1, W>();
+        let widened_nb = nb.to_digits::<u64>().grow::<1, W>();
+        let num = if left_shift == 0 {
+            widened_na
+        } else {
+            unsafe { widened_na.unchecked_shl(left_shift) }
+        };
+
+        let (mut q, r): (Uint<W>, Uint<W>) = match num.cmp(&widened_nb) {
+            Ordering::Less => (Uint::ZERO, na),
+            Ordering::Equal => (Uint::ONE, Uint::ZERO),
+            Ordering::Greater => {
+                let (dq, dr) = num.div_rem_unchecked(widened_nb);
+                (dq.remove_tail().to_integer(), dr.remove_tail().to_integer())
+            }
+        };
+
+        let twice_r = r.shl(1);
+        match twice_r.cmp(&nb) {
+            Ordering::Greater => q = q.add(Uint::ONE),
+            Ordering::Equal => {
+                if q.is_odd() {
+                    q = q.add(Uint::ONE);
+                }
+            }
+            Ordering::Less => {}
         }
 
-        if e > Self::MAX_EXP + Self::EXP_BIAS - 1 {
-            return Self::INFINITY;
+        if q.bit(Self::MB + 1) {
+            q = q.shr(1);
+            e = e.add(Int::ONE);
         }
 
-        if e == 1 && division.bit_width() < Self::MB + 1 {
-            return Self::from_raw_parts(negative, 0, division);
+        if e.ge(&exp_max) {
+            return if negative {
+                Self::NEG_INFINITY
+            } else {
+                Self::INFINITY
+            };
         }
 
-        division.set_bit(Self::MB, false);
-        
-        Self::from_raw_parts(negative, e as UnsignedFloatExponent, division)
+        Self::from_biased_uint_parts(negative, e.cast_unsigned(), q)
     }
 
     #[inline]
-    pub(super) fn div(self, rhs: Self) -> Self {
+    pub(crate) const fn div(self, rhs: Self) -> Self {
         let negative = self.is_sign_negative() ^ rhs.is_sign_negative();
         match (self.classify(), rhs.classify()) {
             (FpCategory::Nan, _) | (_, FpCategory::Nan) => Self::NAN,

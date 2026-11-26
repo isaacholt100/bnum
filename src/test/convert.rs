@@ -136,29 +136,29 @@ impl TestConvert for f32 {
     }
 }
 
-// #[cfg(feature = "float")]
-// impl TestConvert for crate::types::F64 {
-//     type Output = u64;
+#[cfg(feature = "float")]
+impl TestConvert for crate::types::F64 {
+    type Output = u64;
 
-//     #[inline]
-//     fn into(self) -> Self::Output {
-//         use crate::cast::As;
+    #[inline]
+    fn into(self) -> Self::Output {
+        use crate::cast::As;
 
-//         self.to_bits().as_()
-//     }
-// }
+        self.to_bits().as_()
+    }
+}
 
-// #[cfg(feature = "float")]
-// impl TestConvert for crate::types::F32 {
-//     type Output = u32;
+#[cfg(feature = "float")]
+impl TestConvert for crate::types::F32 {
+    type Output = u32;
 
-//     #[inline]
-//     fn into(self) -> Self::Output {
-//         use crate::cast::As;
+    #[inline]
+    fn into(self) -> Self::Output {
+        use crate::cast::As;
 
-//         self.to_bits().as_()
-//     }
-// }
+        self.to_bits().as_()
+    }
+}
 
 impl<T: TestConvert, U: TestConvert> TestConvert for (T, U) {
     type Output = (<T as TestConvert>::Output, <U as TestConvert>::Output);
@@ -193,6 +193,26 @@ impl TestConvert for core::num::ParseIntError {
     #[inline]
     fn into(self) -> Self::Output {
         self.kind().clone()
+    }
+}
+
+#[cfg(feature = "float")]
+impl TestConvert for core::num::ParseFloatError {
+    type Output = bool; // true if Empty, false if Invalid
+
+    #[inline]
+    fn into(self) -> Self::Output {
+        self == "".parse::<f32>().unwrap_err()
+    }
+}
+
+#[cfg(feature = "float")]
+impl TestConvert for crate::errors::ParseFloatError {
+    type Output = bool; // true if Empty, false if Invalid
+
+    #[inline]
+    fn into(self) -> Self::Output {
+        self == crate::errors::ParseFloatError::EMPTY
     }
 }
 

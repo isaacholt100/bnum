@@ -209,6 +209,89 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     pub(crate) const fn signed_biased_exponent(self) -> FloatExponent {
         self.into_signed_biased_parts().1
     }
+
+    /// Returns the exponent bias `2^(EXPONENT_BITS - 1) - 1` as a `Uint<W>`.
+    /// Valid for all `W > 1` and `2 < MB < Self::BITS - 2` (including `EXPONENT_BITS >= 32`).
+    #[inline]
+    pub(crate) const fn exp_bias_uint() -> Uint<W> {
+        Uint::<W>::ONE.shl(Self::EXPONENT_BITS - 1).sub(Uint::ONE)
+    }
+
+    /// Returns the all-ones raw exponent `2^EXPONENT_BITS - 1` as a `Uint<W>`.
+    /// Valid for all `W > 1` and `2 < MB < Self::BITS - 2` (including `EXPONENT_BITS >= 32`).
+    #[inline]
+    pub(crate) const fn exp_max_uint() -> Uint<W> {
+        Uint::<W>::MAX.shr(Self::MB + 1)
+    }
+
+    /// Returns `1.0` without relying on `i32` `EXP_BIAS`.
+    #[inline]
+    pub(crate) const fn one_val() -> Self {
+        Self::from_bits(Self::exp_bias_uint().shl(Self::MB))
+    }
+
+    /// Returns `-1.0` without relying on `i32` `EXP_BIAS`.
+    #[inline]
+    pub(crate) const fn neg_one_val() -> Self {
+        Self::one_val().neg()
+    }
+
+    /// Returns `2.0` without relying on `i32` `EXP_BIAS`.
+    #[inline]
+    pub(crate) const fn two_val() -> Self {
+        Self::from_bits(Self::exp_bias_uint().add(Uint::ONE).shl(Self::MB))
+    }
+
+    /// Returns `0.5` without relying on `i32` `EXP_BIAS` (also handles `EXPONENT_BITS == 2`,
+    /// where `0.5` is subnormal).
+    #[inline]
+    pub(crate) const fn half_val() -> Self {
+        if Self::EXPONENT_BITS == 2 {
+            Self::from_bits(Uint::<W>::ONE.shl(Self::MB - 1))
+        } else {
+            Self::from_bits(Self::exp_bias_uint().sub(Uint::ONE).shl(Self::MB))
+        }
+    }
+
+    /// Splits a finite `Float<W, MB>` into `(sign, biased_exp, significand)` where
+    /// `value = (-1)^sign * significand * 2^(biased_exp - bias - MB)`, `biased_exp >= 1`,
+    /// and `significand < 2^(MB + 1)`. Works for all `EXPONENT_BITS >= 2`.
+    #[inline]
+    pub(crate) const fn into_biased_uint_parts(self) -> (bool, Uint<W>, Uint<W>) {
+        let sign = self.is_sign_negative();
+        let raw_exp = self.bits.bitand(Self::SIGN_MASK).shr(Self::MB);
+        let raw_mant = self.bits.bitand(Self::MANTISSA_MASK);
+        if raw_exp.is_zero() {
+            (sign, Uint::ONE, raw_mant)
+        } else {
+            (sign, raw_exp, raw_mant.bitor(Self::MANTISSA_IMPLICIT_LEADING_ONE_MASK))
+        }
+    }
+
+    /// Packs `(sign, biased_exp, significand)` into a finite `Float<W, MB>`.
+    /// Caller must ensure `biased_exp < Self::exp_max_uint()` and `significand < 2^(MB + 1)`.
+    #[inline]
+    pub(crate) const fn from_biased_uint_parts(
+        sign: bool,
+        exp: Uint<W>,
+        mut mant: Uint<W>,
+    ) -> Self {
+        if mant.is_zero() {
+            return if sign { Self::NEG_ZERO } else { Self::ZERO };
+        }
+        let raw_exp = if mant.bit(Self::MB) {
+            mant.set_bit(Self::MB, false);
+            exp
+        } else {
+            debug_assert!(exp.eq(&Uint::ONE));
+            Uint::ZERO
+        };
+        let mut bits = raw_exp.shl(Self::MB).bitor(mant);
+        if sign {
+            bits.set_bit(Self::BITS - 1, true);
+        }
+        Self::from_bits(bits)
+    }
 }
 
 #[cfg(test)]

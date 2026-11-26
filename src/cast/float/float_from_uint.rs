@@ -38,11 +38,8 @@ where
     let exponent = bit_width - 1; // value lies in range [2^(bit_width - 1), 2^bit_width)
 
     match F::SignedExp::try_from(exponent) {
-        Ok(mut exponent) => {
-            if exponent >= F::MAX_EXP {
-                // exponent is too large
-                return F::INFINITY;
-            }
+        // Ok(exponent) if exponent >= F::MAX_EXP => F::INFINITY,
+        Ok(mut exponent) if exponent < F::MAX_EXP => {
             let mantissa = if bit_width <= F::MANTISSA_DIGITS {
                 // in this case, we can safely cast which preserves the value (no truncation)
                 F::Mantissa::cast_from(value) << (F::MANTISSA_DIGITS - bit_width)

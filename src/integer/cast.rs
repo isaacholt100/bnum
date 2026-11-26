@@ -177,6 +177,20 @@ mod tests {
             function: <STest as CastTo>::cast_to,
             into_types: (u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64, TestUint1, TestUint2, TestUint3, TestUint4, TestUint5, TestUint6, TestUint7, TestUint8, TestUint9, TestUint10, TestInt1, TestInt2, TestInt3, TestInt4, TestInt5, TestInt6, TestInt7, TestInt8, TestInt9, TestInt10)
         }
+
+        
+    }
+}
+
+mod atests {
+    #[test]
+    fn test_cast_to_f32() {
+        use crate::cast::CastFrom;
+        use crate::t;
+        let a= <t!(U128)>::MAX;
+        // let a = A::MAX;
+        let b = f32::cast_from(a);
+        // panic!("{}", b);
     }
 }
 
@@ -212,33 +226,33 @@ mod double_custom_bit_width_cast_tests {
     use crate::test::BitInt;
     use crate::cast::CastFrom;
     use crate::Integer;
-    use crate::macros::get_size_params_from_bits;
+    use crate::t;
 
     macro_rules! test_double_custom_bit_width_cast {
         ($($from: literal => $to: literal), *) => {
             paste::paste! {
                 $(
                     quickcheck::quickcheck! {
-                        fn [<quickcheck_cast_from_u_ $from _to $to _bits>](v: BitInt<false, $from>) -> bool {
+                        fn [<quickcheck_cast_from_u_ $from _to_ $to _bits>](v: BitInt<false, $from>) -> bool {
                             let w = Integer::from(v);
                             let a = BitInt::<false, $to>::cast_from(v);
-                            let b = Integer::<false, {get_size_params_from_bits($to).0}, {get_size_params_from_bits($to).1}>::cast_from(w);
+                            let b = <t!([<U $to >])>::cast_from(w);
 
                             let w = Integer::from(v);
                             let c = BitInt::<true, $to>::cast_from(v);
-                            let d = Integer::<true, {get_size_params_from_bits($to).0}, {get_size_params_from_bits($to).1}>::cast_from(w);
+                            let d = <t!([<I $to >])>::cast_from(w);
 
                             crate::test::test_eq(a, b) && crate::test::test_eq(c, d)
                         }
 
-                        fn [<quickcheck_cast_from_i_ $from _to $to _bits>](v: BitInt<true, $from>) -> bool {
+                        fn [<quickcheck_cast_from_i_ $from _to_ $to _bits>](v: BitInt<true, $from>) -> bool {
                             let w = Integer::from(v);
                             let a = BitInt::<false, $to>::cast_from(v);
-                            let b = Integer::<false, {get_size_params_from_bits($to).0}, {get_size_params_from_bits($to).1}>::cast_from(w);
+                            let b = <t!([<U $to >])>::cast_from(w);
 
                             let w = Integer::from(v);
                             let c = BitInt::<true, $to>::cast_from(v);
-                            let d = Integer::<true, {get_size_params_from_bits($to).0}, {get_size_params_from_bits($to).1}>::cast_from(w);
+                            let d = <t!([<I $to >])>::cast_from(w);
                             crate::test::test_eq(a, b) && crate::test::test_eq(c, d)
                         }
                     }

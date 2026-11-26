@@ -85,28 +85,28 @@ macro_rules! n {
             Parser::parse(negative, radix, digit_bytes)
         }
     };
-    ($ty: ident) => {
-        $crate::Integer::<{
-            $crate::__internal::get_signedness(stringify!($ty))
-        }, {
-            // we do the error handling here, as the processing of the bit width is the most computationally intensive (need to parse a string to an int, more cases to handle). it's very easy and fast to come up with a sign and overflow mode descriptors that are valid when the type descriptor is valid (the sign and overflow mode descriptors may be incorrect for an invalid type descriptor, but this does not matter as the error handling here will cause a panic anyway)
-            const PARAMS_RESULT: Result<(bool, usize, u8), ($crate::__internal::TypeDescriptorError, &'static str)> = $crate::__internal::get_integer_params(stringify!($ty));
-            // compiler doesn't say which const-generic parameter caused the error, so we can put all the error handling in one place, this means we won't forget to cover any of the possible errors
-            match PARAMS_RESULT {
-                Ok((_, bw, _)) => $crate::__internal::get_size_params_from_bits(bw).0,
-                Err(_) => $crate::__internal_panic_type_descriptor_error!(PARAMS_RESULT),
-            }
-        }, {
-            match $crate::__internal::get_integer_params(stringify!($ty)) {
-                Ok((_, bw, _)) => $crate::__internal::get_size_params_from_bits(bw).1,
-                _ => 0,
-            }
-        }, {
-            $crate::__internal::get_overflow_mode(stringify!($ty))
-        }>
-    };
+    // ($ty: ident) => {
+    //     $crate::Integer::<{
+    //         $crate::__internal::get_signedness(stringify!($ty))
+    //     }, {
+    //         // we do the error handling here, as the processing of the bit width is the most computationally intensive (need to parse a string to an int, more cases to handle). it's very easy and fast to come up with a sign and overflow mode descriptors that are valid when the type descriptor is valid (the sign and overflow mode descriptors may be incorrect for an invalid type descriptor, but this does not matter as the error handling here will cause a panic anyway)
+    //         const PARAMS_RESULT: Result<(bool, usize, u8), ($crate::__internal::TypeDescriptorError, &'static str)> = $crate::__internal::get_integer_params(stringify!($ty));
+    //         // compiler doesn't say which const-generic parameter caused the error, so we can put all the error handling in one place, this means we won't forget to cover any of the possible errors
+    //         match PARAMS_RESULT {
+    //             Ok((_, bw, _)) => $crate::__internal::get_size_params_from_bits(bw).0,
+    //             Err(_) => $crate::__internal_panic_type_descriptor_error!(PARAMS_RESULT),
+    //         }
+    //     }, {
+    //         match $crate::__internal::get_integer_params(stringify!($ty)) {
+    //             Ok((_, bw, _)) => $crate::__internal::get_size_params_from_bits(bw).1,
+    //             _ => 0,
+    //         }
+    //     }, {
+    //         $crate::__internal::get_overflow_mode(stringify!($ty))
+    //     }>
+    // };
     ($($_: tt)*) => {
-        compile_error!("expected integer literal or integer type descriptor, e.g. `0xFFFF`, `123456U1024s`, `I256` or `U512w`");
+        compile_error!("expected integer literal e.g. `0xFFFF`, `123456U1024s`, or `0o7654321_I101w`");
     };
 }
 

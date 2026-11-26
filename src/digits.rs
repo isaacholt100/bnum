@@ -1,6 +1,6 @@
 use core::marker::PhantomData;
 
-use crate::{Byte, Exponent, Integer};
+use crate::{Exponent, Integer};
 
 // since we don't have generic_const_exprs, this is used for a u8 array of length N * M + E
 #[derive(Clone, Copy)]
@@ -86,11 +86,12 @@ impl<D, const N: usize, const M: usize, const E: usize> Digits<D, N, M, E> {
 
     pub const ALL_ZEROS: Self = Self([[0; N]; M], [0; E], PhantomData);
 
-    // pub const ONE: Self = {
-    //     let mut out = Self::ALL_ZEROS.force_digit::<u8>();
-    //     out.set(0, 1);
-    //     out.force_digit()
-    // };
+    #[cfg(feature = "float")]
+    pub const ONE: Self = {
+        let mut out = Self::ALL_ZEROS.force_digit::<u8>();
+        out.set(0, 1);
+        out.force_digit()
+    };
 
     const ALL_ONES: Self = Self([[u8::MAX; N]; M], [u8::MAX; E], PhantomData);
 
@@ -116,10 +117,11 @@ impl<D, const N: usize, const M: usize, const E: usize> Digits<D, N, M, E> {
 
     const LAST_DIGIT_OFFSET: usize = Self::BYTE_LEN - Self::LAST_DIGIT_BYTES;
 
-    // #[inline]
-    // pub const fn remove_tail(self) -> Digits<D, N, M, 0> {
-    //     Digits(self.0, [0; 0], PhantomData)
-    // }
+    #[cfg(feature = "float")]
+    #[inline]
+    pub const fn remove_tail(self) -> Digits<D, N, M, 0> {
+        Digits(self.0, [0; 0], PhantomData)
+    }
 }
 
 macro_rules! digits_impl {
@@ -310,8 +312,8 @@ digits_impl! {
 
         #[inline]
         pub const fn bit(&self, index: Exponent) -> bool {
-            let byte = self.get(index as usize / Byte::BITS as usize);
-            byte & (1 << (index % Byte::BITS)) != 0
+            let digit = self.get(index as usize / Digit::BITS as usize);
+            digit & (1 << (index % Digit::BITS)) != 0
         }
 
         #[inline]
@@ -858,7 +860,6 @@ digits_impl! {
                     }
                     q
                 } else {
-                    return (Self::ALL_ZEROS, Self::ALL_ZEROS);
                     Digit::MAX
                 };
 

@@ -343,7 +343,7 @@ mod tests {
 mod double_custom_bit_width_convert_tests {
     use crate::Integer;
     use crate::test::BitInt;
-    use crate::macros::get_size_params_from_bits;
+    use crate::t;
 
     macro_rules! test_double_custom_bit_width_convert {
         ($($from: literal => $to: literal), *) => {
@@ -353,22 +353,22 @@ mod double_custom_bit_width_convert_tests {
                         fn [<quickcheck_cast_from_u_ $from _to $to _bits>](v: BitInt<false, $from>) -> bool {
                             let w = Integer::from(v);
                             let a = BitInt::<false, $to>::try_from(&v);
-                            let b = Integer::<false, {get_size_params_from_bits($to).0}, {get_size_params_from_bits($to).1}>::try_from(&w);
+                            let b = <t!([<U $to >])>::try_from(&w);
 
                             let w = Integer::from(v);
                             let c = BitInt::<true, $to>::try_from(&v);
-                            let d = Integer::<true, {get_size_params_from_bits($to).0}, {get_size_params_from_bits($to).1}>::try_from(&w);
+                            let d = <t!([<I $to >])>::try_from(&w);
                             crate::test::test_eq(a, b) && crate::test::test_eq(c, d)
                         }
 
                         fn [<quickcheck_cast_from_i_ $from _to $to _bits>](v: BitInt<true, $from>) -> bool {
                             let w = Integer::from(v);
                             let a = BitInt::<false, $to>::try_from(&v);
-                            let b = Integer::<false, {get_size_params_from_bits($to).0}, {get_size_params_from_bits($to).1}>::try_from(&w);
+                            let b = <t!([<U $to >])>::try_from(&w);
 
                             let w = Integer::from(v);
                             let c = BitInt::<true, $to>::try_from(&v);
-                            let d = Integer::<true, {get_size_params_from_bits($to).0}, {get_size_params_from_bits($to).1}>::try_from(&w);
+                            let d = <t!([<I $to >])>::try_from(&w);
                             crate::test::test_eq(a, b) && crate::test::test_eq(c, d)
                         }
                     }
