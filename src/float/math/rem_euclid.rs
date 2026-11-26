@@ -3,7 +3,7 @@ use crate::{Exponent, Uint};
 use core::cmp::Ordering;
 use core::num::FpCategory;
 
-impl<const W: usize, const MB: usize> Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     /// Computes exact floating-point remainder `self % rhs` valid for all `W > 1`,
     /// `2 < MB < Self::BITS - 2` (including `EXPONENT_BITS >= 32` and `EXPONENT_BITS == 2`).
     pub(super) const fn rem_exact(self, rhs: Self) -> Self {

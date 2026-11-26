@@ -2,7 +2,7 @@ use super::{Float, FloatExponent, UnsignedFloatExponent};
 use crate::integer::Uint;
 
 /// Associated constants.
-impl<const W: usize, const MB: usize> Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     pub const RADIX: u32 = 2;
 
     pub const MANTISSA_DIGITS: u32 = MB as u32 + 1;

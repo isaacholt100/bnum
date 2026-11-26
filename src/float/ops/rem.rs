@@ -3,7 +3,7 @@ use crate::Exponent;
 use crate::Uint;
 use crate::float::UnsignedFloatExponent;
 
-impl<const W: usize, const MB: usize> Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     #[inline]
     pub(super) fn rem(self, y: Self) -> Self {
         handle_nan!(self; self);

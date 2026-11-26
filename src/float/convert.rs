@@ -8,7 +8,7 @@ impl<const W: usize> Uint<W> {
     }
 }
 
-impl<const W: usize, const MB: usize> Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     #[inline(always)]
     pub const fn to_bits(self) -> Uint<W> {
         self.bits
@@ -35,7 +35,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     }
 }
 
-impl<const W: usize, const MB: usize> Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     const _ASSERT_1: () = assert!(Self::EXPONENT_BITS <= 127);
     const _ASSERT_2: () = assert!(Self::MIN_EXP.checked_sub(MB as FloatExponent + 1).is_some()); // ensures into_normalised_signed_parts won't panic
 

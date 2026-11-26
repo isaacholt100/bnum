@@ -6,7 +6,7 @@ use super::fixed::{
 use crate::Exponent;
 use core::num::FpCategory;
 
-impl<const W: usize, const MB: usize> Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     /// Converts degrees to radians: `self * (pi / 180)` with single IEEE 754 round-to-nearest-even.
     pub(super) const fn to_radians_internal(self) -> Self {
         const {
@@ -34,7 +34,9 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             let num = ext_mul(&x, &const_pi(limbs), limbs);
             let res = ext_div(&num, &ext_from_u64(180, limbs), limbs);
 
-            if let Some(out) = ext_round_to_float::<W, MB>(&res, limbs, ZIV_ERR_BITS, final_round) {
+            if let Some(out) =
+                ext_round_to_float::<W, MB, RM>(&res, limbs, ZIV_ERR_BITS, final_round)
+            {
                 return out;
             }
             stage += 1;

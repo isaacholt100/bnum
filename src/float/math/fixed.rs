@@ -9,6 +9,7 @@
 
 use super::Float;
 use crate::digits::Digits;
+use crate::float::RoundingMode;
 use crate::{Exponent, Int, Uint};
 use core::cmp::Ordering;
 
@@ -665,17 +666,17 @@ pub(super) const fn ext_from_int<const W: usize>(v: Int<W>, limbs: usize) -> Ext
     }
 }
 
-/// Converts any finite `Float<W, MB>` to an exact `Ext<W>`.
+/// Converts any finite `Float<W, MB, RM>` to an exact `Ext<W>`.
 #[inline]
-pub(super) const fn ext_from_float<const W: usize, const MB: usize>(
-    x: Float<W, MB>,
+pub(super) const fn ext_from_float<const W: usize, const MB: usize, const RM: u8>(
+    x: Float<W, MB, RM>,
     limbs: usize,
 ) -> Ext<W> {
     if x.is_zero() {
         return ext_zero(x.is_sign_negative());
     }
     let (sign, biased_exp, mant) = x.into_biased_uint_parts();
-    let bias = Float::<W, MB>::exp_bias_uint().cast_signed();
+    let bias = Float::<W, MB, RM>::exp_bias_uint().cast_signed();
     let bw = mant.bit_width();
     let sub_shift = (MB as Exponent + 1) - bw;
     let exp = biased_exp
@@ -1744,8 +1745,8 @@ const fn table_two_over_pi_slice<const W: usize>(
 /// Uses exact Payne-Hanek range reduction for all exponents up to `16500` (100% of IEEE
 /// `F16`, `F32`, `F64`, `F80`, `F128` inputs), and fast `O(log e)` modular reduction for
 /// astronomical exponents (`e > 16500`, e.g., `Float<16, 3>::MAX`).
-pub(super) const fn reduce_trig<const W: usize, const MB: usize>(
-    x: Float<W, MB>,
+pub(super) const fn reduce_trig<const W: usize, const MB: usize, const RM: u8>(
+    x: Float<W, MB, RM>,
     limbs: usize,
 ) -> (u8, Ext<W>) {
     if x.is_zero() {
@@ -1762,7 +1763,7 @@ pub(super) const fn reduce_trig<const W: usize, const MB: usize>(
     }
 
     let (_, biased_exp, mant) = x.into_biased_uint_parts();
-    let bias = Float::<W, MB>::exp_bias_uint().cast_signed();
+    let bias = Float::<W, MB, RM>::exp_bias_uint().cast_signed();
     // |x| = mant * 2^p where p = biased_exp - bias - MB.
     let p_int: Int<W> = biased_exp
         .cast_signed()
@@ -1936,9 +1937,9 @@ pub(super) const fn reduce_trig<const W: usize, const MB: usize>(
     (quad, r)
 }
 
-/// Computes `(sin(x), cos(x))` for any finite `Float<W, MB>` at precision `limbs`.
-pub(super) const fn ext_sin_cos_float<const W: usize, const MB: usize>(
-    x: Float<W, MB>,
+/// Computes `(sin(x), cos(x))` for any finite `Float<W, MB, RM>` at precision `limbs`.
+pub(super) const fn ext_sin_cos_float<const W: usize, const MB: usize, const RM: u8>(
+    x: Float<W, MB, RM>,
     limbs: usize,
 ) -> (Ext<W>, Ext<W>) {
     let (quad, r) = reduce_trig(x, limbs);
@@ -2032,7 +2033,38 @@ pub(super) const fn ext_atan<const W: usize>(x: &Ext<W>, limbs: usize) -> Ext<W>
 // Two-stage Ziv rounding from `Ext<W>` to `Float<W, MB>`
 // ---------------------------------------------------------------------------
 
-/// Checks whether the bits in `(low_excl .. high_excl)` of `a` all equal `target_bit`.
+/// Extracts the top 64 fractional bits `[shift - 64 .. shift)` of `a`, left-aligned into a `u64`.
+#[inline]
+pub(super) const fn fp_extract_top64<const W: usize>(
+    a: &Fixed<W>,
+    shift: Exponent,
+    limbs: usize,
+) -> u64 {
+    if shift == 0 {
+        return 0;
+    }
+    if shift <= 64 {
+        let lo = a.get(0);
+        if shift == 64 {
+            lo
+        } else {
+            (lo & ((1u64 << shift) - 1)) << (64 - shift)
+        }
+    } else {
+        let lo_bit = shift - 64;
+        let idx = (lo_bit / 64) as usize;
+        let off = lo_bit % 64;
+        let lo = if idx < limbs { a.get(idx) } else { 0 };
+        if off == 0 {
+            lo
+        } else {
+            let hi = if idx + 1 < limbs { a.get(idx + 1) } else { 0 };
+            (lo >> off) | (hi << (64 - off))
+        }
+    }
+}
+
+/// Checks whether the bits in `[low_incl .. high_excl)` of `a` all equal `target_bit`.
 const fn fp_range_all_eq<const W: usize>(
     a: &Fixed<W>,
     low_incl: Exponent,
@@ -2049,17 +2081,18 @@ const fn fp_range_all_eq<const W: usize>(
     true
 }
 
-/// Attempts to round `val` to `Float<W, MB>` using IEEE 754 round-to-nearest-even.
+/// Attempts to round `val` to `Float<W, MB, RM>` using rounding mode `RM`.
 ///
 /// When `final_round == false`, returns `None` if `val` lies within `±2^(err_bits + 1)`
-/// ULPs of `Fixed<W>` from a rounding midpoint (signaling the caller to retry at
-/// `max_limbs::<W>()`). When `final_round == true`, always returns `Some(...)`.
-pub(super) const fn ext_round_to_float<const W: usize, const MB: usize>(
+/// ULPs of `Fixed<W>` from the rounding-mode discontinuity (`0.5` ULP for round-to-nearest
+/// modes, `0.0`/`1.0` ULP for directed and `ToOdd` modes), signaling the caller to retry at
+/// `max_limbs::<W>()`. `Faithful` and `Stochastic` never need Stage 2 escalation.
+pub(super) const fn ext_round_to_float<const W: usize, const MB: usize, const RM: u8>(
     val: &Ext<W>,
     limbs: usize,
     err_bits: Exponent,
     final_round: bool,
-) -> Option<Float<W, MB>> {
+) -> Option<Float<W, MB, RM>> {
     if val.zero {
         return Some(if val.sign {
             Float::NEG_ZERO
@@ -2069,17 +2102,22 @@ pub(super) const fn ext_round_to_float<const W: usize, const MB: usize>(
     }
 
     let p_bits = (limbs as Exponent) * 64;
-    let bias = Float::<W, MB>::exp_bias_uint().cast_signed();
-    let exp_max = Float::<W, MB>::exp_max_uint().cast_signed();
-    let be = val.exp.add(bias);
+    let bias = Float::<W, MB, RM>::exp_bias_uint().cast_signed();
+    let exp_max = Float::<W, MB, RM>::exp_max_uint().cast_signed();
+    let be = match val.exp.checked_add(bias) {
+        Some(v) => v,
+        None => {
+            return Some(if val.exp.is_negative() {
+                Float::<W, MB, RM>::underflow_nonzero(val.sign)
+            } else {
+                Float::<W, MB, RM>::overflow_value(val.sign)
+            });
+        }
+    };
 
     // Overflow check
     if be.ge(&exp_max) {
-        return Some(if val.sign {
-            Float::NEG_INFINITY
-        } else {
-            Float::INFINITY
-        });
+        return Some(Float::<W, MB, RM>::overflow_value(val.sign));
     }
 
     let neg_mb = int_from_i64(-(MB as i64));
@@ -2087,38 +2125,68 @@ pub(super) const fn ext_round_to_float<const W: usize, const MB: usize>(
 
     // Deep underflow (< 0.25 * MIN_POSITIVE_SUBNORMAL)
     if be.lt(&neg_mb_m1) {
-        return Some(if val.sign {
-            Float::NEG_ZERO
-        } else {
-            Float::ZERO
-        });
+        return Some(Float::<W, MB, RM>::underflow_nonzero(val.sign));
     }
+
+    let seed_base = uint_low_u64(&val.exp.cast_unsigned()).wrapping_mul(0x9e37_79b9_7f4a_7c15);
 
     // Just below half of MIN_POSITIVE_SUBNORMAL: value in [0.25, 0.5) ULPs of subnormal.
     if be.eq(&neg_mb_m1) {
-        if !final_round && fp_range_all_eq(&val.sig, err_bits + 1, p_bits, true) {
+        if !final_round
+            && RoundingMode::is_nearest(RM)
+            && (err_bits + 2 >= p_bits || fp_range_all_eq(&val.sig, err_bits + 1, p_bits, true))
+        {
             return None;
         }
-        return Some(if val.sign {
-            Float::NEG_ZERO
+        let frac64 = fp_extract_top64(&val.sig, p_bits, limbs) >> 2;
+        return if RoundingMode::should_round_up::<RM>(
+            val.sign,
+            false,
+            false,
+            true,
+            frac64,
+            seed_base,
+        ) {
+            Some(Float::from_biased_uint_parts(val.sign, Uint::ONE, Uint::ONE))
+        } else if val.sign {
+            Some(Float::NEG_ZERO)
         } else {
-            Float::ZERO
-        });
+            Some(Float::ZERO)
+        };
     }
 
     // In [0.5, 1.0) ULPs of MIN_POSITIVE_SUBNORMAL.
     if be.eq(&neg_mb) {
-        if !final_round && fp_range_all_eq(&val.sig, err_bits + 1, p_bits - 1, false) {
-            return None;
+        if !final_round && !RoundingMode::is_faithful(RM) && !RoundingMode::is_stochastic(RM) {
+            if err_bits + 2 >= p_bits {
+                return None;
+            }
+            if RoundingMode::is_nearest(RM)
+                && fp_range_all_eq(&val.sig, err_bits + 1, p_bits - 1, false)
+            {
+                return None;
+            }
+            if RoundingMode::is_directed_or_odd(RM)
+                && fp_range_all_eq(&val.sig, err_bits + 1, p_bits, true)
+            {
+                return None;
+            }
         }
-        return if fp_has_low_bits(&val.sig, p_bits - 1) {
+        let sticky = fp_has_low_bits(&val.sig, p_bits - 1);
+        let frac64 = fp_extract_top64(&val.sig, p_bits, limbs) >> 1;
+        return if RoundingMode::should_round_up::<RM>(
+            val.sign,
+            false,
+            true,
+            sticky,
+            frac64,
+            seed_base,
+        ) {
             Some(Float::from_biased_uint_parts(val.sign, Uint::ONE, Uint::ONE))
+        } else if val.sign {
+            Some(Float::NEG_ZERO)
         } else {
-            Some(if val.sign {
-                Float::NEG_ZERO
-            } else {
-                Float::ZERO
-            })
+            Some(Float::ZERO)
         };
     }
 
@@ -2132,16 +2200,66 @@ pub(super) const fn ext_round_to_float<const W: usize, const MB: usize>(
 
     let keep_bits = (MB as Exponent + 1) - sub_drop;
     let shift = p_bits - keep_bits;
-    debug_assert!(shift > err_bits + 2);
 
     let round_bit = fp_bit(&val.sig, shift - 1);
-    if !final_round && fp_range_all_eq(&val.sig, err_bits + 1, shift - 1, !round_bit) {
-        return None;
+    if !final_round && !RoundingMode::is_faithful(RM) && !RoundingMode::is_stochastic(RM) {
+        if err_bits + 2 >= shift {
+            return None;
+        }
+        if RoundingMode::is_nearest(RM)
+            && fp_range_all_eq(&val.sig, err_bits + 1, shift - 1, !round_bit)
+        {
+            return None;
+        }
+        if RoundingMode::is_directed_or_odd(RM)
+            && (fp_range_all_eq(&val.sig, err_bits + 1, shift, false)
+                || fp_range_all_eq(&val.sig, err_bits + 1, shift, true))
+        {
+            return None;
+        }
     }
 
     let mut q = fp_shr_to_uint(&val.sig, shift, limbs);
+
+    // At Stage 2 (high precision), if the fractional bits between the rounding position and
+    // the approximation noise floor (`err_bits`) are all 0s or all 1s across at least MB + 64
+    // consecutive bits, the true mathematical value is an exact grid point (e.g. `hypot(3, 4) = 5`,
+    // `log10(1000) = 3`, `powf(9, 0.5) = 3`) perturbed only by Stage-2 ULP noise; snap it so
+    // directed, round-to-odd, and stochastic modes return the exact value.
+    if final_round && err_bits > 0 && shift >= err_bits + (MB as Exponent) + 65 {
+        if fp_range_all_eq(&val.sig, err_bits + 1, shift, false) {
+            return Some(Float::from_biased_uint_parts(
+                val.sign,
+                out_be.cast_unsigned(),
+                q,
+            ));
+        }
+        if fp_range_all_eq(&val.sig, err_bits + 1, shift, true) {
+            q = q.add(Uint::ONE);
+            if q.bit(MB as Exponent + 1) {
+                q = q.shr(1);
+                out_be = out_be.add(Int::ONE);
+            }
+            if out_be.ge(&exp_max) {
+                return Some(Float::<W, MB, RM>::overflow_value(val.sign));
+            }
+            return Some(Float::from_biased_uint_parts(
+                val.sign,
+                out_be.cast_unsigned(),
+                q,
+            ));
+        }
+    }
+
     let sticky = fp_has_low_bits(&val.sig, shift - 1);
-    if round_bit && (sticky || q.is_odd()) {
+    let frac64 = if RM == RoundingMode::Stochastic as u8 {
+        fp_extract_top64(&val.sig, shift, limbs)
+    } else {
+        0
+    };
+    let seed = seed_base ^ uint_low_u64(&q);
+
+    if RoundingMode::should_round_up::<RM>(val.sign, q.is_odd(), round_bit, sticky, frac64, seed) {
         q = q.add(Uint::ONE);
         if q.bit(MB as Exponent + 1) {
             q = q.shr(1);
@@ -2150,11 +2268,7 @@ pub(super) const fn ext_round_to_float<const W: usize, const MB: usize>(
     }
 
     if out_be.ge(&exp_max) {
-        return Some(if val.sign {
-            Float::NEG_INFINITY
-        } else {
-            Float::INFINITY
-        });
+        return Some(Float::<W, MB, RM>::overflow_value(val.sign));
     }
 
     Some(Float::from_biased_uint_parts(

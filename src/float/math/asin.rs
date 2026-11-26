@@ -7,8 +7,8 @@ use crate::Exponent;
 use core::cmp::Ordering;
 use core::num::FpCategory;
 
-impl<const W: usize, const MB: usize> Float<W, MB> {
-    /// Computes `asin(self)` in `[-pi/2, pi/2]` with IEEE 754 round-to-nearest-even.
+impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
+    /// Computes `asin(self)` in `[-pi/2, pi/2]` using rounding mode `RM`.
     pub(super) const fn asin_internal(self) -> Self {
         const {
             assert!(W > 1, "Float requires W > 1");
@@ -37,7 +37,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                 if neg {
                     res = ext_neg(res);
                 }
-                return match ext_round_to_float::<W, MB>(&res, l2, ZIV_ERR_BITS, true) {
+                return match ext_round_to_float::<W, MB, RM>(&res, l2, ZIV_ERR_BITS, true) {
                     Some(v) => v,
                     None => unreachable!(),
                 };
@@ -46,8 +46,9 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         }
 
         let x0 = ext_from_float(abs_x, l1);
+        // Tiny |x|: asin(x) = x + x^3/6 + ... (larger magnitude than |x|).
         if x0.exp.lt(&int_from_i64(-(((Self::MB / 2) as i64) + 4))) {
-            return self;
+            return Self::round_with_tiny_delta(self, !neg);
         }
 
         let half = Self::half_val();
@@ -61,12 +62,10 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             let a = ext_from_float(abs_x, limbs);
             let e_one = ext_one(limbs);
             let mut res = if !use_complement {
-                // |x| <= 0.5: asin(|x|) = atan(|x| / sqrt(1 - x^2))
                 let x2 = ext_mul(&a, &a, limbs);
                 let den = ext_sqrt(&ext_sub(&e_one, &x2, limbs), limbs);
                 ext_atan(&ext_div(&a, &den, limbs), limbs)
             } else {
-                // 0.5 < |x| < 1: compute d = 1 - |x| exactly, asin(|x|) = pi/2 - atan(sqrt(d*(1+|x|)) / |x|)
                 let d = ext_sub(&e_one, &a, limbs);
                 let s = ext_sqrt(&ext_mul(&d, &ext_add(&e_one, &a, limbs), limbs), limbs);
                 let t = ext_atan(&ext_div(&s, &a, limbs), limbs);
@@ -76,7 +75,9 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                 res = ext_neg(res);
             }
 
-            if let Some(out) = ext_round_to_float::<W, MB>(&res, limbs, ZIV_ERR_BITS, final_round) {
+            if let Some(out) =
+                ext_round_to_float::<W, MB, RM>(&res, limbs, ZIV_ERR_BITS, final_round)
+            {
                 return out;
             }
             stage += 1;

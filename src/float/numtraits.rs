@@ -3,7 +3,7 @@ use crate::cast::CastFrom;
 use crate::Integer;
 use num_traits::{AsPrimitive, Bounded, ConstOne, ConstZero, One, Zero, float::TotalOrder};
 
-impl<const W: usize, const MB: usize> Bounded for Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> Bounded for Float<W, MB, RM> {
     #[inline]
     fn min_value() -> Self {
         Self::MIN
@@ -15,15 +15,15 @@ impl<const W: usize, const MB: usize> Bounded for Float<W, MB> {
     }
 }
 
-impl<const W: usize, const MB: usize> ConstZero for Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> ConstZero for Float<W, MB, RM> {
     const ZERO: Self = Self::ZERO;
 }
 
-impl<const W: usize, const MB: usize> ConstOne for Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> ConstOne for Float<W, MB, RM> {
     const ONE: Self = Self::ONE;
 }
 
-impl<const W: usize, const MB: usize> Zero for Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> Zero for Float<W, MB, RM> {
     #[inline]
     fn zero() -> Self {
         Self::ZERO
@@ -35,7 +35,7 @@ impl<const W: usize, const MB: usize> Zero for Float<W, MB> {
     }
 }
 
-impl<const W: usize, const MB: usize> One for Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> One for Float<W, MB, RM> {
     #[inline]
     fn one() -> Self {
         Self::ONE
@@ -81,16 +81,16 @@ impl<const W: usize, const MB: usize> One for Float<W, MB> {
 macro_rules! impl_as_primitive {
     ($($primitive: ty), *) => {
         $(
-            impl<const W: usize, const MB: usize> AsPrimitive<$primitive> for Float<W, MB> {
+            impl<const W: usize, const MB: usize, const RM: u8> AsPrimitive<$primitive> for Float<W, MB, RM> {
                 #[inline]
                 fn as_(self) -> $primitive {
                     <$primitive>::cast_from(self)
                 }
             }
 
-            impl<const W: usize, const MB: usize> AsPrimitive<Float<W, MB>> for $primitive {
+            impl<const W: usize, const MB: usize, const RM: u8> AsPrimitive<Float<W, MB, RM>> for $primitive {
                 #[inline]
-                fn as_(self) -> Float<W, MB> {
+                fn as_(self) -> Float<W, MB, RM> {
                     Float::cast_from(self)
                 }
             }
@@ -102,11 +102,11 @@ impl_as_primitive!(
     u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize, f32, f64
 );
 
-impl<const W: usize, const MB: usize, const S: bool, const N: usize, const B: usize, const OM: u8>
-    AsPrimitive<Float<W, MB>> for Integer<S, N, B, OM>
+impl<const W: usize, const MB: usize, const RM: u8, const S: bool, const N: usize, const B: usize, const OM: u8>
+    AsPrimitive<Float<W, MB, RM>> for Integer<S, N, B, OM>
 {
     #[inline]
-    fn as_(self) -> Float<W, MB> {
+    fn as_(self) -> Float<W, MB, RM> {
         Float::cast_from(self)
     }
 }
@@ -120,16 +120,16 @@ impl<const W: usize, const MB: usize, const S: bool, const N: usize, const B: us
 //     }
 // }
 
-impl<const W1: usize, const MB1: usize, const W2: usize, const MB2: usize>
-    AsPrimitive<Float<W2, MB2>> for Float<W1, MB1>
+impl<const W1: usize, const MB1: usize, const RM1: u8, const W2: usize, const MB2: usize, const RM2: u8>
+    AsPrimitive<Float<W2, MB2, RM2>> for Float<W1, MB1, RM1>
 {
     #[inline]
-    fn as_(self) -> Float<W2, MB2> {
+    fn as_(self) -> Float<W2, MB2, RM2> {
         Float::cast_from(self)
     }
 }
 
-impl<const W: usize, const MB: usize> TotalOrder for Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> TotalOrder for Float<W, MB, RM> {
     #[inline]
     fn total_cmp(&self, other: &Self) -> core::cmp::Ordering {
         Self::total_cmp(&self, other)

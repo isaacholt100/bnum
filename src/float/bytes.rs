@@ -3,7 +3,7 @@ use crate::Uint;
 use crate::doc;
 
 /// Methods that convert floats to and from byte arrays.
-impl<const W: usize, const MB: usize> Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     #[must_use = doc::must_use_op!()]
     #[inline]
     pub const fn to_be_bytes(self) -> [u8; W] {

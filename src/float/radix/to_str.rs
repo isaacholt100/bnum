@@ -1577,7 +1577,7 @@ fn fmt_finite_exact_fixed<const W: usize, const MB: usize>(
 // `Debug` implementation for `Float<W, MB>`
 // -----------------------------------------------------------------------------
 
-impl<const W: usize, const MB: usize> Debug for Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> Debug for Float<W, MB, RM> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         const {
             assert!(

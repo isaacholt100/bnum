@@ -1,5 +1,6 @@
 use super::Float;
 use crate::digits::Digits;
+use crate::float::RoundingMode;
 use crate::{Exponent, Int, Uint};
 
 #[inline(always)]
@@ -58,8 +59,8 @@ const fn uint_from_low_u64<const W: usize>(val: u64) -> Uint<W> {
     out
 }
 
-impl<const W: usize, const MB: usize> Float<W, MB> {
-    /// Computes the correctly rounded (IEEE 754 round-to-nearest, ties-to-even) cube root of `self`.
+impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
+    /// Computes the cube root of `self` rounded according to `RM`.
     ///
     /// Valid for all `W > 1` and `2 < MB < Self::BITS - 2`, including formats with small exponent
     /// widths where the cube root of a subnormal number is itself subnormal, and formats with
@@ -71,6 +72,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                 MB > 2 && MB < (Self::BITS as usize) - 2,
                 "Float mantissa bits MB must satisfy 2 < MB < Self::BITS - 2"
             );
+            assert!(RM <= RoundingMode::MAX_U8, "invalid RoundingMode discriminant");
         }
 
         // Preserve NaN, ±infinity, and ±0.0 verbatim (matching IEEE 754 cbrt / rootn(x, 3)).
@@ -130,20 +132,34 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             (false, Self::MB)
         };
 
-        // Compute the rounded integer significand directly at the target precision `s`:
-        // Let N = m * 2^(3*s - MB + r). Since 3*s - MB + r >= MB >= 3, 8*N is an even integer.
-        // Let Z = floor((8 * N)^(1/3)). Then:
-        //   - If Z = 2*Y is even: Y <= N^(1/3) < Y + 1/2, so nearest integer is Y = (Z + 1) >> 1.
-        //   - If Z = 2*Y + 1 is odd: Z^3 is odd != 8*N (even), so Y + 1/2 < N^(1/3) < Y + 1,
-        //     and nearest integer is Y + 1 = (Z + 1) >> 1.
-        // Thus `(Z + 1) >> 1` is ALWAYS the exact IEEE 754 round-to-nearest-ties-to-even result.
-        let mut rounded_mant = if Self::MB <= 28 {
+        // Compute `Z = floor((8 * N)^(1/3))` together with exact remainder status (`rem_nz`)
+        // and fractional approximation (`frac64`, used only by `Stochastic`).
+        // - `y_trunc = Z >> 1` is `floor(N^(1/3))`.
+        // - `round_bit = (Z & 1) != 0`: when true, `Z^3` is odd != `8 * N` (even), so `rem > 0`
+        //   strictly (`N^(1/3) > y_trunc + 0.5`).
+        // - When `round_bit == false`, `N^(1/3) == y_trunc` exactly iff `!rem_nz`, else
+        //   `y_trunc < N^(1/3) < y_trunc + 0.5`.
+        let (mut rounded_mant, round_bit, rem_nz, frac64) = if Self::MB <= 28 {
             Self::cbrt_mantissa_u64(m, r, s)
         } else if Self::MB <= 60 {
             Self::cbrt_mantissa_u128(m, r, s)
         } else {
             Self::cbrt_mantissa_wide(m, r, s)
         };
+
+        let sticky = round_bit || rem_nz;
+        let seed = uint_low_u64(&q_e.cast_unsigned()).wrapping_mul(0x9e37_79b9_7f4a_7c15)
+            ^ uint_low_u64(&rounded_mant);
+        if RoundingMode::should_round_up::<RM>(
+            sign,
+            rounded_mant.is_odd(),
+            round_bit,
+            sticky,
+            frac64,
+            seed,
+        ) {
+            rounded_mant = rounded_mant.add(Uint::ONE);
+        }
 
         let (biased_out_exp, mant_bits): (Uint<W>, Uint<W>) = if is_subnormal {
             if rounded_mant.bit(Self::MB) {
@@ -172,7 +188,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
     /// Fast path for `MB <= 28`: all intermediates fit in `u64` (`2 * MB + 7 <= 63`).
     #[inline]
-    const fn cbrt_mantissa_u64(m: Uint<W>, r: Exponent, s: Exponent) -> Uint<W> {
+    const fn cbrt_mantissa_u64(m: Uint<W>, r: Exponent, s: Exponent) -> (Uint<W>, bool, bool, u64) {
         let m_val = uint_low_u64(&m);
         let mut rem_m_bits = Self::MB - r;
         let top_chunk = m_val >> rem_m_bits;
@@ -208,12 +224,26 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             k += 1;
         }
 
-        uint_from_low_u64((y + 1) >> 1)
+        let round_bit = (y & 1) != 0;
+        let rem_nz = rem != 0;
+        let frac64 = if RM == RoundingMode::Stochastic as u8 {
+            // Sub-half fraction ≈ rem / (3*y^2 + 3*y + 1) in [0, 1).
+            let denom = (t as u128) + (y as u128) * 3 + 1;
+            let sub_half = if rem == 0 {
+                0u64
+            } else {
+                (((rem as u128) << 63) / denom) as u64
+            };
+            ((round_bit as u64) << 63) | sub_half
+        } else {
+            0
+        };
+        (uint_from_low_u64(y >> 1), round_bit, rem_nz, frac64)
     }
 
     /// Fast path for `MB <= 60`: all intermediates fit in `u128` (`2 * MB + 7 <= 127`).
     #[inline]
-    const fn cbrt_mantissa_u128(m: Uint<W>, r: Exponent, s: Exponent) -> Uint<W> {
+    const fn cbrt_mantissa_u128(m: Uint<W>, r: Exponent, s: Exponent) -> (Uint<W>, bool, bool, u64) {
         let m_val = uint_low_u64(&m);
         let mut rem_m_bits = Self::MB - r;
         let top_chunk = m_val >> rem_m_bits;
@@ -249,7 +279,28 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             k += 1;
         }
 
-        uint_from_low_u64((y + 1) >> 1)
+        let round_bit = (y & 1) != 0;
+        let rem_nz = rem != 0;
+        let frac64 = if RM == RoundingMode::Stochastic as u8 {
+            let denom = t + (y as u128) * 3 + 1;
+            let shift = (128 - denom.leading_zeros()).saturating_sub(63);
+            let d_hi = denom >> shift;
+            let r_hi = rem >> shift;
+            let sub_half = if d_hi == 0 {
+                0u64
+            } else {
+                let q = (r_hi << 63) / d_hi;
+                if q >= (1u128 << 63) {
+                    (1u64 << 63) - 1
+                } else {
+                    q as u64
+                }
+            };
+            ((round_bit as u64) << 63) | sub_half
+        } else {
+            0
+        };
+        (uint_from_low_u64(y >> 1), round_bit, rem_nz, frac64)
     }
 
     /// General multi-precision bit-by-bit cube root for arbitrary `W` and `MB`.
@@ -258,7 +309,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     /// - `y` has exact bit-width `k + 1 <= MB + 2 <= 8 * W - 1`, fitting in `Digits<u64, W, 1, 0>`.
     /// - `rem`, `t = 3 * y^2`, and `b = 3 * y^2 + 3 * y + 1` are all strictly less than
     ///   `2^(2 * k + 5) <= 2^(2 * MB + 7) <= 2^(16 * W + 1)`, fitting in `Digits<u64, W, 2, 1>`.
-    const fn cbrt_mantissa_wide(m: Uint<W>, r: Exponent, s: Exponent) -> Uint<W> {
+    const fn cbrt_mantissa_wide(m: Uint<W>, r: Exponent, s: Exponent) -> (Uint<W>, bool, bool, u64) {
         let mut rem_m_bits = Self::MB - r;
         let top_chunk = extract_bits(&m, rem_m_bits, r + 1);
 
@@ -365,7 +416,54 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         }
 
         let z = Uint::<W>::from_digits(y);
-        z.add(Uint::ONE).shr(1)
+        let round_bit = z.bit(0);
+        let final_w_limbs = (2 * (s as usize + 1) + 5).div_ceil(64);
+        let mut rem_nz = false;
+        let mut i = 0;
+        while i < final_w_limbs {
+            if rem.get(i) != 0 {
+                rem_nz = true;
+                break;
+            }
+            i += 1;
+        }
+        let frac64 = if RM == RoundingMode::Stochastic as u8 {
+            // Approximate rem / (3*z^2 + 3*z + 1) using top limbs of t and rem.
+            let mut top = final_w_limbs;
+            let mut sub_half = 0u64;
+            while top > 0 {
+                top -= 1;
+                let tv = t.get(top);
+                if tv != 0 {
+                    let shift = tv.leading_zeros();
+                    let t_hi = if shift == 0 || top == 0 {
+                        tv
+                    } else {
+                        (tv << shift) | (t.get(top - 1) >> (64 - shift))
+                    };
+                    let r_hi = if shift == 0 || top == 0 {
+                        rem.get(top)
+                    } else {
+                        (rem.get(top) << shift) | (rem.get(top - 1) >> (64 - shift))
+                    };
+                    let d = (t_hi as u128) >> 1;
+                    let n = (r_hi as u128) >> 1;
+                    if d != 0 {
+                        let q = (n << 63) / d;
+                        sub_half = if q >= (1u128 << 63) {
+                            (1u64 << 63) - 1
+                        } else {
+                            q as u64
+                        };
+                    }
+                    break;
+                }
+            }
+            ((round_bit as u64) << 63) | sub_half
+        } else {
+            0
+        };
+        (z.shr(1), round_bit, rem_nz, frac64)
     }
 }
 

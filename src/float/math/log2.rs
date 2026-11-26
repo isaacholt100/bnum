@@ -6,7 +6,7 @@ use super::fixed::{
 use crate::{Exponent, Int};
 use core::num::FpCategory;
 
-impl<const W: usize, const MB: usize> Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     /// Computes `log2(self)` with IEEE 754 round-to-nearest-even via two-stage Ziv rounding.
     pub(super) const fn log2_internal(self) -> Self {
         const {
@@ -51,7 +51,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                 .sub(bias)
                 .sub(int_from_u64(((Self::MB + 1) - bw) as u64));
             let e_ext = ext_from_int(e, l2);
-            return match ext_round_to_float::<W, MB>(&e_ext, l2, 0, true) {
+            return match ext_round_to_float::<W, MB, RM>(&e_ext, l2, 0, true) {
                 Some(v) => v,
                 None => unreachable!(),
             };
@@ -85,7 +85,9 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                 ext_add(&ext_from_int(k, limbs), &frac, limbs)
             };
 
-            if let Some(out) = ext_round_to_float::<W, MB>(&res, limbs, ZIV_ERR_BITS, final_round) {
+            if let Some(out) =
+                ext_round_to_float::<W, MB, RM>(&res, limbs, ZIV_ERR_BITS, final_round)
+            {
                 return out;
             }
             stage += 1;

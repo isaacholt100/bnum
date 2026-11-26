@@ -4,7 +4,7 @@ use crate::Uint;
 use core::cmp::Ordering;
 
 /// Provides `const` function alternatives to methods of common traits, such as `PartialEq` and `PartialCmp`. These functions will be removed once `const` traits are stabilized.
-impl<const W: usize, const MB: usize> Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     #[inline]
     pub const fn eq(&self, other: &Self) -> bool {
         handle_nan!(false; self, other);

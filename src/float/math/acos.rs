@@ -7,7 +7,7 @@ use crate::Exponent;
 use core::cmp::Ordering;
 use core::num::FpCategory;
 
-impl<const W: usize, const MB: usize> Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     /// Computes `acos(self)` in `[0, pi]` with IEEE 754 round-to-nearest-even.
     pub(super) const fn acos_internal(self) -> Self {
         const {
@@ -25,7 +25,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             FpCategory::Nan | FpCategory::Infinite => return Self::NAN,
             FpCategory::Zero => {
                 let res = const_pi_over_2(l2);
-                return match ext_round_to_float::<W, MB>(&res, l2, ZIV_ERR_BITS, true) {
+                return match ext_round_to_float::<W, MB, RM>(&res, l2, ZIV_ERR_BITS, true) {
                     Some(v) => v,
                     None => unreachable!(),
                 };
@@ -42,7 +42,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             Ordering::Equal => {
                 return if neg {
                     let res = const_pi(l2);
-                    match ext_round_to_float::<W, MB>(&res, l2, ZIV_ERR_BITS, true) {
+                    match ext_round_to_float::<W, MB, RM>(&res, l2, ZIV_ERR_BITS, true) {
                         Some(v) => v,
                         None => unreachable!(),
                     }
@@ -85,7 +85,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                 ext_add(&const_pi_over_2(limbs), &t, limbs)
             };
 
-            if let Some(out) = ext_round_to_float::<W, MB>(&res, limbs, ZIV_ERR_BITS, final_round) {
+            if let Some(out) = ext_round_to_float::<W, MB, RM>(&res, limbs, ZIV_ERR_BITS, final_round) {
                 return out;
             }
             stage += 1;

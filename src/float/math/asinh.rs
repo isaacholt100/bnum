@@ -6,9 +6,8 @@ use super::fixed::{
 use crate::{Exponent, Int};
 use core::num::FpCategory;
 
-impl<const W: usize, const MB: usize> Float<W, MB> {
-    /// Computes `asinh(self) = ln(self + sqrt(self^2 + 1))` without overflow for large `|self|`
-    /// and without cancellation near `0`, with IEEE 754 round-to-nearest-even.
+impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
+    /// Computes `asinh(self) = ln(self + sqrt(self^2 + 1))` using rounding mode `RM`.
     pub(super) const fn asinh_internal(self) -> Self {
         const {
             assert!(W > 1, "Float requires W > 1");
@@ -29,9 +28,9 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         let l2 = max_limbs::<W>();
 
         let x0 = ext_from_float(abs_x, l1);
-        // Tiny |x| < 2^-(MB/2 + 4): asinh(x) = x - x^3/6 + ... rounds directly to self.
+        // Tiny |x|: asinh(x) = x - x^3/6 + ... (smaller magnitude than |x|).
         if x0.exp.lt(&int_from_i64(-(((Self::MB / 2) as i64) + 4))) {
-            return self;
+            return Self::round_with_tiny_delta(self, neg);
         }
 
         let huge_thresh = int_from_u64((Self::MB + 64) as u64);
@@ -44,25 +43,23 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
             let a = ext_from_float(abs_x, limbs);
             let mut res = if is_huge {
-                // Huge |x| > 2^(MB + 64): sqrt(x^2 + 1) = |x|*(1 + O(2^-(2*MB+129))),
-                // so asinh(|x|) = ln(|x|) + ln(2) without squaring overflow.
                 ext_add(&ext_ln(&a, limbs), &const_ln2(limbs), limbs)
             } else if a.exp.lt(&Int::ZERO) {
-                // |x| < 1: asinh(|x|) = ln1p(|x| + x^2 / (1 + sqrt(1 + x^2))).
                 let one = ext_one(limbs);
                 let x2 = ext_mul(&a, &a, limbs);
                 let s = ext_sqrt(&ext_add(&one, &x2, limbs), limbs);
                 let t = ext_add(&a, &ext_div(&x2, &ext_add(&one, &s, limbs), limbs), limbs);
                 ext_ln1p(&t, limbs)
             } else {
-                // 1 <= |x| <= 2^(MB + 64): asinh(|x|) = ln(|x| + sqrt(x^2 + 1)).
                 let x2 = ext_mul(&a, &a, limbs);
                 let s = ext_sqrt(&ext_add(&x2, &ext_one(limbs), limbs), limbs);
                 ext_ln(&ext_add(&a, &s, limbs), limbs)
             };
             res.sign = neg;
 
-            if let Some(out) = ext_round_to_float::<W, MB>(&res, limbs, ZIV_ERR_BITS, final_round) {
+            if let Some(out) =
+                ext_round_to_float::<W, MB, RM>(&res, limbs, ZIV_ERR_BITS, final_round)
+            {
                 return out;
             }
             stage += 1;

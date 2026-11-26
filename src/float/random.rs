@@ -5,10 +5,10 @@ use rand::{Fill, Rng, SeedableRng, RngExt};
 use super::{Float, FloatExponent};
 use crate::Uint;
 
-impl<const W: usize, const MB: usize> Distribution<Float<W, MB>> for StandardUniform {
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> Distribution<Float<W, MB, RM>> for StandardUniform {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Float<W, MB, RM> {
         let random_bits: Uint<W> = rng.random();
-        let mantissa = random_bits.shr(Float::<W, MB>::BITS - Float::<W, MB>::MB - 1);
+        let mantissa = random_bits.shr(Float::<W, MB, RM>::BITS - Float::<W, MB, RM>::MB - 1);
         if mantissa.is_zero() {
             return Float::ZERO;
         }
@@ -16,7 +16,7 @@ impl<const W: usize, const MB: usize> Distribution<Float<W, MB>> for StandardUni
             return Float::HALF_EPSILON;
         }
         let mantissa_bits = mantissa.bit_width();
-        let abs_exponent = Float::<W, MB>::MB + 2 - mantissa_bits; // has to be in this order to prevent overflow
+        let abs_exponent = Float::<W, MB, RM>::MB + 2 - mantissa_bits; // has to be in this order to prevent overflow
         Float::from_signed_parts(
             false,
             -(abs_exponent as FloatExponent),
@@ -25,16 +25,16 @@ impl<const W: usize, const MB: usize> Distribution<Float<W, MB>> for StandardUni
     }
 }
 
-impl<const W: usize, const MB: usize> Distribution<Float<W, MB>> for OpenClosed01 {
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> Distribution<Float<W, MB, RM>> for OpenClosed01 {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Float<W, MB, RM> {
         let random_bits: Uint<W> = rng.random();
-        let mantissa = random_bits.shr(Float::<W, MB>::BITS - Float::<W, MB>::MB - 1);
+        let mantissa = random_bits.shr(Float::<W, MB, RM>::BITS - Float::<W, MB, RM>::MB - 1);
         let mantissa = mantissa.add(Uint::ONE); // add one so mantissa is never zero
         if mantissa.is_zero() {
             return Float::HALF_EPSILON;
         }
         let mantissa_bits = mantissa.bit_width();
-        let abs_exponent = Float::<W, MB>::MB + 2 - mantissa_bits; // has to be in this order to prevent overflow
+        let abs_exponent = Float::<W, MB, RM>::MB + 2 - mantissa_bits; // has to be in this order to prevent overflow
         Float::from_signed_parts(
             false,
             -(abs_exponent as FloatExponent),
@@ -43,19 +43,19 @@ impl<const W: usize, const MB: usize> Distribution<Float<W, MB>> for OpenClosed0
     }
 }
 
-impl<const W: usize, const MB: usize> Distribution<Float<W, MB>> for Open01 {
-    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> Distribution<Float<W, MB, RM>> for Open01 {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Float<W, MB, RM> {
         let random_bits: Uint<W> = rng.random();
-        let mantissa = random_bits.shr(Float::<W, MB>::BITS - Float::<W, MB>::MB);
+        let mantissa = random_bits.shr(Float::<W, MB, RM>::BITS - Float::<W, MB, RM>::MB);
         if mantissa.is_zero() {
             return Float::HALF_EPSILON;
         }
         let mantissa_bits = mantissa.bit_width();
-        let abs_exponent = Float::<W, MB>::MB + 1 - mantissa_bits; // has to be in this order to prevent overflow
+        let abs_exponent = Float::<W, MB, RM>::MB + 1 - mantissa_bits; // has to be in this order to prevent overflow
         let exponent = -(abs_exponent as FloatExponent);
         let mut mantissa = mantissa.shl(1).bitor(Uint::ONE); // = 2*mantissa + 1
         mantissa.set_bit(0, true);
-        mantissa = mantissa.shl(Float::<W, MB>::MB - mantissa_bits);
+        mantissa = mantissa.shl(Float::<W, MB, RM>::MB - mantissa_bits);
         let a = Float::from_signed_parts(false, exponent, mantissa);
         a
     }

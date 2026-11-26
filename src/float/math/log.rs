@@ -6,7 +6,7 @@ use crate::Exponent;
 use core::cmp::Ordering;
 use core::num::FpCategory;
 
-impl<const W: usize, const MB: usize> Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     /// Computes `log_{base}(self) = ln(self) / ln(base)` with single IEEE 754
     /// round-to-nearest-even rounding, matching Rust std special-value semantics.
     pub(super) const fn log_internal(self, base: Self) -> Self {
@@ -114,7 +114,9 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             let b = ext_from_float(base, limbs);
             let res = ext_div(&ext_ln(&x, limbs), &ext_ln(&b, limbs), limbs);
 
-            if let Some(out) = ext_round_to_float::<W, MB>(&res, limbs, ZIV_ERR_BITS, final_round) {
+            if let Some(out) =
+                ext_round_to_float::<W, MB, RM>(&res, limbs, ZIV_ERR_BITS, final_round)
+            {
                 return out;
             }
             stage += 1;

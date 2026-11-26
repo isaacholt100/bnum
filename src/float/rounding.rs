@@ -5,7 +5,7 @@ use crate::doc;
 use crate::float::UnsignedFloatExponent;
 
 /// Rounding methods.
-impl<const W: usize, const MB: usize> Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     #[must_use = doc::must_use_op!(float)]
     #[inline]
     pub fn floor(self) -> Self {

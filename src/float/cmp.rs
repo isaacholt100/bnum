@@ -4,7 +4,7 @@ use crate::doc;
 use core::cmp::{Ordering, PartialEq, PartialOrd};
 
 /// Comparison methods.
-impl<const W: usize, const MB: usize> Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     #[must_use = doc::must_use_op!(comparison)]
     #[inline]
     pub const fn max(self, other: Self) -> Self {
@@ -80,14 +80,14 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     }
 }
 
-impl<const W: usize, const MB: usize> PartialEq for Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> PartialEq for Float<W, MB, RM> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
         Self::eq(&self, other)
     }
 }
 
-impl<const W: usize, const MB: usize> PartialOrd for Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> PartialOrd for Float<W, MB, RM> {
     #[inline]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Self::partial_cmp(&self, other)

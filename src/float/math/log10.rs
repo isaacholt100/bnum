@@ -6,8 +6,8 @@ use super::fixed::{
 use crate::Exponent;
 use core::num::FpCategory;
 
-impl<const W: usize, const MB: usize> Float<W, MB> {
-    /// Computes `log10(self)` with IEEE 754 round-to-nearest-even via two-stage Ziv rounding.
+impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
+    /// Computes `log10(self)` using rounding mode `RM`.
     pub(super) const fn log10_internal(self) -> Self {
         const {
             assert!(W > 1, "Float requires W > 1");
@@ -51,7 +51,9 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             let ln_x = ext_ln(&x, limbs);
             let res = ext_div(&ln_x, &const_ln10(limbs), limbs);
 
-            if let Some(out) = ext_round_to_float::<W, MB>(&res, limbs, ZIV_ERR_BITS, final_round) {
+            if let Some(out) =
+                ext_round_to_float::<W, MB, RM>(&res, limbs, ZIV_ERR_BITS, final_round)
+            {
                 return out;
             }
             stage += 1;

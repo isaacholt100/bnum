@@ -7,8 +7,8 @@ use super::fixed::{
 use crate::Exponent;
 use core::num::FpCategory;
 
-impl<const W: usize, const MB: usize> Float<W, MB> {
-    /// Computes `tanh(self)` accurately across all inputs with IEEE 754 round-to-nearest-even.
+impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
+    /// Computes `tanh(self)` using rounding mode `RM`.
     pub(super) const fn tanh_internal(self) -> Self {
         const {
             assert!(W > 1, "Float requires W > 1");
@@ -37,19 +37,20 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         let l2 = max_limbs::<W>();
 
         let x0 = ext_from_float(abs_x, l1);
-        // Tiny |x| < 2^-(MB/2 + 4): tanh(x) = x - x^3/3 + ... rounds directly to self.
+        // Tiny |x|: tanh(x) = x - x^3/3 + ... (smaller magnitude than |x|).
         if x0.exp.lt(&int_from_i64(-(((Self::MB / 2) as i64) + 4))) {
-            return self;
+            return Self::round_with_tiny_delta(self, neg);
         }
 
-        // Saturation: for |x| >= MB + 4, 1 - tanh(|x|) < 2 * e^(-2*(MB+4)) < 2^-(2*MB + 7) => ±1.0.
+        // Saturation: |tanh(x)| < 1 strictly for all finite x.
         let sat_exp = int_from_u64(((Self::MB + 4) as u64).ilog2() as u64 + 1);
         if x0.exp.ge(&sat_exp) {
-            return if neg {
+            let base = if neg {
                 Self::neg_one_val()
             } else {
                 Self::one_val()
             };
+            return Self::round_with_tiny_delta(base, neg);
         }
 
         let mut stage = 0;
@@ -71,7 +72,9 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             };
             res.sign = neg;
 
-            if let Some(out) = ext_round_to_float::<W, MB>(&res, limbs, ZIV_ERR_BITS, final_round) {
+            if let Some(out) =
+                ext_round_to_float::<W, MB, RM>(&res, limbs, ZIV_ERR_BITS, final_round)
+            {
                 return out;
             }
             stage += 1;

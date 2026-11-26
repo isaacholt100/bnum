@@ -6,8 +6,8 @@ use super::fixed::{
 use crate::Exponent;
 use core::num::FpCategory;
 
-impl<const W: usize, const MB: usize> Float<W, MB> {
-    /// Computes `tan(self) = sin(self) / cos(self)` with single IEEE 754 round-to-nearest-even.
+impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
+    /// Computes `tan(self) = sin(self) / cos(self)` using rounding mode `RM`.
     pub(super) const fn tan_internal(self) -> Self {
         const {
             assert!(W > 1, "Float requires W > 1");
@@ -27,8 +27,9 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         let l2 = max_limbs::<W>();
 
         let x0 = ext_from_float(self, l1);
+        // Tiny |x|: tan(x) = x + x^3/3 + ... (larger magnitude than |x|).
         if x0.exp.lt(&int_from_i64(-(((Self::MB / 2) as i64) + 4))) {
-            return self;
+            return Self::round_with_tiny_delta(self, !self.is_sign_negative());
         }
 
         let mut stage = 0;
@@ -38,14 +39,12 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
             let (s_ext, c_ext) = ext_sin_cos_float(self, limbs);
             if c_ext.zero {
-                return if s_ext.sign ^ c_ext.sign {
-                    Self::NEG_INFINITY
-                } else {
-                    Self::INFINITY
-                };
+                return Self::overflow_value(s_ext.sign ^ c_ext.sign);
             }
             let res = ext_div(&s_ext, &c_ext, limbs);
-            if let Some(out) = ext_round_to_float::<W, MB>(&res, limbs, ZIV_ERR_BITS, final_round) {
+            if let Some(out) =
+                ext_round_to_float::<W, MB, RM>(&res, limbs, ZIV_ERR_BITS, final_round)
+            {
                 return out;
             }
             stage += 1;

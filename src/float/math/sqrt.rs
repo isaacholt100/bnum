@@ -1,84 +1,135 @@
 use super::Float;
-use crate::cast::CastFrom;
-use crate::{
-    Int, Uint,
-    float::{FloatExponent, UnsignedFloatExponent},
+use super::fixed::{
+    ZIV_ERR_BITS, ext_from_float, ext_round_to_float, ext_sqrt, int_from_u64, stage1_limbs,
+    uint_low_u64,
 };
+use crate::float::RoundingMode;
+use crate::{Exponent, Int, Uint};
+use core::num::FpCategory;
 
-impl<const W: usize, const MB: usize> Float<W, MB> {
-    // TODO: could also use the sqrt algorithm on Uint with twice as many bits, compare performance with this implementation from libm
-    pub(super) fn sqrt_internal(self) -> Self {
-        handle_nan!(self; self);
-        if self.is_zero() {
-            return self;
+impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
+    /// Computes `sqrt(self)` using rounding mode `RM`, valid for all `W > 1` and
+    /// `2 < MB < Self::BITS - 2` (including `EXPONENT_BITS == 2` and `EXPONENT_BITS >= 32`).
+    pub(super) const fn sqrt_internal(self) -> Self {
+        const {
+            assert!(W > 1, "Float requires W > 1");
+            assert!(
+                MB > 2 && (MB as Exponent) < Self::BITS - 2,
+                "Float requires 2 < MB < BITS - 2"
+            );
+            assert!(RM <= RoundingMode::MAX_U8, "invalid RoundingMode discriminant");
         }
-        let bits = self.to_bits();
-        if bits == Self::INFINITY.to_bits() {
-            return Self::INFINITY;
+
+        match self.classify() {
+            FpCategory::Nan => return self,
+            FpCategory::Zero => return self,
+            FpCategory::Infinite => {
+                return if self.is_sign_negative() {
+                    Self::NAN
+                } else {
+                    Self::INFINITY
+                };
+            }
+            _ => {}
         }
         if self.is_sign_negative() {
             return Self::NAN;
-            /*let u = Uint::MAX << (Self::MB - 1);
-            return Self::from_bits(u);*/
         }
 
-        let tiny = Self::from_bits(Uint::cast_from(0b11011u8) << Self::MB); // TODO: may not work for exponents stored with very few bits
+        // For Stochastic mode, use extended-precision Newton sqrt so full 64-bit fractional
+        // distance drives the rounding probability.
+        if RM == RoundingMode::Stochastic as u8 {
+            let l1 = stage1_limbs::<W, MB>();
+            let r = ext_sqrt(&ext_from_float(self, l1), l1);
+            return match ext_round_to_float::<W, MB, RM>(&r, l1, ZIV_ERR_BITS, true) {
+                Some(v) => v,
+                None => unreachable!(),
+            };
+        }
 
-        let mut ix = bits.cast_signed();
-        let mut i: FloatExponent;
-        let mut m = (bits >> Self::MB).cast_to_unsigned_float_exponent() as FloatExponent;
-        if m == 0 {
-            /* subnormal x */
-            i = 0;
-            while (ix & (Int::ONE << Self::MB)).is_zero() {
-                ix <<= 1;
-                i = i + 1;
+        // Exact bit-by-bit square root producing exact (quotient, round_bit, remainder != 0).
+        let (_, biased_exp, mant) = self.into_biased_uint_parts();
+        let bias = Self::exp_bias_uint().cast_signed();
+        let bw = mant.bit_width();
+        let norm_shift = (Self::MB + 1) - bw;
+        let mut ix = if norm_shift != 0 {
+            mant.shl(norm_shift)
+        } else {
+            mant
+        };
+        let e = biased_exp
+            .cast_signed()
+            .sub(bias)
+            .sub(int_from_u64(norm_shift as u64));
+
+        // Make unbiased exponent even: |self| = (ix / 2^MB) * 2^e with ix in [2^MB, 2^(MB+2)).
+        let e_odd = (e.bytes[0] & 1) != 0;
+        let half_e = if e_odd {
+            ix = ix.shl(1);
+            e.sub(Int::ONE).shr(1)
+        } else {
+            e.shr(1)
+        };
+
+        // Determine target precision `s` (normal: MB; subnormal when EXPONENT_BITS is tiny: < MB).
+        let min_normal_exp = Int::<W>::ONE.sub(bias);
+        let (is_subnormal, s): (bool, Exponent) = if half_e.lt(&min_normal_exp) {
+            let diff = min_normal_exp
+                .sub(half_e)
+                .cast_unsigned()
+                .cast_to_unsigned_float_exponent();
+            (true, Self::MB - diff)
+        } else {
+            (false, Self::MB)
+        };
+
+        // Generate `s + 2` bits of sqrt: top `s + 1` bits form `y`, lowest bit is `round_bit`.
+        // Track a 1-bit overflow carry `rem_hi` for `rem << 1` so this works even at the extreme
+        // boundary `MB == BITS - 3` (e.g. `Float<2, 13>`) where `rem` reaches bit `BITS - 1`.
+        let mut rem_hi = false;
+        let mut rem = ix.shl(1);
+        let mut q = Uint::<W>::ZERO;
+        let mut s_acc = Uint::<W>::ZERO;
+        let mut r = Uint::<W>::ONE.shl(Self::MB + 1);
+        let steps = s + 2;
+        let mut step: Exponent = 0;
+        while step < steps {
+            let t = s_acc.add(r);
+            if rem_hi || t.le(&rem) {
+                let (new_rem, _) = rem.overflowing_sub(t);
+                rem = new_rem;
+                s_acc = t.add(r);
+                q = q.add(r);
             }
-            m -= i - 1;
+            rem_hi = rem.bit(Self::BITS - 1);
+            rem = rem.shl(1);
+            r = r.shr(1);
+            step += 1;
         }
-        m -= Self::EXP_BIAS; /* unbias exponent */
-        ix = (ix & (Uint::MAX >> (Self::BITS - Self::MB)).cast_signed()) | (Int::ONE << Self::MB);
-        if m & 1 == 1 {
-            /* odd m, double x to make it even */
-            ix += ix;
+
+        // Shift `q` down so its lowest bit is `round_bit` and `y = q >> 1` has `s + 1` bits.
+        let tail_bits = Self::MB - s;
+        let q_aligned = if tail_bits != 0 { q.shr(tail_bits) } else { q };
+        let round_bit = q_aligned.bit(0);
+        // If `round_bit` is 1, `(2y + 1)^2` is odd while `4 * m * 2^(2s - MB)` is even (2s >= MB),
+        // so remainder is strictly positive (`rem != 0` always when `round_bit == true`).
+        let sticky = rem_hi || !rem.is_zero() || round_bit;
+        let mut y = q_aligned.shr(1);
+
+        let seed = uint_low_u64(&half_e.cast_unsigned()) ^ uint_low_u64(&y);
+        if RoundingMode::should_round_up::<RM>(false, y.is_odd(), round_bit, sticky, 0, seed) {
+            y = y.add(Uint::ONE);
         }
-        m >>= 1; /* m = [m/2] */
 
-        /* generate sqrt(x) bit by bit */
-        ix += ix;
-        let mut q = Int::ZERO;
-        let mut s = Int::ZERO;
-        let mut r = Uint::ONE << (Self::MB + 1); /* r = moving bit from right to left */
-
-        let mut t: Int<W>;
-        while !r.is_zero() {
-            t = s + r.cast_signed();
-            if t <= ix {
-                s = t + r.cast_signed();
-                ix -= t;
-                q += r.cast_signed();
+        if is_subnormal {
+            Self::from_biased_uint_parts(false, Uint::ONE, y)
+        } else {
+            let mut out_be = half_e.add(bias);
+            if y.bit(Self::MB + 1) {
+                y = y.shr(1);
+                out_be = out_be.add(Int::ONE);
             }
-            ix += ix;
-            r = r >> 1u8;
+            Self::from_biased_uint_parts(false, out_be.cast_unsigned(), y)
         }
-
-        /* use floating add to find out rounding direction */
-        let mut z: Self;
-        if !ix.is_zero() {
-            z = Self::ONE - tiny; /* raise inexact flag */
-            if z >= Self::ONE {
-                z = Self::ONE + tiny;
-                if z > Self::ONE {
-                    q += crate::n!(0b10);
-                } else {
-                    q += q & crate::n!(0b1); // kenobi
-                }
-            }
-        }
-
-        ix = (q >> 1u8) + ((Uint::MAX << (Self::MB + 1 + 2)) >> 2u8).cast_signed();
-        ix += (Uint::cast_from_unsigned_float_exponent(m as UnsignedFloatExponent) << Self::MB)
-            .cast_signed();
-        Self::from_bits(ix.cast_unsigned())
     }
 }

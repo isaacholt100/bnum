@@ -36,7 +36,7 @@ mod to_degrees;
 mod to_radians;
 
 /// Mathematical functions.
-impl<const W: usize, const MB: usize> Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     #[must_use = doc::must_use_op!(float)]
     #[inline]
     pub const fn abs(mut self) -> Self {
@@ -72,7 +72,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     }
 
     #[must_use = doc::must_use_op!(float)]
-    pub fn sqrt(self) -> Self {
+    pub const fn sqrt(self) -> Self {
         self.sqrt_internal()
     }
 

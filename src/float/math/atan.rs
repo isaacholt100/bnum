@@ -6,8 +6,8 @@ use super::fixed::{
 use crate::Exponent;
 use core::num::FpCategory;
 
-impl<const W: usize, const MB: usize> Float<W, MB> {
-    /// Computes `atan(self)` in `[-pi/2, pi/2]` with IEEE 754 round-to-nearest-even.
+impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
+    /// Computes `atan(self)` in `[-pi/2, pi/2]` using rounding mode `RM`.
     pub(super) const fn atan_internal(self) -> Self {
         const {
             assert!(W > 1, "Float requires W > 1");
@@ -28,7 +28,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                 if self.is_sign_negative() {
                     res = ext_neg(res);
                 }
-                return match ext_round_to_float::<W, MB>(&res, l2, ZIV_ERR_BITS, true) {
+                return match ext_round_to_float::<W, MB, RM>(&res, l2, ZIV_ERR_BITS, true) {
                     Some(v) => v,
                     None => unreachable!(),
                 };
@@ -37,9 +37,9 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         }
 
         let x0 = ext_from_float(self, l1);
-        // Tiny |x| < 2^-(MB/2 + 4): atan(x) = x - x^3/3 + ... rounds directly to self.
+        // Tiny |x|: atan(x) = x - x^3/3 + ... (smaller magnitude than |x|).
         if x0.exp.lt(&int_from_i64(-(((Self::MB / 2) as i64) + 4))) {
-            return self;
+            return Self::round_with_tiny_delta(self, self.is_sign_negative());
         }
         // Huge |x| >= 2^(MB + 64): atan(x) = ±pi/2 - 1/x rounds identically to ±pi/2.
         if x0.exp.ge(&int_from_u64((Self::MB + 64) as u64)) {
@@ -47,7 +47,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             if self.is_sign_negative() {
                 res = ext_neg(res);
             }
-            return match ext_round_to_float::<W, MB>(&res, l2, ZIV_ERR_BITS, true) {
+            return match ext_round_to_float::<W, MB, RM>(&res, l2, ZIV_ERR_BITS, true) {
                 Some(v) => v,
                 None => unreachable!(),
             };
@@ -61,7 +61,9 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             let x = ext_from_float(self, limbs);
             let res = ext_atan(&x, limbs);
 
-            if let Some(out) = ext_round_to_float::<W, MB>(&res, limbs, ZIV_ERR_BITS, final_round) {
+            if let Some(out) =
+                ext_round_to_float::<W, MB, RM>(&res, limbs, ZIV_ERR_BITS, final_round)
+            {
                 return out;
             }
             stage += 1;

@@ -7,9 +7,8 @@ use crate::Exponent;
 use core::cmp::Ordering;
 use core::num::FpCategory;
 
-impl<const W: usize, const MB: usize> Float<W, MB> {
-    /// Computes `ln(1 + self)` accurately even for tiny `|self|` (avoiding catastrophic
-    /// cancellation near `0`), with IEEE 754 round-to-nearest-even.
+impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
+    /// Computes `ln(1 + self)` accurately even for tiny `|self|` using rounding mode `RM`.
     pub(super) const fn ln_1p_internal(self) -> Self {
         const {
             assert!(W > 1, "Float requires W > 1");
@@ -43,13 +42,12 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         let l2 = max_limbs::<W>();
         let x0 = ext_from_float(self, l1);
 
-        // Tiny |x| < 2^-(MB + 4): ln(1 + x) = x - x^2/2 + ... rounds directly to self.
+        // Tiny |x| < 2^-(MB + 4): ln(1 + x) = x - x^2/2 + ... < x strictly for all x != 0.
         if x0.exp.lt(&int_from_i64(-((Self::MB as i64) + 4))) {
-            return self;
+            return Self::round_with_tiny_delta(self, false);
         }
 
-        // Huge positive x >= 2^(MB + 64): ln(1 + x) = ln(x) + O(1/x) rounds identically to ln(x).
-        if !x0.sign && x0.exp.ge(&int_from_u64((Self::MB + 64) as u64)) {
+        if !x0.sign && x0.exp.ge(&int_from_u64((Self::MB + 140) as u64)) {
             return self.ln_internal();
         }
 
@@ -61,7 +59,9 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             let x = ext_from_float(self, limbs);
             let res = ext_ln1p(&x, limbs);
 
-            if let Some(out) = ext_round_to_float::<W, MB>(&res, limbs, ZIV_ERR_BITS, final_round) {
+            if let Some(out) =
+                ext_round_to_float::<W, MB, RM>(&res, limbs, ZIV_ERR_BITS, final_round)
+            {
                 return out;
             }
             stage += 1;

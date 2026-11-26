@@ -8,7 +8,7 @@ use crate::Exponent;
 use core::cmp::Ordering;
 use core::num::FpCategory;
 
-impl<const W: usize, const MB: usize> Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     /// Computes the four-quadrant arctangent `atan2(self, other)` in `[-pi, pi]`,
     /// matching IEEE 754 / Rust std semantics with round-to-nearest-even.
     pub(super) const fn atan2_internal(self, other: Self) -> Self {
@@ -38,7 +38,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                 if y_neg {
                     res = ext_neg(res);
                 }
-                return match ext_round_to_float::<W, MB>(&res, l2, ZIV_ERR_BITS, true) {
+                return match ext_round_to_float::<W, MB, RM>(&res, l2, ZIV_ERR_BITS, true) {
                     Some(v) => v,
                     None => unreachable!(),
                 };
@@ -48,7 +48,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                 if y_neg {
                     res = ext_neg(res);
                 }
-                return match ext_round_to_float::<W, MB>(&res, l2, ZIV_ERR_BITS, true) {
+                return match ext_round_to_float::<W, MB, RM>(&res, l2, ZIV_ERR_BITS, true) {
                     Some(v) => v,
                     None => unreachable!(),
                 };
@@ -63,7 +63,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                 if y_neg {
                     res = ext_neg(res);
                 }
-                return match ext_round_to_float::<W, MB>(&res, l2, ZIV_ERR_BITS, true) {
+                return match ext_round_to_float::<W, MB, RM>(&res, l2, ZIV_ERR_BITS, true) {
                     Some(v) => v,
                     None => unreachable!(),
                 };
@@ -73,7 +73,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                 if y_neg {
                     res = ext_neg(res);
                 }
-                return match ext_round_to_float::<W, MB>(&res, l2, ZIV_ERR_BITS, true) {
+                return match ext_round_to_float::<W, MB, RM>(&res, l2, ZIV_ERR_BITS, true) {
                     Some(v) => v,
                     None => unreachable!(),
                 };
@@ -86,7 +86,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                 if y_neg {
                     res = ext_neg(res);
                 }
-                return match ext_round_to_float::<W, MB>(&res, l2, ZIV_ERR_BITS, true) {
+                return match ext_round_to_float::<W, MB, RM>(&res, l2, ZIV_ERR_BITS, true) {
                     Some(v) => v,
                     None => unreachable!(),
                 };
@@ -108,7 +108,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                 if y_neg {
                     res = ext_neg(res);
                 }
-                return match ext_round_to_float::<W, MB>(&res, l2, ZIV_ERR_BITS, true) {
+                return match ext_round_to_float::<W, MB, RM>(&res, l2, ZIV_ERR_BITS, true) {
                     Some(v) => v,
                     None => unreachable!(),
                 };
@@ -119,13 +119,20 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                     if y_neg {
                         res = ext_neg(res);
                     }
-                    return match ext_round_to_float::<W, MB>(&res, l2, ZIV_ERR_BITS, true) {
+                    return match ext_round_to_float::<W, MB, RM>(&res, l2, ZIV_ERR_BITS, true) {
                         Some(v) => v,
                         None => unreachable!(),
                     };
                 } else {
-                    // |y/x| < 2^-(MB + 64) => atan(y/x) rounds identically to y / x.
-                    return self.div(other);
+                    // |y/x| < 2^-(MB + 64): atan(y/x) = y/x - (y/x)^3/3 (strictly smaller magnitude).
+                    let q = self.div(other);
+                    if q.is_zero() {
+                        return Self::underflow_nonzero(y_neg);
+                    }
+                    if q.mul(other).to_bits().eq(&self.to_bits()) {
+                        return Self::round_with_tiny_delta(q, y_neg);
+                    }
+                    return q;
                 }
             }
         } else if ay0.exp.gt(&ax0.exp) {
@@ -133,7 +140,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             if y_neg {
                 res = ext_neg(res);
             }
-            return match ext_round_to_float::<W, MB>(&res, l2, ZIV_ERR_BITS, true) {
+            return match ext_round_to_float::<W, MB, RM>(&res, l2, ZIV_ERR_BITS, true) {
                 Some(v) => v,
                 None => unreachable!(),
             };
@@ -142,12 +149,12 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             if y_neg {
                 res = ext_neg(res);
             }
-            return match ext_round_to_float::<W, MB>(&res, l2, ZIV_ERR_BITS, true) {
+            return match ext_round_to_float::<W, MB, RM>(&res, l2, ZIV_ERR_BITS, true) {
                 Some(v) => v,
                 None => unreachable!(),
             };
         } else {
-            return self.div(other);
+            return Self::underflow_nonzero(y_neg);
         }
 
         let y_le_x = !matches!(abs_y.total_cmp(&abs_x), Ordering::Greater);
@@ -177,7 +184,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             };
             res.sign = y_neg;
 
-            if let Some(out) = ext_round_to_float::<W, MB>(&res, limbs, ZIV_ERR_BITS, final_round) {
+            if let Some(out) = ext_round_to_float::<W, MB, RM>(&res, limbs, ZIV_ERR_BITS, final_round) {
                 return out;
             }
             stage += 1;

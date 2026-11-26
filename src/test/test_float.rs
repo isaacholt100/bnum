@@ -8,15 +8,15 @@ use rug::ops::{PowAssign, NegAssign};
 // we can have confidence that these tests against TestFloat are valid, and that conversions between bnum::Float and TestFloat are correct by also testing for f64 and f32 parameters, i.e. 64 bits with 53 mantissa bits, and 32 bits with 24 mantissa bits.
 
 // TODO: could also use astro-float instead
-pub struct TestFloat<const N: usize, const MB: usize> {
-    inner: Float<N, MB>,
+pub struct TestFloat<const N: usize, const MB: usize, const RM: u8 = { crate::RoundingMode::DEFAULT as u8 }> {
+    inner: Float<N, MB, RM>,
 }
 
-impl<const N: usize, const MB: usize> From<Float<N, MB>> for RugFloat {
-    fn from(value: Float<N, MB>) -> Self {
+impl<const N: usize, const MB: usize, const RM: u8> From<Float<N, MB, RM>> for RugFloat {
+    fn from(value: Float<N, MB, RM>) -> Self {
         let (sign, exponent, mantissa) = value.into_integral_signed_parts();
         let mantissa = RugInteger::from(mantissa);
-        let mut out = RugFloat::with_val(Float::<N, MB>::MANTISSA_DIGITS, mantissa);
+        let mut out = RugFloat::with_val(Float::<N, MB, RM>::MANTISSA_DIGITS, mantissa);
         out.pow_assign(exponent);
         if sign {
             out.neg_assign();

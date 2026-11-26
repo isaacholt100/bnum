@@ -9,7 +9,7 @@ mod mul;
 mod rem;
 mod sub;
 
-impl<const W: usize, const MB: usize> Add for Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> Add for Float<W, MB, RM> {
     type Output = Self;
 
     #[inline]
@@ -18,23 +18,23 @@ impl<const W: usize, const MB: usize> Add for Float<W, MB> {
     }
 }
 
-full_op_impl!(<const W: usize, const MB: usize> Add, AddAssign, Float<W, MB>, add, add_assign for Float<W, MB>);
+full_op_impl!(<const W: usize, const MB: usize, const RM: u8> Add, AddAssign, Float<W, MB, RM>, add, add_assign for Float<W, MB, RM>);
 
-impl<const W: usize, const MB: usize> Sum for Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> Sum for Float<W, MB, RM> {
     #[inline]
     fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.fold(Self::ZERO, |a, b| a + b)
     }
 }
 
-impl<'a, const W: usize, const MB: usize> Sum<&'a Self> for Float<W, MB> {
+impl<'a, const W: usize, const MB: usize, const RM: u8> Sum<&'a Self> for Float<W, MB, RM> {
     #[inline]
     fn sum<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
         iter.fold(Self::ZERO, |a, b| a + *b)
     }
 }
 
-impl<const W: usize, const MB: usize> Sub for Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> Sub for Float<W, MB, RM> {
     type Output = Self;
 
     #[inline]
@@ -43,9 +43,9 @@ impl<const W: usize, const MB: usize> Sub for Float<W, MB> {
     }
 }
 
-full_op_impl!(<const W: usize, const MB: usize> Sub, SubAssign, Float<W, MB>, sub, sub_assign for Float<W, MB>);
+full_op_impl!(<const W: usize, const MB: usize, const RM: u8> Sub, SubAssign, Float<W, MB, RM>, sub, sub_assign for Float<W, MB, RM>);
 
-impl<const W: usize, const MB: usize> Mul for Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> Mul for Float<W, MB, RM> {
     type Output = Self;
 
     #[inline]
@@ -54,23 +54,23 @@ impl<const W: usize, const MB: usize> Mul for Float<W, MB> {
     }
 }
 
-full_op_impl!(<const W: usize, const MB: usize> Mul, MulAssign, Float<W, MB>, mul, mul_assign for Float<W, MB>);
+full_op_impl!(<const W: usize, const MB: usize, const RM: u8> Mul, MulAssign, Float<W, MB, RM>, mul, mul_assign for Float<W, MB, RM>);
 
-impl<const W: usize, const MB: usize> Product for Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> Product for Float<W, MB, RM> {
     #[inline]
     fn product<I: Iterator<Item = Self>>(iter: I) -> Self {
         iter.fold(Self::ONE, |a, b| a * b)
     }
 }
 
-impl<'a, const W: usize, const MB: usize> Product<&'a Self> for Float<W, MB> {
+impl<'a, const W: usize, const MB: usize, const RM: u8> Product<&'a Self> for Float<W, MB, RM> {
     #[inline]
     fn product<I: Iterator<Item = &'a Self>>(iter: I) -> Self {
         iter.fold(Self::ONE, |a, b| a * *b)
     }
 }
 
-impl<const W: usize, const MB: usize> Div for Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> Div for Float<W, MB, RM> {
     type Output = Self;
 
     #[inline]
@@ -79,9 +79,9 @@ impl<const W: usize, const MB: usize> Div for Float<W, MB> {
     }
 }
 
-full_op_impl!(<const W: usize, const MB: usize> Div, DivAssign, Float<W, MB>, div, div_assign for Float<W, MB>);
+full_op_impl!(<const W: usize, const MB: usize, const RM: u8> Div, DivAssign, Float<W, MB, RM>, div, div_assign for Float<W, MB, RM>);
 
-impl<const W: usize, const MB: usize> Rem for Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> Rem for Float<W, MB, RM> {
     type Output = Self;
 
     #[inline]
@@ -90,9 +90,9 @@ impl<const W: usize, const MB: usize> Rem for Float<W, MB> {
     }
 }
 
-full_op_impl!(<const W: usize, const MB: usize> Rem, RemAssign, Float<W, MB>, rem, rem_assign for Float<W, MB>);
+full_op_impl!(<const W: usize, const MB: usize, const RM: u8> Rem, RemAssign, Float<W, MB, RM>, rem, rem_assign for Float<W, MB, RM>);
 
-impl<const W: usize, const MB: usize> Neg for Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> Neg for Float<W, MB, RM> {
     type Output = Self;
 
     #[inline]
@@ -101,11 +101,11 @@ impl<const W: usize, const MB: usize> Neg for Float<W, MB> {
     }
 }
 
-impl<const W: usize, const MB: usize> Neg for &Float<W, MB> {
-    type Output = Float<W, MB>;
+impl<const W: usize, const MB: usize, const RM: u8> Neg for &Float<W, MB, RM> {
+    type Output = Float<W, MB, RM>;
 
     #[inline]
-    fn neg(self) -> Float<W, MB> {
+    fn neg(self) -> Float<W, MB, RM> {
         (*self).neg()
     }
 }

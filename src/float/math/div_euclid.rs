@@ -1,7 +1,8 @@
 use super::Float;
-use crate::{Exponent, Uint};
+use crate::Exponent;
+use crate::Uint;
 
-impl<const W: usize, const MB: usize> Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     /// Truncates `self` toward zero without relying on `i32` `EXP_BIAS`.
     pub(super) const fn trunc_exact(self) -> Self {
         if self.is_nan() || self.is_infinite() || self.is_zero() {

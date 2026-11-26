@@ -6,9 +6,8 @@ use super::fixed::{
 use crate::{Exponent, Int};
 use core::num::FpCategory;
 
-impl<const W: usize, const MB: usize> Float<W, MB> {
-    /// Computes `e^self - 1` accurately even for tiny `|self|` (avoiding catastrophic
-    /// cancellation near `0`), with IEEE 754 round-to-nearest-even.
+impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
+    /// Computes `e^self - 1` accurately even for tiny `|self|` using rounding mode `RM`.
     pub(super) const fn exp_m1_internal(self) -> Self {
         const {
             assert!(W > 1, "Float requires W > 1");
@@ -36,20 +35,18 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
         let x0 = ext_from_float(self, l1);
 
-        // Tiny |x|: |x| < 2^-(MB + 4) => e^x - 1 = x + x^2/2 + ... rounds directly to self.
+        // Tiny |x|: e^x - 1 = x + x^2/2 + ... > x strictly for all x != 0.
         if x0.exp.lt(&int_from_i64(-((Self::MB as i64) + 4))) {
-            return self;
+            return Self::round_with_tiny_delta(self, true);
         }
 
-        // Large |x|: check saturation bounds.
+        // Large negative x: e^x - 1 = -1 + e^x > -1 strictly.
         let neg_sat_exp = int_from_u64(((Self::MB + 4) as u64).ilog2() as u64 + 1);
         if x0.sign && x0.exp.ge(&neg_sat_exp) {
-            // |x| >= 2 * (MB + 4) => e^x < 2^-(2*(MB+4)) => e^x - 1 rounds to -1.0.
-            return Self::neg_one_val();
+            return Self::round_with_tiny_delta(Self::neg_one_val(), true);
         }
-        let pos_exp_thresh = int_from_u64(((Self::MB + 64) as u64).ilog2() as u64 + 1);
+        let pos_exp_thresh = int_from_u64(((Self::MB + 140) as u64).ilog2() as u64 + 1);
         if !x0.sign && x0.exp.ge(&pos_exp_thresh) {
-            // e^x > 2^(MB + 64), so subtracting 1 cannot affect rounding of e^x.
             return self.exp_internal();
         }
 
@@ -60,14 +57,14 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
 
             let x = ext_from_float(self, limbs);
             let res = if x.exp.lt(&Int::ZERO) {
-                // |x| < 1.0: cancellation-free direct expm1 kernel.
                 ext_expm1_small(&x, limbs)
             } else {
-                // |x| >= 1.0: e^x >= e or e^x <= 1/e, so e^x - 1 has zero cancellation.
                 ext_sub(&ext_exp(&x, limbs), &ext_one(limbs), limbs)
             };
 
-            if let Some(out) = ext_round_to_float::<W, MB>(&res, limbs, ZIV_ERR_BITS, final_round) {
+            if let Some(out) =
+                ext_round_to_float::<W, MB, RM>(&res, limbs, ZIV_ERR_BITS, final_round)
+            {
                 return out;
             }
             stage += 1;

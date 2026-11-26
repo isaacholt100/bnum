@@ -7,7 +7,7 @@ use crate::{Exponent, Uint};
 use core::cmp::Ordering;
 use core::num::FpCategory;
 
-impl<const W: usize, const MB: usize> Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     /// Classifies a finite non-zero float as `(is_integer, is_odd_integer)` without relying
     /// on `i32` `EXP_BIAS`.
     #[inline]
@@ -156,7 +156,9 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                 let limbs = if stage == 0 { l1 } else { l2 };
                 let final_round = stage == 1 || l1 == l2;
                 let r = ext_sqrt(&ext_from_float(abs_x, limbs), limbs);
-                if let Some(out) = ext_round_to_float::<W, MB>(&r, limbs, ZIV_ERR_BITS, final_round) {
+                if let Some(out) =
+                    ext_round_to_float::<W, MB, RM>(&r, limbs, ZIV_ERR_BITS, final_round)
+                {
                     return out;
                 }
                 stage += 1;
@@ -178,41 +180,36 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         match exp_sum {
             None => {
                 if y_ext0.exp.is_negative() {
-                    // Both exponents are deeply negative: |y * ln(|x|)| is vanishingly tiny => 1.0.
-                    return if res_neg { Self::neg_one_val() } else { one };
+                    let base = if res_neg { Self::neg_one_val() } else { one };
+                    return Self::round_with_tiny_delta(base, !(prod_neg ^ res_neg));
                 } else {
                     return if prod_neg {
-                        if res_neg { Self::NEG_ZERO } else { Self::ZERO }
-                    } else if res_neg {
-                        Self::NEG_INFINITY
+                        Self::underflow_nonzero(res_neg)
                     } else {
-                        Self::INFINITY
+                        Self::overflow_value(res_neg)
                     };
                 }
             }
             Some(s) => {
                 if s.gt(&max_prod_exp) {
                     return if prod_neg {
-                        if res_neg { Self::NEG_ZERO } else { Self::ZERO }
-                    } else if res_neg {
-                        Self::NEG_INFINITY
+                        Self::underflow_nonzero(res_neg)
                     } else {
-                        Self::INFINITY
+                        Self::overflow_value(res_neg)
                     };
                 }
                 if s.lt(&int_from_i64(-((Self::MB as i64) + 64))) {
-                    return if res_neg { Self::neg_one_val() } else { one };
+                    let base = if res_neg { Self::neg_one_val() } else { one };
+                    return Self::round_with_tiny_delta(base, !(prod_neg ^ res_neg));
                 }
             }
         }
 
-        // If `prod` has > 32 integer bits (possible on huge-exponent formats), start directly at l2.
         let need_wide = match exp_sum {
             Some(s) => s.gt(&int_from_u64(32)),
             None => true,
         };
         let bias = Self::exp_bias_uint().cast_signed();
-        // Conservative bound: |k| > bias + MB + 64 guarantees overflow/underflow.
         let exp_bound = bias.add(int_from_u64((Self::MB + 64) as u64));
 
         let mut stage = if need_wide { 1 } else { 0 };
@@ -224,25 +221,23 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             let ln_x = ext_ln(&ext_from_float(abs_x, limbs), limbs);
             let prod = ext_mul(&y_ext, &ln_x, limbs);
 
-            // Check if |prod| > exp_bound * ln(2) (conservatively |prod| > exp_bound)
-            // before calling `ext_exp` so `k` stays well within `Int<W>`.
             let bound_ext = super::fixed::ext_from_int(exp_bound, limbs);
             if matches!(
                 super::fixed::ext_cmp_abs(&prod, &bound_ext, limbs),
                 Ordering::Greater
             ) {
                 return if prod.sign {
-                    if res_neg { Self::NEG_ZERO } else { Self::ZERO }
-                } else if res_neg {
-                    Self::NEG_INFINITY
+                    Self::underflow_nonzero(res_neg)
                 } else {
-                    Self::INFINITY
+                    Self::overflow_value(res_neg)
                 };
             }
 
             let mut res = ext_exp(&prod, limbs);
             res.sign = res_neg;
-            if let Some(out) = ext_round_to_float::<W, MB>(&res, limbs, ZIV_ERR_BITS, final_round) {
+            if let Some(out) =
+                ext_round_to_float::<W, MB, RM>(&res, limbs, ZIV_ERR_BITS, final_round)
+            {
                 return out;
             }
             stage += 1;

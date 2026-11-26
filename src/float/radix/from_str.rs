@@ -3,6 +3,7 @@ use core::str::FromStr;
 
 use crate::digits::Digits;
 use crate::errors::ParseFloatError;
+use crate::float::RoundingMode;
 use crate::{Exponent, Float, Uint};
 
 /// Fixed-point buffer with `2 * W + 24` bytes.
@@ -824,7 +825,7 @@ fn exact_cmp_midpoint<const W: usize, const MB: usize>(
         return None;
     }
     let needed_bits: usize = if p >= 0 {
-        (MB + 2) + (abs_p as usize)
+        (MB + 3) + (abs_p as usize)
     } else {
         // log2(5) = 2.321928... < 2322 / 1000
         (MB + 4) + ((abs_p * 2322) / 1000) as usize
@@ -863,22 +864,61 @@ fn exact_cmp_midpoint<const W: usize, const MB: usize>(
 // Stage 1 / Stage 2 scaling & rounding + Float::from_str entry point
 // -----------------------------------------------------------------------------
 
-enum ScaleOutcome<const W: usize, const MB: usize> {
-    Resolved(Float<W, MB>),
-    /// Value lies within the error margin of the midpoint `M = (2 * q_lo + 1) * 2^p`.
+#[inline]
+fn fp_extract_top64<const W: usize>(a: &Fixed<W>, shift: Exponent, limbs: usize) -> u64 {
+    if shift == 0 {
+        return 0;
+    }
+    if shift <= 64 {
+        let lo = a.get(0);
+        if shift == 64 {
+            lo
+        } else {
+            (lo & ((1u64 << shift) - 1)) << (64 - shift)
+        }
+    } else {
+        let lo_bit = shift - 64;
+        let idx = (lo_bit / 64) as usize;
+        let off = lo_bit % 64;
+        let lo = if idx < limbs { a.get(idx) } else { 0 };
+        if off == 0 {
+            lo
+        } else {
+            let hi = if idx + 1 < limbs { a.get(idx + 1) } else { 0 };
+            (lo >> off) | (hi << (64 - off))
+        }
+    }
+}
+
+#[inline]
+fn uint_low_u64_fs<const W: usize>(u: &Uint<W>) -> u64 {
+    let mut v = 0u64;
+    let mut i = 0;
+    while i < W && i < 8 {
+        v |= (u.bytes[i] as u64) << (i * 8);
+        i += 1;
+    }
+    v
+}
+
+enum ScaleOutcome<const W: usize, const MB: usize, const RM: u8> {
+    Resolved(Float<W, MB, RM>),
+    /// Value lies within the error margin of either:
+    /// - the halfway midpoint `M = (2 * q_lo + 1) * 2^p` (`is_grid_boundary == false`, nearest modes), or
+    /// - the exact grid point `G = (2 * (q_lo + 1)) * 2^p` (`is_grid_boundary == true`, directed/odd modes).
     Ambiguous {
         is_subnormal: bool,
         q_lo: Uint<W>,
         p: i128,
-        /// Approximate nearest integer (used only if exact Stage 3 cannot allocate for `|p| > 10^6`).
         approx_q: Uint<W>,
+        is_grid_boundary: bool,
     },
 }
 
-impl<const W: usize, const MB: usize> Float<W, MB> {
-    /// Packs a rounded significand `q` (normal or subnormal) into `Float<W, MB>`,
+impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
+    /// Packs a rounded significand `q` (normal or subnormal) into `Float<W, MB, RM>`,
     /// handling rounding carry into the next power of two, subnormal-to-normal carry,
-    /// and overflow to infinity.
+    /// and mode-appropriate overflow.
     fn pack_rounded(
         is_negative: bool,
         is_subnormal: bool,
@@ -896,7 +936,6 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                 };
             }
             if q.bit(Self::MB) {
-                // Rounded up across the subnormal-to-normal boundary to MIN_POSITIVE.
                 (Uint::ONE, Uint::ZERO)
             } else {
                 (Uint::ZERO, q)
@@ -909,11 +948,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             }
             if let Some(b_i128) = bias_i128 {
                 if final_exp > b_i128 {
-                    return if is_negative {
-                        Self::NEG_INFINITY
-                    } else {
-                        Self::INFINITY
-                    };
+                    return Self::overflow_value(is_negative);
                 }
             }
             let biased = add_i128_to_uint(bias, final_exp);
@@ -932,6 +967,168 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         Self::from_bits(out_bits)
     }
 
+    /// Rounds `prod_mant` shifted right by `drop` under rounding mode `RM` at working
+    /// precision `limbs`, returning `Resolved` if provably unambiguous or `Ambiguous` to trigger
+    /// higher precision / exact Stage 3 comparison.
+    fn resolve_with_rm(
+        dec: &ParsedDecimal<'_>,
+        prod_mant: &Fixed<W>,
+        is_subnormal: bool,
+        out_exp: i128,
+        drop: Exponent,
+        err_bits: Exponent,
+        p_exact: i128,
+        bias: Uint<W>,
+        bias_i128: Option<i128>,
+        limbs: usize,
+    ) -> ScaleOutcome<W, MB, RM> {
+        let p_bits = (limbs as Exponent) * 64;
+        let (mid, carry_mid) = fp_add_pow2_with_carry(prod_mant, 0, drop - 1, limbs);
+        let approx_q = fp_shr_with_carry_to_uint(&mid, carry_mid, drop, limbs);
+
+        if RoundingMode::is_faithful(RM) {
+            return ScaleOutcome::Resolved(Self::pack_rounded(
+                dec.is_negative,
+                is_subnormal,
+                out_exp,
+                approx_q,
+                bias,
+                bias_i128,
+            ));
+        }
+
+        if RoundingMode::is_stochastic(RM) {
+            let mut q = fp_shr_with_carry_to_uint(prod_mant, 0, drop, limbs);
+            if err_bits + 2 < drop {
+                let (hi, carry_hi) = fp_add_pow2_with_carry(prod_mant, 0, err_bits, limbs);
+                let (lo, carry_lo) = fp_sub_pow2_with_carry(prod_mant, 0, err_bits, limbs);
+                let q_hi = fp_shr_with_carry_to_uint(&hi, carry_hi, drop, limbs);
+                let q_lo = fp_shr_with_carry_to_uint(&lo, carry_lo, drop, limbs);
+                if !q_hi.eq(&q_lo) {
+                    // Within `2^err_bits` of exact grid point `q_hi` (e.g. exact decimal `"1.5"`).
+                    return ScaleOutcome::Resolved(Self::pack_rounded(
+                        dec.is_negative,
+                        is_subnormal,
+                        out_exp,
+                        q_hi,
+                        bias,
+                        bias_i128,
+                    ));
+                }
+            }
+            let frac64 = if drop <= p_bits {
+                fp_extract_top64(prod_mant, drop, limbs)
+            } else {
+                // Subnormal shift > p_bits: drop == p_bits + 1 means [0.5, 1.0) of subnormal
+                fp_extract_top64(prod_mant, p_bits, limbs) >> (drop - p_bits)
+            };
+            let round_bit = (frac64 >> 63) != 0;
+            let sticky = (frac64 & !(1u64 << 63)) != 0 || drop > 64;
+            let seed = (out_exp as u64).wrapping_mul(0x9e37_79b9_7f4a_7c15) ^ uint_low_u64_fs(&q);
+            if RoundingMode::should_round_up::<RM>(
+                dec.is_negative,
+                q.is_odd(),
+                round_bit,
+                sticky,
+                frac64,
+                seed,
+            ) {
+                q = q.add(Uint::ONE);
+            }
+            return ScaleOutcome::Resolved(Self::pack_rounded(
+                dec.is_negative,
+                is_subnormal,
+                out_exp,
+                q,
+                bias,
+                bias_i128,
+            ));
+        }
+
+        if RoundingMode::is_directed_or_odd(RM) {
+            if err_bits + 2 >= drop {
+                let q_trunc = fp_shr_with_carry_to_uint(prod_mant, 0, drop, limbs);
+                return ScaleOutcome::Ambiguous {
+                    is_subnormal,
+                    q_lo: q_trunc,
+                    p: p_exact,
+                    approx_q: q_trunc,
+                    is_grid_boundary: true,
+                };
+            }
+            let (hi, carry_hi) = fp_add_pow2_with_carry(prod_mant, 0, err_bits, limbs);
+            let (lo, carry_lo) = fp_sub_pow2_with_carry(prod_mant, 0, err_bits, limbs);
+            let q_hi = fp_shr_with_carry_to_uint(&hi, carry_hi, drop, limbs);
+            let q_lo = fp_shr_with_carry_to_uint(&lo, carry_lo, drop, limbs);
+
+            if q_hi.eq(&q_lo) {
+                // Provably strictly inside (q_lo, q_lo + 1) — definitely inexact!
+                let mut q = q_lo;
+                if RoundingMode::should_round_up::<RM>(
+                    dec.is_negative,
+                    q.is_odd(),
+                    false,
+                    true,
+                    0,
+                    0,
+                ) {
+                    q = q.add(Uint::ONE);
+                }
+                return ScaleOutcome::Resolved(Self::pack_rounded(
+                    dec.is_negative,
+                    is_subnormal,
+                    out_exp,
+                    q,
+                    bias,
+                    bias_i128,
+                ));
+            }
+
+            return ScaleOutcome::Ambiguous {
+                is_subnormal,
+                q_lo,
+                p: p_exact,
+                approx_q: q_hi,
+                is_grid_boundary: true,
+            };
+        }
+
+        // Round-to-nearest modes (TiesToEven, TiesToAway, TiesTowardPositive/Negative/Zero, TiesToOdd)
+        if err_bits + 2 >= drop {
+            return ScaleOutcome::Ambiguous {
+                is_subnormal,
+                q_lo: approx_q,
+                p: p_exact,
+                approx_q,
+                is_grid_boundary: false,
+            };
+        }
+
+        let (hi, carry_hi) = fp_add_pow2_with_carry(&mid, carry_mid, err_bits, limbs);
+        let (lo, carry_lo) = fp_sub_pow2_with_carry(&mid, carry_mid, err_bits, limbs);
+        let q_hi = fp_shr_with_carry_to_uint(&hi, carry_hi, drop, limbs);
+        let q_lo = fp_shr_with_carry_to_uint(&lo, carry_lo, drop, limbs);
+
+        if q_hi.eq(&q_lo) {
+            return ScaleOutcome::Resolved(Self::pack_rounded(
+                dec.is_negative,
+                is_subnormal,
+                out_exp,
+                q_lo,
+                bias,
+                bias_i128,
+            ));
+        }
+
+        ScaleOutcome::Ambiguous {
+            is_subnormal,
+            q_lo,
+            p: p_exact,
+            approx_q,
+            is_grid_boundary: false,
+        }
+    }
+
     /// Evaluates `dec` at `limbs` 64-bit limbs of working precision and checks whether the
     /// rounding decision is provably unambiguous.
     fn scale_at_precision(
@@ -939,17 +1136,13 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         bias: Uint<W>,
         bias_i128: Option<i128>,
         limbs: usize,
-    ) -> ScaleOutcome<W, MB> {
+    ) -> ScaleOutcome<W, MB, RM> {
         let p_bits = (limbs as Exponent) * 64;
 
-        // Parse as many leading significant decimal digits as fit into `limbs` 64-bit limbs.
-        // We pack chunks of 19 while a full limb of headroom remains, then 1 digit at a time
-        // until the top limb >= u64::MAX / 10, ensuring `d_bw >= P - 3` whenever truncated.
         let mut d_val = Fixed::<W>::ALL_ZEROS;
         let mut pos = dec.first_nz;
         let end = dec.last_nz_end;
 
-        // First read up to 19 * (limbs - 1) digits in fast 19-digit chunks.
         let fast_limit = dec.first_nz + (limbs - 1) * 19;
         let fast_end = end.min(fast_limit);
         while pos < fast_end {
@@ -962,7 +1155,6 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             debug_assert!(ovf == 0);
             pos += chunk_len;
         }
-        // Fill remaining capacity in the top limb 1 digit at a time without overflow.
         let top_thresh = u64::MAX / 10;
         while pos < end && d_val.get(limbs - 1) < top_thresh {
             let d = dec.digit_at(pos) as u64;
@@ -974,22 +1166,15 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         let digits_read = pos - dec.first_nz;
         let q10: i128 = dec.exp10 - (digits_read as i128 - 1);
 
-        // Normalise d_val to [0.5, 1.0) at scale 2^P.
         let d_bw = fp_bit_width(&d_val, limbs);
         let d_norm = fp_shl(&d_val, p_bits - d_bw, limbs);
         let d_exp2 = d_bw as i128;
 
-        // Compute normalized 5^q10 and multiply by d_norm.
         let (p5_norm, p5_exp2) = fp_pow5::<W>(q10, limbs);
         let (prod_mant, prod_exp) = fp_norm_mul(&d_norm, d_exp2, &p5_norm, p5_exp2, limbs);
 
-        // Total value ≈ (prod_mant / 2^(P - 1)) * 2^(out_exp) where out_exp = prod_exp + q10 - 1.
         let out_exp = prod_exp + q10 - 1;
 
-        // Rigorous upper bound on error in `prod_mant` (in ULPs of bit 0):
-        // - truncation of d_val (if any): <= 8 ULPs (since d_bw >= P - 3)
-        // - binary exponentiation of 5^|q10|: <= 2^ceil(log2(|q10| + 1)) * (2*limbs + 2) ULPs
-        // - optional reciprocal + final multiply: <= 8 * limbs ULPs
         let abs_q = q10.unsigned_abs();
         let q_bits: Exponent = if abs_q == 0 {
             0
@@ -999,32 +1184,49 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         let limb_bits: Exponent = 64 - (limbs as u64).leading_zeros();
         let err_bits: Exponent = q_bits + limb_bits + 8;
 
-        // Check overflow and underflow boundaries (only possible when bias fits in i128,
-        // i.e. EXPONENT_BITS <= 127; otherwise any finite i128 exponent is strictly normal).
         if let Some(b_i128) = bias_i128 {
             let min_normal_exp = 1 - b_i128;
             let min_subnormal_exp = min_normal_exp - (MB as i128);
 
-            // Strictly above overflow threshold (2^(bias + 1) - err >> overflow midpoint).
             if out_exp > b_i128 {
-                return ScaleOutcome::Resolved(if dec.is_negative {
-                    Self::NEG_INFINITY
-                } else {
-                    Self::INFINITY
-                });
+                return ScaleOutcome::Resolved(Self::overflow_value(dec.is_negative));
             }
 
-            // Strictly below half of MIN_POSITIVE_SUBNORMAL.
             if out_exp < min_subnormal_exp - 2 {
-                return ScaleOutcome::Resolved(if dec.is_negative {
-                    Self::NEG_ZERO
-                } else {
-                    Self::ZERO
-                });
+                return ScaleOutcome::Resolved(Self::underflow_nonzero(dec.is_negative));
             }
 
-            // Just below half of MIN_POSITIVE_SUBNORMAL: check if error margin reaches it.
             if out_exp == min_subnormal_exp - 2 {
+                if RoundingMode::is_directed_or_odd(RM) {
+                    return ScaleOutcome::Resolved(Self::underflow_nonzero(dec.is_negative));
+                }
+                if RoundingMode::is_faithful(RM) {
+                    return ScaleOutcome::Resolved(if dec.is_negative {
+                        Self::NEG_ZERO
+                    } else {
+                        Self::ZERO
+                    });
+                }
+                if RoundingMode::is_stochastic(RM) {
+                    let frac64 = fp_extract_top64(&prod_mant, p_bits, limbs) >> 2;
+                    let seed = (out_exp as u64).wrapping_mul(0x9e37_79b9_7f4a_7c15);
+                    return ScaleOutcome::Resolved(
+                        if RoundingMode::should_round_up::<RM>(
+                            dec.is_negative,
+                            false,
+                            false,
+                            true,
+                            frac64,
+                            seed,
+                        ) {
+                            Self::from_biased_uint_parts(dec.is_negative, Uint::ONE, Uint::ONE)
+                        } else if dec.is_negative {
+                            Self::NEG_ZERO
+                        } else {
+                            Self::ZERO
+                        },
+                    );
+                }
                 if err_bits < p_bits {
                     let (_, carry) = fp_add_pow2_with_carry(&prod_mant, 0, err_bits, limbs);
                     if carry == 0 {
@@ -1040,90 +1242,44 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                     q_lo: Uint::ZERO,
                     p: min_subnormal_exp - 1,
                     approx_q: Uint::ZERO,
+                    is_grid_boundary: false,
                 };
             }
 
-            // Subnormal regime (including [0.5, 1.0) * MIN_POSITIVE_SUBNORMAL where diff == MB + 1).
             if out_exp < min_normal_exp {
                 let diff = (min_normal_exp - out_exp) as Exponent;
                 let drop = p_bits + diff - (Self::MB + 1);
-                let (mid, carry_mid) = fp_add_pow2_with_carry(&prod_mant, 0, drop - 1, limbs);
-                let approx_q = fp_shr_with_carry_to_uint(&mid, carry_mid, drop, limbs);
-
-                if err_bits + 2 >= drop {
-                    return ScaleOutcome::Ambiguous {
-                        is_subnormal: true,
-                        q_lo: approx_q,
-                        p: min_subnormal_exp - 1,
-                        approx_q,
-                    };
-                }
-
-                let (hi, carry_hi) = fp_add_pow2_with_carry(&mid, carry_mid, err_bits, limbs);
-                let (lo, carry_lo) = fp_sub_pow2_with_carry(&mid, carry_mid, err_bits, limbs);
-                let q_hi = fp_shr_with_carry_to_uint(&hi, carry_hi, drop, limbs);
-                let q_lo = fp_shr_with_carry_to_uint(&lo, carry_lo, drop, limbs);
-
-                if q_hi.eq(&q_lo) {
-                    return ScaleOutcome::Resolved(Self::pack_rounded(
-                        dec.is_negative,
-                        true,
-                        out_exp,
-                        q_lo,
-                        bias,
-                        bias_i128,
-                    ));
-                }
-                return ScaleOutcome::Ambiguous {
-                    is_subnormal: true,
-                    q_lo,
-                    p: min_subnormal_exp - 1,
-                    approx_q,
-                };
+                return Self::resolve_with_rm(
+                    dec,
+                    &prod_mant,
+                    true,
+                    out_exp,
+                    drop,
+                    err_bits,
+                    min_subnormal_exp - 1,
+                    bias,
+                    bias_i128,
+                    limbs,
+                );
             }
         }
 
-        // Normal regime.
         let drop = p_bits - (Self::MB + 1);
-        let (mid, carry_mid) = fp_add_pow2_with_carry(&prod_mant, 0, drop - 1, limbs);
-        let approx_q = fp_shr_with_carry_to_uint(&mid, carry_mid, drop, limbs);
-
-        if err_bits + 2 >= drop {
-            return ScaleOutcome::Ambiguous {
-                is_subnormal: false,
-                q_lo: approx_q,
-                p: out_exp - (MB as i128) - 1,
-                approx_q,
-            };
-        }
-
-        let (hi, carry_hi) = fp_add_pow2_with_carry(&mid, carry_mid, err_bits, limbs);
-        let (lo, carry_lo) = fp_sub_pow2_with_carry(&mid, carry_mid, err_bits, limbs);
-        let q_hi = fp_shr_with_carry_to_uint(&hi, carry_hi, drop, limbs);
-        let q_lo = fp_shr_with_carry_to_uint(&lo, carry_lo, drop, limbs);
-
-        if q_hi.eq(&q_lo) {
-            return ScaleOutcome::Resolved(Self::pack_rounded(
-                dec.is_negative,
-                false,
-                out_exp,
-                q_lo,
-                bias,
-                bias_i128,
-            ));
-        }
-
-        ScaleOutcome::Ambiguous {
-            is_subnormal: false,
-            q_lo,
-            p: out_exp - (MB as i128) - 1,
-            approx_q,
-        }
+        Self::resolve_with_rm(
+            dec,
+            &prod_mant,
+            false,
+            out_exp,
+            drop,
+            err_bits,
+            out_exp - (MB as i128) - 1,
+            bias,
+            bias_i128,
+            limbs,
+        )
     }
 
-    /// Parses a base-10 floating-point string into `Float<W, MB>`, matching the exact syntax,
-    /// special-value handling, and IEEE 754 round-to-nearest-ties-to-even semantics of Rust's
-    /// primitive `f32::from_str` and `f64::from_str`.
+    /// Parses a base-10 floating-point string into `Float<W, MB, RM>`, rounding according to `RM`.
     ///
     /// Valid for all `W > 1` and `2 < MB < Self::BITS - 2`.
     pub fn from_str(src: &str) -> Result<Self, ParseFloatError> {
@@ -1133,6 +1289,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                 MB > 2 && MB < (Self::BITS as usize) - 2,
                 "Float mantissa bits MB must satisfy 2 < MB < Self::BITS - 2"
             );
+            assert!(RM <= RoundingMode::MAX_U8, "invalid RoundingMode discriminant");
         }
 
         let dec = match lex_decimal(src)? {
@@ -1167,28 +1324,17 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             None
         };
 
-        // Quick decimal-exponent overflow/underflow filter (since log10(2) ≈ 0.30103 < 1/3).
         if let Some(b_i128) = bias_i128 {
             let max_exp10 = (b_i128 + 1) / 3 + 2;
             if dec.exp10 > max_exp10 {
-                return Ok(if dec.is_negative {
-                    Self::NEG_INFINITY
-                } else {
-                    Self::INFINITY
-                });
+                return Ok(Self::overflow_value(dec.is_negative));
             }
             let min_exp10 = -((b_i128 + MB as i128) / 3 + 3);
             if dec.exp10 < min_exp10 {
-                return Ok(if dec.is_negative {
-                    Self::NEG_ZERO
-                } else {
-                    Self::ZERO
-                });
+                return Ok(Self::underflow_nonzero(dec.is_negative));
             }
         }
 
-        // Stage 1: Fast fixed-point scaling with enough precision to overcome binary-exponentiation
-        // error amplification (~log2(|exp10|)) plus >= 56 guard bits.
         let max_limbs = (2 * W + 24) / 8;
         let exp10_bits = if dec.exp10 == 0 {
             0
@@ -1201,8 +1347,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             return Ok(f);
         }
 
-        // Stage 2: High-precision Ziv retry at `max_limbs` (>= 2 * MB + 136 bits).
-        let (is_subnormal, q_lo, p, approx_q) =
+        let (is_subnormal, q_lo, p, approx_q, is_grid_boundary) =
             match Self::scale_at_precision(&dec, bias, bias_i128, max_limbs) {
                 ScaleOutcome::Resolved(f) => return Ok(f),
                 ScaleOutcome::Ambiguous {
@@ -1210,24 +1355,106 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                     q_lo,
                     p,
                     approx_q,
-                } => (is_subnormal, q_lo, p, approx_q),
+                    is_grid_boundary,
+                } => (is_subnormal, q_lo, p, approx_q, is_grid_boundary),
             };
 
-        // Stage 3: Exact comparison against the midpoint `M = (2 * q_lo + 1) * 2^p`
-        // (with IEEE 754 round-to-nearest-ties-to-even).
-        let m_odd = q_lo.shl(1).bitor(Uint::ONE);
-        let final_q = match exact_cmp_midpoint::<W, MB>(&dec, &m_odd, p) {
-            Some(Ordering::Less) => q_lo,
-            Some(Ordering::Greater) => q_lo.add(Uint::ONE),
-            Some(Ordering::Equal) => {
-                // Exact half-ULP tie: round to even!
-                if q_lo.is_odd() {
-                    q_lo.add(Uint::ONE)
-                } else {
-                    q_lo
+        if is_grid_boundary {
+            // Exact comparison against the integer grid point `G = (2 * q_hi) * 2^p`.
+            let q_hi = q_lo.add(Uint::ONE);
+            let m_even = q_hi.shl(1);
+            let g_overflows = if !is_subnormal && q_hi.bit(Self::MB + 1) {
+                matches!(bias_i128, Some(b_i128) if p + (Self::MB as i128) + 2 > b_i128)
+            } else {
+                false
+            };
+            let out_exp = p + (Self::MB as i128) + 1;
+            let res = match exact_cmp_midpoint::<W, MB>(&dec, &m_even, p) {
+                Some(Ordering::Equal) => {
+                    if g_overflows {
+                        Self::overflow_value(dec.is_negative)
+                    } else {
+                        Self::pack_rounded(
+                            dec.is_negative,
+                            is_subnormal,
+                            out_exp,
+                            q_hi,
+                            bias,
+                            bias_i128,
+                        )
+                    }
                 }
+                Some(Ordering::Greater) => {
+                    if g_overflows {
+                        Self::overflow_value(dec.is_negative)
+                    } else {
+                        let g = Self::pack_rounded(
+                            dec.is_negative,
+                            is_subnormal,
+                            out_exp,
+                            q_hi,
+                            bias,
+                            bias_i128,
+                        );
+                        Self::round_with_tiny_delta(g, !dec.is_negative)
+                    }
+                }
+                Some(Ordering::Less) => {
+                    if g_overflows {
+                        let max_signed = if dec.is_negative {
+                            Self::MIN
+                        } else {
+                            Self::MAX
+                        };
+                        Self::round_with_tiny_delta(max_signed, !dec.is_negative)
+                    } else {
+                        let g = Self::pack_rounded(
+                            dec.is_negative,
+                            is_subnormal,
+                            out_exp,
+                            q_hi,
+                            bias,
+                            bias_i128,
+                        );
+                        Self::round_with_tiny_delta(g, dec.is_negative)
+                    }
+                }
+                None => Self::pack_rounded(
+                    dec.is_negative,
+                    is_subnormal,
+                    out_exp,
+                    approx_q,
+                    bias,
+                    bias_i128,
+                ),
+            };
+            return Ok(res);
+        }
+
+        // Exact comparison against the halfway midpoint `M = (2 * q_lo + 1) * 2^p`.
+        let final_q = {
+            let m_odd = q_lo.shl(1).bitor(Uint::ONE);
+            match exact_cmp_midpoint::<W, MB>(&dec, &m_odd, p) {
+                Some(Ordering::Less) => q_lo,
+                Some(Ordering::Greater) => q_lo.add(Uint::ONE),
+                Some(Ordering::Equal) => {
+                    let seed = (p as u64).wrapping_mul(0x9e37_79b9_7f4a_7c15)
+                        ^ uint_low_u64_fs(&q_lo);
+                    if RoundingMode::should_round_up::<RM>(
+                        dec.is_negative,
+                        q_lo.is_odd(),
+                        true,
+                        false,
+                        1u64 << 63,
+                        seed,
+                    ) {
+                        q_lo.add(Uint::ONE)
+                    } else {
+                        q_lo
+                    }
+                }
+                None => approx_q,
             }
-            None => approx_q,
         };
 
         let out_exp = p + (MB as i128) + 1;
@@ -1275,7 +1502,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     }
 }
 
-impl<const W: usize, const MB: usize> FromStr for Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> FromStr for Float<W, MB, RM> {
     type Err = ParseFloatError;
 
     #[inline]

@@ -8,9 +8,8 @@ use crate::{Exponent, Int};
 use core::cmp::Ordering;
 use core::num::FpCategory;
 
-impl<const W: usize, const MB: usize> Float<W, MB> {
-    /// Computes `sinh(self) = (e^self - e^-self) / 2` accurately even near `0` and
-    /// up to `ln(MAX) + ln(2)`, with IEEE 754 round-to-nearest-even.
+impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
+    /// Computes `sinh(self) = (e^self - e^-self) / 2` using rounding mode `RM`.
     pub(super) const fn sinh_internal(self) -> Self {
         const {
             assert!(W > 1, "Float requires W > 1");
@@ -31,20 +30,16 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         let l2 = max_limbs::<W>();
 
         let x0 = ext_from_float(abs_x, l1);
-        // Tiny |x| < 2^-(MB/2 + 4): sinh(x) = x + x^3/6 + ... rounds directly to self.
+        // Tiny |x|: sinh(x) = x + x^3/6 + ... (larger magnitude than |x|).
         if x0.exp.lt(&int_from_i64(-(((Self::MB / 2) as i64) + 4))) {
-            return self;
+            return Self::round_with_tiny_delta(self, !neg);
         }
 
         // Definite overflow guard: sinh(|x|) > 0.5 * e^|x| overflows well before |x| = exp_max + 4.
         let exp_max = Self::exp_max_uint().cast_signed();
         let sat_bound = ext_from_int(exp_max.add(int_from_u64(4)), l1);
         if matches!(ext_cmp_abs(&x0, &sat_bound, l1), Ordering::Greater) {
-            return if neg {
-                Self::NEG_INFINITY
-            } else {
-                Self::INFINITY
-            };
+            return Self::overflow_value(neg);
         }
 
         let need_wide = x0.exp.gt(&int_from_u64(32));
@@ -73,7 +68,9 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             };
             res.sign = neg;
 
-            if let Some(out) = ext_round_to_float::<W, MB>(&res, limbs, ZIV_ERR_BITS, final_round) {
+            if let Some(out) =
+                ext_round_to_float::<W, MB, RM>(&res, limbs, ZIV_ERR_BITS, final_round)
+            {
                 return out;
             }
             stage += 1;

@@ -7,7 +7,7 @@ use crate::Exponent;
 use core::cmp::Ordering;
 use core::num::FpCategory;
 
-impl<const W: usize, const MB: usize> Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     /// Computes `acosh(self) = ln(self + sqrt(self^2 - 1))` for `self >= 1` without
     /// overflow for large `self` and without cancellation near `1`, with IEEE 754
     /// round-to-nearest-even.
@@ -62,7 +62,9 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                 ext_ln1p(&ext_add(&d, &root, limbs), limbs)
             };
 
-            if let Some(out) = ext_round_to_float::<W, MB>(&res, limbs, ZIV_ERR_BITS, final_round) {
+            if let Some(out) =
+                ext_round_to_float::<W, MB, RM>(&res, limbs, ZIV_ERR_BITS, final_round)
+            {
                 return out;
             }
             stage += 1;

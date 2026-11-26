@@ -10,7 +10,7 @@ impl<const W: usize, const MB: usize> Masks<W, MB> {
 }
 
 /// Classification methods: used to determine mathematical properties of the number.
-impl<const W: usize, const MB: usize> Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     #[inline(always)]
     pub const fn is_sign_positive(self) -> bool {
         !self.is_sign_negative()

@@ -57,4 +57,4 @@ pub use integer::{Int, Integer, Uint};
 pub use overflow::OverflowMode;
 
 #[cfg(feature = "float")]
-pub use float::Float;
+pub use float::{Float, RoundingMode};

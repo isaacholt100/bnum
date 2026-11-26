@@ -408,107 +408,6 @@ const fn fp_ln2<const W: usize>(limbs: usize) -> Fixed<W> {
     }
 }
 
-/// Adds `2^bit_idx` to `(val + carry * 2^(64*limbs))`.
-#[inline]
-const fn fp_add_pow2_with_carry<const W: usize>(
-    val: &Fixed<W>,
-    mut carry_hi: u64,
-    bit_idx: Exponent,
-    limbs: usize,
-) -> (Fixed<W>, u64) {
-    let mut out = *val;
-    let word_idx = (bit_idx / 64) as usize;
-    let bit_off = bit_idx % 64;
-    debug_assert!(word_idx < limbs);
-
-    let (s, mut c) = out.get(word_idx).overflowing_add(1u64 << bit_off);
-    out.set(word_idx, s);
-    let mut i = word_idx + 1;
-    while c && i < limbs {
-        let (s2, c2) = out.get(i).overflowing_add(1);
-        out.set(i, s2);
-        c = c2;
-        i += 1;
-    }
-    if c {
-        carry_hi += 1;
-    }
-    (out, carry_hi)
-}
-
-/// Subtracts `2^bit_idx` from `(val + carry * 2^(64*limbs))` (caller guarantees no underflow).
-#[inline]
-const fn fp_sub_pow2_with_carry<const W: usize>(
-    val: &Fixed<W>,
-    mut carry_hi: u64,
-    bit_idx: Exponent,
-    limbs: usize,
-) -> (Fixed<W>, u64) {
-    let mut out = *val;
-    let word_idx = (bit_idx / 64) as usize;
-    let bit_off = bit_idx % 64;
-    debug_assert!(word_idx < limbs);
-
-    let (d, mut b) = out.get(word_idx).overflowing_sub(1u64 << bit_off);
-    out.set(word_idx, d);
-    let mut i = word_idx + 1;
-    while b && i < limbs {
-        let (d2, b2) = out.get(i).overflowing_sub(1);
-        out.set(i, d2);
-        b = b2;
-        i += 1;
-    }
-    if b {
-        debug_assert!(carry_hi > 0);
-        carry_hi -= 1;
-    }
-    (out, carry_hi)
-}
-
-/// Right-shifts `(val + carry * 2^(64 * limbs))` by `shift` bits and writes the result into
-/// `Uint<W>` (caller guarantees the shifted result fits in `Uint<W>`).
-#[inline]
-const fn fp_shr_with_carry_to_uint<const W: usize>(
-    val: &Fixed<W>,
-    carry: u64,
-    shift: Exponent,
-    limbs: usize,
-) -> Uint<W> {
-    let mut out = Digits::<u64, W, 1, 0>::ALL_ZEROS;
-    let out_limbs = W.div_ceil(8);
-    let word_shift = (shift / 64) as usize;
-    let bit_shift = shift % 64;
-
-    let mut i = 0;
-    while i < out_limbs {
-        let src = i + word_shift;
-        let lo = if src < limbs {
-            val.get(src)
-        } else if src == limbs {
-            carry
-        } else {
-            0
-        };
-        let word = if bit_shift == 0 {
-            lo
-        } else {
-            let hi = if src + 1 < limbs {
-                val.get(src + 1)
-            } else if src + 1 == limbs {
-                carry
-            } else {
-                0
-            };
-            (lo >> bit_shift) | (hi << (64 - bit_shift))
-        };
-        if word != 0 {
-            out.set(i, word);
-        }
-        i += 1;
-    }
-    Uint::<W>::from_digits(out)
-}
-
 /// Computes `S = (2 * atanh(num / den)) * 2^(z_shift - 3)` at scale `2^(64 * limbs)`,
 /// where `z_shift = den.bit_width() - num.bit_width() >= 2` and `num / den < 0.172`.
 ///
@@ -568,7 +467,7 @@ const fn fp_atanh_norm<const W: usize>(
     sum
 }
 
-impl<const W: usize, const MB: usize> Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     /// Evaluates `|ln(x)|` at `limbs` 64-bit limbs of working precision and attempts to round
     /// to `Self`. Returns `None` if Ziv's error bound crosses a half-ULP midpoint (only checked
     /// when `check_ziv` is true, prompting a retry at higher precision).
@@ -644,80 +543,17 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             (k_neg, mag, exp)
         };
 
-        // Overflow check (can occur for negative ln(subnormal) when EXPONENT_BITS is small).
-        if out_exp.gt(&bias_signed) {
-            return Some(if out_sign {
-                Self::NEG_INFINITY
-            } else {
-                Self::INFINITY
-            });
-        }
-
         let bw = fp_bit_width(&mag, limbs);
-        let is_subnormal = out_exp.lt(&min_normal_exp);
-        let drop: Exponent = if is_subnormal {
-            let diff = min_normal_exp
-                .sub(out_exp)
-                .cast_unsigned()
-                .cast_to_unsigned_float_exponent();
-            if diff > Self::MB + 1 {
-                return Some(if out_sign {
-                    Self::NEG_ZERO
-                } else {
-                    Self::ZERO
-                });
-            }
-            bw + diff - (Self::MB + 1)
-        } else {
-            bw - (Self::MB + 1)
+        let lz = p_bits - bw;
+        let sig = super::fixed::fp_shl(&mag, lz, limbs);
+        let ext = super::fixed::Ext {
+            sign: out_sign,
+            zero: false,
+            exp: out_exp,
+            sig,
         };
-
-        // Round to nearest (exact half-ULP ties are impossible for transcendental ln(x), x != 1).
-        let (mid, carry_mid) = fp_add_pow2_with_carry(&mag, 0, drop - 1, limbs);
-        let mut rounded_mant = if check_ziv {
-            debug_assert!(drop > ZIV_ERR_BITS + 1);
-            let (hi, carry_hi) = fp_add_pow2_with_carry(&mid, carry_mid, ZIV_ERR_BITS, limbs);
-            let (lo, carry_lo) = fp_sub_pow2_with_carry(&mid, carry_mid, ZIV_ERR_BITS, limbs);
-            let q_hi = fp_shr_with_carry_to_uint(&hi, carry_hi, drop, limbs);
-            let q_lo = fp_shr_with_carry_to_uint(&lo, carry_lo, drop, limbs);
-            if q_hi.ne(&q_lo) {
-                return None;
-            }
-            q_lo
-        } else {
-            fp_shr_with_carry_to_uint(&mid, carry_mid, drop, limbs)
-        };
-
-        let (biased_out_exp, mant_bits): (Uint<W>, Uint<W>) = if is_subnormal {
-            if rounded_mant.bit(Self::MB) {
-                // Rounded up across subnormal-to-normal boundary to MIN_POSITIVE.
-                (Uint::ONE, Uint::ZERO)
-            } else {
-                (Uint::ZERO, rounded_mant)
-            }
-        } else {
-            let mut final_exp = out_exp;
-            if rounded_mant.bit(Self::MB + 1) {
-                final_exp = final_exp.add(Int::ONE);
-                if final_exp.gt(&bias_signed) {
-                    return Some(if out_sign {
-                        Self::NEG_INFINITY
-                    } else {
-                        Self::INFINITY
-                    });
-                }
-                (final_exp.add(bias_signed).cast_unsigned(), Uint::ZERO)
-            } else {
-                rounded_mant.set_bit(Self::MB, false);
-                (final_exp.add(bias_signed).cast_unsigned(), rounded_mant)
-            }
-        };
-
-        let mut out_bits = biased_out_exp.shl(Self::MB).bitor(mant_bits);
-        if out_sign {
-            out_bits.set_bit(Self::BITS - 1, true);
-        }
-        Some(Self::from_bits(out_bits))
+        let _ = (bias_signed, min_normal_exp);
+        super::fixed::ext_round_to_float::<W, MB, RM>(&ext, limbs, ZIV_ERR_BITS + lz, !check_ziv)
     }
 
     /// Computes the natural logarithm `ln(self)` for `Float<W, MB>`.

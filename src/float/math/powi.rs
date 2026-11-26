@@ -3,12 +3,12 @@ use super::fixed::{
     ZIV_ERR_BITS, ext_from_float, ext_mul, ext_one, ext_recip, ext_round_to_float, int_from_u64,
     max_limbs, stage1_limbs,
 };
+use crate::float::RoundingMode;
 use crate::{Exponent, Int, Uint};
 use core::num::FpCategory;
 
-impl<const W: usize, const MB: usize> Float<W, MB> {
-    /// Raises `self` to an integer power `n`, matching IEEE 754 / Rust std semantics
-    /// with extended-precision binary exponentiation and two-stage Ziv rounding.
+impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
+    /// Raises `self` to an integer power `n` using rounding mode `RM`.
     pub(super) const fn powi_internal(self, n: i32) -> Self {
         const {
             assert!(W > 1, "Float requires W > 1");
@@ -16,6 +16,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                 MB > 2 && (MB as Exponent) < Self::BITS - 2,
                 "Float requires 2 < MB < BITS - 2"
             );
+            assert!(RM <= RoundingMode::MAX_U8, "invalid RoundingMode discriminant");
         }
 
         if n == 0 {
@@ -78,7 +79,6 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                 .sub(bias)
                 .sub(int_from_u64(((Self::MB + 1) - bw) as u64));
 
-            // Compute e_unbiased * n with overflow/underflow saturation.
             let e_neg = e_unbiased.is_negative();
             let e_mag = if e_neg {
                 e_unbiased.wrapping_neg().cast_unsigned()
@@ -87,7 +87,6 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             };
             let prod_neg = e_neg ^ n_neg;
             let limit = exp_max.add(int_from_u64((Self::MB + 4) as u64)).cast_unsigned();
-            // Multiply e_mag * n_abs via widened digits to avoid overflow on small W.
             let wid_e = e_mag.to_digits::<u128>().grow::<1, W>();
             let wid_n = Uint::<W>::cast_from_unsigned_float_exponent(n_abs)
                 .to_digits::<u128>()
@@ -96,11 +95,9 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             let wid_limit = limit.to_digits::<u128>().grow::<1, W>();
             if wid_prod.cmp(&wid_limit).is_gt() {
                 return if prod_neg {
-                    if res_neg { Self::NEG_ZERO } else { Self::ZERO }
-                } else if res_neg {
-                    Self::NEG_INFINITY
+                    Self::underflow_nonzero(res_neg)
                 } else {
-                    Self::INFINITY
+                    Self::overflow_value(res_neg)
                 };
             }
             let p_u: Uint<W> = wid_prod.remove_tail().to_integer();
@@ -111,11 +108,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             };
             let out_be = total_e.add(bias);
             if out_be.ge(&exp_max) {
-                return if res_neg {
-                    Self::NEG_INFINITY
-                } else {
-                    Self::INFINITY
-                };
+                return Self::overflow_value(res_neg);
             }
             if out_be.ge(&Int::ONE) {
                 return Self::from_biased_uint_parts(
@@ -126,20 +119,36 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             }
             let drop_i = Int::<W>::ONE.sub(out_be);
             let mb_i = int_from_u64(Self::MB as u64);
-            if drop_i.gt(&mb_i) {
-                return if res_neg { Self::NEG_ZERO } else { Self::ZERO };
+            let mb1_i = mb_i.add(Int::ONE);
+            if drop_i.gt(&mb1_i) {
+                return Self::underflow_nonzero(res_neg);
+            }
+            if drop_i.eq(&mb1_i) {
+                // Exact 0.5 * MIN_POSITIVE_SUBNORMAL
+                return if RoundingMode::should_round_up::<RM>(
+                    res_neg,
+                    false,
+                    true,
+                    false,
+                    1u64 << 63,
+                    n_abs as u64,
+                ) {
+                    Self::from_biased_uint_parts(res_neg, Uint::ONE, Uint::ONE)
+                } else if res_neg {
+                    Self::NEG_ZERO
+                } else {
+                    Self::ZERO
+                };
             }
             let drop = drop_i.cast_unsigned().cast_to_unsigned_float_exponent();
             let sub_m = Uint::<W>::ONE.shl(Self::MB - drop);
             return Self::from_biased_uint_parts(res_neg, Uint::ONE, sub_m);
         }
 
-        // Exact fast path for n == 2 (single hardware-exact multiplication).
         if n == 2 {
             return self.mul_internal(self, false);
         }
 
-        // Two-stage Ziv binary exponentiation in Ext<W>.
         let exp_max = Self::exp_max_uint().cast_signed();
         let limit = exp_max.add(int_from_u64((Self::MB + 64) as u64));
         let neg_limit = limit.wrapping_neg();
@@ -179,21 +188,17 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             if saturated {
                 let overflows = gt_one ^ n_neg;
                 return if overflows {
-                    if res_neg {
-                        Self::NEG_INFINITY
-                    } else {
-                        Self::INFINITY
-                    }
-                } else if res_neg {
-                    Self::NEG_ZERO
+                    Self::overflow_value(res_neg)
                 } else {
-                    Self::ZERO
+                    Self::underflow_nonzero(res_neg)
                 };
             }
 
             let mut res = if n_neg { ext_recip(&acc, limbs) } else { acc };
             res.sign = res_neg;
-            if let Some(out) = ext_round_to_float::<W, MB>(&res, limbs, ZIV_ERR_BITS, final_round) {
+            if let Some(out) =
+                ext_round_to_float::<W, MB, RM>(&res, limbs, ZIV_ERR_BITS, final_round)
+            {
                 return out;
             }
             stage += 1;

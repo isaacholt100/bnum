@@ -447,34 +447,6 @@ const fn fp_add_pow2_with_carry<const W: usize>(
 }
 
 #[inline]
-const fn fp_sub_pow2_with_carry<const W: usize>(
-    val: &Fixed<W>,
-    mut carry_hi: u64,
-    bit_idx: Exponent,
-    limbs: usize,
-) -> (Fixed<W>, u64) {
-    let mut out = *val;
-    let word_idx = (bit_idx / 64) as usize;
-    let bit_off = bit_idx % 64;
-    debug_assert!(word_idx < limbs);
-
-    let (d, mut b) = out.get(word_idx).overflowing_sub(1u64 << bit_off);
-    out.set(word_idx, d);
-    let mut i = word_idx + 1;
-    while b && i < limbs {
-        let (d2, b2) = out.get(i).overflowing_sub(1);
-        out.set(i, d2);
-        b = b2;
-        i += 1;
-    }
-    if b {
-        debug_assert!(carry_hi > 0);
-        carry_hi -= 1;
-    }
-    (out, carry_hi)
-}
-
-#[inline]
 const fn fp_shr_with_carry_to_uint<const W: usize>(
     val: &Fixed<W>,
     carry: u64,
@@ -569,7 +541,7 @@ const fn fp_expm1_pos<const W: usize>(r: &Fixed<W>, limbs: usize) -> Fixed<W> {
     sum
 }
 
-impl<const W: usize, const MB: usize> Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     /// Evaluates `exp(x)` at `limbs` 64-bit limbs of working precision and attempts to round to
     /// `Self`. Returns `None` if Ziv's error bound crosses a half-ULP midpoint (only checked when
     /// `check_ziv` is true, prompting a Stage 2 retry at `MAX_LIMBS`).
@@ -685,87 +657,15 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         let limb_bits: Exponent = 64 - (limbs as u64).leading_zeros();
         let err_bits: Exponent = k_bits_est + limb_bits + 20;
 
-        // Step 3: Overflow, underflow, subnormal, and normal rounding with Ziv check.
-        if out_exp.gt(&bias_signed) {
-            return Some(Self::INFINITY);
-        }
-
-        let mb_plus_1_int = Uint::cast_from_unsigned_float_exponent(Self::MB + 1).cast_signed();
-        let min_subnormal_exp = min_normal_exp.sub(mb_plus_1_int).add(Int::ONE);
-        let underflow_thresh = min_subnormal_exp.sub(Int::ONE).sub(Int::ONE); // min_subnormal_exp - 2
-
-        if out_exp.lt(&underflow_thresh) {
-            return Some(Self::ZERO);
-        }
-
-        if out_exp.eq(&underflow_thresh) {
-            // Value lies in [0.25, 0.5) * MIN_POSITIVE_SUBNORMAL.
-            if err_bits < p_bits {
-                let (_, carry) = fp_add_pow2_with_carry(&exp_r, 0, err_bits, limbs);
-                if carry == 0 {
-                    return Some(Self::ZERO);
-                }
-            }
-            return if check_ziv { None } else { Some(Self::ZERO) };
-        }
-
-        let is_subnormal = out_exp.lt(&min_normal_exp);
-        let drop: Exponent = if is_subnormal {
-            let diff = min_normal_exp
-                .sub(out_exp)
-                .cast_unsigned()
-                .cast_to_unsigned_float_exponent();
-            p_bits + diff - (Self::MB + 1)
-        } else {
-            p_bits - (Self::MB + 1)
+        // Step 3: Overflow, underflow, subnormal, and normal rounding with Ziv check under RM.
+        let _ = (bias, bias_signed, min_normal_exp);
+        let ext = super::fixed::Ext {
+            sign: false,
+            zero: false,
+            exp: out_exp,
+            sig: exp_r,
         };
-
-        // Round to nearest (exact half-ULP ties are impossible for transcendental e^x, x != 0).
-        let (mid, carry_mid) = fp_add_pow2_with_carry(&exp_r, 0, drop - 1, limbs);
-        let mut rounded_mant = if check_ziv {
-            if err_bits + 2 >= drop {
-                return None;
-            }
-            let (hi, carry_hi) = fp_add_pow2_with_carry(&mid, carry_mid, err_bits, limbs);
-            let (lo, carry_lo) = fp_sub_pow2_with_carry(&mid, carry_mid, err_bits, limbs);
-            let q_hi = fp_shr_with_carry_to_uint(&hi, carry_hi, drop, limbs);
-            let q_lo = fp_shr_with_carry_to_uint(&lo, carry_lo, drop, limbs);
-            if q_hi.ne(&q_lo) {
-                return None;
-            }
-            q_lo
-        } else {
-            fp_shr_with_carry_to_uint(&mid, carry_mid, drop, limbs)
-        };
-
-        let (biased_out_exp, mant_bits): (Uint<W>, Uint<W>) = if is_subnormal {
-            if rounded_mant.is_zero() {
-                return Some(Self::ZERO);
-            }
-            if rounded_mant.bit(Self::MB) {
-                // Rounded up across the subnormal-to-normal boundary to MIN_POSITIVE.
-                (Uint::ONE, Uint::ZERO)
-            } else {
-                (Uint::ZERO, rounded_mant)
-            }
-        } else {
-            let mut final_exp = out_exp;
-            if rounded_mant.bit(Self::MB + 1) {
-                final_exp = final_exp.add(Int::ONE);
-                if final_exp.gt(&bias_signed) {
-                    return Some(Self::INFINITY);
-                }
-                (final_exp.add(bias_signed).cast_unsigned(), Uint::ZERO)
-            } else {
-                rounded_mant.set_bit(Self::MB, false);
-                (final_exp.add(bias_signed).cast_unsigned(), rounded_mant)
-            }
-        };
-
-        // exp(x) is always positive, so sign bit is 0.
-        let _ = bias;
-        let out_bits = biased_out_exp.shl(Self::MB).bitor(mant_bits);
-        Some(Self::from_bits(out_bits))
+        super::fixed::ext_round_to_float::<W, MB, RM>(&ext, limbs, err_bits, !check_ziv)
     }
 
     /// Computes the exponential function `e^self` for `Float<W, MB>`.
@@ -815,22 +715,25 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             (raw_exp.cast_signed().sub(bias_signed), norm_mant)
         };
 
-        // Tiny-argument fast path: for |x| < 2^(-MB - 2) (i.e. e <= -MB - 3), e^x is strictly
-        // closer to 1.0 than to either adjacent float (`1 - 2^(-MB-1)` or `1 + 2^(-MB)`).
+        // Tiny-argument fast path: for |x| < 2^(-MB - 2), e^x = 1 + x + ... with |delta| << 0.5 ULP.
         let tiny_exp = Uint::cast_from_unsigned_float_exponent(Self::MB + 3)
             .cast_signed()
             .neg();
         if e.le(&tiny_exp) {
-            return one;
+            return Self::round_with_tiny_delta(one, !x_neg);
         }
 
         // Large-argument overflow/underflow filter:
         // Overflow occurs when x > (bias + 1) * ln(2) < bias + 1;
-        // underflow to 0 occurs when -x > (bias + MB) * ln(2) < bias + MB + 1.
+        // underflow occurs when -x > (bias + MB) * ln(2) < bias + MB + 1.
         let max_k_bound = bias.add(Uint::cast_from_unsigned_float_exponent(Self::MB + 2));
         let max_e_int = Uint::cast_from_unsigned_float_exponent(max_k_bound.bit_width()).cast_signed();
         if e.ge(&max_e_int) {
-            return if x_neg { Self::ZERO } else { Self::INFINITY };
+            return if x_neg {
+                Self::underflow_nonzero(false)
+            } else {
+                Self::overflow_value(false)
+            };
         }
 
         // Estimate integer bit width needed for k = round(|x| / ln(2)):

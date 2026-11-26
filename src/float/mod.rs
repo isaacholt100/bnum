@@ -62,8 +62,11 @@ mod ops;
 #[cfg(feature = "rand")]
 mod random;
 mod rounding;
+mod rounding_mode;
 mod to_str;
 mod radix;
+
+pub use rounding_mode::RoundingMode;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -71,7 +74,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Copy)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[repr(transparent)]
-pub struct Float<const W: usize, const MB: usize> {
+pub struct Float<const W: usize, const MB: usize, const RM: u8 = { RoundingMode::DEFAULT as u8 }> {
     bits: Uint<W>,
 }
 
@@ -80,7 +83,7 @@ pub(crate) type UnsignedFloatExponent = u32; // TODO: change these to just Expon
 
 // TODO: implement rand traits
 
-impl<const W: usize, const MB: usize> Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     const MB: Exponent = MB as _;
     const BITS: Exponent = Uint::<W>::BITS;
 
@@ -123,7 +126,7 @@ impl<const W: usize> Uint<W> {
     }
 }
 
-impl<const W: usize, const MB: usize> Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     const MIN_EXP_MINUS_ONE: FloatExponent = Self::MIN_EXP - 1;
     // TODO: write test for this
     /// generate powers of two that are not subnormal
@@ -138,7 +141,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     }
 }
 
-impl<const W: usize, const MB: usize> Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
     #[must_use = doc::must_use_op!(float)]
     #[inline]
     pub const fn signum(self) -> Self {
@@ -203,7 +206,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
     }
 }
 
-impl<const W: usize, const MB: usize> Default for Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> Default for Float<W, MB, RM> {
     #[doc = doc::default!()]
     #[inline]
     fn default() -> Self {
@@ -212,7 +215,9 @@ impl<const W: usize, const MB: usize> Default for Float<W, MB> {
 }
 
 #[cfg(any(test, feature = "quickcheck"))]
-impl<const W: usize, const MB: usize> quickcheck::Arbitrary for crate::Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> quickcheck::Arbitrary
+    for crate::Float<W, MB, RM>
+{
     fn arbitrary(g: &mut quickcheck::Gen) -> Self {
         Self::from_bits(Uint::arbitrary(g))
     }

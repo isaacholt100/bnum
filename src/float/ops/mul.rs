@@ -1,9 +1,39 @@
 use super::Float;
+use crate::digits::Digits;
+use crate::float::RoundingMode;
 use crate::{Exponent, Int, Uint};
 use core::num::FpCategory;
 
-impl<const W: usize, const MB: usize> Float<W, MB> {
-    /// Multiplies two finite non-zero floats with IEEE 754 round-to-nearest-even.
+#[inline]
+const fn uint_low_u64<const W: usize>(u: &Uint<W>) -> u64 {
+    let mut v = 0u64;
+    let mut i = 0;
+    while i < W && i < 8 {
+        v |= (u.bytes[i] as u64) << (i * 8);
+        i += 1;
+    }
+    v
+}
+
+#[inline]
+const fn prod_frac64<const W: usize>(prod: &Digits<u128, W, 1, W>, shift: Exponent) -> u64 {
+    if shift == 0 {
+        0
+    } else if shift <= 64 {
+        let lo = prod.get(0) as u64;
+        if shift == 64 {
+            lo
+        } else {
+            (lo & ((1u64 << shift) - 1)) << (64 - shift)
+        }
+    } else {
+        let shifted = unsafe { prod.unchecked_shr(shift - 64, false) };
+        shifted.get(0) as u64
+    }
+}
+
+impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
+    /// Multiplies two finite non-zero floats using rounding mode `RM`.
     #[inline]
     pub(crate) const fn mul_internal(self, rhs: Self, negative: bool) -> Self {
         const {
@@ -12,6 +42,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                 MB > 2 && (MB as Exponent) < Self::BITS - 2,
                 "Float requires 2 < MB < BITS - 2"
             );
+            assert!(RM <= RoundingMode::MAX_U8, "invalid RoundingMode discriminant");
         }
 
         let (_, exp_a, mant_a) = self.into_biased_uint_parts();
@@ -47,23 +78,15 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             .sub(Uint::cast_from_unsigned_float_exponent(Self::MB).cast_signed());
 
         if exp.ge(&exp_max) {
-            return if negative {
-                Self::NEG_INFINITY
-            } else {
-                Self::INFINITY
-            };
+            return Self::overflow_value(negative);
         }
 
         let extra_shift: Exponent = if exp.le(&Int::ZERO) {
             let sub_drop = Int::<W>::ONE.sub(exp);
-            let max_useful = Uint::<W>::cast_from_unsigned_float_exponent(prod_bw - extra_bits)
-                .cast_signed();
+            let max_useful =
+                Uint::<W>::cast_from_unsigned_float_exponent(prod_bw - extra_bits).cast_signed();
             if sub_drop.gt(&max_useful) {
-                return if negative {
-                    Self::NEG_ZERO
-                } else {
-                    Self::ZERO
-                };
+                return Self::underflow_nonzero(negative);
             }
             exp = Int::ONE;
             sub_drop.cast_unsigned().cast_to_unsigned_float_exponent() as Exponent
@@ -80,6 +103,11 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         // total_shift is guaranteed to satisfy 1 <= total_shift <= prod_bw < 2 * BITS.
         let round_bit = mant_prod.bit(total_shift - 1);
         let sticky = mant_prod.trailing_zeros() < total_shift - 1;
+        let frac64 = if RM == RoundingMode::Stochastic as u8 {
+            prod_frac64(&mant_prod, total_shift)
+        } else {
+            0
+        };
         let mut mant: Uint<W> = if total_shift >= prod_bw {
             Uint::ZERO
         } else {
@@ -88,7 +116,17 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                 .to_integer()
         };
 
-        if round_bit && (sticky || mant.is_odd()) {
+        let seed = uint_low_u64(&exp.cast_unsigned())
+            .wrapping_mul(0x9e37_79b9_7f4a_7c15)
+            ^ uint_low_u64(&mant);
+        if RoundingMode::should_round_up::<RM>(
+            negative,
+            mant.is_odd(),
+            round_bit,
+            sticky,
+            frac64,
+            seed,
+        ) {
             mant = mant.add(Uint::ONE);
             if mant.bit(Self::MB + 1) {
                 mant = mant.shr(1);
@@ -97,11 +135,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         }
 
         if exp.ge(&exp_max) {
-            return if negative {
-                Self::NEG_INFINITY
-            } else {
-                Self::INFINITY
-            };
+            return Self::overflow_value(negative);
         }
 
         Self::from_biased_uint_parts(negative, exp.cast_unsigned(), mant)

@@ -1,15 +1,16 @@
 use super::Float;
 use super::fixed::{
-    Fixed, fp_add, fp_bit, fp_bit_width, fp_cmp, fp_from_uint_shl, fp_has_low_bits, fp_shl,
-    fp_shr, fp_shr_to_uint, fp_sub, int_from_i64, int_from_u64, max_limbs, uint_low_u64,
+    Fixed, fp_add, fp_bit, fp_bit_width, fp_cmp, fp_extract_top64, fp_from_uint_shl,
+    fp_has_low_bits, fp_shl, fp_shr, fp_shr_to_uint, fp_sub, int_from_i64, int_from_u64,
+    max_limbs, uint_low_u64,
 };
+use crate::float::RoundingMode;
 use crate::{Exponent, Int, Uint};
 use core::cmp::Ordering;
 use core::num::FpCategory;
 
-impl<const W: usize, const MB: usize> Float<W, MB> {
-    /// Fused multiply-add: computes `(self * a) + b` with a single IEEE 754
-    /// round-to-nearest-even rounding.
+impl<const W: usize, const MB: usize, const RM: u8> Float<W, MB, RM> {
+    /// Fused multiply-add: computes `(self * a) + b` with a single rounding using mode `RM`.
     pub(super) const fn mul_add_internal(self, a: Self, b: Self) -> Self {
         const {
             assert!(W > 1, "Float requires W > 1");
@@ -17,6 +18,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
                 MB > 2 && (MB as Exponent) < Self::BITS - 2,
                 "Float requires 2 < MB < BITS - 2"
             );
+            assert!(RM <= RoundingMode::MAX_U8, "invalid RoundingMode discriminant");
         }
 
         let prod_neg = self.is_sign_negative() ^ a.is_sign_negative();
@@ -51,6 +53,8 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             (FpCategory::Zero, _, FpCategory::Zero) | (_, FpCategory::Zero, FpCategory::Zero) => {
                 return if prod_neg && b_neg {
                     Self::NEG_ZERO
+                } else if prod_neg != b_neg {
+                    Self::zero_from_cancellation()
                 } else {
                     Self::ZERO
                 };
@@ -69,7 +73,6 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         let exp_max = Self::exp_max_uint().cast_signed();
         let mb_int = int_from_u64(Self::MB as u64);
 
-        // Compute exact product m_self * m_a into Fixed<W> (uses max_limbs >= 2*MB + 136 bits).
         let limbs = max_limbs::<W>();
         let p_bits = (limbs as Exponent) * 64;
 
@@ -102,8 +105,6 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         }
 
         let bw_p = fp_bit_width(&prod_fp, limbs);
-        // Exact value of product: prod_fp * 2^ep where ep = (e_self - bias) + (e_a - bias) - 2*MB.
-        // Top bit of product has unbiased exponent top_p = ep + bw_p - 1.
         let ep = e_self
             .cast_signed()
             .sub(bias)
@@ -112,12 +113,10 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             .sub(mb_int);
         let top_p = ep.add(int_from_u64((bw_p - 1) as u64));
 
-        // Exact value of b: m_b * 2^eb_raw where eb_raw = (e_b - bias) - MB.
         let bw_b = m_b.bit_width();
         let eb_raw = e_b.cast_signed().sub(bias).sub(mb_int);
         let top_b = eb_raw.add(int_from_u64((bw_b - 1) as u64));
 
-        // Align both magnitudes with their MSBs at bit `p_bits - 2` (leaving 1 bit for add carry).
         let p_aligned = fp_shl(&prod_fp, (p_bits - 2) - (bw_p - 1), limbs);
         let b_aligned = fp_from_uint_shl(&m_b, (p_bits - 2) - (bw_b - 1), limbs);
 
@@ -148,9 +147,6 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             }
         };
 
-        // Combine hi_fp and (lo_shifted + eps), where eps = 0 if !sticky_lo else 0 < eps < 1 ULP of Fixed.
-        // Because p_bits >= 2*MB + 136, whenever diff_exp <= 1 both terms fit 100% exactly
-        // (sticky_lo == false), and whenever diff_exp >= 2 bit 0 is > 130 bits below the rounding bit.
         let (res_fp, res_top, extra_sticky) = if same_sign {
             let (sum, _) = fp_add(&hi_fp, &lo_shifted, limbs);
             if fp_bit(&sum, p_bits - 1) {
@@ -168,33 +164,46 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
             let bw = fp_bit_width(&diff, limbs);
             if bw == 0 {
                 debug_assert!(!sticky_lo);
-                return Self::ZERO;
+                return Self::zero_from_cancellation();
             }
-            // Bit `p_bits - 2` corresponded to `hi_top`, so bit `bw - 1` corresponds to:
             let drop = (p_bits - 2) - (bw - 1);
             let norm = fp_shl(&diff, p_bits - bw, limbs);
             (norm, hi_top.sub(int_from_u64(drop as u64)), sticky_lo)
         };
 
-        // Now exact magnitude is `(res_fp + frac) * 2^(res_top - (p_bits - 1))`
-        // where `res_fp` has bit `p_bits - 1` set and `frac == 0` iff `!extra_sticky` (else `0 < frac < 1`).
         let be = res_top.add(bias);
         if be.ge(&exp_max) {
-            return if res_neg {
-                Self::NEG_INFINITY
-            } else {
-                Self::INFINITY
-            };
+            return Self::overflow_value(res_neg);
         }
 
         let neg_mb = int_from_i64(-(Self::MB as i64));
         if be.lt(&neg_mb) {
-            return if res_neg { Self::NEG_ZERO } else { Self::ZERO };
+            if be.eq(&neg_mb.sub(Int::ONE)) && RM == RoundingMode::Stochastic as u8 {
+                let frac64 = fp_extract_top64(&res_fp, p_bits, limbs) >> 2;
+                let seed = uint_low_u64(&res_top.cast_unsigned());
+                return if RoundingMode::should_round_up::<RM>(
+                    res_neg, false, false, true, frac64, seed,
+                ) {
+                    Self::from_biased_uint_parts(res_neg, Uint::ONE, Uint::ONE)
+                } else if res_neg {
+                    Self::NEG_ZERO
+                } else {
+                    Self::ZERO
+                };
+            }
+            return Self::underflow_nonzero(res_neg);
         }
         if be.eq(&neg_mb) {
-            // Value in [0.5, 1.0) ULPs of MIN_POSITIVE_SUBNORMAL.
-            let gt_half = extra_sticky || fp_has_low_bits(&res_fp, p_bits - 1);
-            return if gt_half {
+            let sticky = extra_sticky || fp_has_low_bits(&res_fp, p_bits - 1);
+            let frac64 = if RM == RoundingMode::Stochastic as u8 {
+                fp_extract_top64(&res_fp, p_bits, limbs) >> 1
+            } else {
+                1u64 << 63
+            };
+            let seed = uint_low_u64(&res_top.cast_unsigned());
+            return if RoundingMode::should_round_up::<RM>(
+                res_neg, false, true, sticky, frac64, seed,
+            ) {
                 Self::from_biased_uint_parts(res_neg, Uint::ONE, Uint::ONE)
             } else if res_neg {
                 Self::NEG_ZERO
@@ -215,8 +224,22 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         let mut q = fp_shr_to_uint(&res_fp, shift, limbs);
         let round_bit = fp_bit(&res_fp, shift - 1);
         let sticky = extra_sticky || fp_has_low_bits(&res_fp, shift - 1);
+        let frac64 = if RM == RoundingMode::Stochastic as u8 {
+            fp_extract_top64(&res_fp, shift, limbs)
+        } else {
+            0
+        };
+        let seed = uint_low_u64(&out_be.cast_unsigned()).wrapping_mul(0x9e37_79b9_7f4a_7c15)
+            ^ uint_low_u64(&q);
 
-        if round_bit && (sticky || q.is_odd()) {
+        if RoundingMode::should_round_up::<RM>(
+            res_neg,
+            q.is_odd(),
+            round_bit,
+            sticky,
+            frac64,
+            seed,
+        ) {
             q = q.add(Uint::ONE);
             if q.bit(Self::MB + 1) {
                 q = q.shr(1);
@@ -225,11 +248,7 @@ impl<const W: usize, const MB: usize> Float<W, MB> {
         }
 
         if out_be.ge(&exp_max) {
-            return if res_neg {
-                Self::NEG_INFINITY
-            } else {
-                Self::INFINITY
-            };
+            return Self::overflow_value(res_neg);
         }
 
         Self::from_biased_uint_parts(res_neg, out_be.cast_unsigned(), q)

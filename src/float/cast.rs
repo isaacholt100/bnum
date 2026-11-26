@@ -1,7 +1,8 @@
-use crate::cast::float::{FloatCastHelper, FloatMantissa, ConvertFloatParts};
-use crate::helpers::{Zero, Bits};
+use crate::cast::float::{
+    CastFloatFromUintHelper, ConvertFloatParts, FloatCastHelper, FloatMantissa,
+};
 
-use super::{Float, FloatExponent, UnsignedFloatExponent};
+use super::{Float, FloatExponent, RoundingMode, UnsignedFloatExponent};
 use crate::Exponent;
 use crate::cast::CastFrom;
 use crate::{Int, Integer, Uint};
@@ -13,13 +14,110 @@ impl<const N: usize, const B: usize> FloatMantissa for Uint<N, B> {
     }
 }
 
+#[inline]
+const fn uint_low_u64<const W: usize>(u: &Uint<W>) -> u64 {
+    let mut v = 0u64;
+    let mut i = 0;
+    while i < W && i < 8 {
+        v |= (u.bytes[i] as u64) << (i * 8);
+        i += 1;
+    }
+    v
+}
+
+#[inline]
+const fn uint_frac64<const W: usize>(u: &Uint<W>, shift: Exponent) -> u64 {
+    if shift == 0 {
+        0
+    } else if shift <= 64 {
+        let lo = uint_low_u64(u);
+        if shift == 64 {
+            lo
+        } else {
+            (lo & ((1u64 << shift) - 1)) << (64 - shift)
+        }
+    } else {
+        uint_low_u64(&u.shr(shift - 64))
+    }
+}
+
+/// Casts an unsigned magnitude with an explicit `sign` to `Float<W, MB, RM>`, rounding
+/// according to `RM`.
+fn cast_float_from_uint_signed<U, const W: usize, const MB: usize, const RM: u8>(
+    sign: bool,
+    value: U,
+) -> Float<W, MB, RM>
+where
+    U: CastFloatFromUintHelper + Copy,
+    Uint<W>: CastFrom<U>,
+    u64: CastFrom<U>,
+{
+    let bit_width = value.bit_width();
+    if bit_width == 0 {
+        return Float::ZERO;
+    }
+    let exp_u = bit_width - 1;
+    if Float::<W, MB, RM>::EXPONENT_BITS <= 64
+        && (exp_u as u64) > ((1u128 << (Float::<W, MB, RM>::EXPONENT_BITS - 1)) - 1) as u64
+    {
+        return Float::overflow_value(sign);
+    }
+    let bias = Float::<W, MB, RM>::exp_bias_uint();
+    let exp_max = Float::<W, MB, RM>::exp_max_uint();
+    let exp_as_uint = Uint::<W>::cast_from_unsigned_float_exponent(exp_u);
+    let mut biased_exp = bias.add(exp_as_uint);
+
+    // Check overflow: if biased_exp >= exp_max (or bias + exp_u overflowed).
+    if exp_as_uint.gt(&bias) || biased_exp.ge(&exp_max) {
+        return Float::overflow_value(sign);
+    }
+
+    let mb_plus_1 = Float::<W, MB, RM>::MANTISSA_DIGITS;
+    let mant = if bit_width <= mb_plus_1 {
+        Uint::<W>::cast_from(value).shl(mb_plus_1 - bit_width)
+    } else {
+        let shift = bit_width - mb_plus_1;
+        let round_bit = value.bit(shift - 1);
+        let sticky = value.trailing_zeros() < shift - 1;
+        let frac64 = if RM == RoundingMode::Stochastic as u8 {
+            if shift <= 64 {
+                let lo = u64::cast_from(value);
+                if shift == 64 {
+                    lo
+                } else {
+                    (lo & ((1u64 << shift) - 1)) << (64 - shift)
+                }
+            } else {
+                u64::cast_from(value >> (shift - 64))
+            }
+        } else {
+            0
+        };
+        let mut q = Uint::<W>::cast_from(value >> shift);
+        let seed = uint_low_u64(&biased_exp).wrapping_mul(0x9e37_79b9_7f4a_7c15) ^ uint_low_u64(&q);
+        if RoundingMode::should_round_up::<RM>(sign, q.is_odd(), round_bit, sticky, frac64, seed) {
+            q = q.add(Uint::ONE);
+            if q.bit(mb_plus_1) {
+                q = q.shr(1);
+                biased_exp = biased_exp.add(Uint::ONE);
+            }
+        }
+        q
+    };
+
+    if biased_exp.ge(&exp_max) {
+        return Float::overflow_value(sign);
+    }
+    Float::from_biased_uint_parts(sign, biased_exp, mant)
+}
+
 macro_rules! uint_as_float {
     ($($uint: ident), *) => {
         $(
-            impl<const W: usize, const MB: usize> CastFrom<$uint> for Float<W, MB> {
+            impl<const W: usize, const MB: usize, const RM: u8> CastFrom<$uint> for Float<W, MB, RM> {
                 #[inline]
                 fn cast_from(value: $uint) -> Self {
-                    crate::cast::float::cast_float_from_uint(value)
+                    cast_float_from_uint_signed(false, value)
                 }
             }
         )*
@@ -31,14 +129,10 @@ uint_as_float!(u8, u16, u32, u64, u128, usize);
 macro_rules! int_as_float {
     ($($int: ty), *) => {
         $(
-            impl<const W: usize, const MB: usize> CastFrom<$int> for Float<W, MB> {
+            impl<const W: usize, const MB: usize, const RM: u8> CastFrom<$int> for Float<W, MB, RM> {
+                #[inline]
                 fn cast_from(value: $int) -> Self {
-                    let pos_cast = Self::cast_from(value.unsigned_abs());
-                    if value.is_negative() {
-                        -pos_cast
-                    } else {
-                        pos_cast
-                    }
+                    cast_float_from_uint_signed(value.is_negative(), value.unsigned_abs())
                 }
             }
         )*
@@ -47,20 +141,31 @@ macro_rules! int_as_float {
 
 int_as_float!(i8, i16, i32, i64, i128, isize);
 
-impl<const W: usize, const MB: usize, const S: bool, const N: usize, const B: usize, const OM: u8>
-    CastFrom<Integer<S, N, B, OM>> for Float<W, MB>
+impl<
+    const W: usize,
+    const MB: usize,
+    const RM: u8,
+    const S: bool,
+    const N: usize,
+    const B: usize,
+    const OM: u8,
+> CastFrom<Integer<S, N, B, OM>> for Float<W, MB, RM>
 {
     fn cast_from(value: Integer<S, N, B, OM>) -> Self {
         if !S {
-            return crate::cast::float::cast_float_from_uint(value.force::<false, B, _>());
+            return cast_float_from_uint_signed(false, value.force::<false, B, _>());
         }
-        let f = Self::cast_from(value.unsigned_abs_internal());
-        if value.is_negative_internal() { -f } else { f }
+        cast_float_from_uint_signed(
+            value.is_negative_internal(),
+            value.unsigned_abs_internal().force::<false, B, _>(),
+        )
     }
 }
 
-impl<const W: usize, const MB: usize, const N: usize> CastFrom<Float<W, MB>> for Int<N> {
-    fn cast_from(value: Float<W, MB>) -> Self {
+impl<const W: usize, const MB: usize, const RM: u8, const N: usize> CastFrom<Float<W, MB, RM>>
+    for Int<N>
+{
+    fn cast_from(value: Float<W, MB, RM>) -> Self {
         crate::integer::cast::cast_int_from_float!(value)
     }
 }
@@ -68,9 +173,9 @@ impl<const W: usize, const MB: usize, const N: usize> CastFrom<Float<W, MB>> for
 macro_rules! float_as_int {
     ($($int: ty; $uint: ty), *) => {
         $(
-            impl<const W: usize, const MB: usize> CastFrom<Float<W, MB>> for $int {
+            impl<const W: usize, const MB: usize, const RM: u8> CastFrom<Float<W, MB, RM>> for $int {
                 #[inline]
-                fn cast_from(value: Float<W, MB>) -> Self {
+                fn cast_from(value: Float<W, MB, RM>) -> Self {
                     if value.is_sign_negative() {
                         let u = <$uint>::cast_from(-value);
                         if u >= Self::MIN as $uint {
@@ -98,9 +203,9 @@ float_as_int!(i8; u8, i16; u16, i32; u32, i64; u64, i128; u128, isize; usize);
 macro_rules! float_as_uint {
     ($($uint: ident $(<$N: ident>)?), *) => {
         $(
-            impl<const W: usize, const MB: usize $(, const $N: usize)?> CastFrom<Float<W, MB>> for $uint $(<$N>)? {
+            impl<const W: usize, const MB: usize, const RM: u8 $(, const $N: usize)?> CastFrom<Float<W, MB, RM>> for $uint $(<$N>)? {
                 #[inline]
-                fn cast_from(value: Float<W, MB>) -> Self {
+                fn cast_from(value: Float<W, MB, RM>) -> Self {
                     crate::cast::float::cast_uint_from_float(value)
                 }
             }
@@ -110,7 +215,7 @@ macro_rules! float_as_uint {
 
 float_as_uint!(Uint<N>, u8, u16, u32, u64, u128, usize);
 
-impl<const W: usize, const MB: usize> ConvertFloatParts for Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> ConvertFloatParts for Float<W, MB, RM> {
     type Mantissa = Uint<W>;
     type SignedExp = FloatExponent;
     type UnsignedExp = UnsignedFloatExponent;
@@ -169,7 +274,7 @@ impl<const W: usize, const MB: usize> ConvertFloatParts for Float<W, MB> {
     }
 }
 
-impl<const W: usize, const MB: usize> FloatCastHelper for Float<W, MB> {
+impl<const W: usize, const MB: usize, const RM: u8> FloatCastHelper for Float<W, MB, RM> {
     const MANTISSA_DIGITS: Exponent = Self::MANTISSA_DIGITS as Exponent;
     const MAX_EXP: FloatExponent = Self::MAX_EXP;
     const INFINITY: Self = Self::INFINITY;
@@ -186,189 +291,206 @@ impl<const W: usize, const MB: usize> FloatCastHelper for Float<W, MB> {
     }
 }
 
-trait FloatCastFromFloatHelper: FloatCastHelper {
-    const NEG_ZERO: Self;
-    const MIN_SUBNORMAL_EXP: <Self as ConvertFloatParts>::SignedExp;
-    const EXPONENT_BITS: Exponent;
-
-    fn round_exponent_mantissa<const TIES_EVEN: bool>(
-        exponent: Self::SignedExp,
-        mantissa: Self::Mantissa,
-        shift: Exponent,
-    ) -> (Self::SignedExp, Self::Mantissa);
-    fn from_normalised_signed_parts(
-        sign: bool,
-        exponent: Self::SignedExp,
-        mantissa: Self::Mantissa,
-    ) -> Self;
-}
-
-impl<const W: usize, const MB: usize> FloatCastFromFloatHelper for Float<W, MB> {
-    const NEG_ZERO: Self = Self::NEG_ZERO;
-    const MIN_SUBNORMAL_EXP: FloatExponent = Self::MIN_SUBNORMAL_EXP;
-    const EXPONENT_BITS: Exponent = Self::EXPONENT_BITS;
-
-    #[inline]
-    fn round_exponent_mantissa<const TIES_EVEN: bool>(
-        exponent: Self::SignedExp,
-        mantissa: Self::Mantissa,
-        shift: Exponent,
-    ) -> (Self::SignedExp, Self::Mantissa) {
-        Self::round_exponent_mantissa::<TIES_EVEN>(exponent, mantissa, shift)
+/// Converts `Float<W2, MB2, RM2>` into `Float<W1, MB1, RM1>` with a single rounding using `RM1`
+/// (avoiding double rounding on subnormals and supporting arbitrary exponent widths).
+fn cast_float_to_float_rm<
+    const W1: usize,
+    const MB1: usize,
+    const RM1: u8,
+    const W2: usize,
+    const MB2: usize,
+    const RM2: u8,
+>(
+    value: Float<W2, MB2, RM2>,
+) -> Float<W1, MB1, RM1> {
+    use core::num::FpCategory;
+    match value.classify() {
+        FpCategory::Nan => return Float::NAN,
+        FpCategory::Infinite => {
+            return if value.is_sign_negative() {
+                Float::NEG_INFINITY
+            } else {
+                Float::INFINITY
+            };
+        }
+        FpCategory::Zero => {
+            return if value.is_sign_negative() {
+                Float::NEG_ZERO
+            } else {
+                Float::ZERO
+            };
+        }
+        _ => {}
     }
 
-    #[inline]
-    fn from_normalised_signed_parts(
-        sign: bool,
-        exponent: Self::SignedExp,
-        mantissa: Self::Mantissa,
-    ) -> Self {
-        Self::from_normalised_signed_parts(sign, exponent, mantissa)
-    }
-}
-
-macro_rules! impl_float_cast_from_float_helper_for_primitive_float {
-    ($float_type: ty, $mantissa_type: ty, $float_bit_width: expr) => {
-        // $(
-            impl FloatCastFromFloatHelper for $float_type {
-                const NEG_ZERO: Self = -0.0;
-                const MIN_SUBNORMAL_EXP: <Self as ConvertFloatParts>::SignedExp = Self::MIN_EXP + 1 - Self::MANTISSA_DIGITS as <Self as ConvertFloatParts>::SignedExp;
-                const EXPONENT_BITS: Exponent = $float_bit_width - Self::MANTISSA_DIGITS as Exponent;
-
-                #[inline]
-                fn round_exponent_mantissa<const TIES_EVEN: bool>(
-                    mut exponent: Self::SignedExp,
-                    mantissa: Self::Mantissa,
-                    shift: Exponent,
-                ) -> (Self::SignedExp, Self::Mantissa) {
-                    let mut shifted_mantissa = mantissa >> shift;
-                    if !TIES_EVEN {
-                        return (exponent, shifted_mantissa); // if not TIES_EVEN, then we truncate
-                    }
-                    let discarded_shifted_bits =
-                        mantissa & (<$mantissa_type>::MAX >> ($float_bit_width - shift));
-                    if Bits::bit(&discarded_shifted_bits, shift - 1) {
-                        // in this case, the discarded portion is at least a half
-                        if shifted_mantissa % 2 == 1 || !discarded_shifted_bits.is_power_of_two() {
-                            // in this case, ties to even says we round up. checking if not a power of two tells us that there is at least one bit set to 1 (after the most significant bit set to 1). we check in this order as is_odd is O(1) whereas is_power_of_two is O(N)
-                            shifted_mantissa = shifted_mantissa + 1;
-                            if Bits::bit(&shifted_mantissa, shift) {
-                                // check for overflow (with respect to the mantissa bit width)
-                                exponent += 1;
-                                shifted_mantissa = shifted_mantissa >> 1;
-                            }
-                        }
-                    }
-                    (exponent, shifted_mantissa)
-                }
-
-                #[inline]
-                fn from_normalised_signed_parts(
-                    sign: bool,
-                    exponent: Self::SignedExp,
-                    mantissa: Self::Mantissa,
-                ) -> Self {
-                    debug_assert!(mantissa == 0 || Bits::bit_width(&mantissa) == Self::MANTISSA_DIGITS);
-                    if exponent < Self::MIN_EXP - 1 {
-                        let shift = (Self::MIN_EXP - 1 - exponent) as Exponent;
-                        let (out_exponent, out_mantissa) =
-                            Self::round_exponent_mantissa::<true>(Self::MIN_EXP - 1, mantissa, shift);
-
-                        Self::from_signed_parts(sign, out_exponent, out_mantissa)
-                    } else {
-                        Self::from_signed_parts(sign, exponent, mantissa)
-                    }
-                }
-            }
-        // )*
+    let (sign, src_be, src_m) = value.into_biased_uint_parts();
+    let src_bw = src_m.bit_width();
+    let src_sub_shift = (MB2 as Exponent + 1) - src_bw;
+    let src_norm = if src_sub_shift != 0 {
+        src_m.shl(src_sub_shift)
+    } else {
+        src_m
     };
-}
 
-impl_float_cast_from_float_helper_for_primitive_float!(f32, u32, 32);
-impl_float_cast_from_float_helper_for_primitive_float!(f64, u64, 64);
+    let src_bias = Float::<W2, MB2, RM2>::exp_bias_uint().cast_signed();
+    let src_exp: Int<W2> = src_be
+        .cast_signed()
+        .sub(src_bias)
+        .sub(Uint::cast_from_unsigned_float_exponent(src_sub_shift).cast_signed());
 
-fn cast_float_from_float<T, U>(f: T) -> U
-where
-    T: FloatCastFromFloatHelper,
-    U: FloatCastFromFloatHelper,
-    U::Mantissa: CastFrom<T::Mantissa>,
-    U::SignedExp: CastFrom<T::SignedExp>,
-    T::SignedExp: CastFrom<U::SignedExp>,
-{
-    // deal with zero cases as this means mantissa must have leading one
-    let (sign, mut exponent, mantissa) = f.into_normalised_signed_parts();
-    if mantissa == T::Mantissa::ZERO {
-        return if sign { U::NEG_ZERO } else { U::ZERO };
+    let dst_bias = Float::<W1, MB1, RM1>::exp_bias_uint().cast_signed();
+    let dst_exp_max = Float::<W1, MB1, RM1>::exp_max_uint().cast_signed();
+
+    // Check whether src_exp is out of dst's finite range before casting exponent to Int<W1>.
+    let exp_neg = src_exp.is_negative();
+    let exp_mag_src: Uint<W2> = if exp_neg {
+        src_exp.wrapping_neg().cast_unsigned()
+    } else {
+        src_exp.cast_unsigned()
+    };
+    let dst_max_pos_mag = dst_bias.cast_unsigned(); // max finite unbiased exp == dst_bias
+    // Half of min positive subnormal has unbiased exp == -(dst_bias + MB1).
+    let dst_max_neg_mag = dst_bias
+        .cast_unsigned()
+        .add(Uint::cast_from_unsigned_float_exponent(MB1 as Exponent));
+
+    // Compare exp_mag_src against dst bounds cleanly via bit_width / byte comparison.
+    let src_mag_bw = exp_mag_src.bit_width();
+    if !exp_neg {
+        let lim_bw = dst_max_pos_mag.bit_width();
+        if src_mag_bw > lim_bw
+            || (src_mag_bw == lim_bw && Uint::<W1>::cast_from(exp_mag_src).gt(&dst_max_pos_mag))
+        {
+            return Float::overflow_value(sign);
+        }
+    } else {
+        let lim_bw = dst_max_neg_mag.bit_width();
+        if src_mag_bw > lim_bw
+            || (src_mag_bw == lim_bw && Uint::<W1>::cast_from(exp_mag_src).gt(&dst_max_neg_mag))
+        {
+            return Float::underflow_nonzero(sign);
+        }
     }
-    if exponent == T::MAX_EXP {
-        // the float is either infinity or NaN
-        let out_mantissa = if T::MANTISSA_DIGITS <= U::MANTISSA_DIGITS {
-            U::Mantissa::cast_from(mantissa) << (U::MANTISSA_DIGITS - T::MANTISSA_DIGITS)
+
+    // Now src_exp fits cleanly in Int<W1>.
+    let e_dst_mag = Uint::<W1>::cast_from(exp_mag_src);
+    let e_dst: Int<W1> = if exp_neg {
+        e_dst_mag.cast_signed().wrapping_neg()
+    } else {
+        e_dst_mag.cast_signed()
+    };
+    let be = e_dst.add(dst_bias);
+
+    let (mut out_be, sub_drop): (Int<W1>, Exponent) = if be.ge(&Int::ONE) {
+        (be, 0)
+    } else {
+        let drop = Int::<W1>::ONE
+            .sub(be)
+            .cast_unsigned()
+            .cast_to_unsigned_float_exponent();
+        (Int::ONE, drop)
+    };
+
+    let src_digits = MB2 as Exponent + 1;
+    let dst_digits = MB1 as Exponent + 1;
+
+    // Special subnormal halfway boundary: sub_drop == dst_digits (value in [0.5, 1.0) of min subnormal)
+    if sub_drop >= dst_digits {
+        let sticky = src_norm.trailing_zeros() < src_digits - 1;
+        let frac64 = if RM1 == RoundingMode::Stochastic as u8 {
+            uint_frac64(&src_norm, src_digits)
         } else {
-            U::Mantissa::cast_from(mantissa >> (T::MANTISSA_DIGITS - U::MANTISSA_DIGITS))
+            1u64 << 63
         };
-        return U::from_normalised_signed_parts(sign, U::MAX_EXP, out_mantissa);
+        let seed = uint_low_u64(&src_norm);
+        return if RoundingMode::should_round_up::<RM1>(sign, false, true, sticky, frac64, seed) {
+            Float::from_biased_uint_parts(sign, Uint::ONE, Uint::ONE)
+        } else if sign {
+            Float::NEG_ZERO
+        } else {
+            Float::ZERO
+        };
     }
-    let out_mantissa = if T::MANTISSA_DIGITS <= U::MANTISSA_DIGITS {
-        // in this case, the mantissa can be converted exactly
-        U::Mantissa::cast_from(mantissa) << (U::MANTISSA_DIGITS - T::MANTISSA_DIGITS)
-    } else {
-        let (e, m) = T::round_exponent_mantissa::<true>(
-            exponent,
-            mantissa,
-            T::MANTISSA_DIGITS - U::MANTISSA_DIGITS,
-        );
-        exponent = e;
 
-        U::Mantissa::cast_from(m)
+    let keep_bits = dst_digits - sub_drop;
+    let mut q: Uint<W1> = if keep_bits >= src_digits {
+        Uint::<W1>::cast_from(src_norm).shl(keep_bits - src_digits)
+    } else {
+        let shift = src_digits - keep_bits;
+        let round_bit = src_norm.bit(shift - 1);
+        let sticky = src_norm.trailing_zeros() < shift - 1;
+        let frac64 = if RM1 == RoundingMode::Stochastic as u8 {
+            uint_frac64(&src_norm, shift)
+        } else {
+            0
+        };
+        let mut q0 = Uint::<W1>::cast_from(src_norm.shr(shift));
+        let seed = uint_low_u64(&out_be.cast_unsigned()).wrapping_mul(0x9e37_79b9_7f4a_7c15)
+            ^ uint_low_u64(&q0);
+        if RoundingMode::should_round_up::<RM1>(sign, q0.is_odd(), round_bit, sticky, frac64, seed)
+        {
+            q0 = q0.add(Uint::ONE);
+            if q0.bit(dst_digits) {
+                q0 = q0.shr(1);
+                out_be = out_be.add(Int::ONE);
+            }
+        }
+        q0
     };
 
-    let out_exponent = if T::EXPONENT_BITS <= U::EXPONENT_BITS {
-        // in this case, we will never have overflow
-        U::SignedExp::cast_from(exponent)
-    } else {
-        if T::SignedExp::cast_from(U::MAX_EXP) <= exponent {
-            // exponent is too large to fit into output exponent
-            return if sign { -U::INFINITY } else { U::INFINITY };
-        }
-        if exponent < T::SignedExp::cast_from(U::MIN_SUBNORMAL_EXP) {
-            return if sign { U::NEG_ZERO } else { U::ZERO };
-        }
-        U::SignedExp::cast_from(exponent)
-    };
-    U::from_normalised_signed_parts(sign, out_exponent, out_mantissa)
+    if out_be.ge(&dst_exp_max) {
+        return Float::overflow_value(sign);
+    }
+    let _ = &mut q;
+    Float::from_biased_uint_parts(sign, out_be.cast_unsigned(), q)
 }
 
-impl<const W1: usize, const MB1: usize, const W2: usize, const MB2: usize> CastFrom<Float<W2, MB2>>
-    for Float<W1, MB1>
+impl<
+    const W1: usize,
+    const MB1: usize,
+    const RM1: u8,
+    const W2: usize,
+    const MB2: usize,
+    const RM2: u8,
+> CastFrom<Float<W2, MB2, RM2>> for Float<W1, MB1, RM1>
 {
     #[inline]
-    fn cast_from(value: Float<W2, MB2>) -> Self {
-        cast_float_from_float(value)
+    fn cast_from(value: Float<W2, MB2, RM2>) -> Self {
+        cast_float_to_float_rm(value)
     }
 }
 
-macro_rules! primitive_and_big_float_cast {
-    ($($primitive_float_type: ty), *) => {
-        $(
-            impl<const W: usize, const MB: usize> CastFrom<$primitive_float_type> for Float<W, MB> {
-                #[inline]
-                fn cast_from(value: $primitive_float_type) -> Self {
-                    cast_float_from_float(value)
-                }
-            }
-
-            impl<const W: usize, const MB: usize> CastFrom<Float<W, MB>> for $primitive_float_type {
-                #[inline]
-                fn cast_from(value: Float<W, MB>) -> Self {
-                    cast_float_from_float(value)
-                }
-            }
-        )*
-    };
+impl<const W: usize, const MB: usize, const RM: u8> CastFrom<f32> for Float<W, MB, RM> {
+    #[inline]
+    fn cast_from(value: f32) -> Self {
+        let f = Float::<4, 23, RM>::from_bits(Uint::from_le_bytes(value.to_bits().to_le_bytes()));
+        cast_float_to_float_rm(f)
+    }
 }
 
-primitive_and_big_float_cast!(f32, f64);
+impl<const W: usize, const MB: usize, const RM: u8> CastFrom<f64> for Float<W, MB, RM> {
+    #[inline]
+    fn cast_from(value: f64) -> Self {
+        let f = Float::<8, 52, RM>::from_bits(Uint::from_le_bytes(value.to_bits().to_le_bytes()));
+        cast_float_to_float_rm(f)
+    }
+}
+
+impl<const W: usize, const MB: usize, const RM: u8> CastFrom<Float<W, MB, RM>> for f32 {
+    #[inline]
+    fn cast_from(value: Float<W, MB, RM>) -> Self {
+        let f: Float<4, 23, { RoundingMode::TiesToEven as u8 }> = cast_float_to_float_rm(value);
+        f32::from_bits(u32::from_le_bytes(f.to_bits().bytes))
+    }
+}
+
+impl<const W: usize, const MB: usize, const RM: u8> CastFrom<Float<W, MB, RM>> for f64 {
+    #[inline]
+    fn cast_from(value: Float<W, MB, RM>) -> Self {
+        let f: Float<8, 52, { RoundingMode::TiesToEven as u8 }> = cast_float_to_float_rm(value);
+        f64::from_bits(u64::from_le_bytes(f.to_bits().bytes))
+    }
+}
 
 #[cfg(test)]
 mod tests {
